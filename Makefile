@@ -2,20 +2,26 @@ EXTERNAL_OPTIONS=
 DEBUG?=0
 JOBS?=8
 
-all: hooks src
+BUILD_DIR=build
+INSTALL_DIR=install
+
+all: hooks build
 
 external:
 	cd external ; make DEBUG=$(DEBUG) JOBS=$(JOBS) $(EXTERNAL_OPTIONS);
 
-src: external
-	cd src ; make ; 
+build: external
+	mkdir -p $(BUILD_DIR)
+	mkdir -p $(INSTALL_DIR)
+	cmake -DCMAKE_C_COMPILER=`which clang` -DCMAKE_CXX_COMPILER=`which clang++` -S . -B $(BUILD_DIR)
+	make -C $(BUILD_DIR) all DEBUG=$(DEBUG) -j$(JOBS)
 
-src-fast: external
-	cd src ; make core-fast DEBUG=$(DEBUG) JOBS=$(JOBS);
-	cd src ; make tools-fast DEBUG=$(DEBUG) JOBS=$(JOBS);
+# src-fast: external
+# 	cd src ; make core-fast DEBUG=$(DEBUG) JOBS=$(JOBS);
+# 	cd src ; make tools-fast DEBUG=$(DEBUG) JOBS=$(JOBS);
 
-tests: src
-	cd tests ; make ;
+# tests: src
+# 	cd tests ; make ;
 
 hooks:
 	make -C .githooks
