@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_TOOLS_LOOPID_H
+#define NOELLE_SRC_TOOLS_LOOPID_H
 #pragma once
 
 #include "llvm/Pass.h"
@@ -55,3 +57,5 @@ public:
 };
 
 } // namespace llvm::noelle
+
+#endif
