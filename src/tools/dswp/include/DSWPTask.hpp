@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_TOOLS_DSWPTASK_H
+#define NOELLE_SRC_TOOLS_DSWPTASK_H
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
@@ -117,4 +119,7 @@ struct QueueInstrs {
   Value *allocaCast;
   Value *load;
 };
+
 } // namespace llvm::noelle
+
+#endif
