@@ -28,19 +28,35 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
                     ${CMAKE_CURRENT_BINARY_DIR}/include
                     ${CMAKE_INSTALL_PREFIX}/include
                     ${CMAKE_INSTALL_PREFIX}/include/svf)
+                  
+# List of NOELLE tools
+# NOTE: If you add a tool, you MUST add it here
+set(tool_dirs
+  deadfunctioneliminator
+  doall
+  dswp
+  enablers
+  helix
+  heuristics
+  inliner
+  loop_invariant_code_motion
+  loop_metadata
+  loop_stats
+  parallelization_technique
+  parallelizer
+  pdg_stats
+  scev_simplification
+  codesize
+  )
 
-add_subdirectory(deadfunctioneliminator)
-add_subdirectory(doall)
-add_subdirectory(dswp)
-add_subdirectory(enablers)
-add_subdirectory(helix)
-add_subdirectory(heuristics)
-add_subdirectory(inliner)
-add_subdirectory(loop_invariant_code_motion)
-add_subdirectory(loop_metadata)
-add_subdirectory(loop_stats)
-add_subdirectory(parallelization_technique)
-add_subdirectory(parallelizer)
-add_subdirectory(pdg_stats)
-add_subdirectory(scev_simplification)
-add_subdirectory(codesize)
+                  
+# Add all include directories
+foreach(tool_dir ${tool_dirs})
+  include_directories(${tool_dir}/include)
+endforeach()
+
+# Add each Tool
+foreach(tool_dir ${tool_dirs})
+  add_subdirectory(${tool_dir})
+endforeach()
+                  
