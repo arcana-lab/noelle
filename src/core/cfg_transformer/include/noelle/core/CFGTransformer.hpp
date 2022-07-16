@@ -37,6 +37,13 @@ public:
 
   bool runOnModule(Module &M) override;
 
+  BasicBlock *branchToANewBasicBlockAndBack(
+      Instruction *splitPoint,
+      std::string newBasicBlockName,
+      std::string joinBasicBlockName,
+      std::function<void(BasicBlock *newBB, BasicBlock *newJoinBB)>
+          addConditionalBranch);
+
 private:
 };
 

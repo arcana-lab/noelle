@@ -278,6 +278,10 @@ CFGAnalysis Noelle::getCFGAnalysis(void) const {
   return CFGAnalysis{};
 }
 
+CFGTransformer Noelle::getCFGTransformer(void) const {
+  return CFGTransformer{};
+}
+
 DataFlowEngine Noelle::getDataFlowEngine(void) const {
   return DataFlowEngine{};
 }
