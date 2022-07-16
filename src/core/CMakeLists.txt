@@ -31,13 +31,21 @@ set(core_dirs
   basic_utilities
   callgraph
   clean_metadata
+  cfg_analysis
   dataflow
+  forest
   hotprofiler
+  induction_variables
+  invariants
   loop_distribution
-  loops
+  loop_environment
+  loop_nesting_graph
   loop_structure
+  loop_transformer
   loop_unroll
   loop_whilifier
+  loops
+  metadata_manager
   noelle
   outliner
   pdg
@@ -49,10 +57,19 @@ set(core_dirs
   )
 
 
-# Add all include directories
+
+# Building a list of all NOELLE include dirs to reference
+set(noelle_include_dirs "")
 foreach(core_dir ${core_dirs})
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/${core_dir}/include)
+  set(noelle_include_dirs
+    ${noelle_include_dirs}
+    ${CMAKE_CURRENT_SOURCE_DIR}/${core_dir}/include)
 endforeach()
+set_property(GLOBAL PROPERTY NOELLE_INCLUDE_DIRS "${noelle_include_dirs}")
+
+# Add all include directories
+get_property(noelle_include_dirs GLOBAL PROPERTY NOELLE_INCLUDE_DIRS)
+include_directories(${noelle_include_dirs})
 
 # Add each Pass
 foreach(core_dir ${core_dirs})

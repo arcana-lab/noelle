@@ -51,9 +51,21 @@ set(tool_dirs
 
                   
 # Add all include directories
+set(noelle_tool_include_dirs "")
 foreach(tool_dir ${tool_dirs})
-  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/${tool_dir}/include)
+  set(noelle_tool_include_dirs
+    ${noelle_tool_include_dirs}
+    ${CMAKE_CURRENT_SOURCE_DIR}/${tool_dir}/include
+    PARENT_SCOPE)
 endforeach()
+set_property(GLOBAL PROPERTY NOELLE_TOOL_INCLUDE_DIRS "${noelle_tool_include_dirs}")
+
+#Add all include directories
+get_property(noelle_include_dirs GLOBAL PROPERTY NOELLE_INCLUDE_DIRS)
+include_directories(${noelle_include_dirs})
+
+get_property(noelle_tool_include_dirs GLOBAL PROPERTY NOELLE_TOOL_INCLUDE_DIRS)
+include_directories(${noelle_tool_include_dirs})
 
 # Add each Tool
 foreach(tool_dir ${tool_dirs})
