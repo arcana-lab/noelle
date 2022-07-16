@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_CORE_SYSTEMHEADERS_H
+#define NOELLE_SRC_CORE_SYSTEMHEADERS_H
 #pragma once
 
 /*
@@ -76,3 +78,5 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/CFG.h"
 #include <llvm/IR/Verifier.h>
+
+#endif
