@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_TOOLS_DOALLTASK_H
+#define NOELLE_SRC_TOOLS_DOALLTASK_H
 #pragma once
 
 #include "noelle/core/Task.hpp"
@@ -51,4 +53,7 @@ public:
 
   void extractFuncArgs() override;
 };
+
 } // namespace llvm::noelle
+
+#endif
