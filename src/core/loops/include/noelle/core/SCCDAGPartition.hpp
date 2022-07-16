@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_CORE_SCCDAGPARTITION_H
+#define NOELLE_SRC_CORE_SCCDAGPARTITION_H
 #pragma once
 
 #include "noelle/core/LoopStructure.hpp"
@@ -157,3 +159,5 @@ struct GraphTraits<
         llvm::noelle::SCCSet> {};
 
 } // namespace llvm
+
+#endif

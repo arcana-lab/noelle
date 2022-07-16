@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_CORE_SCCDAGNORMALIZER_H
+#define NOELLE_SRC_CORE_SCCDAGNORMALIZER_H
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
@@ -62,4 +64,7 @@ private:
    */
   void collapseIntroducedCycles(void);
 };
+
 } // namespace llvm::noelle
+
+#endif
