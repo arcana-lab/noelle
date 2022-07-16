@@ -1,3 +1,5 @@
+#ifndef NOELLE_SRC_CORE_UNIQUEIRVERIFIER_H
+#define NOELLE_SRC_CORE_UNIQUEIRVERIFIER_H
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
@@ -36,3 +38,5 @@ private:
 };
 
 } // namespace llvm::noelle
+
+#endif

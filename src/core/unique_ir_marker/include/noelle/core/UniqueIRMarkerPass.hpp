@@ -1,3 +1,5 @@
+#ifndef NOELLE_SRC_CORE_UNQIUEIRMARKERPASS_H
+#define NOELLE_SRC_CORE_UNQIUEIRMARKERPASS_H
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
@@ -17,3 +19,5 @@ public:
 };
 
 } // namespace llvm::noelle
+
+#endif
