@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_CORE_MEMORYSITE_H
+#define NOELLE_SRC_CORE_MEMORYSITE_H
 #pragma once
 
 #include "llvm/IR/Module.h"
@@ -82,3 +84,5 @@ struct MemoryReference {
   int32_t offsetInBits;
 };
 } // namespace llvm::noelle
+
+#endif
