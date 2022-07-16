@@ -52,7 +52,7 @@ set(tool_dirs
                   
 # Add all include directories
 foreach(tool_dir ${tool_dirs})
-  include_directories(${tool_dir}/include)
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/${tool_dir}/include)
 endforeach()
 
 # Add each Tool
