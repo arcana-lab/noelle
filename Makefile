@@ -30,12 +30,14 @@ format:
 	cd src ; ./scripts/format_source_code.sh
 
 clean:
-	cd external ; make clean ; 
 	cd src ; make clean ; 
 	cd tests ; make clean; 
 	cd examples ; make clean ; 
 	find ./ -name .clangd -exec rm -rv {} +
 	find ./ -name .cache -exec rm -rv {} +
+
+clean-external:
+	cd external ; make clean ; 
 
 uninstall: clean
 	rm -f enable ;
