@@ -109,8 +109,7 @@ bool HELIX::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   auto profiles = this->noelle.getProfiles();
   auto loopStructure = LDI->getLoopStructure();
   auto loopIDOpt = loopStructure->getID();
-  assert(loopIDOpt); // ED: we are potentially parallelizing with HELIX, loops
-                     // should have IDs.
+  assert(loopIDOpt);
   auto loopID = loopIDOpt.value();
   auto averageInstructions =
       profiles->getAverageTotalInstructionsPerIteration(loopStructure);
@@ -302,6 +301,7 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
       scc->print(errs(), s);
       return true;
     }
+
     return false;
   };
   this->initializeEnvironmentBuilder(LDI, isReducible);
