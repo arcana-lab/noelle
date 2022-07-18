@@ -257,7 +257,7 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Generate code to allocate and initialize the loop environment.
    */
-  auto isReducible = [](uint32_t idx, bool isLiveOut) -> bool { return false; };
+  auto isReducible = [](uint32_t id, bool isLiveOut) -> bool { return false; };
   this->initializeEnvironmentBuilder(LDI, isReducible);
   collectLiveInEnvInfo(LDI);
   collectLiveOutEnvInfo(LDI);

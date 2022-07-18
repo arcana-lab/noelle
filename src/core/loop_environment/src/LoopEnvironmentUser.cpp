@@ -24,13 +24,15 @@
 
 namespace llvm::noelle {
 
-LoopEnvironmentUser::LoopEnvironmentUser()
+LoopEnvironmentUser::LoopEnvironmentUser(
+    std::unordered_map<uint32_t, uint32_t> &envIDToIndex)
   : envIndexToPtr{},
-    liveInInds{},
-    liveOutInds{} {
+    liveInIDs{},
+    liveOutIDs{},
+    envIDToIndex{ envIDToIndex } {
   envIndexToPtr.clear();
-  liveInInds.clear();
-  liveOutInds.clear();
+  liveInIDs.clear();
+  liveOutIDs.clear();
 
   return;
 }
@@ -41,7 +43,7 @@ void LoopEnvironmentUser::setEnvironmentArray(Value *envArr) {
 
 Instruction *LoopEnvironmentUser::createEnvironmentVariablePointer(
     IRBuilder<> builder,
-    uint32_t envIndex,
+    uint32_t envID,
     Type *type) {
 
   /*
@@ -52,6 +54,13 @@ Instruction *LoopEnvironmentUser::createEnvironmentVariablePointer(
         << "A reference to the environment array has not been set for this user!\n";
     abort();
   }
+
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(envID) != this->envIDToIndex.end()
+         && "The environment variable is not included in the user\n");
+  auto envIndex = this->envIDToIndex[envID];
 
   /*
    * Create the zero integer constant.
@@ -88,7 +97,7 @@ Instruction *LoopEnvironmentUser::createEnvironmentVariablePointer(
 }
 
 void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> builder,
-                                                uint32_t envIndex,
+                                                uint32_t envID,
                                                 Type *type,
                                                 uint32_t reducerCount,
                                                 Value *reducerIndV) {
@@ -97,6 +106,13 @@ void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> builder,
         << "A reference to the environment array has not been set for this user!\n";
     abort();
   }
+
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(envID) != this->envIDToIndex.end()
+         && "The environment variable is not included in the user\n");
+  auto envIndex = this->envIDToIndex[envID];
 
   /*
    * Compute how many values can fit in a cache line.
@@ -127,19 +143,32 @@ void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> builder,
   this->envIndexToPtr[envIndex] = cast<Instruction>(envPtr);
 }
 
-void LoopEnvironmentUser::addLiveInIndex(uint32_t ind) {
-  liveInInds.insert(ind);
+void LoopEnvironmentUser::addLiveIn(uint32_t id) {
+  if (this->envIDToIndex.find(id) != this->envIDToIndex.end()) {
+    auto ind = this->envIDToIndex[id];
+    liveInIDs.insert(id);
+  }
 
   return;
 }
 
-void LoopEnvironmentUser::addLiveOutIndex(uint32_t ind) {
-  liveOutInds.insert(ind);
+void LoopEnvironmentUser::addLiveOut(uint32_t id) {
+  if (this->envIDToIndex.find(id) != this->envIDToIndex.end()) {
+    auto ind = this->envIDToIndex[id];
+    liveOutIDs.insert(id);
+  }
 
   return;
 }
 
-Instruction *LoopEnvironmentUser::getEnvPtr(uint32_t ind) {
+Instruction *LoopEnvironmentUser::getEnvPtr(uint32_t id) {
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(id) != this->envIDToIndex.end()
+         && "The environment variable is not included in the user\n");
+  auto ind = this->envIDToIndex[id];
+
   auto ptr = this->envIndexToPtr[ind];
   assert(ptr != nullptr);
 
@@ -147,13 +176,13 @@ Instruction *LoopEnvironmentUser::getEnvPtr(uint32_t ind) {
 }
 
 iterator_range<std::set<uint32_t>::iterator> LoopEnvironmentUser::
-    getEnvIndicesOfLiveInVars(void) {
-  return make_range(liveInInds.begin(), liveInInds.end());
+    getEnvIDsOfLiveInVars(void) {
+  return make_range(liveInIDs.begin(), liveInIDs.end());
 }
 
 iterator_range<std::set<uint32_t>::iterator> LoopEnvironmentUser::
-    getEnvIndicesOfLiveOutVars(void) {
-  return make_range(liveOutInds.begin(), liveOutInds.end());
+    getEnvIDsOfLiveOutVars(void) {
+  return make_range(liveOutIDs.begin(), liveOutIDs.end());
 }
 
 LoopEnvironmentUser::~LoopEnvironmentUser() {
