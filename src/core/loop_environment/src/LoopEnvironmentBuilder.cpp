@@ -617,6 +617,10 @@ uint32_t LoopEnvironmentBuilder::getIndexOfEnvironmentVariable(
   return this->envIDToIndex.at(id);
 }
 
+bool LoopEnvironmentBuilder::isIncludedEnvironmentVariable(uint32_t id) const {
+  return (this->envIDToIndex.find(id) != this->envIDToIndex.end());
+}
+
 Value *LoopEnvironmentBuilder::getAccumulatedReducedEnvironmentVariable(
     uint32_t id) const {
   /*

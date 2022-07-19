@@ -199,6 +199,12 @@ void ParallelizationTechnique::populateLiveInEnvironment(
    */
   IRBuilder<> builder(this->entryPointOfParallelizedLoop);
   for (auto envID : env->getEnvIDsOfLiveInVars()) {
+    /*
+     * Skip the environment variable if it's not included in the builder
+     */
+    if (!this->envBuilder->isIncludedEnvironmentVariable(envID)) {
+      continue;
+    }
 
     /*
      * Fetch the value to store.
