@@ -1286,6 +1286,14 @@ void ParallelizationTechnique::adjustDataFlowToUseClones(Instruction *cloneI,
     auto opV = op.get();
 
     /*
+     * If the value is a skipped environment variable, there is nothing we need
+     * to do.
+     */
+    if (task->isSkippedEnvironmentVariable(opV)) {
+      continue;
+    }
+
+    /*
      * If the value is a constant, then there is nothing we need to do.
      */
     if (dyn_cast<Constant>(opV)) {

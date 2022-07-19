@@ -324,6 +324,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
         auto sccInfo = sccManager->getSCCAttrs(scc);
         if (!sccInfo->isInductionVariableSCC()
             && sccInfo->canExecuteReducibly()) {
+          chunkerTask->addSkippedEnvironmentVariable(producer);
           return true;
         }
       }
