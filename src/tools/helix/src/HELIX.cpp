@@ -304,7 +304,39 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
 
     return false;
   };
-  this->initializeEnvironmentBuilder(LDI, isReducible);
+  auto isSkippable = [this, environment, sccManager, helixTask](
+                         uint32_t id,
+                         bool isLiveOut) -> bool {
+    if (isLiveOut) {
+      return false;
+    }
+
+    /*
+     * We have a live-in variable.
+     *
+     * The initial value of the reduction variable can be skipped,
+     * which means the following conditions should all meet
+     * 1. This live-in variable only has one user, and
+     * 2. The user is a phi node, and
+     * 3. The scc contains this phi is not part of the induction variable but
+     * reducible operation
+     */
+    auto producer = environment->getProducer(id);
+    if (producer->getNumUses() == 1) {
+      if (auto consumer = dyn_cast<PHINode>(*producer->user_begin())) {
+        auto scc = sccManager->getSCCDAG()->sccOfValue(consumer);
+        auto sccInfo = sccManager->getSCCAttrs(scc);
+        if (!sccInfo->isInductionVariableSCC()
+            && sccInfo->canExecuteReducibly()) {
+          helixTask->addSkippedEnvironmentVariable(producer);
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+  this->initializeEnvironmentBuilder(LDI, isReducible, isSkippable);
 
   /*
    * Clone the sequential loop and store the cloned instructions/basic blocks
