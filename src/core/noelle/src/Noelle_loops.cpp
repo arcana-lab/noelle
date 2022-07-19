@@ -145,11 +145,13 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
        */
       auto loopStructure = new LoopStructure{ loop };
       auto loopHeader = loopStructure->getHeader();
-      if (!isLoopHot(loopStructure, minimumHotness)) {
-        errs() << "Noelle:  Disable loop \"" << currentLoopIndex
-               << "\" as cold code\n";
-        delete loopStructure;
-        continue;
+      if (minimumHotness > 0) {
+        if (!isLoopHot(loopStructure, minimumHotness)) {
+          errs() << "Noelle:  Disable loop \"" << currentLoopIndex
+                 << "\" as cold code\n";
+          delete loopStructure;
+          continue;
+        }
       }
 
       // TODO: Print out more information than just loop hotness, perhaps the
@@ -379,9 +381,11 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(Function *function,
      * Check if the loop is hot enough.
      */
     auto loopS = new LoopStructure(loop);
-    if (!isLoopHot(loopS, minimumHotness)) {
-      delete loopS;
-      continue;
+    if (minimumHotness > 0) {
+      if (!this->isLoopHot(loopS, minimumHotness)) {
+        delete loopS;
+        continue;
+      }
     }
 
     /*
@@ -533,16 +537,18 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
        * Check if the loop is hot enough.
        */
       auto loopS = new LoopStructure(loop);
-      if (!isLoopHot(loopS, minimumHotness)) {
-        errs() << "Noelle:  Disable loop \"" << currentLoopIndex
-               << "\" as cold code\n";
+      if (minimumHotness > 0) {
+        if (!this->isLoopHot(loopS, minimumHotness)) {
+          errs() << "Noelle:  Disable loop \"" << currentLoopIndex
+                 << "\" as cold code\n";
 
-        /*
-         * Free the memory.
-         */
-        delete loopS;
+          /*
+           * Free the memory.
+           */
+          delete loopS;
 
-        continue;
+          continue;
+        }
       }
 
       /*
@@ -737,9 +743,11 @@ uint32_t Noelle::getNumberOfProgramLoops(double minimumHotness) {
        * Check if the loop is hot enough.
        */
       LoopStructure loopStructure{ loop };
-      if (!isLoopHot(&loopStructure, minimumHotness)) {
-        currentLoopIndex++;
-        continue;
+      if (minimumHotness > 0) {
+        if (!isLoopHot(&loopStructure, minimumHotness)) {
+          currentLoopIndex++;
+          continue;
+        }
       }
 
       /*
@@ -1251,20 +1259,25 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
 }
 
 bool Noelle::isLoopHot(LoopStructure *loopStructure, double minimumHotness) {
-  if (!profiles->isAvailable()) {
+  assert(this->profiles != nullptr);
+
+  if (!this->profiles->isAvailable()) {
     return true;
   }
 
-  auto hotness = profiles->getDynamicTotalInstructionCoverage(loopStructure);
+  auto hotness =
+      this->profiles->getDynamicTotalInstructionCoverage(loopStructure);
   return hotness >= minimumHotness;
 }
 
 bool Noelle::isFunctionHot(Function *function, double minimumHotness) {
-  if (!profiles->isAvailable()) {
+  assert(this->profiles != nullptr);
+
+  if (!this->profiles->isAvailable()) {
     return true;
   }
 
-  auto hotness = profiles->getDynamicTotalInstructionCoverage(function);
+  auto hotness = this->profiles->getDynamicTotalInstructionCoverage(function);
   return hotness >= minimumHotness;
 }
 
