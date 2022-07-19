@@ -43,6 +43,16 @@ uint32_t ParallelizationTechnique::getIndexOfEnvironmentVariable(
 
 void ParallelizationTechnique::initializeEnvironmentBuilder(
     LoopDependenceInfo *LDI,
+    std::set<uint32_t> nonReducableVars) {
+  std::set<uint32_t> emptySet{};
+
+  this->initializeEnvironmentBuilder(LDI, nonReducableVars, emptySet);
+
+  return;
+}
+
+void ParallelizationTechnique::initializeEnvironmentBuilder(
+    LoopDependenceInfo *LDI,
     std::set<uint32_t> simpleVars,
     std::set<uint32_t> reducableVars) {
   auto isReducable = [&reducableVars](uint32_t variableID,
@@ -61,6 +71,21 @@ void ParallelizationTechnique::initializeEnvironmentBuilder(
     LoopDependenceInfo *LDI,
     std::function<bool(uint32_t variableID, bool isLiveOut)>
         shouldThisVariableBeReduced) {
+  auto shouldThisVariableBeSkipped =
+      [](uint32_t variableID, bool isLiveOut) -> bool { return false; };
+  this->initializeEnvironmentBuilder(LDI,
+                                     shouldThisVariableBeReduced,
+                                     shouldThisVariableBeSkipped);
+
+  return;
+}
+
+void ParallelizationTechnique::initializeEnvironmentBuilder(
+    LoopDependenceInfo *LDI,
+    std::function<bool(uint32_t variableID, bool isLiveOut)>
+        shouldThisVariableBeReduced,
+    std::function<bool(uint32_t variableID, bool isLiveOut)>
+        shouldThisVariableBeSkipped) {
   assert(LDI != nullptr);
 
   /*
@@ -86,6 +111,7 @@ void ParallelizationTechnique::initializeEnvironmentBuilder(
   this->envBuilder = new LoopEnvironmentBuilder(program->getContext(),
                                                 environment,
                                                 shouldThisVariableBeReduced,
+                                                shouldThisVariableBeSkipped,
                                                 this->numTaskInstances,
                                                 this->tasks.size());
 
@@ -124,16 +150,6 @@ void ParallelizationTechnique::initializeLoopEnvironmentUsers(void) {
         "noelle.environment_variable.pointer");
     envUser->setEnvironmentArray(bitcastInst);
   }
-
-  return;
-}
-
-void ParallelizationTechnique::initializeEnvironmentBuilder(
-    LoopDependenceInfo *LDI,
-    std::set<uint32_t> nonReducableVars) {
-  std::set<uint32_t> emptySet{};
-
-  this->initializeEnvironmentBuilder(LDI, nonReducableVars, emptySet);
 
   return;
 }
@@ -183,6 +199,12 @@ void ParallelizationTechnique::populateLiveInEnvironment(
    */
   IRBuilder<> builder(this->entryPointOfParallelizedLoop);
   for (auto envID : env->getEnvIDsOfLiveInVars()) {
+    /*
+     * Skip the environment variable if it's not included in the builder
+     */
+    if (!this->envBuilder->isIncludedEnvironmentVariable(envID)) {
+      continue;
+    }
 
     /*
      * Fetch the value to store.
@@ -1268,6 +1290,14 @@ void ParallelizationTechnique::adjustDataFlowToUseClones(Instruction *cloneI,
      * Fetch the current operand of @cloneI
      */
     auto opV = op.get();
+
+    /*
+     * If the value is a skipped environment variable, there is nothing we need
+     * to do.
+     */
+    if (task->isSkippedEnvironmentVariable(opV)) {
+      continue;
+    }
 
     /*
      * If the value is a constant, then there is nothing we need to do.

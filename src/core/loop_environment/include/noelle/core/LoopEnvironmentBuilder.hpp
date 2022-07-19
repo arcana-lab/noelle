@@ -37,6 +37,16 @@ public:
       uint64_t reducerCount,
       uint64_t numberOfUsers);
 
+  LoopEnvironmentBuilder(
+      LLVMContext &cxt,
+      LoopEnvironment *env,
+      std::function<bool(uint32_t variableID, bool isLiveOut)>
+          shouldThisVariableBeReduced,
+      std::function<bool(uint32_t variableID, bool isLiveOut)>
+          shouldThisVariableBeSkipped,
+      uint64_t reducerCount,
+      uint64_t numberOfUsers);
+
   LoopEnvironmentBuilder(LLVMContext &CXT,
                          const std::vector<Type *> &varTypes,
                          const std::set<uint32_t> &singleVarIDs,
@@ -79,6 +89,7 @@ public:
 
   Value *getEnvironmentVariable(uint32_t id) const;
   uint32_t getIndexOfEnvironmentVariable(uint32_t id) const;
+  bool isIncludedEnvironmentVariable(uint32_t id) const;
   Value *getAccumulatedReducedEnvironmentVariable(uint32_t id) const;
   Value *getReducedEnvironmentVariable(uint32_t id, uint32_t reducerInd) const;
   bool hasVariableBeenReduced(uint32_t id) const;

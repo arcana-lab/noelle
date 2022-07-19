@@ -82,17 +82,24 @@ protected:
   /*
    * Loop's environment
    */
-  void initializeEnvironmentBuilder(
-      LoopDependenceInfo *LDI,
-      std::function<bool(uint32_t variableID, bool isLiveOut)>
-          shouldThisVariableBeReduced);
-
   void initializeEnvironmentBuilder(LoopDependenceInfo *LDI,
                                     std::set<uint32_t> nonReducableVars);
 
   void initializeEnvironmentBuilder(LoopDependenceInfo *LDI,
                                     std::set<uint32_t> simpleVars,
                                     std::set<uint32_t> reducableVars);
+
+  void initializeEnvironmentBuilder(
+      LoopDependenceInfo *LDI,
+      std::function<bool(uint32_t variableID, bool isLiveOut)>
+          shouldThisVariableBeReduced);
+
+  void initializeEnvironmentBuilder(
+      LoopDependenceInfo *LDI,
+      std::function<bool(uint32_t variableID, bool isLiveOut)>
+          shouldThisVariableBeReduced,
+      std::function<bool(uint32_t variableID, bool isLiveOut)>
+          shouldThisVariableBeSkipped);
 
   void initializeLoopEnvironmentUsers(void);
 

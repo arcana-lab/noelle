@@ -45,6 +45,20 @@ uint32_t Task::getID(void) const {
   return this->ID;
 }
 
+void Task::addSkippedEnvironmentVariable(Value *v) {
+  assert(this->skippedEnvironmentVariables.find(v)
+             == this->skippedEnvironmentVariables.end()
+         && "Skipped environment variable is skipped already\n");
+  this->skippedEnvironmentVariables.insert(v);
+
+  return;
+}
+
+bool Task::isSkippedEnvironmentVariable(Value *v) const {
+  return this->skippedEnvironmentVariables.find(v)
+         != this->skippedEnvironmentVariables.end();
+}
+
 bool Task::isAnOriginalLiveIn(Value *v) const {
   if (this->liveInClones.find(v) == this->liveInClones.end()) {
     return false;
