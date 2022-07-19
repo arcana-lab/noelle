@@ -32,6 +32,25 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder(
         shouldThisVariableBeReduced,
     uint64_t reducerCount,
     uint64_t numberOfUsers)
+  : LoopEnvironmentBuilder(
+      cxt,
+      environment,
+      shouldThisVariableBeReduced,
+      [](uint32_t variableID, bool isLiveOut) -> bool { return false; },
+      reducerCount,
+      numberOfUsers) {
+  return;
+}
+
+LoopEnvironmentBuilder::LoopEnvironmentBuilder(
+    LLVMContext &cxt,
+    LoopEnvironment *environment,
+    std::function<bool(uint32_t variableID, bool isLiveOut)>
+        shouldThisVariableBeReduced,
+    std::function<bool(uint32_t variableID, bool isLiveOut)>
+        shouldThisVariableBeSkipped,
+    uint64_t reducerCount,
+    uint64_t numberOfUsers)
   : CXT{ cxt } {
   assert(environment != nullptr);
 
@@ -41,6 +60,9 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder(
   std::set<uint32_t> nonReducableVars;
   std::set<uint32_t> reducableVars;
   for (auto liveInVariableID : environment->getEnvIDsOfLiveInVars()) {
+    if (shouldThisVariableBeSkipped(liveInVariableID, false)) {
+      continue;
+    }
     if (shouldThisVariableBeReduced(liveInVariableID, false)) {
       reducableVars.insert(liveInVariableID);
     } else {
@@ -48,6 +70,9 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder(
     }
   }
   for (auto liveOutVariableID : environment->getEnvIDsOfLiveOutVars()) {
+    if (shouldThisVariableBeSkipped(liveOutVariableID, true)) {
+      continue;
+    }
     if (shouldThisVariableBeReduced(liveOutVariableID, true)) {
       reducableVars.insert(liveOutVariableID);
     } else {
