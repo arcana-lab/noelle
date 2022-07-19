@@ -23,7 +23,6 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopStructure.hpp"
-#include "noelle/core/LoopNestingGraphEdge.hpp"
 
 namespace llvm::noelle {
 class LoopNestingGraphLoopLoopEdge;
