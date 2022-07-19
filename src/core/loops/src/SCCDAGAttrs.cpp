@@ -88,7 +88,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
         /*
          * Collect information about the current SCC.
          */
-        bool doesSCCOnlyContainIV =
+        auto doesSCCOnlyContainIV =
             this->checkIfSCCOnlyContainsInductionVariables(scc,
                                                            loopNode,
                                                            ivs,
