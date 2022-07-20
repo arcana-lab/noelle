@@ -244,8 +244,9 @@ void LoopEnvironmentBuilder::allocateEnvironmentArray(IRBuilder<> builder) {
 
   auto int8 = IntegerType::get(builder.getContext(), 8);
   auto ptrTy_int8 = PointerType::getUnqual(int8);
-  this->envArray =
-      builder.CreateAlloca(this->envArrayType, nullptr, "loop_environment");
+  this->envArray = builder.CreateAlloca(this->envArrayType,
+                                        nullptr,
+                                        "noelle.loop_environment");
   this->envArrayInt8Ptr =
       cast<Value>(builder.CreateBitCast(this->envArray, ptrTy_int8));
 
@@ -340,9 +341,10 @@ void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> builder) {
      * Allocate the vectorized form of the current reducable variable on the
      * stack.
      */
-    auto reduceArrAlloca = builder.CreateAlloca(reduceArrType,
-                                                nullptr,
-                                                "reduction_variable_array");
+    auto reduceArrAlloca =
+        builder.CreateAlloca(reduceArrType,
+                             nullptr,
+                             "noelle.private_variable_for_all_tasks");
     this->envIndexToVectorOfReducableVar[envIndex] = reduceArrAlloca;
 
     /*
