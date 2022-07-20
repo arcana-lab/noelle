@@ -33,8 +33,6 @@ void LoopStats::collectStatsForLoop(Hot *profiles,
   statsByLoopAccordingToLLVM.insert(std::make_pair(id, statsForLoop));
   statsForLoop->loopID = id;
 
-  auto loopFunction = llvmLoop.getHeader()->getParent();
-
   collectStatsOnLLVMIVs(profiles, SE, llvmLoop, statsForLoop);
   collectStatsOnLLVMInvariants(profiles, llvmLoop, statsForLoop);
   collectStatsOnLLVMSCCs(profiles, loopDG, statsForLoop);

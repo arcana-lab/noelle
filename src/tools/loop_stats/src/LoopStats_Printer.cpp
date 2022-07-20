@@ -24,15 +24,6 @@
 using namespace llvm;
 using namespace llvm::noelle;
 
-static double updateMovingAverage(double avg,
-                                  double newValue,
-                                  double n,
-                                  double loopCoverage) {
-  double newAvg = (newValue + ((double)n) * avg) / (n + loopCoverage);
-
-  return newAvg;
-}
-
 void LoopStats::printPerLoopStats(Hot *profiles, Stats *stats) {
   if (stats->loopID != -1) {
     errs() << "  Loop: " << stats->loopID << "\n";
