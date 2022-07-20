@@ -41,6 +41,7 @@ public:
   LoopNestingGraphLoopNode *getChild(void) const;
 
   virtual void print(void) = 0;
+  virtual ~LoopNestingGraphEdge() = default;
 
 protected:
   bool isMust;

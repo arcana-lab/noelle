@@ -32,6 +32,7 @@ public:
   LoopNestingGraphNode() = default;
 
   virtual void print(void) = 0;
+  virtual ~LoopNestingGraphNode() = default;
 };
 
 class LoopNestingGraphInstructionNode : public LoopNestingGraphNode {
