@@ -55,6 +55,8 @@ public:
 
   Value *getEnvArray(void) const;
 
+  uint32_t getIndexOfEnvironmentVariable(uint32_t id) const;
+
   BasicBlock *getParLoopEntryPoint(void) const;
 
   BasicBlock *getParLoopExitPoint(void) const;
@@ -80,17 +82,24 @@ protected:
   /*
    * Loop's environment
    */
-  void initializeEnvironmentBuilder(
-      LoopDependenceInfo *LDI,
-      std::function<bool(uint32_t variableIndex, bool isLiveOut)>
-          shouldThisVariableBeReduced);
-
   void initializeEnvironmentBuilder(LoopDependenceInfo *LDI,
                                     std::set<uint32_t> nonReducableVars);
 
   void initializeEnvironmentBuilder(LoopDependenceInfo *LDI,
                                     std::set<uint32_t> simpleVars,
                                     std::set<uint32_t> reducableVars);
+
+  void initializeEnvironmentBuilder(
+      LoopDependenceInfo *LDI,
+      std::function<bool(uint32_t variableID, bool isLiveOut)>
+          shouldThisVariableBeReduced);
+
+  void initializeEnvironmentBuilder(
+      LoopDependenceInfo *LDI,
+      std::function<bool(uint32_t variableID, bool isLiveOut)>
+          shouldThisVariableBeReduced,
+      std::function<bool(uint32_t variableID, bool isLiveOut)>
+          shouldThisVariableBeSkipped);
 
   void initializeLoopEnvironmentUsers(void);
 
@@ -135,7 +144,7 @@ protected:
   fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable(
       LoopDependenceInfo *LDI,
       int taskIndex,
-      int envIndex,
+      int envID,
       BasicBlock *insertBasicBlock,
       DominatorSummary &taskDS);
 
@@ -160,7 +169,7 @@ protected:
                                                    int taskIndex);
 
   Value *getIdentityValueForEnvironmentValue(LoopDependenceInfo *LDI,
-                                             int environmentIndex,
+                                             int environmentID,
                                              Type *typeForValue);
 
   Value *castToCorrectReducibleType(IRBuilder<> &builder,

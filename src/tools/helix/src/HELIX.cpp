@@ -109,8 +109,7 @@ bool HELIX::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   auto profiles = this->noelle.getProfiles();
   auto loopStructure = LDI->getLoopStructure();
   auto loopIDOpt = loopStructure->getID();
-  assert(loopIDOpt); // ED: we are potentially parallelizing with HELIX, loops
-                     // should have IDs.
+  assert(loopIDOpt);
   auto loopID = loopIDOpt.value();
   auto averageInstructions =
       profiles->getAverageTotalInstructionsPerIteration(loopStructure);
@@ -278,7 +277,7 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
    * Generate code to allocate and initialize the loop environment.
    */
   errs() << this->prefixString << "  Initialize the environment of the loop\n";
-  auto isReducible = [this, environment, sccManager](uint32_t idx,
+  auto isReducible = [this, environment, sccManager](uint32_t id,
                                                      bool isLiveOut) -> bool {
     if (!isLiveOut) {
       return false;
@@ -290,7 +289,7 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
      * Check if it can be reduced so we can generate more efficient code that
      * does not require a sequential segment.
      */
-    auto producer = environment->producerAt(idx);
+    auto producer = environment->getProducer(id);
     auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
     auto sccInfo = sccManager->getSCCAttrs(scc);
     if (sccInfo->canExecuteReducibly()) {
@@ -302,9 +301,42 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
       scc->print(errs(), s);
       return true;
     }
+
     return false;
   };
-  this->initializeEnvironmentBuilder(LDI, isReducible);
+  auto isSkippable = [this, environment, sccManager, helixTask](
+                         uint32_t id,
+                         bool isLiveOut) -> bool {
+    if (isLiveOut) {
+      return false;
+    }
+
+    /*
+     * We have a live-in variable.
+     *
+     * The initial value of the reduction variable can be skipped,
+     * which means the following conditions should all meet
+     * 1. This live-in variable only has one user, and
+     * 2. The user is a phi node, and
+     * 3. The scc contains this phi is not part of the induction variable but
+     * reducible operation
+     */
+    auto producer = environment->getProducer(id);
+    if (producer->getNumUses() == 1) {
+      if (auto consumer = dyn_cast<PHINode>(*producer->user_begin())) {
+        auto scc = sccManager->getSCCDAG()->sccOfValue(consumer);
+        auto sccInfo = sccManager->getSCCAttrs(scc);
+        if (!sccInfo->isInductionVariableSCC()
+            && sccInfo->canExecuteReducibly()) {
+          helixTask->addSkippedEnvironmentVariable(producer);
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+  this->initializeEnvironmentBuilder(LDI, isReducible, isSkippable);
 
   /*
    * Clone the sequential loop and store the cloned instructions/basic blocks
@@ -320,11 +352,11 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
    * Store final results to loop live-out variables.
    */
   auto envUser = this->envBuilder->getUser(0);
-  for (auto envIndex : environment->getEnvIndicesOfLiveInVars()) {
-    envUser->addLiveInIndex(envIndex);
+  for (auto envID : environment->getEnvIDsOfLiveInVars()) {
+    envUser->addLiveIn(envID);
   }
-  for (auto envIndex : environment->getEnvIndicesOfLiveOutVars()) {
-    envUser->addLiveOutIndex(envIndex);
+  for (auto envID : environment->getEnvIDsOfLiveOutVars()) {
+    envUser->addLiveOut(envID);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);
 

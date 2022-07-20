@@ -32,21 +32,31 @@ public:
   LoopEnvironmentBuilder(
       LLVMContext &cxt,
       LoopEnvironment *env,
-      std::function<bool(uint32_t variableIndex, bool isLiveOut)>
+      std::function<bool(uint32_t variableID, bool isLiveOut)>
           shouldThisVariableBeReduced,
+      uint64_t reducerCount,
+      uint64_t numberOfUsers);
+
+  LoopEnvironmentBuilder(
+      LLVMContext &cxt,
+      LoopEnvironment *env,
+      std::function<bool(uint32_t variableID, bool isLiveOut)>
+          shouldThisVariableBeReduced,
+      std::function<bool(uint32_t variableID, bool isLiveOut)>
+          shouldThisVariableBeSkipped,
       uint64_t reducerCount,
       uint64_t numberOfUsers);
 
   LoopEnvironmentBuilder(LLVMContext &CXT,
                          const std::vector<Type *> &varTypes,
-                         const std::set<uint32_t> &singleVarIndices,
-                         const std::set<uint32_t> &reducableVarIndices,
+                         const std::set<uint32_t> &singleVarIDs,
+                         const std::set<uint32_t> &reducableVarIDs,
                          uint64_t reducerCount,
                          uint64_t numberOfUsers);
 
   LoopEnvironmentBuilder() = delete;
 
-  void addVariableToEnvironment(uint64_t varIndex, Type *varType);
+  void addVariableToEnvironment(uint64_t varID, Type *varType);
 
   /*
    * Generate code to create environment array/variable allocations
@@ -77,10 +87,12 @@ public:
   LoopEnvironmentUser *getUser(uint32_t user) const;
   uint32_t getNumberOfUsers(void) const;
 
-  Value *getEnvironmentVariable(uint32_t ind) const;
-  Value *getAccumulatedReducedEnvironmentVariable(uint32_t ind) const;
-  Value *getReducedEnvironmentVariable(uint32_t ind, uint32_t reducerInd) const;
-  bool hasVariableBeenReduced(uint32_t ind) const;
+  Value *getEnvironmentVariable(uint32_t id) const;
+  uint32_t getIndexOfEnvironmentVariable(uint32_t id) const;
+  bool isIncludedEnvironmentVariable(uint32_t id) const;
+  Value *getAccumulatedReducedEnvironmentVariable(uint32_t id) const;
+  Value *getReducedEnvironmentVariable(uint32_t id, uint32_t reducerInd) const;
+  bool hasVariableBeenReduced(uint32_t id) const;
 
   ~LoopEnvironmentBuilder();
 
@@ -91,6 +103,12 @@ private:
   LLVMContext &CXT;
   Value *envArray;
   Value *envArrayInt8Ptr;
+
+  /*
+   * Map and reverse map from envID to index
+   */
+  std::unordered_map<uint32_t, uint32_t> envIDToIndex;
+  std::unordered_map<uint32_t, uint32_t> indexToEnvID;
 
   /*
    * The environment variable types and their allocations
@@ -110,8 +128,8 @@ private:
   std::vector<LoopEnvironmentUser *> envUsers;
 
   void initializeBuilder(const std::vector<Type *> &varTypes,
-                         const std::set<uint32_t> &singleVarIndices,
-                         const std::set<uint32_t> &reducableVarIndices,
+                         const std::set<uint32_t> &singleVarIDs,
+                         const std::set<uint32_t> &reducableVarIDs,
                          uint64_t reducerCount,
                          uint64_t numberOfUsers);
 

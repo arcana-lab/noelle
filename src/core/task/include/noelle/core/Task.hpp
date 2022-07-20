@@ -37,6 +37,13 @@ public:
   Value *getTaskInstanceID(void) const;
 
   /*
+   * Skipped environment variables
+   */
+  void addSkippedEnvironmentVariable(Value *v);
+
+  bool isSkippedEnvironmentVariable(Value *v) const;
+
+  /*
    * Live-in values.
    */
   bool isAnOriginalLiveIn(Value *v) const;
@@ -154,6 +161,8 @@ protected:
   std::unordered_map<BasicBlock *, BasicBlock *> basicBlockClones;
   std::unordered_map<Instruction *, Instruction *> instructionClones;
   std::unordered_map<Instruction *, Instruction *> instructionCloneToOriginal;
+
+  std::unordered_set<Value *> skippedEnvironmentVariables;
 
   Value *instanceIndexV;
   Value *envArg;

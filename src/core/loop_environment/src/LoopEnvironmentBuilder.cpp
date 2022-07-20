@@ -28,8 +28,27 @@ namespace llvm::noelle {
 LoopEnvironmentBuilder::LoopEnvironmentBuilder(
     LLVMContext &cxt,
     LoopEnvironment *environment,
-    std::function<bool(uint32_t variableIndex, bool isLiveOut)>
+    std::function<bool(uint32_t variableID, bool isLiveOut)>
         shouldThisVariableBeReduced,
+    uint64_t reducerCount,
+    uint64_t numberOfUsers)
+  : LoopEnvironmentBuilder(
+      cxt,
+      environment,
+      shouldThisVariableBeReduced,
+      [](uint32_t variableID, bool isLiveOut) -> bool { return false; },
+      reducerCount,
+      numberOfUsers) {
+  return;
+}
+
+LoopEnvironmentBuilder::LoopEnvironmentBuilder(
+    LLVMContext &cxt,
+    LoopEnvironment *environment,
+    std::function<bool(uint32_t variableID, bool isLiveOut)>
+        shouldThisVariableBeReduced,
+    std::function<bool(uint32_t variableID, bool isLiveOut)>
+        shouldThisVariableBeSkipped,
     uint64_t reducerCount,
     uint64_t numberOfUsers)
   : CXT{ cxt } {
@@ -40,26 +59,32 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder(
    */
   std::set<uint32_t> nonReducableVars;
   std::set<uint32_t> reducableVars;
-  for (auto liveInVariableIndex : environment->getEnvIndicesOfLiveInVars()) {
-    if (shouldThisVariableBeReduced(liveInVariableIndex, false)) {
-      reducableVars.insert(liveInVariableIndex);
+  for (auto liveInVariableID : environment->getEnvIDsOfLiveInVars()) {
+    if (shouldThisVariableBeSkipped(liveInVariableID, false)) {
+      continue;
+    }
+    if (shouldThisVariableBeReduced(liveInVariableID, false)) {
+      reducableVars.insert(liveInVariableID);
     } else {
-      nonReducableVars.insert(liveInVariableIndex);
+      nonReducableVars.insert(liveInVariableID);
     }
   }
-  for (auto liveOutVariableIndex : environment->getEnvIndicesOfLiveOutVars()) {
-    if (shouldThisVariableBeReduced(liveOutVariableIndex, true)) {
-      reducableVars.insert(liveOutVariableIndex);
+  for (auto liveOutVariableID : environment->getEnvIDsOfLiveOutVars()) {
+    if (shouldThisVariableBeSkipped(liveOutVariableID, true)) {
+      continue;
+    }
+    if (shouldThisVariableBeReduced(liveOutVariableID, true)) {
+      reducableVars.insert(liveOutVariableID);
     } else {
-      nonReducableVars.insert(liveOutVariableIndex);
+      nonReducableVars.insert(liveOutVariableID);
     }
   }
 
   /*
    * Should an exit block environment variable be necessary, register one
    */
-  if (environment->indexOfExitBlockTaken() >= 0) {
-    nonReducableVars.insert(environment->indexOfExitBlockTaken());
+  if (environment->getExitBlockID() >= 0) {
+    nonReducableVars.insert(environment->getExitBlockID());
   }
 
   /*
@@ -77,8 +102,8 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder(
 LoopEnvironmentBuilder::LoopEnvironmentBuilder(
     LLVMContext &cxt,
     const std::vector<Type *> &varTypes,
-    const std::set<uint32_t> &singleVarIndices,
-    const std::set<uint32_t> &reducableVarIndices,
+    const std::set<uint32_t> &singleVarIDs,
+    const std::set<uint32_t> &reducableVarIDs,
     uint64_t reducerCount,
     uint64_t numberOfUsers)
   : CXT{ cxt } {
@@ -87,8 +112,8 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder(
    * Initialize the builder
    */
   this->initializeBuilder(varTypes,
-                          singleVarIndices,
-                          reducableVarIndices,
+                          singleVarIDs,
+                          reducableVarIDs,
                           reducerCount,
                           numberOfUsers);
 
@@ -97,20 +122,43 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder(
 
 void LoopEnvironmentBuilder::initializeBuilder(
     const std::vector<Type *> &varTypes,
-    const std::set<uint32_t> &singleVarIndices,
-    const std::set<uint32_t> &reducableVarIndices,
+    const std::set<uint32_t> &singleVarIDs,
+    const std::set<uint32_t> &reducableVarIDs,
     uint64_t reducerCount,
     uint64_t numberOfUsers) {
+
+  /*
+   * Build up envID to index map and reverse map
+   */
+  uint32_t index = 0;
+  for (auto singleVarID : singleVarIDs) {
+    this->envIDToIndex[singleVarID] = index;
+    this->indexToEnvID[index] = singleVarID;
+    index++;
+  }
+  for (auto reducableVarID : reducableVarIDs) {
+    this->envIDToIndex[reducableVarID] = index;
+    this->indexToEnvID[index] = reducableVarID;
+    index++;
+  }
 
   /*
    * Initialize fields
    */
   this->envArray = nullptr;
   this->envArrayInt8Ptr = nullptr;
-  this->envSize = singleVarIndices.size() + reducableVarIndices.size();
+  this->envSize = singleVarIDs.size() + reducableVarIDs.size();
   this->envArrayType = nullptr;
-  this->envTypes = varTypes;
   this->numReducers = reducerCount;
+
+  /*
+   * Build up partial/all environment types array based on envSize
+   */
+  for (uint32_t i = 0; i < this->envSize; i++) {
+    auto varID = this->indexToEnvID[i];
+    this->envTypes.push_back(varTypes.at(varID));
+  }
+
   assert(this->envSize == this->envTypes.size()
          && "Environment variables must either be singular or reducible\n");
 
@@ -128,10 +176,12 @@ void LoopEnvironmentBuilder::initializeBuilder(
   /*
    * Initialize the index-to-variable map.
    */
-  for (auto envIndex : singleVarIndices) {
+  for (auto envID : singleVarIDs) {
+    uint32_t envIndex = this->envIDToIndex[envID];
     this->envIndexToVar[envIndex] = nullptr;
   }
-  for (auto envIndex : reducableVarIndices) {
+  for (auto envID : reducableVarIDs) {
+    uint32_t envIndex = this->envIDToIndex[envID];
     this->envIndexToReducableVar[envIndex] = std::vector<Value *>();
   }
 
@@ -145,14 +195,21 @@ void LoopEnvironmentBuilder::initializeBuilder(
 
 void LoopEnvironmentBuilder::createUsers(uint32_t numUsers) {
   for (auto i = 0u; i < numUsers; ++i) {
-    this->envUsers.push_back(new LoopEnvironmentUser());
+    this->envUsers.push_back(new LoopEnvironmentUser(this->envIDToIndex));
   }
 
   return;
 }
 
-void LoopEnvironmentBuilder::addVariableToEnvironment(uint64_t varIndex,
+void LoopEnvironmentBuilder::addVariableToEnvironment(uint64_t varID,
                                                       Type *varType) {
+  /*
+   * Register the new variable in both maps
+   */
+  assert(this->envIDToIndex.find(varID) == this->envIDToIndex.end()
+         && "This variable is already in of the environment\n");
+  this->envIDToIndex[varID] = this->envSize;
+  this->indexToEnvID[this->envSize] = varID;
   this->envSize++;
   this->envTypes.push_back(varType);
 
@@ -170,6 +227,7 @@ void LoopEnvironmentBuilder::addVariableToEnvironment(uint64_t varIndex,
   /*
    * Set the index-to-var map for the new variable.
    */
+  auto varIndex = this->envIDToIndex[varID];
   this->envIndexToVar[varIndex] = nullptr;
 
   return;
@@ -186,8 +244,9 @@ void LoopEnvironmentBuilder::allocateEnvironmentArray(IRBuilder<> builder) {
 
   auto int8 = IntegerType::get(builder.getContext(), 8);
   auto ptrTy_int8 = PointerType::getUnqual(int8);
-  this->envArray =
-      builder.CreateAlloca(this->envArrayType, nullptr, "loop_environment");
+  this->envArray = builder.CreateAlloca(this->envArrayType,
+                                        nullptr,
+                                        "noelle.loop_environment");
   this->envArrayInt8Ptr =
       cast<Value>(builder.CreateBitCast(this->envArray, ptrTy_int8));
 
@@ -282,9 +341,10 @@ void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> builder) {
      * Allocate the vectorized form of the current reducable variable on the
      * stack.
      */
-    auto reduceArrAlloca = builder.CreateAlloca(reduceArrType,
-                                                nullptr,
-                                                "reduction_variable_array");
+    auto reduceArrAlloca =
+        builder.CreateAlloca(reduceArrType,
+                             nullptr,
+                             "noelle.private_variable_for_all_tasks");
     this->envIndexToVectorOfReducableVar[envIndex] = reduceArrAlloca;
 
     /*
@@ -365,9 +425,10 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
    */
   std::vector<PHINode *> phiNodes;
   auto count = 0;
-  for (auto envIndexInitValue : initialValues) {
-    auto envIndex = envIndexInitValue.first;
-    auto initialValue = envIndexInitValue.second;
+  for (auto envIDInitValue : initialValues) {
+    auto envID = envIDInitValue.first;
+    auto envIndex = this->envIDToIndex[envID];
+    auto initialValue = envIDInitValue.second;
 
     /*
      * Create a PHI node for the current reduced variable.
@@ -396,8 +457,9 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
    */
   count = 0;
   std::vector<Value *> loadedValues;
-  for (auto envIndexInitValue : initialValues) {
-    auto envIndex = envIndexInitValue.first;
+  for (auto envIDInitValue : initialValues) {
+    auto envID = envIDInitValue.first;
+    auto envIndex = this->envIDToIndex[envID];
 
     /*
      * Compute the pointer of the private copy of the current thread.
@@ -438,14 +500,15 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
    * Accumulate values to the appropriate accumulators.
    */
   count = 0;
-  for (auto envIndexInitValue : initialValues) {
-    auto envIndex = envIndexInitValue.first;
+  for (auto envIDInitValue : initialValues) {
+    auto envID = envIDInitValue.first;
+    auto envIndex = this->envIDToIndex[envID];
 
     /*
      * Fetch the information about the operation to perform to accumulate
      * values.
      */
-    auto binOp = reducableBinaryOps.at(envIndex);
+    auto binOp = reducableBinaryOps.at(envID);
 
     /*
      * Fetch the accumulator, which is the PHI node related to the current
@@ -472,8 +535,9 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
    * Fix the PHI nodes of the accumulators.
    */
   count = 0;
-  for (auto envIndexInitValue : initialValues) {
-    auto envIndex = envIndexInitValue.first;
+  for (auto envIDInitValue : initialValues) {
+    auto envID = envIDInitValue.first;
+    auto envIndex = this->envIDToIndex[envID];
 
     /*
      * Fetch the PHI node of the accumulator of the current reduced variable.
@@ -532,28 +596,70 @@ Value *LoopEnvironmentBuilder::getEnvironmentArray(void) const {
   return this->envArray;
 }
 
-Value *LoopEnvironmentBuilder::getEnvironmentVariable(uint32_t ind) const {
+Value *LoopEnvironmentBuilder::getEnvironmentVariable(uint32_t id) const {
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(id) != this->envIDToIndex.end()
+         && "The environment variable is not included in the builder\n");
+  auto ind = this->envIDToIndex.at(id);
+
   auto iter = envIndexToVar.find(ind);
   assert(iter != envIndexToVar.end());
   return (*iter).second;
 }
 
+uint32_t LoopEnvironmentBuilder::getIndexOfEnvironmentVariable(
+    uint32_t id) const {
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(id) != this->envIDToIndex.end()
+         && "The environment variable is not included in the builder\n");
+  return this->envIDToIndex.at(id);
+}
+
+bool LoopEnvironmentBuilder::isIncludedEnvironmentVariable(uint32_t id) const {
+  return (this->envIDToIndex.find(id) != this->envIDToIndex.end());
+}
+
 Value *LoopEnvironmentBuilder::getAccumulatedReducedEnvironmentVariable(
-    uint32_t ind) const {
+    uint32_t id) const {
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(id) != this->envIDToIndex.end()
+         && "The environment variable is not included in the builder\n");
+  auto ind = this->envIDToIndex.at(id);
+
   auto iter = envIndexToAccumulatedReducableVar.find(ind);
   assert(iter != envIndexToAccumulatedReducableVar.end());
   return (*iter).second;
 }
 
 Value *LoopEnvironmentBuilder::getReducedEnvironmentVariable(
-    uint32_t ind,
+    uint32_t id,
     uint32_t reducerInd) const {
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(id) != this->envIDToIndex.end()
+         && "The environment variable is not included in the builder\n");
+  auto ind = this->envIDToIndex.at(id);
+
   auto iter = envIndexToReducableVar.find(ind);
   assert(iter != envIndexToReducableVar.end());
   return (*iter).second[reducerInd];
 }
 
-bool LoopEnvironmentBuilder::hasVariableBeenReduced(uint32_t ind) const {
+bool LoopEnvironmentBuilder::hasVariableBeenReduced(uint32_t id) const {
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(id) != this->envIDToIndex.end()
+         && "The environment variable is not included in the builder\n");
+  auto ind = this->envIDToIndex.at(id);
+
   auto isSingle = envIndexToVar.find(ind) != envIndexToVar.end();
   auto isReduce =
       envIndexToReducableVar.find(ind) != envIndexToReducableVar.end();

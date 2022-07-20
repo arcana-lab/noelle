@@ -330,7 +330,7 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
     auto envUser = this->envBuilder->getUser(0);
     std::vector<std::pair<Instruction *, Instruction *>>
         headerPHICloneAndProducerPairs;
-    for (auto envIndex : envUser->getEnvIndicesOfLiveOutVars()) {
+    for (auto envID : envUser->getEnvIDsOfLiveOutVars()) {
 
       /*
        * Fetch the clone of the producer of the current live-out variable.
@@ -338,7 +338,7 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
        * Check whether the header PHI is part of the set of PHIs we need to
        * guard
        */
-      auto producer = cast<Instruction>(env->producerAt(envIndex));
+      auto producer = cast<Instruction>(env->getProducer(envID));
       assert(producer != nullptr);
       auto scc = sccdag->sccOfValue(producer);
       assert(scc != nullptr);

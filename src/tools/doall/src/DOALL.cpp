@@ -265,9 +265,8 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
     errs() << "DOALL:   Reduced variables:\n";
   }
   auto sccManager = LDI->getSCCManager();
-  auto isReducible = [this,
-                      loopEnvironment,
-                      sccManager](uint32_t idx, bool isLiveOut) -> bool {
+  auto isReducible =
+      [this, loopEnvironment, sccManager](uint32_t id, bool isLiveOut) -> bool {
     if (!isLiveOut) {
       return false;
     }
@@ -279,7 +278,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
      * IVs are not reducable because they get re-computed locally by each
      * thread.
      */
-    auto producer = loopEnvironment->producerAt(idx);
+    auto producer = loopEnvironment->getProducer(id);
     auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
     auto sccInfo = sccManager->getSCCAttrs(scc);
     if (sccInfo->isInductionVariableSCC()) {
@@ -301,7 +300,39 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
 
     return true;
   };
-  this->initializeEnvironmentBuilder(LDI, isReducible);
+  auto isSkippable = [this, loopEnvironment, sccManager, chunkerTask](
+                         uint32_t id,
+                         bool isLiveOut) -> bool {
+    if (isLiveOut) {
+      return false;
+    }
+
+    /*
+     * We have a live-in variable.
+     *
+     * The initial value of the reduction variable can be skipped,
+     * which means the following conditions should all meet
+     * 1. This live-in variable only has one user, and
+     * 2. The user is a phi node, and
+     * 3. The scc contains this phi is not part of the induction variable but
+     * reducible operation
+     */
+    auto producer = loopEnvironment->getProducer(id);
+    if (producer->getNumUses() == 1) {
+      if (auto consumer = dyn_cast<PHINode>(*producer->user_begin())) {
+        auto scc = sccManager->getSCCDAG()->sccOfValue(consumer);
+        auto sccInfo = sccManager->getSCCAttrs(scc);
+        if (!sccInfo->isInductionVariableSCC()
+            && sccInfo->canExecuteReducibly()) {
+          chunkerTask->addSkippedEnvironmentVariable(producer);
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+  this->initializeEnvironmentBuilder(LDI, isReducible, isSkippable);
 
   /*
    * Clone loop into the single task used by DOALL
@@ -316,11 +347,11 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
    */
   auto envUser = this->envBuilder->getUser(0);
   assert(envUser != nullptr);
-  for (auto envIndex : loopEnvironment->getEnvIndicesOfLiveInVars()) {
-    envUser->addLiveInIndex(envIndex);
+  for (auto envID : loopEnvironment->getEnvIDsOfLiveInVars()) {
+    envUser->addLiveIn(envID);
   }
-  for (auto envIndex : loopEnvironment->getEnvIndicesOfLiveOutVars()) {
-    envUser->addLiveOutIndex(envIndex);
+  for (auto envID : loopEnvironment->getEnvIDsOfLiveOutVars()) {
+    envUser->addLiveOut(envID);
   }
   this->generateCodeToLoadLiveInVariables(LDI, 0);
 

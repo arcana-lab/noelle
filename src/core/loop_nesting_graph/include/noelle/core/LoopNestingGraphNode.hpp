@@ -21,9 +21,8 @@
  */
 #pragma once
 
-#include "noelle/core/LoopStructure.hpp"
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopNestingGraphEdge.hpp"
+#include "noelle/core/LoopStructure.hpp"
 
 namespace llvm::noelle {
 class LoopNestingGraphLoopLoopEdge;

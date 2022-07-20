@@ -37,6 +37,7 @@
 #include "noelle/core/ConstantsManager.hpp"
 #include "noelle/core/CompilationOptionsManager.hpp"
 #include "noelle/core/CFGAnalysis.hpp"
+#include "noelle/core/CFGTransformer.hpp"
 
 namespace llvm::noelle {
 
@@ -136,6 +137,8 @@ public:
   DataFlowAnalysis getDataFlowAnalyses(void) const;
 
   CFGAnalysis getCFGAnalysis(void) const;
+
+  CFGTransformer getCFGTransformer(void) const;
 
   DataFlowEngine getDataFlowEngine(void) const;
 
