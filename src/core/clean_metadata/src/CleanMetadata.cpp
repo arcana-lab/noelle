@@ -28,6 +28,22 @@ CleanMetadata::CleanMetadata() : ModulePass{ ID }, cleanPDG{ false } {
   return;
 }
 
+void CleanMetadata::cleanLoopMetadata(Module &M) {
+  errs() << "noelle/core/Clean Loop Metadata\n";
+
+  for (auto &F : M) {
+    for (auto &B : F) {
+      for (auto &I : B) {
+        if (I.getMetadata("noelle.loop.id")) {
+          I.setMetadata("noelle.loop.id", nullptr);
+        }
+      }
+    }
+  }
+
+  return;
+}
+
 void CleanMetadata::cleanPDGMetadata(Module &M) {
   errs() << "noelle/core/Clean PDG Metadata\n";
 

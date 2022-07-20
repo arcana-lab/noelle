@@ -27,53 +27,34 @@
 using namespace llvm;
 using namespace llvm::noelle;
 
-bool LoopMetadataPass::tagLoops(LLVMContext &context, Module &M, Noelle &par) {
+bool LoopMetadataPass::setIDs(Module &M, Noelle &noelle) {
 
   /*
    * Fetch all the loops of the program.
+   * Min hotness is set to 0.0 to ensure we get all loops.
    */
-  auto loopStructuresToParallelize = par.getLoopStructures(0.0);
+  auto loopStructures = noelle.getLoopStructures(0.0);
 
   /*
-   * Tag all loops.
+   * Set ID for all loops in the module.
    */
   auto modified = false;
   auto loopID = 0;
-  for (auto loopStructure : *loopStructuresToParallelize) {
+  for (auto loopStructure : *loopStructures) {
+    if (loopStructure->doesHaveID()) {
+      errs()
+          << "LoopID: loop " << *(loopStructure->getHeader()->getTerminator())
+          << " already has ID ";
+      auto loopID = loopStructure->getID();
+      if (loopID) {
+        errs() << loopID.value();
+      }
+      errs() << ". Abort.\n";
+      abort();
+    }
 
-    /*
-     * We cannot attach metadata to loops in the current LLVM infrastructure.
-     * We cannot attach metadata to basic blocks in the current LLVM
-     * infrastructure. Hence, we attach metadata to the terminator of the header
-     * of the loop to represent the metadata of the loop.
-     *
-     * Fetch the header.
-     */
-    auto header = loopStructure->getHeader();
+    loopStructure->setID(loopID);
 
-    /*
-     * Fetch the terminator.
-     */
-    auto headerTerminator = header->getTerminator();
-
-    /*
-     * Tag the header terminator to tag the loop as "to be optimized"
-     */
-    auto trueMetadataString = MDString::get(context, "true");
-    auto trueMetadata = MDNode::get(context, trueMetadataString);
-    headerTerminator->setMetadata("noelle.loop_optimize", trueMetadata);
-
-    /*
-     * Tag the header terminator to make explicit the ID of the loop.
-     */
-    auto loopIDString = std::to_string(loopID);
-    auto loopIDMetadataAsString = MDString::get(context, loopIDString);
-    auto loopIDMetadata = MDNode::get(context, loopIDMetadataAsString);
-    headerTerminator->setMetadata("noelle.loop_ID", loopIDMetadata);
-
-    /*
-     * Remember that we have modified the code.
-     */
     modified = true;
     loopID++;
   }

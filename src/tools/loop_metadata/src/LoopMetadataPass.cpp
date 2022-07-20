@@ -35,28 +35,17 @@ bool LoopMetadataPass::doInitialization(Module &M) {
 }
 
 bool LoopMetadataPass::runOnModule(Module &M) {
+  bool modified = false;
 
   /*
-   * Fetch the outputs of the passes we rely on.
+   * Fetch noelle.
    */
-  auto &parallelizationFramework = getAnalysis<Noelle>();
+  auto &noelle = getAnalysis<Noelle>();
 
   /*
-   * Fetch the context
+   * Set loop ID metadata
    */
-  auto &context = M.getContext();
-
-  /*
-   * Tag all loops of the function given as input.
-   *
-   * Fetch the result of loop identification analysis.
-   */
-  auto modified = false;
-
-  /*
-   * Tag the loops of the current function.
-   */
-  modified |= this->tagLoops(context, M, parallelizationFramework);
+  modified |= this->setIDs(M, noelle);
 
   return modified;
 }

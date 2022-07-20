@@ -23,6 +23,10 @@
 
 namespace llvm::noelle {
 
+static cl::opt<bool> CleanLoopMetadata(
+    "clean-loop-metadata",
+    cl::init(false),
+    cl::desc("noelle/core/Clean metadata of loops"));
 static cl::opt<bool> CleanPDGMetadata(
     "clean-pdg-metadata",
     cl::init(false),
@@ -33,6 +37,7 @@ static cl::opt<bool> CleanProfileMetadata(
     cl::desc("noelle/core/Clean metadata of profiles"));
 
 bool CleanMetadata::doInitialization(Module &M) {
+  this->cleanLoop = CleanLoopMetadata.getNumOccurrences() > 0 ? true : false;
   this->cleanPDG = CleanPDGMetadata.getNumOccurrences() > 0 ? true : false;
   this->cleanProf = CleanProfileMetadata.getNumOccurrences() > 0 ? true : false;
 
@@ -44,6 +49,10 @@ void CleanMetadata::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool CleanMetadata::runOnModule(Module &M) {
+  if (this->cleanLoop) {
+    this->cleanLoopMetadata(M);
+  }
+
   if (this->cleanPDG) {
     this->cleanPDGMetadata(M);
   }

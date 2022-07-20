@@ -28,7 +28,7 @@ namespace llvm::noelle {
  * Set the string for loop ID that we use as key to get the corresponding
  * metadata
  */
-const std::string LoopStructure::metadataKeyID = "noelle.loop_id.loopid";
+const std::string LoopStructure::metadataKeyID = "noelle.loop.id";
 
 LoopStructure::LoopStructure(Loop *l) {
 
@@ -77,18 +77,6 @@ LoopStructure::LoopStructure(Loop *l) {
   this->exitEdges =
       std::vector<std::pair<BasicBlock *, BasicBlock *>>(exitEdges.begin(),
                                                          exitEdges.end());
-
-  /*
-   * Get noelle.loop_id.loopid metadata
-   * TODO: put this code in a private method "retrieve ID", call the private
-   * ethod in setID and getID. the metadata key string needs to be a private
-   * static const std::string of LoopStructure and must be set in the
-   * LoopStructure constructor. Remove getID from LoopDependenceInfo. Kill
-   * tools/loop_metadata pass, remove it from CMake as well, then do make clean
-   * ; make uninstall ;  make to make sure everything still works. After run the
-   * tests with make (not make condor), if the first 3 tests pass, create pull
-   * request.
-   */
 
   return;
 }

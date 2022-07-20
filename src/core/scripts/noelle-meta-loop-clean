@@ -8,6 +8,6 @@ fi
 installDir
 
 # Remove the PDG from the bitcode
-cmdToExecute="noelle-load -load ${installDir}/lib/CleanMetadata.so -CleanMetadata -clean-loop-metadata=false -clean-prof-metadata=false -clean-pdg-metadata=true $1 -o $2" 
+cmdToExecute="noelle-load -load ${installDir}/lib/CleanMetadata.so -CleanMetadata -clean-loop-metadata=true -clean-prof-metadata=false -clean-pdg-metadata=false $1 -o $2" 
 echo $cmdToExecute ;
 eval $cmdToExecute 

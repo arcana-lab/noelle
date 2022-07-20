@@ -40,7 +40,7 @@ public:
   void getAnalysisUsage(AnalysisUsage &AU) const override;
 
 private:
-  bool tagLoops(LLVMContext &context, Module &M, Noelle &par);
+  bool setIDs(Module &M, Noelle &noelle);
 };
 
 } // namespace llvm::noelle

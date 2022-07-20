@@ -3,17 +3,18 @@
 installDir
 
 inputIR=$1
+afterLoopMetadata="afterLoopMetadata.bc"
 intermediateResult="baseline_with_parallel_plan.bc" ;
 intermediateResult_unoptimized="parallelized_unoptimized.bc" ;
 outputIR=$3
 
 # Step 0: Add loop ID to all loops
-cmdToExecute="noelle-load -load ${installDir}/lib/LoopID.so -loopid ${inputIR} -o ${inputIR}" ;
+cmdToExecute="noelle-meta-loop-embed ${inputIR} -o ${afterLoopMetadata}"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 
 # Step 1: Run parallelization planner
-cmdToExecute="noelle-parallelization-planner ${inputIR} -o ${intermediateResult} ${@:4}" ;
+cmdToExecute="noelle-parallelization-planner ${afterLoopMetadata} -o ${intermediateResult} ${@:4}" ;
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 

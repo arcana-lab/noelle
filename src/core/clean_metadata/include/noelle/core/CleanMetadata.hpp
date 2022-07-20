@@ -40,9 +40,13 @@ public:
   bool runOnModule(Module &M) override;
 
 private:
+  bool cleanLoop;
+
   bool cleanPDG;
 
   bool cleanProf;
+
+  void cleanLoopMetadata(Module &M);
 
   void cleanPDGMetadata(Module &M);
 

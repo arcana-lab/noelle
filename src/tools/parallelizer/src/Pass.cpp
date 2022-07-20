@@ -151,22 +151,29 @@ bool Parallelizer::runOnModule(Module &M) {
 
     /*
      * Get loop ID.
-     *
-     * We are parallelizing a loop.
-     * Therefore, this loop must have an ID.
      */
     auto loopIDOpt = ls->getID();
-    uint64_t loopID = 42434232423;
-    if (loopIDOpt) {
-      assert(loopIDOpt);
-      loopID = loopIDOpt.value();
-    }
+
     if (!safe) {
+      errs() << "Parallelizer:    Loop ";
+      // Parent loop has been parallelized, so basic blocks have been modified
+      // and we might not have a loop ID for the child loop. If we have it we
+      // print it, otherwise we don't.
+      if (loopIDOpt) {
+        auto loopID = loopIDOpt.value();
+        errs() << loopID;
+      }
       errs()
-          << "Parallelizer:    Loop " << loopID
           << " cannot be parallelized because one of its parent has been parallelized already\n";
       continue;
     }
+
+    /*
+     * We are parallelizing a loop.
+     * Therefore, this loop must have an ID.
+     */
+    assert(loopIDOpt);
+    auto loopID = loopIDOpt.value();
 
     /*
      * Parallelize the current loop.
