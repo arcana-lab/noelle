@@ -85,8 +85,3 @@ fi
 cmdToExecute="noelle-simplification $notOptions -o $notOptions"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
-
-# Add metadata to all loops of the program
-cmdToExecute="noelle-meta-loop-embed $notOptions -o $notOptions"
-echo $cmdToExecute ;
-eval $cmdToExecute ;
