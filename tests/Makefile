@@ -8,7 +8,7 @@ condor: download
 	cd condor ; make ; make submit ;
 
 condor_watch:
-	watch condor_q `whoami` ;
+	./scripts/condor_watch.sh ;
 
 condor_check: 
 	./scripts/condor_check.sh ;
