@@ -521,6 +521,7 @@ BasicBlock * DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value 
    */
   BasicBlock* reductionPt = this->entryPointOfParallelizedLoop;
   if(initialValues.size()){
+    errs() << "SUSAN: creating reduction:" << *reductionPt << "\n";
     reductionPt = CreateSynchronization(f, *builder, this->entryPointOfParallelizedLoop, nullptr, 1);
     SyncFunctionInserted = true;
     delete builder;

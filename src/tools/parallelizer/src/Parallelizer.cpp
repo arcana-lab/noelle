@@ -46,13 +46,23 @@ namespace llvm::noelle {
 
   BasicBlock* Parallelizer::findLatestInsertionPt(BasicBlock *originalInsertPt){
     for(auto loops : treesToParallelize){
+      bool containBB = false;
       for(auto ldi : loops){
         auto ls = ldi->getLoopStructure();
         if(!ls) continue;
-        if(ls->getNestingLevel() != 1) continue;
-        if(ls->isIncluded(originalInsertPt))
-            return(ls->getHeader());
+        if(ls->isIncluded(originalInsertPt)){
+          containBB = true;
+          break;
+        }
       }
+
+      if(containBB)
+        for(auto ldi : loops){
+          auto ls = ldi->getLoopStructure();
+          if(!ls) continue;
+          if(ls->getNestingLevel() == 1)
+            return(ls->getHeader());
+        }
     }
     return originalInsertPt;
   }
@@ -232,6 +242,7 @@ namespace llvm::noelle {
     //NOTE:> not tested in performance tests
     if(usedTechnique == doall){
 
+      std::set<BasicBlock*> insertedBlocks;
       Value* threadsUsed = usedTechnique->getNumOfThreads();
       Value* memoryIndex = usedTechnique->getMemoryIndex();
       auto dispatcherInst = usedTechnique->getDispatcherInst();
@@ -246,38 +257,55 @@ namespace llvm::noelle {
         if(!liveoutInst) continue;
         auto liveoutBB = liveoutInst->getParent();
         BasicBlock *newInsertPt = findLatestInsertionPt(liveoutBB);
-        techniques[newInsertPt] = usedTechnique;
+        if(insertedBlocks.find(newInsertPt) != insertedBlocks.end())
+          continue;
+        insertedBlocks.insert(newInsertPt);
+        errs() << "SUSAN: inserting at live-out Deps: " << *newInsertPt << "\n";
+        techniques.push_back(std::make_pair(newInsertPt, usedTechnique));
       }
 
       /*
-       * Synchronization: add sync function before mem/ctrl dependences.
+       * Synchronization: add sync function before mem dependences.
        * If a bb has multiple inserting points, insert at the earliest one
        */
       std::set<Value*> externalDeps = LDI->environment->getExternalDeps();
       for(auto insertPt : externalDeps){
         Instruction *depInst = dyn_cast<Instruction>(insertPt);
+        errs() << "SUSAN: mem dep: " << *depInst << "\n";
         BasicBlock *newInsertPt = findLatestInsertionPt(depInst->getParent());
-        techniques[newInsertPt] = usedTechnique;
+        if(insertedBlocks.find(newInsertPt) != insertedBlocks.end())
+          continue;
+        errs() << "SUSAN: inserting at mem Deps: " << *newInsertPt << "\n";
+        insertedBlocks.insert(newInsertPt);
+        techniques.push_back(std::make_pair(newInsertPt, usedTechnique));
       }
 
       /*
        * Synchronization: add sync function before dispatcher
        */
-      techniques[dispatcherBB] = usedTechnique;
+      errs() << "SUSAN: inserting at dispatch: " << *dispatcherBB << "\n";
+      if(insertedBlocks.find(dispatcherBB) == insertedBlocks.end()){
+        insertedBlocks.insert(dispatcherBB);
+        techniques.push_back(std::make_pair(dispatcherBB, usedTechnique));
+      }
 
       /*
        * Synchronization: add sync function before exiting functions only for last
        * parallel region
        */
-      for(auto ldi : treesToParallelize.back())
-        if(LDI == ldi)
+      for(auto ldi : treesToParallelize.back()){
+        if(LDI->getLoopStructure() == ldi->getLoopStructure())
           for(auto &BB : *f)
             for(auto &I : BB)
               if(isa<ReturnInst>(&I)){
                  BasicBlock *newInsertPt = findLatestInsertionPt(&BB);
-                 techniques[dispatcherBB] = usedTechnique;
+                 if(insertedBlocks.find(newInsertPt) != insertedBlocks.end())
+                  continue;
+                 insertedBlocks.insert(newInsertPt);
+                 errs() << "SUSAN: inserting at exit: " << *newInsertPt << "\n";
+                 techniques.push_back(std::make_pair(newInsertPt, usedTechnique));
               }
-
+      }
     } //end of adding sync function for doall
 
     if (verbose != Verbosity::Disabled) {

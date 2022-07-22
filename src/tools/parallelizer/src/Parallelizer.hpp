@@ -103,7 +103,7 @@ namespace llvm::noelle {
       void InsertSyncFunctionBefore(BasicBlock* currBB, ParallelizationTechnique *usedTechnique, Function* f, std::set<std::pair<BasicBlock*, BasicBlock*>> &addedSyncEdges);
       std::vector<std::vector<LoopDependenceInfo *>> treesToParallelize;
       BasicBlock* findLatestInsertionPt(BasicBlock *originalInsertPt);
-      std::map<BasicBlock*, ParallelizationTechnique *> techniques;
+      std::vector<std::pair<BasicBlock*, ParallelizationTechnique *>> techniques;
 
   };
 

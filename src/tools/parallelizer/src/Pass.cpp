@@ -154,7 +154,18 @@ bool Parallelizer::runOnModule (Module &M) {
         }
       }
     }
+  }
 
+  std::set<std::pair<BasicBlock*, BasicBlock*>> addedSyncEdges;
+  std::set<ParallelizationTechnique*> freeTechnique;
+  for(auto [bb, usedTechnique] : techniques){
+    errs() << "SUSAN: inserting sync function at bb: " << *bb << "\n";
+    auto f = bb->getParent();
+    InsertSyncFunctionBefore(bb, usedTechnique, f, addedSyncEdges);
+    freeTechnique.insert(usedTechnique);
+  }
+
+  for (auto loopsToParallelize : treesToParallelize){
     /*
      * Free the memory.
      */
@@ -162,15 +173,6 @@ bool Parallelizer::runOnModule (Module &M) {
       delete loop;
     }
   }
-
-  std::set<std::pair<BasicBlock*, BasicBlock*>> addedSyncEdges;
-  std::set<ParallelizationTechnique*> freeTechnique;
-  for(auto [bb, usedTechnique] : techniques){
-    auto f = bb->getParent();
-    InsertSyncFunctionBefore(bb, usedTechnique, f, addedSyncEdges);
-    freeTechnique.insert(usedTechnique);
-  }
-
   for(auto technique : freeTechnique)
     delete technique;
 

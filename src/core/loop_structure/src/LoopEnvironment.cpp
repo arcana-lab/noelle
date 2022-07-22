@@ -68,11 +68,11 @@ LoopEnvironment::LoopEnvironment (
      * Determine whether the external value is a consumer (i.e., live-out).
      */
     for (auto edge : externalNode->getIncomingEdges()) {
-      if (edge->isMemoryDependence() || edge->isControlDependence()) {
+      if (edge->isMemoryDependence()) {
         /*
          * Synchronization: record external mem/ctrl dependent instruction locations
          */
-         externalDeps.insert(externalValue);
+        externalDeps.insert(externalValue);
         continue;
       }
       auto internalValue = edge->getOutgoingT();
