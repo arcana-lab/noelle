@@ -21,9 +21,5 @@ generateStagesFromPartitionedSCCs -> generatePipelineStagesFromPartitionedSCCDAG
 - Complete HELIX
 
 
-==== PDG
-- Implement the detection of loop-carried data dependences in PDGAnalysis
-
-
 ==== OPTIMIZATIONS
 - Packing/unpacking pushes and pops
