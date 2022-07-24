@@ -34,7 +34,7 @@ public:
   /*
    * Types.
    */
-  enum SCCType { SEQUENTIAL, REDUCIBLE, INDEPENDENT };
+  enum SCCType { SEQUENTIAL, INDEPENDENT };
 
   /*
    * Iterators.
@@ -77,7 +77,7 @@ public:
    * Return true if a reduction transformation can be applied to the SCC.
    * Return false otherwise.
    */
-  bool canExecuteReducibly(void) const;
+  virtual bool canExecuteReducibly(void) const;
 
   /*
    * Return true if the iterations of the SCC are independent between each
@@ -160,7 +160,7 @@ public:
   /*
    * If only one loop carried variable is contained, return that variable
    */
-  LoopCarriedVariable *getSingleLoopCarriedVariable(void) const;
+  virtual LoopCarriedVariable *getLoopCarriedVariable(void) const;
 
   const std::pair<Value *, Instruction *>
       *getSingleInstructionThatControlLoopExit(void);
@@ -170,11 +170,6 @@ public:
    * same memory locations between invocations of this SCC.
    */
   std::unordered_set<AllocaInst *> getMemoryLocationsToClone(void) const;
-
-  /*
-   * Add a loop carried cycle
-   */
-  void addLoopCarriedVariable(LoopCarriedVariable *variable);
 
   /*
    * Set the type of SCC.
@@ -207,7 +202,6 @@ private:
   std::set<PHINode *> PHINodes;
   std::set<Instruction *> accumulators;
   std::set<PHINode *> headerPHINodes;
-  std::unordered_set<LoopCarriedVariable *> loopCarriedVariables;
 
   std::unordered_set<const ClonableMemoryLocation *> clonableMemoryLocations;
   bool isSCCClonableIntoLocalMemory;

@@ -1445,7 +1445,7 @@ PHINode *ParallelizationTechnique::fetchLoopEntryPHIOfProducer(
   auto producerSCC = sccdag->sccOfValue(producer);
 
   auto sccInfo = sccManager->getSCCAttrs(producerSCC);
-  auto reducibleVariable = sccInfo->getSingleLoopCarriedVariable();
+  auto reducibleVariable = sccInfo->getLoopCarriedVariable();
   assert(reducibleVariable != nullptr);
 
   auto headerProducerPHI =

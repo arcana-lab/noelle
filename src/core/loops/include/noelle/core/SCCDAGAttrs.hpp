@@ -129,7 +129,9 @@ private:
   /*
    * Helper methods on single SCC
    */
-  bool checkIfReducible(SCC *scc, StayConnectedNestedLoopForestNode *loop);
+  LoopCarriedVariable *checkIfReducible(
+      SCC *scc,
+      StayConnectedNestedLoopForestNode *loop);
   bool checkIfIndependent(SCC *scc);
   bool checkIfSCCOnlyContainsInductionVariables(
       SCC *scc,

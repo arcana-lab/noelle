@@ -20,6 +20,7 @@ install(
   include/noelle/core/SCCDAGNormalizer.hpp
   include/noelle/core/SCCDAGPartition.hpp
   include/noelle/core/SCCAttrs.hpp
+  include/noelle/core/Reduction.hpp
   include/noelle/core/AccumulatorOpInfo.hpp
   include/noelle/core/LoopTransformationsOptions.hpp
   DESTINATION 

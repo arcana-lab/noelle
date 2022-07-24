@@ -32,7 +32,6 @@ SCCAttrs::SCCAttrs(SCC *s, AccumulatorOpInfo &opInfo, LoopStructure *loop)
     accumulators{},
     controlFlowInsts{},
     controlPairs{},
-    loopCarriedVariables{},
     isClonable{ false },
     isSCCClonableIntoLocalMemory{ false },
     hasIV{ false },
@@ -252,14 +251,8 @@ void SCCAttrs::setSCCToBeClonable(bool isClonable) {
   return;
 }
 
-void SCCAttrs::addLoopCarriedVariable(LoopCarriedVariable *variable) {
-  loopCarriedVariables.insert(variable);
-}
-
-LoopCarriedVariable *SCCAttrs::getSingleLoopCarriedVariable(void) const {
-  if (loopCarriedVariables.size() != 1)
-    return nullptr;
-  return *loopCarriedVariables.begin();
+LoopCarriedVariable *SCCAttrs::getLoopCarriedVariable(void) const {
+  return nullptr;
 }
 
 void SCCAttrs::setSCCToBeClonableUsingLocalMemory(void) {
@@ -289,7 +282,7 @@ bool SCCAttrs::mustExecuteSequentially(void) const {
 }
 
 bool SCCAttrs::canExecuteReducibly(void) const {
-  return this->getType() == SCCAttrs::SCCType::REDUCIBLE;
+  return false;
 }
 
 bool SCCAttrs::canExecuteIndependently(void) const {
@@ -304,10 +297,6 @@ bool SCCAttrs::isInductionVariableSCC(void) const {
   return this->hasIV;
 }
 
-SCCAttrs::~SCCAttrs() {
-  for (auto var : loopCarriedVariables) {
-    delete var;
-  }
-}
+SCCAttrs::~SCCAttrs() {}
 
 } // namespace llvm::noelle

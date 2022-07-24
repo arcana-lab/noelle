@@ -10,6 +10,7 @@ set(Srcs
   LoopCarriedDependencies.cpp
   LoopIterationDomainSpaceAnalysis.cpp
   SCCAttrs.cpp
+  Reduction.cpp
   SCCDAGAttrs.cpp
   SCCDAGNormalizer.cpp
   LoopDependenceInfo.cpp

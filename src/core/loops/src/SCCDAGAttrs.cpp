@@ -21,6 +21,7 @@
  */
 #include "noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/PDGPrinter.hpp"
+#include "noelle/core/Reduction.hpp"
 #include "LoopCarriedDependencies.hpp"
 
 namespace llvm::noelle {
@@ -82,7 +83,15 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
         /*
          * Allocate the metadata about this SCC.
          */
-        auto sccInfo = new SCCAttrs(scc, this->accumOpInfo, rootLoop);
+        auto lcVar = this->checkIfReducible(scc, loopNode);
+        auto isReducable = lcVar != nullptr;
+        SCCAttrs *sccInfo = nullptr;
+        if (isReducable) {
+          sccInfo = new Reduction(scc, this->accumOpInfo, rootLoop, lcVar);
+        } else {
+          sccInfo = new SCCAttrs(scc, this->accumOpInfo, rootLoop);
+        }
+        assert(sccInfo != nullptr);
         this->sccToInfo[scc] = sccInfo;
 
         /*
@@ -100,14 +109,13 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
         /*
          * Categorize the current SCC.
          */
-        if (this->checkIfIndependent(scc)) {
-          sccInfo->setType(SCCAttrs::SCCType::INDEPENDENT);
+        if (!isReducable) {
+          if (this->checkIfIndependent(scc)) {
+            sccInfo->setType(SCCAttrs::SCCType::INDEPENDENT);
 
-        } else if (this->checkIfReducible(scc, loopNode)) {
-          sccInfo->setType(SCCAttrs::SCCType::REDUCIBLE);
-
-        } else {
-          sccInfo->setType(SCCAttrs::SCCType::SEQUENTIAL);
+          } else {
+            sccInfo->setType(SCCAttrs::SCCType::SEQUENTIAL);
+          }
         }
 
         return false;
@@ -448,9 +456,18 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables(
   return true;
 }
 
-bool SCCDAGAttrs::checkIfReducible(
+LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(
     SCC *scc,
     StayConnectedNestedLoopForestNode *loopNode) {
+
+  /*
+   * Check if the SCC has loop-carried dependences.
+   * If not, then this SCC is not reducable because there is nothing to reduce.
+   */
+  if (this->sccToLoopCarriedDependencies.find(scc)
+      == this->sccToLoopCarriedDependencies.end()) {
+    return nullptr;
+  }
 
   /*
    * A reducible variable consists of one loop carried value
@@ -465,7 +482,7 @@ bool SCCDAGAttrs::checkIfReducible(
      * We do not handle reducibility of memory locations
      */
     if (dependency->isMemoryDependence()) {
-      return false;
+      return nullptr;
     }
 
     /*
@@ -474,7 +491,7 @@ bool SCCDAGAttrs::checkIfReducible(
     auto producer = dependency->getOutgoingT();
     if (dependency->isControlDependence()) {
       if (scc->isInternal(producer)) {
-        return false;
+        return nullptr;
       }
       continue;
     }
@@ -489,7 +506,7 @@ bool SCCDAGAttrs::checkIfReducible(
        * We do not handle SCCs with loop-carried data dependences with
        * instructions that are not PHI.
        */
-      return false;
+      return nullptr;
     }
     assert(isa<PHINode>(consumer)
            && "All consumers of loop carried data dependencies must be PHIs");
@@ -520,7 +537,7 @@ bool SCCDAGAttrs::checkIfReducible(
    * Check if there are loop carried dependences related to PHI nodes.
    */
   if (loopCarriedPHIs.size() != 1) {
-    return false;
+    return nullptr;
   }
   auto singleLoopCarriedPHI = *loopCarriedPHIs.begin();
 
@@ -535,7 +552,7 @@ bool SCCDAGAttrs::checkIfReducible(
                                           singleLoopCarriedPHI);
   if (!variable->isEvolutionReducibleAcrossLoopIterations()) {
     delete variable;
-    return false;
+    return nullptr;
   }
 
   /*
@@ -552,15 +569,13 @@ bool SCCDAGAttrs::checkIfReducible(
      * Floating point values cannot be considered real numbers and therefore
      * floating point variables cannot be reduced.
      */
-    return false;
+    return nullptr;
   }
 
   /*
    * This SCC can be reduced.
    */
-  auto sccInfo = this->getSCCAttrs(scc);
-  sccInfo->addLoopCarriedVariable(variable);
-  return true;
+  return variable;
 }
 
 /*
