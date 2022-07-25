@@ -159,9 +159,17 @@ bool Parallelizer::runOnModule (Module &M) {
   std::set<std::pair<BasicBlock*, BasicBlock*>> addedSyncEdges;
   std::set<ParallelizationTechnique*> freeTechnique;
   for(auto [bb, usedTechnique] : techniques){
-    errs() << "SUSAN: inserting sync function at bb: " << *bb << "\n";
-    auto f = bb->getParent();
-    InsertSyncFunctionBefore(bb, usedTechnique, f, addedSyncEdges);
+    auto insertPt = bb;
+    for(auto [bb2, technique] : techniques){
+      auto LS = technique->getOriginalLS();
+      if(LS->isIncluded(bb)){
+        errs() << "SUSAN: found dep in parallel region:" << *bb << "\n";
+        insertPt = technique->getDispatcherInst()->getParent();
+      }
+    }
+    errs() << "SUSAN: inserting sync function at bb: " << *insertPt << "\n";
+    auto f = insertPt->getParent();
+    InsertSyncFunctionBefore(insertPt, usedTechnique, f, addedSyncEdges);
     freeTechnique.insert(usedTechnique);
   }
 

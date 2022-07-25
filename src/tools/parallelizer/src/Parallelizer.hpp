@@ -104,6 +104,8 @@ namespace llvm::noelle {
       std::vector<std::vector<LoopDependenceInfo *>> treesToParallelize;
       BasicBlock* findLatestInsertionPt(BasicBlock *originalInsertPt);
       std::vector<std::pair<BasicBlock*, ParallelizationTechnique *>> techniques;
+      std::map<LoopDependenceInfo*, Instruction*> DispatcherForLoop;
+      std::map<Instruction*, std::unordered_set<BasicBlock *>> dispatcher2OriginalLoop;
 
   };
 

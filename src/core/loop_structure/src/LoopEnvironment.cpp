@@ -72,6 +72,9 @@ LoopEnvironment::LoopEnvironment (
         /*
          * Synchronization: record external mem/ctrl dependent instruction locations
          */
+        auto internalValue = edge->getOutgoingT();
+        errs() << "SUSAN: recording dep from: " << *internalValue << "\n";
+        errs() << "to: " << *externalValue << "\n";
         externalDeps.insert(externalValue);
         continue;
       }

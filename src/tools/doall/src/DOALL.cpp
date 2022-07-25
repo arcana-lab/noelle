@@ -396,6 +396,11 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   }));
 
   /*
+   * Synchronization: build a map between original loop and the dispatcherInst
+   */
+  originalLS = LDI->getLoopStructure();
+
+  /*
    * Synchronization: create a bit for this dispatch indicating whether it's synced
    * create variable for numCores and memoryIdx
    */

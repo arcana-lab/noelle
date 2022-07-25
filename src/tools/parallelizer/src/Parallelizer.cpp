@@ -293,8 +293,8 @@ namespace llvm::noelle {
        * Synchronization: add sync function before exiting functions only for last
        * parallel region
        */
-      for(auto ldi : treesToParallelize.back()){
-        if(LDI->getLoopStructure() == ldi->getLoopStructure())
+      //for(auto ldi : treesToParallelize.back()){
+      //  if(LDI->getLoopStructure() == ldi->getLoopStructure())
           for(auto &BB : *f)
             for(auto &I : BB)
               if(isa<ReturnInst>(&I)){
@@ -305,7 +305,7 @@ namespace llvm::noelle {
                  errs() << "SUSAN: inserting at exit: " << *newInsertPt << "\n";
                  techniques.push_back(std::make_pair(newInsertPt, usedTechnique));
               }
-      }
+    //  }
     } //end of adding sync function for doall
 
     if (verbose != Verbosity::Disabled) {

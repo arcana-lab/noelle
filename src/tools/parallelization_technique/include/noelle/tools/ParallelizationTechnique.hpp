@@ -66,6 +66,7 @@ namespace llvm::noelle {
       Value* getNumOfThreads(){ return numThreadsUsed; }
       Value* getMemoryIndex(){ return memoryIndex; }
       BasicBlock* CreateSynchronization (Function *f, IRBuilder<> builder, BasicBlock* bbBeforeSync, BasicBlock* originalBBAfterSync, bool eraseTarget);
+      LoopStructure* getOriginalLS(){ return originalLS;}
 
       /*
        * Destructor.
@@ -266,6 +267,7 @@ namespace llvm::noelle {
       Instruction *isSyncedAlloca;
       Instruction *numCoresAlloca;
       Instruction *memoryIdxAlloca;
+      LoopStructure *originalLS;
   };
 
 }
