@@ -167,6 +167,7 @@ bool Parallelizer::runOnModule (Module &M) {
         insertPt = technique->getDispatcherInst()->getParent();
       }
     }
+    //insertPt = findLatestInsertionPt(insertPt);
     errs() << "SUSAN: inserting sync function at bb: " << *insertPt << "\n";
     auto f = insertPt->getParent();
     InsertSyncFunctionBefore(insertPt, usedTechnique, f, addedSyncEdges);

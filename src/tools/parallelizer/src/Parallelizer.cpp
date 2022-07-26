@@ -256,7 +256,7 @@ namespace llvm::noelle {
         Instruction* liveoutInst = dyn_cast<Instruction>(liveoutUse);
         if(!liveoutInst) continue;
         auto liveoutBB = liveoutInst->getParent();
-        BasicBlock *newInsertPt = findLatestInsertionPt(liveoutBB);
+        BasicBlock *newInsertPt = liveoutBB;
         if(insertedBlocks.find(newInsertPt) != insertedBlocks.end())
           continue;
         insertedBlocks.insert(newInsertPt);
@@ -272,7 +272,7 @@ namespace llvm::noelle {
       for(auto insertPt : externalDeps){
         Instruction *depInst = dyn_cast<Instruction>(insertPt);
         errs() << "SUSAN: mem dep: " << *depInst << "\n";
-        BasicBlock *newInsertPt = findLatestInsertionPt(depInst->getParent());
+        BasicBlock *newInsertPt = depInst->getParent();
         if(insertedBlocks.find(newInsertPt) != insertedBlocks.end())
           continue;
         errs() << "SUSAN: inserting at mem Deps: " << *newInsertPt << "\n";
@@ -298,7 +298,7 @@ namespace llvm::noelle {
           for(auto &BB : *f)
             for(auto &I : BB)
               if(isa<ReturnInst>(&I)){
-                 BasicBlock *newInsertPt = findLatestInsertionPt(&BB);
+                 BasicBlock *newInsertPt = &BB;
                  if(insertedBlocks.find(newInsertPt) != insertedBlocks.end())
                   continue;
                  insertedBlocks.insert(newInsertPt);
