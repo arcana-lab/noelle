@@ -12,6 +12,80 @@
 
 namespace llvm::noelle {
 
+    BasicBlock* Parallelizer::CreateSynchronization (Function *f, IRBuilder<> builder,
+      BasicBlock* bbBeforeSync, BasicBlock* originalBBAfterSync, bool eraseTarget, Instruction* isSyncedAlloca, Instruction *numCoresAlloca, Instruction *memoryIdxAlloca) {
+
+      //create a before sync BB
+      auto beforeSyncBB = BasicBlock::Create(f->getContext(), "beforeSyncBB", f);
+
+      auto bbTerminator = bbBeforeSync->getTerminator();
+      if(!eraseTarget){
+        if(BranchInst *br = dyn_cast<BranchInst>(bbTerminator)){
+          if(!br->isConditional()) builder.CreateBr(beforeSyncBB);
+          else{
+            auto cond = br->getCondition();
+            auto succ0 = br->getSuccessor(0);
+            auto succ1 = br->getSuccessor(1);
+            Instruction* newBr = nullptr;
+            if(succ0 == originalBBAfterSync)
+              newBr = builder.CreateCondBr(cond, beforeSyncBB, succ1);
+            else if(succ1 == originalBBAfterSync)
+              newBr = builder.CreateCondBr(cond, succ0, beforeSyncBB);
+
+            assert(newBr && "synchronization not linked properly\n");
+          }
+        }
+        else if(SwitchInst *sw = dyn_cast<SwitchInst>(bbTerminator)){
+          for (SwitchInst::CaseIt i = sw->case_begin(), e = sw->case_end(); i != e; ++i){
+            ConstantInt *CaseVal = i->getCaseValue();
+            BasicBlock *succ = i->getCaseSuccessor();
+            if(succ == originalBBAfterSync){
+              sw->removeCase(i);
+              sw->addCase(CaseVal, beforeSyncBB);
+            }
+          }
+        }
+     } else builder.CreateBr(beforeSyncBB);
+
+
+     if (bbTerminator != nullptr && isa<BranchInst>(bbTerminator)){
+      bbTerminator->eraseFromParent();
+     }
+
+     //create check for whether synced or not yet
+     IRBuilder<> beforeSyncBuilder{beforeSyncBB};
+     auto int1Ty = IntegerType::get(beforeSyncBuilder.getContext(), 1);
+     auto constantOne = ConstantInt::get(int1Ty, 1);
+     auto loadedSyncBit = beforeSyncBuilder.CreateLoad(int1Ty, isSyncedAlloca);
+     auto cmpSync = beforeSyncBuilder.CreateICmpEQ(loadedSyncBit, constantOne);
+
+     //create a sync BB
+     auto syncBB = BasicBlock::Create(f->getContext(), "SyncBB", f);
+
+     //create a BB after syncBB
+     auto afterSyncBB = BasicBlock::Create(f->getContext(), "afterSyncBB", f, syncBB);
+
+     //create branch based on whether synced or not
+     beforeSyncBuilder.CreateCondBr(cmpSync, afterSyncBB, syncBB);
+
+     //syncBB: call SyncFunction in syncBB
+     IRBuilder<> syncBBBuilder{syncBB};
+     auto int32Ty = IntegerType::get(syncBBBuilder.getContext(), 32);
+     auto int64Ty = IntegerType::get(syncBBBuilder.getContext(), 64);
+     auto numThreadsUsed = syncBBBuilder.CreateLoad(int32Ty, numCoresAlloca);
+     auto memoryIndex = syncBBBuilder.CreateLoad(int64Ty, memoryIdxAlloca);
+     syncBBBuilder.CreateCall(SyncFunction, ArrayRef<Value *>({numThreadsUsed, memoryIndex}));
+
+     //syncBB: store 1 to isSyncedSignal
+     int1Ty = IntegerType::get(syncBBBuilder.getContext(), 1);
+     syncBBBuilder.CreateStore(ConstantInt::get(int1Ty,1), isSyncedAlloca);
+
+     //link syncBB to afterSyncBB
+     syncBBBuilder.CreateBr(afterSyncBB);
+
+     return afterSyncBB;
+  }
+
   void Parallelizer::InsertSyncFunctionBefore(BasicBlock* currBB, ParallelizationTechnique *usedTechnique, Function* f, std::set<std::pair<BasicBlock*, BasicBlock*>> &addedSyncEdges){
         std::set<BasicBlock*> predBB2Remove;
         for (pred_iterator PI = pred_begin(currBB), E = pred_end(currBB); PI != E; ++PI)
@@ -27,7 +101,7 @@ namespace llvm::noelle {
           if(alreadyInserted) continue;
           addedSyncEdges.insert(std::make_pair(currBB,predBB));
           auto builder = new IRBuilder<>(predBB);
-          auto afterSyncBB = usedTechnique->CreateSynchronization(f, *builder, predBB, currBB, 0);
+          auto afterSyncBB = CreateSynchronization(f, *builder, predBB, currBB, 0, isSyncedAlloca[usedTechnique], numCoresAlloca[usedTechnique], memoryIdxAlloca[usedTechnique]);
           delete builder;
           //link afterSyncBB to dispatcherBB
           IRBuilder <>afterSyncBuilder(afterSyncBB);
@@ -42,29 +116,6 @@ namespace llvm::noelle {
         }
 
 
-  }
-
-  BasicBlock* Parallelizer::findLatestInsertionPt(BasicBlock *originalInsertPt){
-    for(auto loops : treesToParallelize){
-      bool containBB = false;
-      for(auto ldi : loops){
-        auto ls = ldi->getLoopStructure();
-        if(!ls) continue;
-        if(ls->isIncluded(originalInsertPt)){
-          containBB = true;
-          break;
-        }
-      }
-
-      if(containBB)
-        for(auto ldi : loops){
-          auto ls = ldi->getLoopStructure();
-          if(!ls) continue;
-          if(ls->getNestingLevel() == 1)
-            return(ls->getHeader());
-        }
-    }
-    return originalInsertPt;
   }
 
   bool Parallelizer::parallelizeLoop (
@@ -241,7 +292,7 @@ namespace llvm::noelle {
 
     //NOTE:> not tested in performance tests
     if(usedTechnique == doall){
-
+      techniques.insert(usedTechnique);
       std::set<BasicBlock*> insertedBlocks;
       Value* threadsUsed = usedTechnique->getNumOfThreads();
       Value* memoryIndex = usedTechnique->getMemoryIndex();
@@ -261,7 +312,7 @@ namespace llvm::noelle {
           continue;
         insertedBlocks.insert(newInsertPt);
         errs() << "SUSAN: inserting at live-out Deps: " << *newInsertPt << "\n";
-        techniques.push_back(std::make_pair(newInsertPt, usedTechnique));
+        insertingPts.push_back(std::make_pair(newInsertPt, usedTechnique));
       }
 
       /*
@@ -277,7 +328,7 @@ namespace llvm::noelle {
           continue;
         errs() << "SUSAN: inserting at mem Deps: " << *newInsertPt << "\n";
         insertedBlocks.insert(newInsertPt);
-        techniques.push_back(std::make_pair(newInsertPt, usedTechnique));
+        insertingPts.push_back(std::make_pair(newInsertPt, usedTechnique));
       }
 
       /*
@@ -286,7 +337,7 @@ namespace llvm::noelle {
       errs() << "SUSAN: inserting at dispatch: " << *dispatcherBB << "\n";
       if(insertedBlocks.find(dispatcherBB) == insertedBlocks.end()){
         insertedBlocks.insert(dispatcherBB);
-        techniques.push_back(std::make_pair(dispatcherBB, usedTechnique));
+        insertingPts.push_back(std::make_pair(dispatcherBB, usedTechnique));
       }
 
       /*
@@ -303,7 +354,7 @@ namespace llvm::noelle {
                   continue;
                  insertedBlocks.insert(newInsertPt);
                  errs() << "SUSAN: inserting at exit: " << *newInsertPt << "\n";
-                 techniques.push_back(std::make_pair(newInsertPt, usedTechnique));
+                 insertingPts.push_back(std::make_pair(newInsertPt, usedTechnique));
               }
     //  }
     } //end of adding sync function for doall

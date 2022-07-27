@@ -101,11 +101,13 @@ namespace llvm::noelle {
        */
       Function *SyncFunction;
       void InsertSyncFunctionBefore(BasicBlock* currBB, ParallelizationTechnique *usedTechnique, Function* f, std::set<std::pair<BasicBlock*, BasicBlock*>> &addedSyncEdges);
+      BasicBlock* CreateSynchronization (Function *f, IRBuilder<> builder, BasicBlock* bbBeforeSync, BasicBlock* originalBBAfterSync, bool eraseTarget, Instruction* isSyncedAlloca, Instruction *numCoresAlloca, Instruction *memoryIdxAlloca);
       std::vector<std::vector<LoopDependenceInfo *>> treesToParallelize;
-      BasicBlock* findLatestInsertionPt(BasicBlock *originalInsertPt);
-      std::vector<std::pair<BasicBlock*, ParallelizationTechnique *>> techniques;
-      std::map<LoopDependenceInfo*, Instruction*> DispatcherForLoop;
-      std::map<Instruction*, std::unordered_set<BasicBlock *>> dispatcher2OriginalLoop;
+      std::vector<std::pair<BasicBlock*, ParallelizationTechnique *>> insertingPts;
+      std::set<ParallelizationTechnique*> techniques;
+      std::map<ParallelizationTechnique*, Instruction*>isSyncedAlloca;
+      std::map<ParallelizationTechnique*, Instruction*>numCoresAlloca;
+      std::map<ParallelizationTechnique*, Instruction*>memoryIdxAlloca;
 
   };
 

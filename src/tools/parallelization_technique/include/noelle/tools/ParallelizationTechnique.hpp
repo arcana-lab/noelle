@@ -65,7 +65,8 @@ namespace llvm::noelle {
       Instruction* getDispatcherInst() { return dispatcherInst; }
       Value* getNumOfThreads(){ return numThreadsUsed; }
       Value* getMemoryIndex(){ return memoryIndex; }
-      BasicBlock* CreateSynchronization (Function *f, IRBuilder<> builder, BasicBlock* bbBeforeSync, BasicBlock* originalBBAfterSync, bool eraseTarget);
+      bool Reduced(){return isReduction;}
+      //BasicBlock* CreateSynchronization (Function *f, IRBuilder<> builder, BasicBlock* bbBeforeSync, BasicBlock* originalBBAfterSync, bool eraseTarget);
       LoopStructure* getOriginalLS(){ return originalLS;}
 
       /*
@@ -264,10 +265,8 @@ namespace llvm::noelle {
       Instruction* dispatcherInst;
       Value *numThreadsUsed;
       Value *memoryIndex;
-      Instruction *isSyncedAlloca;
-      Instruction *numCoresAlloca;
-      Instruction *memoryIdxAlloca;
       LoopStructure *originalLS;
+      bool isReduction;
   };
 
 }

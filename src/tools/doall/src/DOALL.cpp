@@ -400,23 +400,23 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
    */
   originalLS = LDI->getLoopStructure();
 
-  /*
-   * Synchronization: create a bit for this dispatch indicating whether it's synced
-   * create variable for numCores and memoryIdx
-   */
-  IRBuilder<> entryBuilder(loopFunction->getEntryBlock().getTerminator());
-  auto int1Ty = IntegerType::get(entryBuilder.getContext(), 1);
-  isSyncedAlloca = entryBuilder.CreateAlloca(int1Ty);
-  entryBuilder.CreateStore(ConstantInt::get(int1Ty, 1), isSyncedAlloca);
-  auto int32Ty = IntegerType::get(entryBuilder.getContext(), 32);
-  numCoresAlloca = entryBuilder.CreateAlloca(int32Ty);
-  auto int64Ty = IntegerType::get(entryBuilder.getContext(), 64);
-  memoryIdxAlloca = entryBuilder.CreateAlloca(int64Ty);
+  ///*
+  // * Synchronization: create a bit for this dispatch indicating whether it's synced
+  // * create variable for numCores and memoryIdx
+  // */
+  //IRBuilder<> entryBuilder(loopFunction->getEntryBlock().getTerminator());
+  //auto int1Ty = IntegerType::get(entryBuilder.getContext(), 1);
+  //isSyncedAlloca = entryBuilder.CreateAlloca(int1Ty);
+  //entryBuilder.CreateStore(ConstantInt::get(int1Ty, 1), isSyncedAlloca);
+  //auto int32Ty = IntegerType::get(entryBuilder.getContext(), 32);
+  //numCoresAlloca = entryBuilder.CreateAlloca(int32Ty);
+  //auto int64Ty = IntegerType::get(entryBuilder.getContext(), 64);
+  //memoryIdxAlloca = entryBuilder.CreateAlloca(int64Ty);
 
-  /*
-   * Synchronization: store 0 to isSynced after dispatch inst
-   */
-  doallBuilder.CreateStore(ConstantInt::get(int1Ty, 0), isSyncedAlloca);
+  ///*
+  // * Synchronization: store 0 to isSynced after dispatch inst
+  // */
+  //doallBuilder.CreateStore(ConstantInt::get(int1Ty, 0), isSyncedAlloca);
 
   /*
    * Synchronization: store call to dispatcherinst and use in Parallelizer to insert synchronization calls
@@ -424,10 +424,10 @@ void DOALL::addChunkFunctionExecutionAsideOriginalLoop (
   dispatcherInst = doallCallInst;
 
   numThreadsUsed = doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)0);
-  doallBuilder.CreateStore(numThreadsUsed, numCoresAlloca);
+  //doallBuilder.CreateStore(numThreadsUsed, numCoresAlloca);
 
   memoryIndex = doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)1);
-  doallBuilder.CreateStore(memoryIndex, memoryIdxAlloca);
+  //doallBuilder.CreateStore(memoryIndex, memoryIdxAlloca);
 
   /*
    * Propagate the last value of live-out variables to the code outside the parallelized loop.
@@ -524,18 +524,20 @@ BasicBlock * DOALL::propagateLiveOutEnvironment (LoopDependenceInfo *LDI, Value 
   /*
    * Synchronization: add SyncFunction before reduction
    */
-  BasicBlock* reductionPt = this->entryPointOfParallelizedLoop;
+  //reductionPt = this->entryPointOfParallelizedLoop;
+  isReduction = false;
   if(initialValues.size()){
-    errs() << "SUSAN: creating reduction:" << *reductionPt << "\n";
-    reductionPt = CreateSynchronization(f, *builder, this->entryPointOfParallelizedLoop, nullptr, 1);
-    SyncFunctionInserted = true;
-    delete builder;
-    builder = new IRBuilder<>(reductionPt);
+    isReduction = true;
+    //errs() << "SUSAN: creating reduction:" << *reductionPt << "\n";
+    //reductionPt = CreateSynchronization(f, *builder, this->entryPointOfParallelizedLoop, nullptr, 1);
+    //SyncFunctionInserted = true;
+    //delete builder;
+    //builder = new IRBuilder<>(reductionPt);
   }
 
 
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
-    reductionPt,
+    this->entryPointOfParallelizedLoop,
     *builder,
     reducableBinaryOps,
     initialValues,
