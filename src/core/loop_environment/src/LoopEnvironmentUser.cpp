@@ -39,6 +39,8 @@ LoopEnvironmentUser::LoopEnvironmentUser(
 
 void LoopEnvironmentUser::setEnvironmentArray(Value *envArr) {
   this->envArray = envArr;
+
+  return;
 }
 
 Instruction *LoopEnvironmentUser::createEnvironmentVariablePointer(

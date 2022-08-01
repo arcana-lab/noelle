@@ -39,6 +39,7 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder(
       [](uint32_t variableID, bool isLiveOut) -> bool { return false; },
       reducerCount,
       numberOfUsers) {
+
   return;
 }
 
@@ -158,7 +159,6 @@ void LoopEnvironmentBuilder::initializeBuilder(
     auto varID = this->indexToEnvID[i];
     this->envTypes.push_back(varTypes.at(varID));
   }
-
   assert(this->envSize == this->envTypes.size()
          && "Environment variables must either be singular or reducible\n");
 

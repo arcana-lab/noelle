@@ -34,12 +34,43 @@ Reduction::Reduction(SCC *s,
   assert(this->lcVariable != nullptr);
 
   /*
+   * Find the PHI of the SCC.
+   * An SCC must have a PHI, it must be the only PHI in the header of the loop.
+   * Notice that the PHI is the only instruction that is guaranteed to have the
+   * correct type of the source-level variable being updated by this IR-level
+   * SCC (the accumulator IR instruction does not.)
+   */
+  auto header = loop->getHeader();
+  PHINode *phiInst = nullptr;
+  for (auto n : s->getNodes()) {
+    auto inst = cast<Instruction>(n->getT());
+    if (inst->getParent() != header) {
+      continue;
+    }
+    if (phiInst = dyn_cast<PHINode>(inst)) {
+      break;
+    }
+  }
+  if (phiInst == nullptr) {
+    errs()
+        << "Reduction: ERROR = the PHI node could not be found in the header of the loop.\n";
+    errs() << "Reduction: SCC = ";
+    s->print(errs());
+    errs() << "\n";
+    errs() << "Reduction: Loop = ";
+    loop->print(errs());
+    errs() << "\n";
+    abort();
+  }
+  assert(phiInst != nullptr);
+
+  /*
    * Set the reduction operation.
    */
   auto firstAccumI = *(this->getAccumulators().begin());
   auto binOpCode = firstAccumI->getOpcode();
   this->reductionOperation =
-      opInfo.accumOpForType(binOpCode, firstAccumI->getType());
+      opInfo.accumOpForType(binOpCode, phiInst->getType());
 
   return;
 }

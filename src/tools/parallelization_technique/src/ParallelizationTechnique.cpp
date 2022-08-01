@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/tools/ParallelizationTechnique.hpp"
+#include "noelle/core/Reduction.hpp"
 
 namespace llvm::noelle {
 
@@ -33,12 +34,17 @@ ParallelizationTechnique::ParallelizationTechnique(Noelle &n)
 }
 
 Value *ParallelizationTechnique::getEnvArray(void) const {
+  assert(this->envBuilder != nullptr);
   return this->envBuilder->getEnvironmentArray();
 }
 
 uint32_t ParallelizationTechnique::getIndexOfEnvironmentVariable(
     uint32_t id) const {
-  return this->envBuilder->getIndexOfEnvironmentVariable(id);
+  assert(this->envBuilder != nullptr);
+
+  auto envVar = this->envBuilder->getIndexOfEnvironmentVariable(id);
+
+  return envVar;
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder(
@@ -199,6 +205,7 @@ void ParallelizationTechnique::populateLiveInEnvironment(
    */
   IRBuilder<> builder(this->entryPointOfParallelizedLoop);
   for (auto envID : env->getEnvIDsOfLiveInVars()) {
+
     /*
      * Skip the environment variable if it's not included in the builder
      */
@@ -246,9 +253,10 @@ BasicBlock *ParallelizationTechnique::
   auto loopPreHeader = loopSummary->getPreHeader();
 
   /*
-   * Fetch the SCC manager.
+   * Fetch the SCCDAG.
    */
   auto sccManager = LDI->getSCCManager();
+  auto loopSCCDAG = sccManager->getSCCDAG();
 
   /*
    * Fetch the environment of the loop
@@ -278,17 +286,16 @@ BasicBlock *ParallelizationTechnique::
      * Collect information about the reduction
      */
     auto producer = environment->getProducer(envID);
-    auto producerSCC = sccManager->getSCCDAG()->sccOfValue(producer);
-    auto producerSCCAttributes = sccManager->getSCCAttrs(producerSCC);
+    auto producerSCC = loopSCCDAG->sccOfValue(producer);
+    auto producerSCCAttributes =
+        static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
+    assert(producerSCCAttributes != nullptr);
 
     /*
-     * HACK: Need to get accumulator that feeds directly into producer PHI, not
-     * any intermediate one
+     * Get the accumulator.
      */
-    auto firstAccumI = *(producerSCCAttributes->getAccumulators().begin());
-    auto binOpCode = firstAccumI->getOpcode();
-    reducableBinaryOps[envID] =
-        sccManager->accumOpInfo.accumOpForType(binOpCode, producer->getType());
+    auto reducableOperation = producerSCCAttributes->getReductionOperation();
+    reducableBinaryOps[envID] = reducableOperation;
 
     auto loopEntryProducerPHI =
         this->fetchLoopEntryPHIOfProducer(LDI, producer);
