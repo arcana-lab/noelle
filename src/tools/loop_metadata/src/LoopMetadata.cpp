@@ -27,27 +27,59 @@
 using namespace llvm;
 using namespace llvm::noelle;
 
-bool LoopMetadataPass::setIDs(Module &M, Noelle &noelle) {
+std::vector<LoopStructure *> LoopMetadataPass::getLoopStructuresOnly(
+    Module &M) {
+  std::vector<LoopStructure *> loopStructures;
+  for (auto &F : M) {
+    /*
+     * Check if this is application code.
+     */
+    if (F.empty()) {
+      continue;
+    }
+
+    /*
+     * Check if the function has loops.
+     */
+    auto &LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
+    if (std::distance(LI.begin(), LI.end()) == 0) {
+      continue;
+    }
+
+    /*
+     * Consider all loops of the current function.
+     */
+    auto loops = LI.getLoopsInPreorder();
+    for (auto loop : loops) {
+      auto loopStructure = new LoopStructure{ loop };
+      loopStructures.push_back(loopStructure);
+    }
+  }
+
+  return loopStructures;
+}
+
+bool LoopMetadataPass::setIDs(Module &M) {
 
   /*
    * Fetch all the loops of the program.
    * Min hotness is set to 0.0 to ensure we get all loops.
    */
-  auto loopStructures = noelle.getLoopStructures(0.0);
+  auto loopStructures = getLoopStructuresOnly(M);
 
   /*
    * Set ID for all loops in the module.
    */
   auto modified = false;
   auto loopID = 0;
-  for (auto loopStructure : *loopStructures) {
+  for (auto loopStructure : loopStructures) {
     if (loopStructure->doesHaveID()) {
       errs()
           << "LoopID: loop " << *(loopStructure->getHeader()->getTerminator())
           << " already has ID ";
-      auto loopID = loopStructure->getID();
-      if (loopID) {
-        errs() << loopID.value();
+      auto loopIDOpt = loopStructure->getID();
+      if (loopIDOpt) {
+        errs() << loopIDOpt.value();
       }
       errs() << ". Abort.\n";
       abort();

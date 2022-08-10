@@ -198,7 +198,6 @@ private:
   std::vector<uint32_t> loopThreads;
   std::vector<uint32_t> techniquesToDisable;
   std::vector<uint32_t> DOALLChunkSize;
-  std::unordered_map<BasicBlock *, uint32_t> loopHeaderToLoopIndexMap;
   FunctionsManager *fm;
   TypesManager *tm;
   ConstantsManager *cm;

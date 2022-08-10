@@ -35,6 +35,11 @@ for var in "$@" ; do
   fi
 done
 
+# Add loop ID to all loops
+cmdToExecute="noelle-meta-loop-embed ${notOptions} -o ${notOptions}"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
 # Strip debugging symbols 
 cmdToExecute="opt --strip-debug --strip-debug-declare $notOptions -o $notOptions"
 echo $cmdToExecute ;
