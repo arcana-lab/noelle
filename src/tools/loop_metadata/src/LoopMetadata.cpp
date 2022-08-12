@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <algorithm>
+
 #include "noelle/core/SystemHeaders.hpp"
 #include "llvm/Analysis/LoopInfo.h"
 
@@ -68,27 +70,44 @@ bool LoopMetadataPass::setIDs(Module &M) {
   auto loopStructures = getLoopStructuresOnly(M);
 
   /*
-   * Set ID for all loops in the module.
+   * Initial scan of possible loop IDs.
+   * Get the max loopID to start assigning
+   * new loop IDs from there.
    */
-  auto modified = false;
-  auto loopID = 0;
+  uint64_t maxLoopID = 0;
   for (auto loopStructure : loopStructures) {
     if (loopStructure->doesHaveID()) {
-      errs()
-          << "LoopID: loop " << *(loopStructure->getHeader()->getTerminator())
-          << " already has ID ";
       auto loopIDOpt = loopStructure->getID();
-      if (loopIDOpt) {
-        errs() << loopIDOpt.value();
-      }
-      errs() << ". Abort.\n";
-      abort();
+      assert(loopIDOpt);
+      uint64_t currLoopID = loopIDOpt.value();
+      maxLoopID = std::max(currLoopID, maxLoopID);
     }
+  }
 
-    loopStructure->setID(loopID);
+  /*
+   * Set ID for all remaining loops in the module.
+   */
+  auto modified = false;
+  uint64_t loopID = 0;
+  if (maxLoopID != 0) {
+    loopID = maxLoopID + 1;
+  }
+  auto thereIsNewLoopWithoutID = false;
+  for (auto loopStructure : loopStructures) {
+    if (!loopStructure->doesHaveID()) {
+      loopStructure->setID(loopID);
+      modified = true;
+      loopID++;
 
-    modified = true;
-    loopID++;
+      if (maxLoopID != 0) {
+        thereIsNewLoopWithoutID = true;
+      }
+    }
+  }
+
+  if (thereIsNewLoopWithoutID) {
+    errs()
+        << "LOOP_METADATA: there is at least one new loop that didn't have an ID.\n";
   }
 
   return modified;

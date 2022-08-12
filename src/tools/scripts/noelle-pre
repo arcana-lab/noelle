@@ -52,8 +52,18 @@ if test "$enableDead" == "1" ; then
   eval $cmdToExecute ;
 fi
 
+# Add loop ID to all loops
+cmdToExecute="noelle-meta-loop-embed ${notOptions} -o ${notOptions}"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
 # Normalize the code
 cmdToExecute="noelle-simplification $notOptions -o $notOptions"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
+# Add loop ID to all loops
+cmdToExecute="noelle-meta-loop-embed ${notOptions} -o ${notOptions}"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 
@@ -62,8 +72,18 @@ cmdToExecute="noelle-inline $notOptions \"-noelle-inliner-verbose=1 $options\""
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 
+# Add loop ID to all loops
+cmdToExecute="noelle-meta-loop-embed ${notOptions} -o ${notOptions}"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
 # Normalize the code
 cmdToExecute="noelle-simplification $notOptions -o $notOptions"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
+# Add loop ID to all loops
+cmdToExecute="noelle-meta-loop-embed ${notOptions} -o ${notOptions}"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 
@@ -74,8 +94,18 @@ if test "$enableDead" == "1" ; then
   eval $cmdToExecute ;
 fi
 
+# Add loop ID to all loops
+cmdToExecute="noelle-meta-loop-embed ${notOptions} -o ${notOptions}"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
 # Normalize the code
 cmdToExecute="noelle-simplification $notOptions -o $notOptions"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
+# Add loop ID to all loops
+cmdToExecute="noelle-meta-loop-embed ${notOptions} -o ${notOptions}"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 
@@ -86,7 +116,19 @@ if test "$enableEnablers" == "1" ; then
   eval $cmdToExecute ;
 fi
 
+# Add loop ID to all loops
+cmdToExecute="noelle-meta-loop-embed ${notOptions} -o ${notOptions}"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
 # Normalize the code
 cmdToExecute="noelle-simplification $notOptions -o $notOptions"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
+
+# Add loop ID to all loops
+cmdToExecute="noelle-meta-loop-embed ${notOptions} -o ${notOptions}"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
+
