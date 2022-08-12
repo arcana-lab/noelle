@@ -24,7 +24,14 @@ FRONTEND_FLAGS=-emit-llvm $(FRONTEND_OPTIONS)
 
 THREADER=Parallelizer_utils
 OPTIMIZED=parallelized
+OPTIMIZED_AUTOTUNED=parallelized_autotuned
 PRINT_OUTPUT_FILE=test.txt
+
+# Autotuner
+# Time limit for the autotuner to run (in seconds)
+TIME=100
+# Max number of configurations the autotuner explores
+NUM_CONF=500
 
 # Fetch the list of files to compile
 CPP_FILES := $(wildcard *.cpp)
@@ -55,8 +62,14 @@ $(THREADER).bc: $(THREADER).cpp
 $(OPTIMIZED): test_parallelized.bc
 	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 
+$(OPTIMIZED_AUTOTUNED): test_parallelized_autotuned.bc
+	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
+
 test_parallelized.bc: baseline_with_metadata.bc
 	noelle-parallelizer $^ -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
+
+test_parallelized_autotuned.bc: baseline_with_metadata.bc input.txt
+	export autotunerCPP="$(CPP)" ; export autotunerOPT_LEVEL="$(OPT_LEVEL)" ; export autotunerLIBS="$(LIBS)" ; export autotunerINPUT="input.txt" ; export autotunerINPUTBC="$<" ; export autotunerOUTPUTBC="$@" ; export autotunerTIME="$(TIME)" ; export autotunerNUM_CONF="$(NUM_CONF)" ; noelle-parallelizer-autotuner $< -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
 
 baseline.bc: test.bc
 	$(CPP) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
@@ -106,5 +119,6 @@ clean:
 	rm -f time_parallelized.txt compiler_output.txt input.txt ;
 	rm -f output*.txt ;
 	rm -f OUT ;
+	rm -rf binaryToRun autotuner_space.info executionTime.txt exploredConfs.json opentuner.db opentuner.log ;
 
 .PHONY: test_correctness clean

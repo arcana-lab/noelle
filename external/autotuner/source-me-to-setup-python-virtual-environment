@@ -1,0 +1,39 @@
+#!/bin/bash -e
+
+# Check we have virtualenv
+virtualenv="virtualenv" ;
+which ${virtualenv} ;
+retCode="$?" ;
+if [ "${retCode}" != "0" ] ; then
+  echo "ERROR: virtualenv not found. Abort." ;
+  exit 1 ;
+fi
+
+# Get path to this file
+THIS_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )" ;
+
+# Check opentuner repo
+#pathToOpentunerRepo="${THIS_PATH}/opentuner"
+#if ! test -d ${pathToOpentunerRepo} ; then
+#  git clone git@github.com:jansel/opentuner.git ${pathToOpentunerRepo} ;
+#fi
+
+# Setup the python virtual environment for opentuner
+virtualEnvDir="${THIS_PATH}/virtualEnv" ;
+if ! test -d ${virtualEnvDir} ; then
+  mkdir ${virtualEnvDir} ;
+  ${virtualenv} -p python2 ${virtualEnvDir} ;
+  source ${virtualEnvDir}/bin/activate ;
+  pip install --upgrade pip ;
+
+  pip install opentuner ;
+  pip install argparse ;
+  pip install fn ;
+  pip install future ;
+  pip install numpy ;
+  pip install enum ;
+  pip install SQLAlchemy==1.2.19 ; # This is the correct SQLAlchemy version to avoid a bug with opentuner
+
+else
+  source ${virtualEnvDir}/bin/activate ;
+fi

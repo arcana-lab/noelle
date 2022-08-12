@@ -1,0 +1,102 @@
+#!/bin/bash -e
+
+echo "AUTOTUNER: filter search space" ;
+
+# Get args (TODO add sanity check)
+spaceFile="${autotunerSPACE_FILE}" ;
+confFile="${INDEX_FILE}" ;
+installDir="${autotunerINSTALL_DIR}" ;
+executionTimeFile="${autotunerEXECUTION_TIME}" ;
+outputbc="${autotunerOUTPUTBC}" ;
+
+# Compile and run baseline as a reference
+# Get search space info
+numberOfLoops="`cat ${spaceFile} | wc -l`" ;
+parametersPerLoop="`head -1 ${spaceFile} | awk '{print NF}'`" ;
+
+# Set configuration to all zeros (i.e., all loops disabled)
+echo -n "" > ${confFile} ; # Create new empty file
+for i in `seq 1 ${numberOfLoops}` ; do
+  for j in `seq 1 ${parametersPerLoop}` ; do
+    echo -n "0 " >> ${confFile} ;
+  done
+  echo -n -e "\n" >> ${confFile} ;
+done
+
+# Compile baseline
+${installDir}/autotuner/scripts/compile ;
+baselinebc="baseline_as_reference.bc" ;
+cp ${outputbc} ${baselinebc} ;
+linesNumberBaseline="`wc -l ${baselinebc} | awk '{print $1}'`";
+
+# Run baseline
+${installDir}/autotuner/scripts/run ;
+
+# Get execution time of baseline
+baselineExecutionTime="`cat ${executionTimeFile}`" ;
+
+declare -a searchSpace ;
+# Disable one loop at a time
+for loopNumber in `seq 1 ${numberOfLoops}` ; do
+  searchSpace[${loopNumber}]="0" ;
+
+  # Create a conf where only the current loop is parallelized
+  echo -n "" > $INDEX_FILE ;
+
+  # Disable all loops prior to the current one
+  for i in `seq 2 ${loopNumber}` ; do
+    for j in `seq 1 ${parametersPerLoop}` ; do
+      echo -n "0 " >> ${confFile} ;
+    done
+    echo -n -e "\n" >> ${confFile} ;
+  done
+
+  # Enable the current loop
+  echo -n "1 0 0 4 2 8 0 0 0 " >> ${confFile} ;
+  echo -n -e "\n" >> ${confFile} ;
+
+  # Disable all loops after the current one
+  loopNumberPlus1="`echo "${loopNumber} + 1" | bc`" ;
+  for i in `seq ${loopNumberPlus1} ${numberOfLoops}` ; do
+    for j in `seq 1 ${parametersPerLoop}` ; do
+      echo -n "0 " >> ${confFile} ;
+    done
+    echo -n -e "\n" >> ${confFile} ;
+  done
+
+  # Compile
+  ${installDir}/autotuner/scripts/compile ;
+  linesNumberConf="`wc -l ${outputbc} | awk '{print $1}'`";
+  linesChanged="`echo "${linesNumberConf} - ${linesNumberBaseline}" | bc`";
+  hasBeenParallelized="`echo "${linesChanged} > 2" | bc`" ;
+  # If bitcode didn't change, then don't even run this conf
+  if [ "${hasBeenParallelized}" == "0" ] ; then
+    continue ;
+  fi
+
+  # Run
+  ${installDir}/autotuner/scripts/run ;
+
+  # Get execution time
+  confExecutionTime="`cat ${executionTimeFile}`" ;
+  
+  isItWorthParallelizing="`echo "scale=3; ${confExecutionTime} < ${baselineExecutionTime}" | bc`" ;
+  # If conf execution time is worse than baseline, then we do not parallelize this loop
+  if [ "${isItWorthParallelizing}" == "0" ] ; then
+    continue ;
+  fi
+
+  # If we get here, then we want to parallelize the current loop
+  searchSpace[${loopNumber}]="1" ;
+done
+
+# Create new filtered autotuner_space.info file
+echo -n "" > ${spaceFile} ;
+for loopNumber in `seq 1 ${numberOfLoops}` ; do
+  if [ ${searchSpace[${loopNumber}]} == "1" ] ; then
+    echo "2 0 0 3 28 8 0 0 0 " >> ${spaceFile} ;
+  else
+    echo "0 0 0 0 0 0 0 0 0 " >> ${spaceFile} ;
+  fi
+done
+
