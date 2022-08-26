@@ -32,7 +32,7 @@ void LoopCarriedDependencies::setLoopCarriedDependencies(
   }
 
   for (auto edge : dgForLoops.getEdges()) {
-    auto loop = getLoopOfLCD(loopNode, DS, edge);
+    auto loop = this->getLoopOfLCD(loopNode, DS, edge);
     if (!loop) {
       continue;
     }

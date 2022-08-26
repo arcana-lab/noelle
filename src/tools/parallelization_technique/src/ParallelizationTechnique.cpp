@@ -27,7 +27,11 @@ namespace llvm::noelle {
 ParallelizationTechnique::ParallelizationTechnique(Noelle &n)
   : noelle{ n },
     tasks{},
-    envBuilder{ nullptr } {
+    envBuilder{ nullptr },
+    taskSignature{ nullptr },
+    entryPointOfParallelizedLoop{ nullptr },
+    exitPointOfParallelizedLoop{ nullptr },
+    numTaskInstances{ 0 } {
   this->verbose = n.getVerbosity();
 
   return;
@@ -395,8 +399,7 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks(
       BasicBlock::Create(cxt, "", loopFunction);
   this->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", loopFunction);
 
-  this->numTaskInstances = taskStructs.size();
-  for (auto i = 0; i < numTaskInstances; ++i) {
+  for (auto i = 0; i < taskStructs.size(); ++i) {
     auto task = taskStructs[i];
     tasks.push_back(task);
 
