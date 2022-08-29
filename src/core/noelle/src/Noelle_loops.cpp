@@ -216,6 +216,26 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
   return allLoops;
 }
 
+StayConnectedNestedLoopForest *Noelle::getLoopNestingForest(void) {
+
+  /*
+   * Fetch all loops
+   */
+  auto loopStructures = this->getLoopStructures();
+
+  /*
+   * Organize loops in forest.
+   */
+  auto forest = this->organizeLoopsInTheirNestingForest(*loopStructures);
+
+  /*
+   * Free the memory.
+   */
+  delete loopStructures;
+
+  return forest;
+}
+
 LoopDependenceInfo *Noelle::getLoop(LoopStructure *l) {
 
   /*

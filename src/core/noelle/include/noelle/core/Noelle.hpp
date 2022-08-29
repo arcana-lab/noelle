@@ -65,8 +65,6 @@ public:
 
   FunctionsManager *getFunctionsManager(void);
 
-  LoopNestingGraph *getLoopNestingGraphForProgram(void);
-
   CompilationOptionsManager *getCompilationOptionsManager(void);
 
   TypesManager *getTypesManager(void);
@@ -75,14 +73,9 @@ public:
 
   MetadataManager *getMetadataManager(void);
 
-  std::vector<LoopDependenceInfo *> *getLoops(void);
+  LoopNestingGraph *getLoopNestingGraphForProgram(void);
 
-  std::vector<LoopDependenceInfo *> *getLoops(double minimumHotness);
-
-  std::vector<LoopDependenceInfo *> *getLoops(Function *function);
-
-  std::vector<LoopDependenceInfo *> *getLoops(Function *function,
-                                              double minimumHotness);
+  StayConnectedNestedLoopForest *getLoopNestingForest(void);
 
   std::vector<LoopStructure *> *getLoopStructures(void);
 
@@ -92,6 +85,15 @@ public:
 
   std::vector<LoopStructure *> *getLoopStructures(Function *function,
                                                   double minimumHotness);
+
+  std::vector<LoopDependenceInfo *> *getLoops(void);
+
+  std::vector<LoopDependenceInfo *> *getLoops(double minimumHotness);
+
+  std::vector<LoopDependenceInfo *> *getLoops(Function *function);
+
+  std::vector<LoopDependenceInfo *> *getLoops(Function *function,
+                                              double minimumHotness);
 
   LoopDependenceInfo *getLoop(LoopStructure *loop);
 
