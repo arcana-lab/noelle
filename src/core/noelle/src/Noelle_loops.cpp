@@ -875,6 +875,10 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
      * DOALL: chunk factor
      */
     auto DOALLChunkFactor = this->fetchTheNextValue(indexString);
+    DOALLChunkFactor++; /*
+                          DOALL chunk size is the one defined by INDEX_FILE + 1.
+                          This is because chunk size must start from 1.
+                         */
 
     /*
      * Skip
@@ -894,7 +898,10 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
     } else {
       this->loopThreads.push_back(1);
       this->techniquesToDisable.push_back(0);
-      this->DOALLChunkSize.push_back(0);
+      this->DOALLChunkSize.push_back(1); /*
+                            DOALL chunk size is the one defined by INDEX_FILE
+                            + 1. This is because chunk size must start from 1.
+                           */
     }
   }
 
@@ -1196,21 +1203,16 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
   /*
    * Allocate the LDI.
    */
-  auto ldi = new LoopDependenceInfo(
-      functionPDG,
-      loopNode,
-      loop,
-      *DS,
-      *SE,
-      maxCores,
-      this->enableFloatAsReal,
-      optimizations,
-      this->loopAwareDependenceAnalysis,
-      DOALLChunkSizeForLoop
-          + 1 /* DOALL chunk size is the one defined by INDEX_FILE + 1.
-                 This is because chunk size must start from 1.
-                 */
-  );
+  auto ldi = new LoopDependenceInfo(functionPDG,
+                                    loopNode,
+                                    loop,
+                                    *DS,
+                                    *SE,
+                                    maxCores,
+                                    this->enableFloatAsReal,
+                                    optimizations,
+                                    this->loopAwareDependenceAnalysis,
+                                    DOALLChunkSizeForLoop);
 
   /*
    * Set the techniques that are enabled.
@@ -1258,25 +1260,40 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
 }
 
 bool Noelle::isLoopHot(LoopStructure *loopStructure, double minimumHotness) {
-  assert(this->profiles != nullptr);
 
-  if (!this->profiles->isAvailable()) {
+  /*
+   * Fetch the profiles.
+   */
+  auto hot = this->getProfiles();
+  assert(hot != nullptr);
+
+  /*
+   * Check if the profiles are available
+   */
+  if (!hot->isAvailable()) {
     return true;
   }
 
-  auto hotness =
-      this->profiles->getDynamicTotalInstructionCoverage(loopStructure);
+  auto hotness = hot->getDynamicTotalInstructionCoverage(loopStructure);
   return hotness >= minimumHotness;
 }
 
 bool Noelle::isFunctionHot(Function *function, double minimumHotness) {
-  assert(this->profiles != nullptr);
 
-  if (!this->profiles->isAvailable()) {
+  /*
+   * Fetch the profiles.
+   */
+  auto hot = this->getProfiles();
+  assert(hot != nullptr);
+
+  /*
+   * Check if the profiles are available
+   */
+  if (!hot->isAvailable()) {
     return true;
   }
 
-  auto hotness = this->profiles->getDynamicTotalInstructionCoverage(function);
+  auto hotness = hot->getDynamicTotalInstructionCoverage(function);
   return hotness >= minimumHotness;
 }
 
