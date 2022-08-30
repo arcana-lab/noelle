@@ -85,23 +85,20 @@ bool Parallelizer::runOnModule(Module &M) {
    * Fetch all the loops we want to parallelize.
    */
   errs() << "Parallelizer:  Fetching the program loops\n";
-  auto programLoops = noelle.getLoopStructures();
-  if (programLoops->size() == 0) {
+  auto forest = noelle.getLoopNestingForest();
+  if (forest->getNumberOfLoops() == 0) {
     errs() << "Parallelizer:    There is no loop to consider\n";
 
     /*
      * Free the memory.
      */
-    delete programLoops;
+    delete forest;
 
     errs() << "Parallelizer: Exit\n";
     return false;
   }
-  errs() << "Parallelizer:    There are " << programLoops->size()
+  errs() << "Parallelizer:    There are " << forest->getNumberOfLoops()
          << " loops in the program we are going to consider\n";
-
-  auto forest = noelle.organizeLoopsInTheirNestingForest(*programLoops);
-  delete programLoops;
 
   /*
    * Determine the parallelization order from the metadata.

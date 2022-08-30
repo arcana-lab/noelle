@@ -92,6 +92,8 @@ public:
       std::vector<LoopStructure *> const &loops,
       std::unordered_map<Function *, DominatorSummary *> const &doms);
 
+  uint64_t getNumberOfLoops(void) const;
+
   std::unordered_set<StayConnectedNestedLoopForestNode *> getTrees(void) const;
 
   void removeTree(StayConnectedNestedLoopForestNode *tree);

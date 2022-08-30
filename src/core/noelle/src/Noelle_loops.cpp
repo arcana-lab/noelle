@@ -76,8 +76,6 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(void) {
 }
 
 std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
-
-  auto profiles = this->getProfiles();
   auto allLoops = new std::vector<LoopStructure *>();
 
   /*
@@ -216,6 +214,26 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
   return allLoops;
 }
 
+StayConnectedNestedLoopForest *Noelle::getLoopNestingForest(void) {
+
+  /*
+   * Fetch all loops
+   */
+  auto loopStructures = this->getLoopStructures();
+
+  /*
+   * Organize loops in forest.
+   */
+  auto forest = this->organizeLoopsInTheirNestingForest(*loopStructures);
+
+  /*
+   * Free the memory.
+   */
+  delete loopStructures;
+
+  return forest;
+}
+
 LoopDependenceInfo *Noelle::getLoop(LoopStructure *l) {
 
   /*
@@ -324,11 +342,6 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(Function *function) {
 
 std::vector<LoopDependenceInfo *> *Noelle::getLoops(Function *function,
                                                     double minimumHotness) {
-
-  /*
-   * Fetch the profiles.
-   */
-  auto profiles = this->getProfiles();
 
   /*
    * Allocate the vector of loops.
@@ -445,11 +458,6 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(void) {
 }
 
 std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
-
-  /*
-   * Fetch the profiles.
-   */
-  auto profiles = this->getProfiles();
 
   /*
    * Allocate the vector of loops.
@@ -684,11 +692,6 @@ uint32_t Noelle::getNumberOfProgramLoops(void) {
 
 uint32_t Noelle::getNumberOfProgramLoops(double minimumHotness) {
   uint32_t counter = 0;
-
-  /*
-   * Fetch the profiles.
-   */
-  auto profiles = this->getProfiles();
 
   /*
    * Fetch the list of functions of the module.
@@ -1094,10 +1097,6 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
  * B (may or must based on the subedge type)
  */
 LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
-  /*
-   * Fetch the profiles.
-   */
-  auto profiles = this->getProfiles();
 
   /*
    * Fetch the list of functions of the module.
