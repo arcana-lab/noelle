@@ -299,7 +299,7 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
     /*
      * Check if the time saved is enough.
      */
-    if (true && (!this->forceParallelization) && (savedTimeTotal < 2)) {
+    if ((!this->forceParallelization) && (savedTimeTotal < 2)) {
       errs() << "Planner: LoopSelector:  Loop " << loopID << " saves only "
              << savedTimeTotal << " when parallelized. Skip it\n";
       continue;

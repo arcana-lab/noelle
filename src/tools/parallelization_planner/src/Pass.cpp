@@ -58,34 +58,23 @@ bool Planner::runOnModule(Module &M) {
   auto profiles = noelle.getProfiles();
 
   /*
-   * Fetch the verbosity level.
-   */
-  auto verbosity = noelle.getVerbosity();
-
-  /*
    * Fetch all the loops we want to parallelize.
    */
   errs() << "Planner:  Fetching the program loops\n";
-  auto programLoops = noelle.getLoopStructures();
-  if (programLoops->size() == 0) {
+  auto forest = noelle.getLoopNestingForest();
+  if (forest->getNumberOfLoops() == 0) {
     errs() << "Planner:    There is no loop to consider\n";
 
     /*
      * Free the memory.
      */
-    delete programLoops;
+    delete forest;
 
     errs() << "Planner: Exit\n";
     return false;
   }
-  errs() << "Planner:    There are " << programLoops->size()
+  errs() << "Planner:    There are " << forest->getNumberOfLoops()
          << " loops in the program we are going to consider\n";
-
-  /*
-   * Compute the nesting forest.
-   */
-  auto forest = noelle.organizeLoopsInTheirNestingForest(*programLoops);
-  delete programLoops;
 
   /*
    * Filter out loops that are not worth parallelizing.
