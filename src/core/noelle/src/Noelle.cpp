@@ -51,6 +51,22 @@ Module *Noelle::getProgram(void) const {
   return this->program;
 }
 
+LLVMContext &Noelle::getProgramContext(void) const {
+
+  /*
+   * Fetch the program.
+   */
+  auto p = this->getProgram();
+  assert(p != nullptr);
+
+  /*
+   * Fetch the context of the program.
+   */
+  auto &cxt = p->getContext();
+
+  return cxt;
+}
+
 std::vector<Function *> *Noelle::getModuleFunctionsReachableFrom(
     Module *module,
     Function *startingPoint) {

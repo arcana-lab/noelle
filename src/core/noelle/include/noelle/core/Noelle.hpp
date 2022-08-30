@@ -130,6 +130,8 @@ public:
 
   Module *getProgram(void) const;
 
+  LLVMContext &getProgramContext(void) const;
+
   Hot *getProfiles(void);
 
   PDG *getProgramDependenceGraph(void);
