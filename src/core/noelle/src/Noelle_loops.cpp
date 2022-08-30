@@ -1260,25 +1260,40 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
 }
 
 bool Noelle::isLoopHot(LoopStructure *loopStructure, double minimumHotness) {
-  assert(this->profiles != nullptr);
 
-  if (!this->profiles->isAvailable()) {
+  /*
+   * Fetch the profiles.
+   */
+  auto hot = this->getProfiles();
+  assert(hot != nullptr);
+
+  /*
+   * Check if the profiles are available
+   */
+  if (!hot->isAvailable()) {
     return true;
   }
 
-  auto hotness =
-      this->profiles->getDynamicTotalInstructionCoverage(loopStructure);
+  auto hotness = hot->getDynamicTotalInstructionCoverage(loopStructure);
   return hotness >= minimumHotness;
 }
 
 bool Noelle::isFunctionHot(Function *function, double minimumHotness) {
-  assert(this->profiles != nullptr);
 
-  if (!this->profiles->isAvailable()) {
+  /*
+   * Fetch the profiles.
+   */
+  auto hot = this->getProfiles();
+  assert(hot != nullptr);
+
+  /*
+   * Check if the profiles are available
+   */
+  if (!hot->isAvailable()) {
     return true;
   }
 
-  auto hotness = this->profiles->getDynamicTotalInstructionCoverage(function);
+  auto hotness = hot->getDynamicTotalInstructionCoverage(function);
   return hotness >= minimumHotness;
 }
 
