@@ -872,6 +872,10 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
      * DOALL: chunk factor
      */
     auto DOALLChunkFactor = this->fetchTheNextValue(indexString);
+    DOALLChunkFactor++; /*
+                          DOALL chunk size is the one defined by INDEX_FILE + 1.
+                          This is because chunk size must start from 1.
+                         */
 
     /*
      * Skip
@@ -891,7 +895,10 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
     } else {
       this->loopThreads.push_back(1);
       this->techniquesToDisable.push_back(0);
-      this->DOALLChunkSize.push_back(0);
+      this->DOALLChunkSize.push_back(1); /*
+                            DOALL chunk size is the one defined by INDEX_FILE
+                            + 1. This is because chunk size must start from 1.
+                           */
     }
   }
 
@@ -1197,21 +1204,16 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
   /*
    * Allocate the LDI.
    */
-  auto ldi = new LoopDependenceInfo(
-      functionPDG,
-      loopNode,
-      loop,
-      *DS,
-      *SE,
-      maxCores,
-      this->enableFloatAsReal,
-      optimizations,
-      this->loopAwareDependenceAnalysis,
-      DOALLChunkSizeForLoop
-          + 1 /* DOALL chunk size is the one defined by INDEX_FILE + 1.
-                 This is because chunk size must start from 1.
-                 */
-  );
+  auto ldi = new LoopDependenceInfo(functionPDG,
+                                    loopNode,
+                                    loop,
+                                    *DS,
+                                    *SE,
+                                    maxCores,
+                                    this->enableFloatAsReal,
+                                    optimizations,
+                                    this->loopAwareDependenceAnalysis,
+                                    DOALLChunkSizeForLoop);
 
   /*
    * Set the techniques that are enabled.
