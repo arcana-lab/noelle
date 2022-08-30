@@ -298,8 +298,7 @@ BasicBlock *ParallelizationTechnique::
     /*
      * Get the accumulator.
      */
-    auto reducableOperation = producerSCCAttributes->getReductionOperation();
-    reducableBinaryOps[envID] = reducableOperation;
+    reducableBinaryOps[envID] = producerSCCAttributes->getReductionOperation();
 
     auto loopEntryProducerPHI =
         this->fetchLoopEntryPHIOfProducer(LDI, producer);
@@ -376,20 +375,19 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks(
   assert(this->tasks.size() == 0);
 
   /*
+   * Fetch the loop structure.
+   */
+  auto loopStructure = LDI->getLoopStructure();
+
+  /*
    * Fetch the loop headers.
    */
-  auto loopSummary = LDI->getLoopStructure();
-  auto loopPreHeader = loopSummary->getPreHeader();
+  auto loopPreHeader = loopStructure->getPreHeader();
 
   /*
    * Fetch the loop function.
    */
-  auto loopFunction = loopSummary->getFunction();
-
-  /*
-   * Fetch the loop structure.
-   */
-  auto loopStructure = LDI->getLoopStructure();
+  auto loopFunction = loopStructure->getFunction();
 
   /*
    * Setup original loop and task with functions and basic blocks for wiring
@@ -442,14 +440,13 @@ void ParallelizationTechnique::cloneSequentialLoop(LoopDependenceInfo *LDI,
   assert(taskIndex < this->tasks.size());
 
   /*
-   * Fetch the program.
+   * Fetch the context of the program.
    */
-  auto program = this->noelle.getProgram();
+  auto &cxt = this->noelle.getProgramContext();
 
   /*
    * Fetch the task.
    */
-  auto &cxt = program->getContext();
   auto task = this->tasks[taskIndex];
 
   /*
@@ -486,11 +483,13 @@ void ParallelizationTechnique::cloneSequentialLoopSubset(
     std::set<Instruction *> subset) {
 
   /*
-   * Fetch the program.
+   * Fetch the context of the program.
    */
-  auto program = this->noelle.getProgram();
+  auto &cxt = this->noelle.getProgramContext();
 
-  auto &cxt = program->getContext();
+  /*
+   * Fetch the task.
+   */
   auto task = tasks[taskIndex];
 
   /*
