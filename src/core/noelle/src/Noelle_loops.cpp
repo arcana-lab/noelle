@@ -76,8 +76,6 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(void) {
 }
 
 std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
-
-  auto profiles = this->getProfiles();
   auto allLoops = new std::vector<LoopStructure *>();
 
   /*
@@ -346,11 +344,6 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(Function *function,
                                                     double minimumHotness) {
 
   /*
-   * Fetch the profiles.
-   */
-  auto profiles = this->getProfiles();
-
-  /*
    * Allocate the vector of loops.
    */
   auto allLoops = new std::vector<LoopDependenceInfo *>();
@@ -465,11 +458,6 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(void) {
 }
 
 std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
-
-  /*
-   * Fetch the profiles.
-   */
-  auto profiles = this->getProfiles();
 
   /*
    * Allocate the vector of loops.
@@ -704,11 +692,6 @@ uint32_t Noelle::getNumberOfProgramLoops(void) {
 
 uint32_t Noelle::getNumberOfProgramLoops(double minimumHotness) {
   uint32_t counter = 0;
-
-  /*
-   * Fetch the profiles.
-   */
-  auto profiles = this->getProfiles();
 
   /*
    * Fetch the list of functions of the module.
@@ -1107,10 +1090,6 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
  * B (may or must based on the subedge type)
  */
 LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
-  /*
-   * Fetch the profiles.
-   */
-  auto profiles = this->getProfiles();
 
   /*
    * Fetch the list of functions of the module.
