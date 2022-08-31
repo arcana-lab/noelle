@@ -28,7 +28,7 @@ Task::Task(uint32_t ID, FunctionType *taskSignature, Module &M) : ID{ ID } {
   /*
    * Create the name of the function.
    */
-  auto functionName = std::string{ "noelle_task" };
+  auto functionName = std::string{ "noelle_task_" };
   functionName.append(std::to_string(Task::ID));
   Task::ID++;
 
@@ -37,6 +37,11 @@ Task::Task(uint32_t ID, FunctionType *taskSignature, Module &M) : ID{ ID } {
    */
   auto functionCallee = M.getOrInsertFunction(functionName, taskSignature);
   this->F = cast<Function>(functionCallee.getCallee());
+  if (!this->F->empty()) {
+    errs() << "Task: ERROR = function " << functionName
+           << " already exists in the program.\n";
+    abort();
+  }
 
   /*
    * Add the entry and exit basic blocks.
