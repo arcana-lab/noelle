@@ -26,9 +26,16 @@ namespace llvm::noelle {
 Task::Task(uint32_t ID, FunctionType *taskSignature, Module &M) : ID{ ID } {
 
   /*
+   * Create the name of the function.
+   */
+  auto functionName = std::string{ "noelle_task" };
+  functionName.append(std::to_string(Task::ID));
+  Task::ID++;
+
+  /*
    * Create the empty body of the task.
    */
-  auto functionCallee = M.getOrInsertFunction("", taskSignature);
+  auto functionCallee = M.getOrInsertFunction(functionName, taskSignature);
   this->F = cast<Function>(functionCallee.getCallee());
 
   /*
@@ -350,4 +357,7 @@ void Task::removeOriginalInstruction(Instruction *o) {
 Task::~Task() {
   return;
 }
+
+uint64_t Task::currentID = 0;
+
 } // namespace llvm::noelle
