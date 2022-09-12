@@ -29,8 +29,8 @@ Task::Task(uint32_t ID, FunctionType *taskSignature, Module &M) : ID{ ID } {
    * Create the name of the function.
    */
   auto functionName = std::string{ "noelle_task_" };
-  functionName.append(std::to_string(Task::ID));
-  Task::ID++;
+  functionName.append(std::to_string(Task::currentID));
+  Task::currentID++;
 
   /*
    * Create the empty body of the task.
