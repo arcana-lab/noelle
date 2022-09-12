@@ -232,7 +232,7 @@ BasicBlock *ParallelizationTechnique::
     performReductionToAllReducableLiveOutVariables(
         LoopDependenceInfo *LDI,
         Value *numberOfThreadsExecuted) {
-  auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
+  IRBuilder<> builder{ this->entryPointOfParallelizedLoop };
 
   /*
    * Fetch the loop headers.
@@ -290,20 +290,15 @@ BasicBlock *ParallelizationTechnique::
         loopEntryProducerPHI->getBasicBlockIndex(loopPreHeader);
     auto initialValue = loopEntryProducerPHI->getIncomingValue(initValPHIIndex);
     initialValues[envID] =
-        castToCorrectReducibleType(*builder, initialValue, producer->getType());
+        castToCorrectReducibleType(builder, initialValue, producer->getType());
   }
 
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
       this->entryPointOfParallelizedLoop,
-      *builder,
+      builder,
       reducableBinaryOps,
       initialValues,
       numberOfThreadsExecuted);
-
-  /*
-   * Free the memory.
-   */
-  delete builder;
 
   /*
    * If reduction occurred, then all environment loads to propagate live outs
@@ -728,8 +723,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
      */
     task->addInstruction(alloca, allocaClone);
   }
-  task->getTaskBody()->print(errs());
-  rootLoop->getFunction()->print(errs());
 }
 
 void ParallelizationTechnique::generateCodeToLoadLiveInVariables(
@@ -1384,7 +1377,6 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
      */
     auto producerClone = cast<PHINode>(
         task->getCloneOfOriginalInstruction(loopEntryProducerPHI));
-    assert(producerClone != nullptr);
 
     /*
      * Fetch the cloned pre-header index
@@ -1826,8 +1818,6 @@ void ParallelizationTechnique::dumpToFile(LoopDependenceInfo &LDI) {
   File.close();
 }
 
-ParallelizationTechnique::~ParallelizationTechnique() {}
-
 BasicBlock *ParallelizationTechnique::getParLoopEntryPoint(void) const {
   return entryPointOfParallelizedLoop;
 }
@@ -1835,5 +1825,7 @@ BasicBlock *ParallelizationTechnique::getParLoopEntryPoint(void) const {
 BasicBlock *ParallelizationTechnique::getParLoopExitPoint(void) const {
   return exitPointOfParallelizedLoop;
 }
+
+ParallelizationTechnique::~ParallelizationTechnique() {}
 
 } // namespace llvm::noelle
