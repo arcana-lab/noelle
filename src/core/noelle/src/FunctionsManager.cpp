@@ -108,4 +108,30 @@ std::set<Function *> FunctionsManager::getProgramConstructors(void) const {
   return s;
 }
 
+Function *FunctionsManager::newFunction(const std::string &name,
+                                        FunctionType &signature) {
+
+  /*
+   * Get the function
+   */
+  auto r = this->program.getOrInsertFunction(name, &signature);
+  auto newFunction = cast<Function>(r.getCallee());
+  if (newFunction == nullptr) {
+    errs() << "NOELLE: FunctionsManager::newFunction: ERROR = function \""
+           << name << "\" cannot be created\n";
+    abort();
+  }
+
+  /*
+   * Check if the function existed before
+   */
+  if (!newFunction->empty()) {
+    errs() << "NOELLE: FunctionsManager::newFunction: ERROR = function \""
+           << name << "\" already existed\n";
+    abort();
+  }
+
+  return newFunction;
+}
+
 } // namespace llvm::noelle
