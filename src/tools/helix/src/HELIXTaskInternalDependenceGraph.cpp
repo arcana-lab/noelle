@@ -23,10 +23,10 @@
 #include "HELIXTask.hpp"
 #include <set>
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 static void constructEdgesFromUseDefs(PDG *pdg);
+
 static void constructEdgesFromControlForFunction(
     PDG *pdg,
     Function &F,
@@ -54,16 +54,27 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
 
   auto copyEdgeUsingTaskClonedValues =
       [&](DGEdge<Value> *originalEdge) -> void {
-    DGEdge<Value> edgeToPointToClones(*originalEdge);
+    DGEdge<Value> edgeToPointToClones{ *originalEdge };
 
-    // Loop carry dependencies will be recomputed
+    /*
+     * Loop carry dependencies will be recomputed
+     */
     edgeToPointToClones.setLoopCarried(false);
 
-    edgeToPointToClones.setNodePair(
-        taskFunctionDG->fetchNode(helixTask->getCloneOfOriginalInstruction(
-            cast<Instruction>(originalEdge->getOutgoingT()))),
-        taskFunctionDG->fetchNode(helixTask->getCloneOfOriginalInstruction(
-            cast<Instruction>(originalEdge->getIncomingT()))));
+    /*
+     * Add the edge to the task internal dependence graph
+     */
+    auto cloneOutgoingInst = helixTask->getCloneOfOriginalInstruction(
+        cast<Instruction>(originalEdge->getOutgoingT()));
+    assert(cloneOutgoingInst != nullptr);
+    auto cloneIncomingInst = helixTask->getCloneOfOriginalInstruction(
+        cast<Instruction>(originalEdge->getIncomingT()));
+    assert(cloneIncomingInst != nullptr);
+    auto cloneOutgoingNode = taskFunctionDG->fetchNode(cloneOutgoingInst);
+    assert(cloneOutgoingNode != nullptr);
+    auto cloneIncomingNode = taskFunctionDG->fetchNode(cloneIncomingInst);
+    assert(cloneIncomingNode != nullptr);
+    edgeToPointToClones.setNodePair(cloneOutgoingNode, cloneIncomingNode);
     taskFunctionDG->copyAddEdge(edgeToPointToClones);
   };
 
@@ -215,3 +226,5 @@ static void constructEdgesFromControlForFunction(
     }
   }
 }
+
+} // namespace llvm::noelle

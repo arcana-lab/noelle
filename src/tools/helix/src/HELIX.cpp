@@ -142,6 +142,19 @@ bool HELIX::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
 bool HELIX::apply(LoopDependenceInfo *LDI, Heuristics *h) {
 
   /*
+   * Print the LDI
+   */
+  if (this->verbose != Verbosity::Disabled) {
+    auto prefixStringWithIndentation = std::string{ this->prefixString };
+    prefixStringWithIndentation.append("  ");
+    this->printSequentialCode(
+        errs(),
+        prefixStringWithIndentation,
+        LDI,
+        DOALL::getSCCsThatBlockDOALLToBeApplicable(LDI, this->noelle));
+  }
+
+  /*
    * If a task has not been defined, create such a task from the
    * loop dependence info of the original function's loop
    * Otherwise, add synchronization to the already defined task
@@ -181,61 +194,6 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
    */
   if (this->verbose != Verbosity::Disabled) {
     errs() << this->prefixString << "Start the parallelization\n";
-
-    /*
-     * Print the sequential SCCs that will create sequential segments.
-     */
-    auto nonDOALLSCCs =
-        DOALL::getSCCsThatBlockDOALLToBeApplicable(LDI, this->noelle);
-    if (this->verbose >= Verbosity::Maximal) {
-      if (nonDOALLSCCs.size() > 0) {
-        errs()
-            << this->prefixString << "  There are " << nonDOALLSCCs.size()
-            << " SCCs that have loop-carried dependences that cannot be broken\n";
-      }
-
-      for (auto scc : nonDOALLSCCs) {
-
-        /*
-         * Fetch the SCC metadata.
-         */
-        auto sccInfo = sccManager->getSCCAttrs(scc);
-        assert(sccInfo != nullptr);
-
-        /*
-         * The current SCC needs to create a sequential segment.
-         */
-        // errs() << "HELIX:     SCC:\n";
-        // scc->printMinimal(errs(), "HELIX:       ") ;
-        errs() << this->prefixString << "    Loop-carried dependences\n";
-        sccManager->iterateOverLoopCarriedDependences(
-            scc,
-            [this](DGEdge<Value> *dep) -> bool {
-              auto fromInst = dep->getOutgoingT();
-              auto toInst = dep->getIncomingT();
-              errs() << this->prefixString << "      " << *fromInst << " ---> "
-                     << *toInst;
-
-              /*
-               * Control dependences.
-               */
-              if (dep->isControlDependence()) {
-                errs() << " control\n";
-                return false;
-              }
-
-              /*
-               * Data dependences.
-               */
-              if (dep->isMemoryDependence()) {
-                errs() << " via memory\n";
-              } else {
-                errs() << " via variable\n";
-              }
-              return false;
-            });
-      }
-    }
 
     /*
      * Print the prologue

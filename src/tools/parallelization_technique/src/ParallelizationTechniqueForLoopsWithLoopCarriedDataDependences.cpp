@@ -153,4 +153,105 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
   return;
 }
 
+void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
+    printSequentialCode(raw_ostream &stream,
+                        const std::string &prefixString,
+                        LoopDependenceInfo *LDI,
+                        const std::set<SCC *> &sequentialSCCs) {
+
+  /*
+   * Fetch the sequential SCCs.
+   */
+  if (sequentialSCCs.size() > 0) {
+    stream
+        << prefixString << "There are " << sequentialSCCs.size()
+        << " SCCs that have loop-carried dependences that cannot be broken\n";
+  }
+
+  /*
+   * Print the sequential SCCs.
+   */
+  auto sccManager = LDI->getSCCManager();
+  for (auto scc : sequentialSCCs) {
+    stream << prefixString << "  SCC:\n";
+
+    /*
+     * Fetch the SCC metadata.
+     */
+    auto sccInfo = sccManager->getSCCAttrs(scc);
+    assert(sccInfo != nullptr);
+
+    /*
+     * The current SCC is sequential.
+     */
+    stream << prefixString << "    Loop-carried dependences\n";
+    sccManager->iterateOverLoopCarriedDependences(
+        scc,
+        [this, &stream, &prefixString](DGEdge<Value> *dep) -> bool {
+          auto fromInst = dep->getOutgoingT();
+          auto toInst = dep->getIncomingT();
+          stream << prefixString << "      " << *fromInst << " ---> "
+                 << *toInst;
+
+          /*
+           * Control dependences.
+           */
+          if (dep->isControlDependence()) {
+            stream << " control\n";
+            return false;
+          }
+
+          /*
+           * Data dependences.
+           */
+          if (dep->isMemoryDependence()) {
+            stream << " via memory\n";
+          } else {
+            stream << " via variable\n";
+          }
+          return false;
+        });
+
+    /*
+     * Print the content of the SCC.
+     */
+    auto prefixStringWithIndentation = std::string(prefixString);
+    prefixStringWithIndentation.append("    ");
+    scc->print(errs(), prefixStringWithIndentation);
+  }
+
+  /*
+   * Print loop-carried dependences.
+   */
+  stream << prefixString
+         << "Next are all loop-carried dependences of the loop\n";
+  auto loopDG = LDI->getLoopDG();
+  auto loopDependences = loopDG->getSortedDependences();
+  for (auto dep : loopDependences) {
+    if (!dep->isLoopCarriedDependence()) {
+      continue;
+    }
+    auto fromInst = dep->getOutgoingT();
+    auto toInst = dep->getIncomingT();
+    stream << prefixString << "  " << *fromInst << " ---> " << *toInst;
+
+    /*
+     * Control dependences.
+     */
+    if (dep->isControlDependence()) {
+      stream << " control\n";
+      continue;
+    }
+
+    /*
+     * Data dependences.
+     */
+    if (dep->isMemoryDependence()) {
+      stream << " via memory\n";
+    } else {
+      stream << " via variable\n";
+    }
+  }
+}
+
 } // namespace llvm::noelle
