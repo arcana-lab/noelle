@@ -29,7 +29,6 @@ HELIX::HELIX(Noelle &n, bool forceParallelization)
   : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{ n,
                                                                     forceParallelization },
     loopCarriedLoopEnvironmentBuilder{ nullptr },
-    taskFunctionDG{ nullptr },
     lastIterationExecutionBlock{ nullptr },
     enableInliner{ true },
     prefixString{ "HELIX: " } {

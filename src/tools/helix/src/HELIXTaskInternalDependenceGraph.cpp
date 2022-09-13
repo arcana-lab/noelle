@@ -45,10 +45,10 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
   /*
    * Create a new PDG for the internals of the task.
    */
-  this->taskFunctionDG = new PDG(*taskBody);
-  constructEdgesFromUseDefs(this->taskFunctionDG);
+  auto taskFunctionDG = new PDG(*taskBody);
+  constructEdgesFromUseDefs(taskFunctionDG);
 
-  constructEdgesFromControlForFunction(this->taskFunctionDG,
+  constructEdgesFromControlForFunction(taskFunctionDG,
                                        *taskBody,
                                        postDomTreeOfTaskFunction);
 
@@ -60,13 +60,11 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
     edgeToPointToClones.setLoopCarried(false);
 
     edgeToPointToClones.setNodePair(
-        this->taskFunctionDG->fetchNode(
-            helixTask->getCloneOfOriginalInstruction(
-                cast<Instruction>(originalEdge->getOutgoingT()))),
-        this->taskFunctionDG->fetchNode(
-            helixTask->getCloneOfOriginalInstruction(
-                cast<Instruction>(originalEdge->getIncomingT()))));
-    this->taskFunctionDG->copyAddEdge(edgeToPointToClones);
+        taskFunctionDG->fetchNode(helixTask->getCloneOfOriginalInstruction(
+            cast<Instruction>(originalEdge->getOutgoingT()))),
+        taskFunctionDG->fetchNode(helixTask->getCloneOfOriginalInstruction(
+            cast<Instruction>(originalEdge->getIncomingT()))));
+    taskFunctionDG->copyAddEdge(edgeToPointToClones);
   };
 
   /*
@@ -136,18 +134,18 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
           std::unordered_set<LoadInst *> &loads) -> void {
     for (auto store : stores) {
       for (auto other : stores) {
-        this->taskFunctionDG->addEdge(store, other)
+        taskFunctionDG->addEdge(store, other)
             ->setMemMustType(true, true, DataDependenceType::DG_DATA_WAW);
-        this->taskFunctionDG->addEdge(other, store)
+        taskFunctionDG->addEdge(other, store)
             ->setMemMustType(true, true, DataDependenceType::DG_DATA_WAW);
       }
     }
 
     for (auto store : stores) {
       for (auto load : loads) {
-        this->taskFunctionDG->addEdge(store, load)
+        taskFunctionDG->addEdge(store, load)
             ->setMemMustType(true, true, DataDependenceType::DG_DATA_RAW);
-        this->taskFunctionDG->addEdge(load, store)
+        taskFunctionDG->addEdge(load, store)
             ->setMemMustType(true, true, DataDependenceType::DG_DATA_WAR);
       }
     }
@@ -162,15 +160,7 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
                                         spill->environmentLoads);
   }
 
-  // if (this->verbose >= Verbosity::Maximal) {
-  //   auto sccdag = new SCCDAG(taskFunctionDG);
-  //   DGPrinter::writeGraph<PDG, Value>("technique-task-fdg-" +
-  //   std::to_string(LDI->getID()) + ".dot", taskFunctionDG);
-  //   DGPrinter::writeGraph<SCCDAG, SCC>("technique-task-sccdag-" +
-  //   std::to_string(LDI->getID()) + ".dot", sccdag); delete sccdag;
-  // }
-
-  return this->taskFunctionDG;
+  return taskFunctionDG;
 }
 
 /*
