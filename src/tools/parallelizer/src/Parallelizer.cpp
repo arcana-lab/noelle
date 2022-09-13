@@ -130,6 +130,7 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
     auto newForest = par.organizeLoopsInTheirNestingForest(*newLoops);
     auto newLoopNode = newForest->getInnermostLoopThatContains(l->getHeader());
     assert(newLoopNode != nullptr);
+    auto lto = LDI->getLoopTransformationsManager();
     auto newLDI = new LoopDependenceInfo(
         taskFunctionDG,
         newLoopNode,
@@ -137,9 +138,10 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
         *DS,
         SE,
         par.getCompilationOptionsManager()->getMaximumNumberOfCores(),
-        par.canFloatsBeConsideredRealNumbers());
-    newLDI->copyParallelizationOptionsFrom(LDI);
-
+        par.canFloatsBeConsideredRealNumbers(),
+        lto->getOptimizationsEnabled(),
+        false,
+        lto->getChunkSize());
     codeModified = helix.apply(newLDI, h);
     usedTechnique = &helix;
 
