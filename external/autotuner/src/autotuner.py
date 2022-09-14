@@ -164,7 +164,7 @@ class autotuneProgram(MeasurementInterface):
     conf = confArg.copy()
     startLoopIndex = 0
     isLoopEnabled = False
-    for key in conf:
+    for key in confArg:
       value = conf[key]
       if ((key % 9) == 0):
         startLoopIndex = key
