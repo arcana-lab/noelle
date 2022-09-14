@@ -37,3 +37,4 @@ patchInstallDir "noelle-pdg-stats" ;
 patchInstallDir "noelle-loop-stats" ;
 patchInstallDir "noelle-parallelization-planner" ;
 patchInstallDir "noelle-parallelizer-loop" ;
+patchInstallDir "noelle-parallelizer-autotuner" ;

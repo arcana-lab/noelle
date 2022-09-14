@@ -27,6 +27,7 @@ techniqueIndexConverter = [Technique.DOALL, Technique.HELIX, Technique.DSWP]
 
 class autotuneProgram(MeasurementInterface):
   ranges = None
+  loopIDs = None
   confFile = None
   executionTimeFile = None
   exploredConfs = {}
@@ -34,7 +35,7 @@ class autotuneProgram(MeasurementInterface):
   def getArgs(self):
     # Read the range of each dimension of the design space
     spaceFile = os.environ['autotunerSPACE_FILE']
-    self.ranges = self.readSpaceFile(spaceFile)
+    self.ranges, self.loopIDs = self.readSpaceFile(spaceFile)
 
     # Get autotuner.info
     self.confFile = os.environ['INDEX_FILE']
@@ -56,22 +57,27 @@ class autotuneProgram(MeasurementInterface):
 
 
   def readSpaceFile(self, pathToFile):
-    ranges = []
+    ranges = {}
+    loopIDs = []
     with open(str(pathToFile), 'r') as f:
       for line in f.readlines():
-        for elem in line.split():
-          ranges.append(int(elem))
+        loopID = int(line.split()[0])
+        loopIDs.append(loopID)
+        ranges[loopID] = []
+        for elem in line.split()[1:]:
+          ranges[loopID].append(int(elem))
       f.close()
   
-    return ranges
+    return ranges, loopIDs
 
 
   def writeConfFile(self, pathToFile, conf):
-    strToWrite = ''
-    for key in sorted(conf.keys()):
-      if ((key % 9) == 0) and (key != 0):
-        strToWrite += '\n'
-      strToWrite += str(conf[key]) + ' '
+    strToWrite = ""
+    for loopID in conf:
+      strToWrite += str(loopID)
+      for elem in conf[loopID]:
+        strToWrite += " " + str(elem)
+      strToWrite += "\n"
 
     with open(str(pathToFile), 'w') as f:
       f.write(strToWrite)
@@ -85,70 +91,71 @@ class autotuneProgram(MeasurementInterface):
     Define the search space by creating a
     ConfigurationManipulator
     """
-    sys.stderr.write('AUTOTUNER:   Create the design space\n')
+    sys.stderr.write('AUTOTUNER: create the design space\n')
 
     self.getArgs()
 
     # Describe the design space to opentuner
     param = 0
     manipulator = ConfigurationManipulator()
-    for elem in self.ranges:
-      # Check if the current dimension has a cardinality higher than 1
-      if elem > 1:
+    for loopID in self.loopIDs:
+      for elem in self.ranges[loopID]:
+        # Check if the current dimension has a cardinality higher than 1
+        if (elem > 1):
 
-        # Check the type of the parameter
-        paramType = param % 9
+          # Check the type of the parameter
+          paramType = param % 9
 
-        # Create the parameter
-        if paramType == 0:
-          # Should the loop be parallelized?
-          openTuner_param = SwitchParameter(param, elem)
-          #openTuner_param = BooleanParameter(param)
+          # Create the parameter
+          if paramType == 0:
+            # Should the loop be parallelized?
+            openTuner_param = SwitchParameter(param, elem)
+            #openTuner_param = BooleanParameter(param)
 
-        elif paramType == 1:
+          elif paramType == 1:
 
-          # Unroll factor
-          openTuner_param = IntegerParameter(param, 0, elem - 1)
+            # Unroll factor
+            openTuner_param = IntegerParameter(param, 0, elem - 1)
 
-        elif paramType == 2:
+          elif paramType == 2:
 
-          # Peel factor
-          openTuner_param = IntegerParameter(param, 0, elem - 1)
+            # Peel factor
+            openTuner_param = IntegerParameter(param, 0, elem - 1)
 
-        elif paramType == 3:
+          elif paramType == 3:
 
-          # Parallelization technique
-          openTuner_param = IntegerParameter(param, 0, elem - 1) # ED: should this be a SwitchParameter?
+            # Parallelization technique
+            openTuner_param = IntegerParameter(param, 0, elem - 1) # ED: should this be a SwitchParameter?
 
-        elif paramType == 4:
+          elif paramType == 4:
 
-          # Number of cores to dedicate to the current loop
-          openTuner_param = IntegerParameter(param, 0, elem - 1)
+            # Number of cores to dedicate to the current loop
+            openTuner_param = IntegerParameter(param, 0, elem - 1)
 
-        elif paramType == 5:
+          elif paramType == 5:
 
-          # DOALL parameter: chunk factor
-          openTuner_param = IntegerParameter(param, 0, elem - 1)
+            # DOALL parameter: chunk factor
+            openTuner_param = IntegerParameter(param, 0, elem - 1)
 
-        elif paramType == 6:
+          elif paramType == 6:
 
-          # HELIX parameter: should we fix the maximum number of sequential segments?
-          openTuner_param = SwitchParameter(param, elem)
+            # HELIX parameter: should we fix the maximum number of sequential segments?
+            openTuner_param = SwitchParameter(param, elem)
 
-        elif paramType == 7:
+          elif paramType == 7:
 
-          # HELIX parameter: maximum number of sequential segments
-          openTuner_param = IntegerParameter(param, 0, elem - 1)
+            # HELIX parameter: maximum number of sequential segments
+            openTuner_param = IntegerParameter(param, 0, elem - 1)
 
-        elif paramType == 8:
+          elif paramType == 8:
 
-          # DSWP parameter: should we use queue packing?
-          openTuner_param = SwitchParameter(param, elem)
+            # DSWP parameter: should we use queue packing?
+            openTuner_param = SwitchParameter(param, elem)
 
-        # Share the parameter to OpenTuner
-        manipulator.add_parameter(openTuner_param)
+          # Share the parameter to OpenTuner
+          manipulator.add_parameter(openTuner_param)
 
-      param += 1
+        param += 1
 
     return manipulator
 
@@ -184,17 +191,33 @@ class autotuneProgram(MeasurementInterface):
   def getExpandedConf(self, confArg):
     conf = confArg.copy()
     index = 0
-    for elem in self.ranges:
-      if (index not in conf):
-        conf[index] = 0
-      index += 1
+    for loopID in self.loopIDs:
+      for elem in range(0, len(self.ranges[loopID])):
+        if (index not in conf):
+          conf[index] = 0
+        index += 1
 
     return conf
  
 
-  def myCompile(self, confExpanded):
+  def getConfWithLoopIDs(self, confArg):
+    conf = {}
+    for loopID in self.loopIDs:
+      conf[loopID] = []
+
+    loopIDIndex = -1
+    for key in sorted(confArg.keys()):
+      if ((key % 9) == 0):
+        loopIDIndex += 1
+      loopID = self.loopIDs[loopIDIndex]
+      conf[loopID].append(confArg[key])
+
+    return conf
+ 
+
+  def myCompile(self, conf):
     # Write autotuner.info file
-    self.writeConfFile(self.confFile, confExpanded)
+    self.writeConfFile(self.confFile, conf)
 
     return os.system(thisPath + '/../scripts/compile')
 
@@ -230,7 +253,9 @@ class autotuneProgram(MeasurementInterface):
       return Result(time = time)
     
     # Compile
-    compileRetCode = self.myCompile(confExpanded)
+    confWithLoopIDs = self.getConfWithLoopIDs(confExpanded)
+    sys.stderr.write('AUTOTUNER: exploring conf ' + str(confWithLoopIDs) + '\n')
+    compileRetCode = self.myCompile(confWithLoopIDs)
     if (compileRetCode != 0):
       time = float('inf')
       return Result(time = time)
@@ -264,7 +289,8 @@ class autotuneProgram(MeasurementInterface):
     confNormalized = self.getNormalizedConf(conf)
     confExpanded = self.getExpandedConf(confNormalized)
     confExpandedAsStr = self.getConfAsStr(confExpanded)
-    compileRetCode = self.myCompile(confExpanded)
+    confWithLoopIDs = self.getConfWithLoopIDs(confExpanded)
+    compileRetCode = self.myCompile(confWithLoopIDs)
     if (compileRetCode != 0):
       sys.stderr.write("AUTOTUNER: final configuration " + confExpandedAsStr + " did not compile.\nAbort.")
       sys.exit(1)

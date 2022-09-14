@@ -1,0 +1,128 @@
+#!/bin/bash -e
+
+installDir
+
+# Parse arguments
+for arg in "$@"; do
+  case ${arg} in
+    --parallelizer-args=*)
+      parallelizerArgs="${arg#*=}"
+      shift # past argument=value
+      ;;
+    --libs=*)
+      libs="${arg#*=}"
+      shift # past argument=value
+      ;;
+    --input=*)
+      inputToRun="${arg#*=}"
+      shift # past argument=value
+      ;;
+    --autotuner-time=*)
+      autotunerTime="${arg#*=}"
+      shift # past argument=value
+      ;;
+     --autotuner-numconf=*)
+      autotunerNumConf="${arg#*=}"
+      shift # past argument=value
+      ;;
+    -*|--*)
+      echo "Unknown option ${arg}"
+      exit 1
+      ;;
+    *)
+      ;;
+  esac
+done
+
+# Get additional arguments
+if [ ${inputToRun} == "" ] ; then
+  echo "--input cannot be empty. Abort." ;
+  exit 1 ;
+fi
+
+if [ ${parallelizerArgs} == "" ] ; then
+  echo "--parallelizer-args cannot be empty. Abort." ;
+  exit 1 ;
+fi
+IFS=' ' read -ra parallelizerArgsArray <<< "${parallelizerArgs}" ;
+inputbc="${parallelizerArgsArray[0]}" ;
+outputbc="${parallelizerArgsArray[2]}" ;
+
+# Remove previous conf and space file (if any)
+autotunerConf="autotuner.info" ;
+rm -f ${autotunerConf} ;
+autotunerSpace="autotuner_space.info" ;
+rm -f ${autotunerSpace} ;
+
+# Add loop ID to all loops
+cmd="noelle-meta-loop-embed ${inputbc} -o ${inputbc}"
+echo ${cmd} ;
+eval ${cmd} ;
+
+# Generate autotuner_space.info 
+cmd="noelle-load -load ${installDir}/lib/AutotunerSearchSpace.so -autotunersearchspace ${inputbc} -disable-output" ;
+echo ${cmd} ;
+eval ${cmd} ;
+
+# Sanity check for existance of autotuner_space.info file
+if ! test -f ${autotunerSpace} ; then
+  echo "ERROR: no ${autotunerSpace} found. Abort." ;
+  exit 1 ;
+fi
+
+# Adjust search space with DOALL only loops
+cmd="noelle-parallel-load -load ${installDir}/lib/AutotunerDoallFilter.so -autotunerdoallfilter ${inputbc} -disable-output" ;
+echo ${cmd} ;
+eval ${cmd} ;
+
+# Export the remaining environment variables for the autotuner
+export autotunerPARALLELIZED_BINARY="binaryToRun" ;
+export autotunerEXECUTION_TIME="executionTime.txt" ;
+export autotunerSPACE_FILE="${autotunerSpace}" ;
+export INDEX_FILE="${autotunerConf}" ; # We need to export this env var to force loop parallelization in noelle
+export autotunerINSTALL_DIR="${installDir}" ;
+export autotunerARGS="${parallelizerArgs}" ;
+export autotunerINPUT="${inputToRun}" ;
+export autotunerINPUTBC="${inputbc}" ;
+export autotunerOUTPUTBC="${outputbc}" ;
+export autotunerLIBS="${libs}" ;
+
+# Setup python virtualEnv
+source ${installDir}/autotuner/source-me-to-setup-python-virtual-environment ;
+
+# Filter search space by trying to parallelize DOALL loops one by one
+# if they don't speedup compared to the baseline, then disable them
+# (note: modifies autotuner_space.info)
+cmd="python ${installDir}/autotuner/scripts/filter.py" ;
+echo ${cmd} ;
+eval ${cmd} ;
+
+# Execute autotuner only if space file is not empty
+if [ -s ${autotunerSpace} ] ; then
+  echo "AUTOTUNER: space file ${autotunerSpace} contains:" ;
+  echo `cat ${autotunerSpace}` ;
+
+  # Set the command to execute
+  cmd="python ${installDir}/autotuner/src/autotuner.py --no-dups --parallelism=1" ;
+
+  # Get autotuner limits
+  if [ "${autotunerTime}" != "" ] ; then
+    cmd="${cmd} --stop-after=${autotunerTime}" ;
+  fi
+
+  if [ "${autotunerNumConf}" != "" ] ; then
+    cmd="${cmd} --test-limit=${autotunerNumConf}" ;
+  fi
+
+  # Print command we are about to execute
+  echo ${cmd} ;
+
+  # Execute
+  eval ${cmd} ;
+
+else
+  echo "AUTOTUNER: space file ${autotunerSpace} is empty. We will not run the autotuner. Bye." ;
+fi
+
+# Deactivate python virtualEnv
+deactivate ;

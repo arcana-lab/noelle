@@ -191,14 +191,15 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
       }
 
       /*
-       * Safety code.
+       * Safety code. TODO: remove
        */
-      if (currentLoopIndex >= loopThreads.size()) {
-        errs()
-            << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than "
-            << loopThreads.size() << " loops available in the program\n";
-        abort();
-      }
+      // if (currentLoopIndex >= loopThreads.size()) {
+      //  errs()
+      //      << "ERROR: the 'INDEX_FILE' file isn't correct. There are more
+      //      than "
+      //      << loopThreads.size() << " loops available in the program\n";
+      //  abort();
+      //}
 
       /*
        * The current loop needs to be considered as specified by the user.
@@ -267,13 +268,14 @@ LoopDependenceInfo *Noelle::getLoop(
   auto loopIndex = loopIDOpt.value();
 
   /*
-   * Ensure loop configurables exist for this loop index
+   * Ensure loop configurables exist for this loop index TODO: remove
    */
-  if (loopIndex >= this->loopThreads.size()) {
-    errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than "
-           << this->loopThreads.size() << " loops available in the program\n";
-    abort();
-  }
+  // if (loopIndex >= this->loopThreads.size()) {
+  //  errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than
+  //  "
+  //         << this->loopThreads.size() << " loops available in the program\n";
+  //  abort();
+  //}
 
   auto maximumNumberOfCoresForTheParallelization = this->loopThreads[loopIndex];
   assert(
@@ -570,14 +572,16 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
       }
 
       /*
-       * Safety code.
+       * Safety code. TODO: remove
        */
-      if (this->hasReadFilterFile && currentLoopIndex >= loopThreads.size()) {
-        errs()
-            << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than "
-            << loopThreads.size() << " loops available in the program\n";
-        abort();
-      }
+      // if (this->hasReadFilterFile && currentLoopIndex >= loopThreads.size())
+      // {
+      //  errs()
+      //      << "ERROR: the 'INDEX_FILE' file isn't correct. There are more
+      //      than "
+      //      << loopThreads.size() << " loops available in the program\n";
+      //  abort();
+      //}
 
       /*
        * The current loop needs to be considered as specified by the user.
@@ -801,19 +805,19 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
    * Get file number of lines.
    * Needed to allocate space for every loop data.
    */
-  auto numOfLines = 0;
-  std::string line;
-  std::ifstream fileStream(this->filterFileName);
-  while (std::getline(fileStream, line)) {
-    numOfLines++;
-  }
+  // auto numOfLines = 0;
+  // std::string line;
+  // std::ifstream fileStream(this->filterFileName);
+  // while (std::getline(fileStream, line)) {
+  //  numOfLines++;
+  //}
 
   /*
    * Pre-allocate loop data
    */
-  this->loopThreads.resize(numOfLines);
-  this->techniquesToDisable.resize(numOfLines);
-  this->DOALLChunkSize.resize(numOfLines);
+  // this->loopThreads.resize(numOfLines);
+  // this->techniquesToDisable.resize(numOfLines);
+  // this->DOALLChunkSize.resize(numOfLines);
 
   /*
    * Read the file.
@@ -832,7 +836,7 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
      * Read loop ID
      */
     auto loopID = this->fetchTheNextValue(indexString);
-    assert(loopID < numOfLines);
+    // assert(loopID < numOfLines);
 
     /*
      * Should the loop be parallelized?

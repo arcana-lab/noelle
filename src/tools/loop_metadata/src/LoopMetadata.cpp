@@ -70,19 +70,38 @@ bool LoopMetadataPass::setIDs(Module &M) {
   auto loopStructures = getLoopStructuresOnly(M);
 
   /*
-   * Initial scan of possible loop IDs.
+   * Initial scan of current loop IDs.
    * Get the max loopID to start assigning
    * new loop IDs from there.
    */
-  uint64_t maxLoopID = 0;
+  std::set<uint64_t> currLoopIDs;
   for (auto loopStructure : loopStructures) {
     if (loopStructure->doesHaveID()) {
       auto loopIDOpt = loopStructure->getID();
       assert(loopIDOpt);
       uint64_t currLoopID = loopIDOpt.value();
-      maxLoopID = std::max(currLoopID, maxLoopID);
+      currLoopIDs.insert(currLoopID);
     }
   }
+
+  /*
+   * Get the max loopID to start assigning
+   * new loop IDs from there.
+   */
+  uint64_t maxLoopID = 0;
+  if (!currLoopIDs.empty()) {
+    maxLoopID = *(currLoopIDs.rbegin());
+  }
+
+  /*
+   * Sanity check: we assume that loop IDs
+   * got from 0 to max loop ID without interruption.
+   * Let's test this is true.
+   */
+  // for (uint64_t i = 0; i <= maxLoopID; ++i){
+  //  currLoopIDs.erase(i);
+  //}
+  // assert(currLoopIDs.size() == 0);
 
   /*
    * Set ID for all remaining loops in the module.

@@ -69,7 +69,7 @@ test_parallelized.bc: baseline_with_metadata.bc
 	noelle-parallelizer $^ -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
 
 test_parallelized_autotuned.bc: baseline_with_metadata.bc input.txt
-	export autotunerCPP="$(CPP)" ; export autotunerOPT_LEVEL="$(OPT_LEVEL)" ; export autotunerLIBS="$(LIBS)" ; export autotunerINPUT="input.txt" ; export autotunerINPUTBC="$<" ; export autotunerOUTPUTBC="$@" ; export autotunerTIME="$(TIME)" ; export autotunerNUM_CONF="$(NUM_CONF)" ; noelle-parallelizer-autotuner $< -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
+	noelle-parallelizer-autotuner --parallelizer-args="$< -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)" --libs="$(LIBS)" --input="input.txt" --autotuner-time="$(TIME)" --autotuner-numconf="$(NUM_CONF)"
 
 baseline.bc: test.bc
 	$(CPP) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
