@@ -190,8 +190,7 @@ bool Noelle::runOnModule(Module &M) {
 
 // Next there is code to register your pass to "opt"
 char Noelle::ID = 0;
-static RegisterPass<Noelle> X("parallelization",
-                              "Computing the Program Dependence Graph");
+static RegisterPass<Noelle> X("noelle", "The NOELLE framework");
 
 // Next there is code to register your pass to "clang"
 static Noelle *_PassMaker = NULL;

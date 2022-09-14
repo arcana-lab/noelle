@@ -72,6 +72,28 @@ StayConnectedNestedLoopForest::StayConnectedNestedLoopForest(
   return;
 }
 
+uint64_t StayConnectedNestedLoopForest::getNumberOfLoops(void) const {
+  uint64_t t = 0;
+
+  /*
+   * Iterate over the trees
+   */
+  for (auto tree : this->getTrees()) {
+
+    /*
+     * Count the root of the tree
+     */
+    t++;
+
+    /*
+     * Count all nodes but the root of the tree
+     */
+    t += tree->getNumberOfSubLoops();
+  }
+
+  return t;
+}
+
 void StayConnectedNestedLoopForest::addChildrenToTree(
     StayConnectedNestedLoopForestNode *root,
     std::unordered_map<Function *, DominatorSummary *> const &doms,

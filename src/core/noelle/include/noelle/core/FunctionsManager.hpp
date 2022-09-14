@@ -36,6 +36,8 @@ public:
 
   bool isTheLibraryFunctionPure(Function *libraryFunction);
 
+  Function *newFunction(const std::string &name, FunctionType &signature);
+
   CallGraph *getProgramCallGraph(void);
 
 private:

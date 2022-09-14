@@ -55,6 +55,11 @@ protected:
    * Partition SCCDAG.
    */
   void partitionSCCDAG(LoopDependenceInfo *LDI);
+
+  void printSequentialCode(raw_ostream &stream,
+                           const std::string &prefixString,
+                           LoopDependenceInfo *LDI,
+                           const std::set<SCC *> &sequentialSCCs);
 };
 
 } // namespace llvm::noelle

@@ -27,10 +27,12 @@ namespace llvm::noelle {
 ParallelizationTechnique::ParallelizationTechnique(Noelle &n)
   : noelle{ n },
     tasks{},
-    envBuilder{ nullptr } {
+    envBuilder{ nullptr },
+    taskSignature{ nullptr },
+    entryPointOfParallelizedLoop{ nullptr },
+    exitPointOfParallelizedLoop{ nullptr },
+    numTaskInstances{ 0 } {
   this->verbose = n.getVerbosity();
-
-  return;
 }
 
 Value *ParallelizationTechnique::getEnvArray(void) const {
@@ -53,8 +55,6 @@ void ParallelizationTechnique::initializeEnvironmentBuilder(
   std::set<uint32_t> emptySet{};
 
   this->initializeEnvironmentBuilder(LDI, nonReducableVars, emptySet);
-
-  return;
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder(
@@ -69,8 +69,6 @@ void ParallelizationTechnique::initializeEnvironmentBuilder(
     return false;
   };
   this->initializeEnvironmentBuilder(LDI, isReducable);
-
-  return;
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder(
@@ -82,8 +80,6 @@ void ParallelizationTechnique::initializeEnvironmentBuilder(
   this->initializeEnvironmentBuilder(LDI,
                                      shouldThisVariableBeReduced,
                                      shouldThisVariableBeSkipped);
-
-  return;
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder(
@@ -125,8 +121,6 @@ void ParallelizationTechnique::initializeEnvironmentBuilder(
    * Create the users of the environment: one user per task.
    */
   this->initializeLoopEnvironmentUsers();
-
-  return;
 }
 
 void ParallelizationTechnique::initializeLoopEnvironmentUsers(void) {
@@ -156,8 +150,6 @@ void ParallelizationTechnique::initializeLoopEnvironmentUsers(void) {
         "noelle.environment_variable.pointer");
     envUser->setEnvironmentArray(bitcastInst);
   }
-
-  return;
 }
 
 void ParallelizationTechnique::allocateEnvironmentArray(
@@ -182,8 +174,6 @@ void ParallelizationTechnique::allocateEnvironmentArray(
   IRBuilder<> builder(&*firstI);
   envBuilder->allocateEnvironmentArray(builder);
   envBuilder->generateEnvVariables(builder);
-
-  return;
 }
 
 void ParallelizationTechnique::populateLiveInEnvironment(
@@ -236,15 +226,13 @@ void ParallelizationTechnique::populateLiveInEnvironment(
                     "noelle.environment_variable.live_in.store_pointer",
                     std::to_string(envID));
   }
-
-  return;
 }
 
 BasicBlock *ParallelizationTechnique::
     performReductionToAllReducableLiveOutVariables(
         LoopDependenceInfo *LDI,
         Value *numberOfThreadsExecuted) {
-  auto builder = new IRBuilder<>(this->entryPointOfParallelizedLoop);
+  IRBuilder<> builder{ this->entryPointOfParallelizedLoop };
 
   /*
    * Fetch the loop headers.
@@ -294,8 +282,7 @@ BasicBlock *ParallelizationTechnique::
     /*
      * Get the accumulator.
      */
-    auto reducableOperation = producerSCCAttributes->getReductionOperation();
-    reducableBinaryOps[envID] = reducableOperation;
+    reducableBinaryOps[envID] = producerSCCAttributes->getReductionOperation();
 
     auto loopEntryProducerPHI =
         this->fetchLoopEntryPHIOfProducer(LDI, producer);
@@ -303,20 +290,15 @@ BasicBlock *ParallelizationTechnique::
         loopEntryProducerPHI->getBasicBlockIndex(loopPreHeader);
     auto initialValue = loopEntryProducerPHI->getIncomingValue(initValPHIIndex);
     initialValues[envID] =
-        castToCorrectReducibleType(*builder, initialValue, producer->getType());
+        castToCorrectReducibleType(builder, initialValue, producer->getType());
   }
 
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
       this->entryPointOfParallelizedLoop,
-      *builder,
+      builder,
       reducableBinaryOps,
       initialValues,
       numberOfThreadsExecuted);
-
-  /*
-   * Free the memory.
-   */
-  delete builder;
 
   /*
    * If reduction occurred, then all environment loads to propagate live outs
@@ -372,20 +354,19 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks(
   assert(this->tasks.size() == 0);
 
   /*
+   * Fetch the loop structure.
+   */
+  auto loopStructure = LDI->getLoopStructure();
+
+  /*
    * Fetch the loop headers.
    */
-  auto loopSummary = LDI->getLoopStructure();
-  auto loopPreHeader = loopSummary->getPreHeader();
+  auto loopPreHeader = loopStructure->getPreHeader();
 
   /*
    * Fetch the loop function.
    */
-  auto loopFunction = loopSummary->getFunction();
-
-  /*
-   * Fetch the loop structure.
-   */
-  auto loopStructure = LDI->getLoopStructure();
+  auto loopFunction = loopStructure->getFunction();
 
   /*
    * Setup original loop and task with functions and basic blocks for wiring
@@ -395,8 +376,7 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks(
       BasicBlock::Create(cxt, "", loopFunction);
   this->exitPointOfParallelizedLoop = BasicBlock::Create(cxt, "", loopFunction);
 
-  this->numTaskInstances = taskStructs.size();
-  for (auto i = 0; i < numTaskInstances; ++i) {
+  for (auto i = 0; i < taskStructs.size(); ++i) {
     auto task = taskStructs[i];
     tasks.push_back(task);
 
@@ -429,8 +409,6 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks(
       builder.CreateBr(task->getExit());
     }
   }
-
-  return;
 }
 
 void ParallelizationTechnique::cloneSequentialLoop(LoopDependenceInfo *LDI,
@@ -439,14 +417,13 @@ void ParallelizationTechnique::cloneSequentialLoop(LoopDependenceInfo *LDI,
   assert(taskIndex < this->tasks.size());
 
   /*
-   * Fetch the program.
+   * Fetch the context of the program.
    */
-  auto program = this->noelle.getProgram();
+  auto &cxt = this->noelle.getProgramContext();
 
   /*
    * Fetch the task.
    */
-  auto &cxt = program->getContext();
   auto task = this->tasks[taskIndex];
 
   /*
@@ -473,8 +450,6 @@ void ParallelizationTechnique::cloneSequentialLoop(LoopDependenceInfo *LDI,
      */
     task->cloneAndAddBasicBlock(originBB, filter);
   }
-
-  return;
 }
 
 void ParallelizationTechnique::cloneSequentialLoopSubset(
@@ -483,11 +458,13 @@ void ParallelizationTechnique::cloneSequentialLoopSubset(
     std::set<Instruction *> subset) {
 
   /*
-   * Fetch the program.
+   * Fetch the context of the program.
    */
-  auto program = this->noelle.getProgram();
+  auto &cxt = this->noelle.getProgramContext();
 
-  auto &cxt = program->getContext();
+  /*
+   * Fetch the task.
+   */
   auto task = tasks[taskIndex];
 
   /*
@@ -746,10 +723,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
      */
     task->addInstruction(alloca, allocaClone);
   }
-  task->getTaskBody()->print(errs());
-  rootLoop->getFunction()->print(errs());
-
-  return;
 }
 
 void ParallelizationTechnique::generateCodeToLoadLiveInVariables(
@@ -803,8 +776,6 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables(
      */
     task->addLiveIn(producer, envLoad);
   }
-
-  return;
 }
 
 void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
@@ -1039,8 +1010,6 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
       delete taskDS;
     }
   }
-
-  return;
 }
 
 std::set<BasicBlock *> ParallelizationTechnique::
@@ -1249,8 +1218,6 @@ void ParallelizationTechnique::adjustDataFlowToUseClones(
     auto cloneI = task->getCloneOfOriginalInstruction(origI);
     this->adjustDataFlowToUseClones(cloneI, taskIndex);
   }
-
-  return;
 }
 
 void ParallelizationTechnique::adjustDataFlowToUseClones(Instruction *cloneI,
@@ -1348,8 +1315,6 @@ void ParallelizationTechnique::adjustDataFlowToUseClones(Instruction *cloneI,
       }
     }
   }
-
-  return;
 }
 
 void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
@@ -1412,7 +1377,6 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
      */
     auto producerClone = cast<PHINode>(
         task->getCloneOfOriginalInstruction(loopEntryProducerPHI));
-    assert(producerClone != nullptr);
 
     /*
      * Fetch the cloned pre-header index
@@ -1435,8 +1399,6 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
      */
     producerClone->setIncomingValue(incomingIndex, identityV);
   }
-
-  return;
 }
 
 PHINode *ParallelizationTechnique::fetchLoopEntryPHIOfProducer(
@@ -1581,8 +1543,6 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
     term->removeFromParent();
     builder.Insert(term);
   }
-
-  return;
 }
 
 void ParallelizationTechnique::doNestedInlineOfCalls(
@@ -1753,8 +1713,6 @@ void ParallelizationTechnique::
     auto adjustedStepValue = insertBlock.CreateMul(value, ptrSizeValue);
     clonedStepValueMap[iv] = adjustedStepValue;
   }
-
-  return;
 }
 
 float ParallelizationTechnique::computeSequentialFractionOfExecution(
@@ -1860,10 +1818,6 @@ void ParallelizationTechnique::dumpToFile(LoopDependenceInfo &LDI) {
   File.close();
 }
 
-ParallelizationTechnique::~ParallelizationTechnique() {
-  return;
-}
-
 BasicBlock *ParallelizationTechnique::getParLoopEntryPoint(void) const {
   return entryPointOfParallelizedLoop;
 }
@@ -1871,5 +1825,7 @@ BasicBlock *ParallelizationTechnique::getParLoopEntryPoint(void) const {
 BasicBlock *ParallelizationTechnique::getParLoopExitPoint(void) const {
   return exitPointOfParallelizedLoop;
 }
+
+ParallelizationTechnique::~ParallelizationTechnique() {}
 
 } // namespace llvm::noelle

@@ -133,8 +133,6 @@ protected:
 private:
   Function *waitSSCall, *signalSSCall;
   LoopDependenceInfo *originalLDI;
-  PDG *taskFunctionDG;
-
   LoopEnvironmentBuilder *loopCarriedLoopEnvironmentBuilder;
   std::unordered_set<SpilledLoopCarriedDependency *> spills;
   std::unordered_map<Instruction *, Instruction *>

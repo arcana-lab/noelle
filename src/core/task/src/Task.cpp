@@ -26,10 +26,22 @@ namespace llvm::noelle {
 Task::Task(uint32_t ID, FunctionType *taskSignature, Module &M) : ID{ ID } {
 
   /*
+   * Create the name of the function.
+   */
+  auto functionName = std::string{ "noelle_task_" };
+  functionName.append(std::to_string(Task::currentID));
+  Task::currentID++;
+
+  /*
    * Create the empty body of the task.
    */
-  auto functionCallee = M.getOrInsertFunction("", taskSignature);
+  auto functionCallee = M.getOrInsertFunction(functionName, taskSignature);
   this->F = cast<Function>(functionCallee.getCallee());
+  if (!this->F->empty()) {
+    errs() << "Task: ERROR = function " << functionName
+           << " already exists in the program.\n";
+    abort();
+  }
 
   /*
    * Add the entry and exit basic blocks.
@@ -350,4 +362,7 @@ void Task::removeOriginalInstruction(Instruction *o) {
 Task::~Task() {
   return;
 }
+
+uint64_t Task::currentID = 0;
+
 } // namespace llvm::noelle

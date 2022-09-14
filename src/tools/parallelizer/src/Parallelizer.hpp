@@ -85,11 +85,6 @@ private:
                                                           Noelle &par);
 
   bool collectThreadPoolHelperFunctionsAndTypes(Module &M, Noelle &par);
-
-  /*
-   * Debug utilities
-   */
-  void printLoop(Loop *loop);
 };
 
 } // namespace llvm::noelle

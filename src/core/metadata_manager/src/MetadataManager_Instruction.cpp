@@ -38,14 +38,33 @@ bool MetadataManager::doesHaveMetadata(Instruction *inst,
 }
 
 std::string MetadataManager::getMetadata(Instruction *inst,
-                                         const std::string &metadataName) {}
+                                         const std::string &metadataName) {
+
+  /*
+   * Get the metadata.
+   */
+  auto metaNode = inst->getMetadata(metadataName);
+  if (metaNode) {
+    errs() << "MetadataManager::getMetadata: ERROR = the metadata \""
+           << metadataName << "\" already exists in the instruction " << *inst
+           << "\n";
+    abort();
+  }
+
+  /*
+   * Get the string.
+   */
+  auto metaString = cast<MDString>(metaNode->getOperand(0))->getString();
+
+  return metaString;
+}
 
 void MetadataManager::addMetadata(Instruction *inst,
                                   const std::string &metadataName,
                                   const std::string &metadataValue) {
 
   /*
-   * Create the metadata.
+   * Get the metadata.
    */
   auto metaNode = inst->getMetadata(metadataName);
   if (metaNode) {

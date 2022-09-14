@@ -32,7 +32,7 @@ void LoopCarriedDependencies::setLoopCarriedDependencies(
   }
 
   for (auto edge : dgForLoops.getEdges()) {
-    auto loop = getLoopOfLCD(loopNode, DS, edge);
+    auto loop = LoopCarriedDependencies::getLoopOfLCD(loopNode, DS, edge);
     if (!loop) {
       continue;
     }
@@ -88,6 +88,16 @@ LoopStructure *LoopCarriedDependencies::getLoopOfLCD(
    * cannot be loop-carried.
    */
   if (!producerLoop || !consumerLoop) {
+    return nullptr;
+  }
+
+  /*
+   * If the dependence is a control one and the two instructions belong to a
+   * subloop, then this cannot be a loop-carried one for the target loop.
+   */
+  if (true && edge->isControlDependence()
+      && (producerLoop != loopNode->getLoop())
+      && (consumerLoop != loopNode->getLoop())) {
     return nullptr;
   }
 

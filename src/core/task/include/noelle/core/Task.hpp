@@ -171,6 +171,9 @@ protected:
   std::vector<BasicBlock *> lastBlocks;
 
   LLVMContext &getLLVMContext(void) const;
+
+private:
+  static uint64_t currentID;
 };
 
 } // namespace llvm::noelle

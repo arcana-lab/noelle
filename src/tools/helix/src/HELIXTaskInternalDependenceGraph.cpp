@@ -23,10 +23,10 @@
 #include "HELIXTask.hpp"
 #include <set>
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 static void constructEdgesFromUseDefs(PDG *pdg);
+
 static void constructEdgesFromControlForFunction(
     PDG *pdg,
     Function &F,
@@ -45,28 +45,37 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
   /*
    * Create a new PDG for the internals of the task.
    */
-  this->taskFunctionDG = new PDG(*taskBody);
-  constructEdgesFromUseDefs(this->taskFunctionDG);
+  auto taskFunctionDG = new PDG(*taskBody);
+  constructEdgesFromUseDefs(taskFunctionDG);
 
-  constructEdgesFromControlForFunction(this->taskFunctionDG,
+  constructEdgesFromControlForFunction(taskFunctionDG,
                                        *taskBody,
                                        postDomTreeOfTaskFunction);
 
   auto copyEdgeUsingTaskClonedValues =
       [&](DGEdge<Value> *originalEdge) -> void {
-    DGEdge<Value> edgeToPointToClones(*originalEdge);
+    DGEdge<Value> edgeToPointToClones{ *originalEdge };
 
-    // Loop carry dependencies will be recomputed
+    /*
+     * Loop carry dependencies will be recomputed
+     */
     edgeToPointToClones.setLoopCarried(false);
 
-    edgeToPointToClones.setNodePair(
-        this->taskFunctionDG->fetchNode(
-            helixTask->getCloneOfOriginalInstruction(
-                cast<Instruction>(originalEdge->getOutgoingT()))),
-        this->taskFunctionDG->fetchNode(
-            helixTask->getCloneOfOriginalInstruction(
-                cast<Instruction>(originalEdge->getIncomingT()))));
-    this->taskFunctionDG->copyAddEdge(edgeToPointToClones);
+    /*
+     * Add the edge to the task internal dependence graph
+     */
+    auto cloneOutgoingInst = helixTask->getCloneOfOriginalInstruction(
+        cast<Instruction>(originalEdge->getOutgoingT()));
+    assert(cloneOutgoingInst != nullptr);
+    auto cloneIncomingInst = helixTask->getCloneOfOriginalInstruction(
+        cast<Instruction>(originalEdge->getIncomingT()));
+    assert(cloneIncomingInst != nullptr);
+    auto cloneOutgoingNode = taskFunctionDG->fetchNode(cloneOutgoingInst);
+    assert(cloneOutgoingNode != nullptr);
+    auto cloneIncomingNode = taskFunctionDG->fetchNode(cloneIncomingInst);
+    assert(cloneIncomingNode != nullptr);
+    edgeToPointToClones.setNodePair(cloneOutgoingNode, cloneIncomingNode);
+    taskFunctionDG->copyAddEdge(edgeToPointToClones);
   };
 
   /*
@@ -136,18 +145,18 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
           std::unordered_set<LoadInst *> &loads) -> void {
     for (auto store : stores) {
       for (auto other : stores) {
-        this->taskFunctionDG->addEdge(store, other)
+        taskFunctionDG->addEdge(store, other)
             ->setMemMustType(true, true, DataDependenceType::DG_DATA_WAW);
-        this->taskFunctionDG->addEdge(other, store)
+        taskFunctionDG->addEdge(other, store)
             ->setMemMustType(true, true, DataDependenceType::DG_DATA_WAW);
       }
     }
 
     for (auto store : stores) {
       for (auto load : loads) {
-        this->taskFunctionDG->addEdge(store, load)
+        taskFunctionDG->addEdge(store, load)
             ->setMemMustType(true, true, DataDependenceType::DG_DATA_RAW);
-        this->taskFunctionDG->addEdge(load, store)
+        taskFunctionDG->addEdge(load, store)
             ->setMemMustType(true, true, DataDependenceType::DG_DATA_WAR);
       }
     }
@@ -162,15 +171,7 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
                                         spill->environmentLoads);
   }
 
-  // if (this->verbose >= Verbosity::Maximal) {
-  //   auto sccdag = new SCCDAG(taskFunctionDG);
-  //   DGPrinter::writeGraph<PDG, Value>("technique-task-fdg-" +
-  //   std::to_string(LDI->getID()) + ".dot", taskFunctionDG);
-  //   DGPrinter::writeGraph<SCCDAG, SCC>("technique-task-sccdag-" +
-  //   std::to_string(LDI->getID()) + ".dot", sccdag); delete sccdag;
-  // }
-
-  return this->taskFunctionDG;
+  return taskFunctionDG;
 }
 
 /*
@@ -225,3 +226,5 @@ static void constructEdgesFromControlForFunction(
     }
   }
 }
+
+} // namespace llvm::noelle

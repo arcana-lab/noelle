@@ -76,8 +76,6 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(void) {
 }
 
 std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
-
-  auto profiles = this->getProfiles();
   auto allLoops = new std::vector<LoopStructure *>();
 
   /*
@@ -213,6 +211,26 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
   return allLoops;
 }
 
+StayConnectedNestedLoopForest *Noelle::getLoopNestingForest(void) {
+
+  /*
+   * Fetch all loops
+   */
+  auto loopStructures = this->getLoopStructures();
+
+  /*
+   * Organize loops in forest.
+   */
+  auto forest = this->organizeLoopsInTheirNestingForest(*loopStructures);
+
+  /*
+   * Free the memory.
+   */
+  delete loopStructures;
+
+  return forest;
+}
+
 LoopDependenceInfo *Noelle::getLoop(LoopStructure *l) {
 
   /*
@@ -306,11 +324,6 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(Function *function) {
 
 std::vector<LoopDependenceInfo *> *Noelle::getLoops(Function *function,
                                                     double minimumHotness) {
-
-  /*
-   * Fetch the profiles.
-   */
-  auto profiles = this->getProfiles();
 
   /*
    * Allocate the vector of loops.
@@ -427,11 +440,6 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(void) {
 }
 
 std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
-
-  /*
-   * Fetch the profiles.
-   */
-  auto profiles = this->getProfiles();
 
   /*
    * Allocate the vector of loops.
@@ -670,11 +678,6 @@ uint32_t Noelle::getNumberOfProgramLoops(double minimumHotness) {
   uint32_t counter = 0;
 
   /*
-   * Fetch the profiles.
-   */
-  auto profiles = this->getProfiles();
-
-  /*
    * Fetch the list of functions of the module.
    */
   this->getFunctionsManager();
@@ -875,6 +878,10 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
      * DOALL: chunk factor
      */
     auto DOALLChunkFactor = this->fetchTheNextValue(indexString);
+    DOALLChunkFactor++; /*
+                          DOALL chunk size is the one defined by INDEX_FILE + 1.
+                          This is because chunk size must start from 1.
+                         */
 
     /*
      * Skip
@@ -894,7 +901,10 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
     } else {
       this->loopThreads[loopID] = 1;
       this->techniquesToDisable[loopID] = 0;
-      this->DOALLChunkSize[loopID] = 0;
+      this->DOALLChunkSize[loopID] = 1; /*
+                            DOALL chunk size is the one defined by INDEX_FILE
+                            + 1. This is because chunk size must start from 1.
+                           */
     }
   }
 
@@ -1090,10 +1100,6 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
  * B (may or must based on the subedge type)
  */
 LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
-  /*
-   * Fetch the profiles.
-   */
-  auto profiles = this->getProfiles();
 
   /*
    * Fetch the list of functions of the module.
@@ -1200,21 +1206,16 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
   /*
    * Allocate the LDI.
    */
-  auto ldi = new LoopDependenceInfo(
-      functionPDG,
-      loopNode,
-      loop,
-      *DS,
-      *SE,
-      maxCores,
-      this->enableFloatAsReal,
-      optimizations,
-      this->loopAwareDependenceAnalysis,
-      DOALLChunkSizeForLoop
-          + 1 /* DOALL chunk size is the one defined by INDEX_FILE + 1.
-                 This is because chunk size must start from 1.
-                 */
-  );
+  auto ldi = new LoopDependenceInfo(functionPDG,
+                                    loopNode,
+                                    loop,
+                                    *DS,
+                                    *SE,
+                                    maxCores,
+                                    this->enableFloatAsReal,
+                                    optimizations,
+                                    this->loopAwareDependenceAnalysis,
+                                    DOALLChunkSizeForLoop);
 
   /*
    * Set the techniques that are enabled.
@@ -1262,25 +1263,40 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
 }
 
 bool Noelle::isLoopHot(LoopStructure *loopStructure, double minimumHotness) {
-  assert(this->profiles != nullptr);
 
-  if (!this->profiles->isAvailable()) {
+  /*
+   * Fetch the profiles.
+   */
+  auto hot = this->getProfiles();
+  assert(hot != nullptr);
+
+  /*
+   * Check if the profiles are available
+   */
+  if (!hot->isAvailable()) {
     return true;
   }
 
-  auto hotness =
-      this->profiles->getDynamicTotalInstructionCoverage(loopStructure);
+  auto hotness = hot->getDynamicTotalInstructionCoverage(loopStructure);
   return hotness >= minimumHotness;
 }
 
 bool Noelle::isFunctionHot(Function *function, double minimumHotness) {
-  assert(this->profiles != nullptr);
 
-  if (!this->profiles->isAvailable()) {
+  /*
+   * Fetch the profiles.
+   */
+  auto hot = this->getProfiles();
+  assert(hot != nullptr);
+
+  /*
+   * Check if the profiles are available
+   */
+  if (!hot->isAvailable()) {
     return true;
   }
 
-  auto hotness = this->profiles->getDynamicTotalInstructionCoverage(function);
+  auto hotness = hot->getDynamicTotalInstructionCoverage(function);
   return hotness >= minimumHotness;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2021  Simone Campanoni
+ * Copyright 2019 - 2022  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -29,91 +29,93 @@ void Planner::removeLoopsNotWorthParallelizing(
     StayConnectedNestedLoopForest *forest) {
 
   /*
-   * Filter out loops that are not worth parallelizing.
+   * Check if we are force to consider all loops.
    */
-  errs() << "Planner:  Filter out loops not worth considering\n";
-  auto filter = [this, forest, profiles](LoopStructure *ls) -> bool {
-    /*
-     * Fetch the loop ID.
-     */
-    auto loopIDOpt = ls->getID();
-    assert(loopIDOpt); // ED: we are removing loops that we do not parallelize,
-                       // loops should have IDs to give meaningful information.
-    auto loopID = loopIDOpt.value();
+  if (!this->forceParallelization) {
 
     /*
-     * Check if the loop is executed at all.
+     * Filter out loops that are not worth parallelizing.
      */
-    if (true && (!this->forceParallelization)
-        && (profiles->getIterations(ls) == 0)) {
-      errs() << "Planner:    Loop " << loopID << " did not execute\n";
+    errs() << "Planner:  Filter out loops not worth considering\n";
+    auto filter = [this, forest, profiles](LoopStructure *ls) -> bool {
+      /*
+       * Fetch the loop ID.
+       */
+      auto loopIDOpt = ls->getID();
+      assert(loopIDOpt);
+      auto loopID = loopIDOpt.value();
 
       /*
-       * Remove the loop.
+       * Check if the loop is executed at all.
        */
-      return true;
-    }
+      if (profiles->getIterations(ls) == 0) {
+        errs() << "Planner:    Loop " << loopID << " did not execute\n";
 
-    /*
-     * Check if the latency of each loop invocation is enough to justify the
-     * parallelization.
-     */
-    auto averageInstsPerInvocation =
-        profiles->getAverageTotalInstructionsPerInvocation(ls);
-    auto averageInstsPerInvocationThreshold = 2000;
-    if (true && (!this->forceParallelization)
-        && (averageInstsPerInvocation < averageInstsPerInvocationThreshold)) {
-      errs() << "Planner:    Loop " << loopID << " has "
-             << averageInstsPerInvocation
-             << " number of instructions per loop invocation\n";
-      errs() << "Planner:      It is too low. The threshold is "
-             << averageInstsPerInvocationThreshold << "\n";
+        /*
+         * Remove the loop.
+         */
+        return true;
+      }
 
       /*
-       * Remove the loop.
+       * Check if the latency of each loop invocation is enough to justify the
+       * parallelization.
        */
-      return true;
-    }
+      auto averageInstsPerInvocation =
+          profiles->getAverageTotalInstructionsPerInvocation(ls);
+      auto averageInstsPerInvocationThreshold = 2000;
+      if (averageInstsPerInvocation < averageInstsPerInvocationThreshold) {
+        errs() << "Planner:    Loop " << loopID << " has "
+               << averageInstsPerInvocation
+               << " number of instructions per loop invocation\n";
+        errs() << "Planner:      It is too low. The threshold is "
+               << averageInstsPerInvocationThreshold << "\n";
 
-    /*
-     * Check the number of iterations per invocation.
-     */
-    auto averageIterations =
-        profiles->getAverageLoopIterationsPerInvocation(ls);
-    auto averageIterationThreshold = 12;
-    if (true && (!this->forceParallelization)
-        && (averageIterations < averageIterationThreshold)) {
-      errs() << "Planner:    Loop " << loopID << " has " << averageIterations
-             << " number of iterations on average per loop invocation\n";
-      errs() << "Planner:      It is too low. The threshold is "
-             << averageIterationThreshold << "\n";
+        /*
+         * Remove the loop.
+         */
+        return true;
+      }
 
       /*
-       * Remove the loop.
+       * Check the number of iterations per invocation.
        */
-      return true;
-    }
+      auto averageIterations =
+          profiles->getAverageLoopIterationsPerInvocation(ls);
+      auto averageIterationThreshold = 12;
+      if (averageIterations < averageIterationThreshold) {
+        errs() << "Planner:    Loop " << loopID << " has " << averageIterations
+               << " number of iterations on average per loop invocation\n";
+        errs() << "Planner:      It is too low. The threshold is "
+               << averageIterationThreshold << "\n";
 
-    /*
-     * Check the minimum hotness
-     */
-    auto hotness = profiles->getDynamicTotalInstructionCoverage(ls) * 100;
-    auto minimumHotness = 0.0;
-    if (true && (!this->forceParallelization) && (hotness < minimumHotness)) {
-      errs() << "Planner:    Loop " << loopID << " has only " << hotness
-             << "\% coverage\n";
-      errs() << "Planner:      It is too low. The threshold is "
-             << minimumHotness << "\%\n";
+        /*
+         * Remove the loop.
+         */
+        return true;
+      }
 
       /*
-       * Remove the loop.
+       * Check the minimum hotness
        */
-      return true;
-    }
+      auto hotness = profiles->getDynamicTotalInstructionCoverage(ls) * 100;
+      auto minimumHotness = 0.0;
+      if (hotness < minimumHotness) {
+        errs() << "Planner:    Loop " << loopID << " has only " << hotness
+               << "\% coverage\n";
+        errs() << "Planner:      It is too low. The threshold is "
+               << minimumHotness << "\%\n";
 
-    return false;
-  };
-  noelle.filterOutLoops(forest, filter);
+        /*
+         * Remove the loop.
+         */
+        return true;
+      }
+
+      return false;
+    };
+    noelle.filterOutLoops(forest, filter);
+  }
 
   /*
    * Print the loops.
@@ -139,9 +141,7 @@ void Planner::removeLoopsNotWorthParallelizing(
        * Fetch the loop ID.
        */
       auto loopIDOpt = loopStructure->getID();
-      assert(
-          loopIDOpt); // ED: we are printing the loops we want to parallelize,
-                      // loops should have IDs to give meaningful information.
+      assert(loopIDOpt);
       auto loopID = loopIDOpt.value();
 
       /*
@@ -285,8 +285,7 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
      * Get loop ID.
      */
     auto loopIDOpt = ls->getID();
-    assert(loopIDOpt); // ED: we are selecting loops to parallelize, loops
-                       // should have IDs.
+    assert(loopIDOpt);
     auto loopID = loopIDOpt.value();
 
     /*
@@ -299,7 +298,7 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
     /*
      * Check if the time saved is enough.
      */
-    if (true && (!this->forceParallelization) && (savedTimeTotal < 2)) {
+    if ((!this->forceParallelization) && (savedTimeTotal < 2)) {
       errs() << "Planner: LoopSelector:  Loop " << loopID << " saves only "
              << savedTimeTotal << " when parallelized. Skip it\n";
       continue;
@@ -362,8 +361,7 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
        * Get loop ID.
        */
       auto loopIDOpt = ls->getID();
-      assert(loopIDOpt); // ED: we are selecting loops to parallelize, loops
-                         // should have IDs.
+      assert(loopIDOpt);
       auto loopID = loopIDOpt.value();
 
       /*
