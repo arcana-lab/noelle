@@ -145,4 +145,87 @@ void Linker::linkTransformedLoopToOriginalFunction(
   return;
 }
 
+void Linker::substituteOriginalLoopWithTransformedLoop(
+    BasicBlock *originalPreHeader,
+    BasicBlock *startOfParLoopInOriginalFunc,
+    BasicBlock *endOfParLoopInOriginalFunc,
+    Value *envArray,
+    Value *envIndexForExitVariable,
+    std::vector<BasicBlock *> &loopExitBlocks) {
+
+  /*
+   * Fetch the terminator of the preheader.
+   */
+  auto originalTerminator = originalPreHeader->getTerminator();
+
+  /*
+   * Fetch the header of the original loop.
+   */
+  auto originalHeader = originalTerminator->getSuccessor(0);
+
+  /*
+   * Check if another invocation of the loop is running in parallel.
+   */
+  IRBuilder<> loopSwitchBuilder(originalTerminator);
+  loopSwitchBuilder.CreateBr(startOfParLoopInOriginalFunc);
+  originalTerminator->eraseFromParent();
+
+  /*
+   * Load exit block environment variable and branch to the correct loop exit
+   * block
+   */
+  IRBuilder<> endBuilder(endOfParLoopInOriginalFunc);
+  if (loopExitBlocks.size() == 1) {
+    endBuilder.CreateBr(loopExitBlocks[0]);
+
+  } else {
+
+    /*
+     * Compute how many values can fit in a cache line.
+     */
+    auto valuesInCacheLine =
+        Architecture::getCacheLineBytes() / sizeof(int64_t);
+
+    auto int64 = this->tm->getIntegerType(64);
+    auto exitEnvPtr = endBuilder.CreateInBoundsGEP(
+        envArray,
+        ArrayRef<Value *>({ cast<Value>(ConstantInt::get(int64, 0)),
+                            endBuilder.CreateMul(
+                                envIndexForExitVariable,
+                                ConstantInt::get(int64, valuesInCacheLine)) }));
+  auto integerType = this->tm->getIntegerType(32);
+    auto exitEnvCast =
+        endBuilder.CreateIntCast(endBuilder.CreateLoad(exitEnvPtr),
+                                 integerType,
+                                 /*isSigned=*/false);
+    auto exitSwitch = endBuilder.CreateSwitch(exitEnvCast, loopExitBlocks[0]);
+    for (int i = 1; i < loopExitBlocks.size(); ++i) {
+      auto constantInt = cast<ConstantInt>(ConstantInt::get(integerType, i));
+      exitSwitch->addCase(constantInt, loopExitBlocks[i]);
+    }
+  }
+
+  /*
+   * LCSSA constants need to be replicated for parallelized code path
+   */
+  for (auto bb : loopExitBlocks) {
+    for (auto &I : *bb) {
+      if (auto phi = dyn_cast<PHINode>(&I)) {
+        auto bbIndex = phi->getBasicBlockIndex(originalHeader);
+        if (bbIndex == -1) {
+          continue;
+        }
+        auto val = phi->getIncomingValue(bbIndex);
+        if (isa<Constant>(val)) {
+          phi->addIncoming(val, endOfParLoopInOriginalFunc);
+        }
+        continue;
+      }
+      break;
+    }
+  }
+
+  return;
+}
+
 }

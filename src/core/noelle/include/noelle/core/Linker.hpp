@@ -38,6 +38,14 @@ public:
       Value *envIndexForExitVariable,
       std::vector<BasicBlock *> &loopExitBlocks);
 
+void substituteOriginalLoopWithTransformedLoop(
+    BasicBlock *originalPreHeader,
+    BasicBlock *startOfParLoopInOriginalFunc,
+    BasicBlock *endOfParLoopInOriginalFunc,
+    Value *envArray,
+    Value *envIndexForExitVariable,
+    std::vector<BasicBlock *> &loopExitBlocks);
+
 private:
   Module &program;
   TypesManager *tm;
