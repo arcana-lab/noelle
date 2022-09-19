@@ -30,6 +30,7 @@ patchInstallDir "noelle-inline" ;
 patchInstallDir "noelle-enable" ;
 patchInstallDir "noelle-pre" ;
 patchInstallDir "noelle-deadcode" ;
+patchInstallDir "noelle-rm-function" ;
 patchInstallDir "noelle-codesize" ;
 patchInstallDir "noelle-loopsize" ;
 patchInstallDir "noelle-fixedpoint" ;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 - 2021  Simone Campanoni
+ * Copyright 2021 - 2022  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,35 +19,52 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
-
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "RemoveFunction.hpp"
 
 namespace llvm::noelle {
 
-class FunctionsManager {
-public:
-  FunctionsManager(Module &m, PDGAnalysis &noellePDGAnalysis);
+RemoveFunction::RemoveFunction()
+  : ModulePass{ ID },
+    functionName{ "" },
+    prefix{ "RemoveFunction: " } {
 
-  Function *getEntryFunction(void) const;
+  return;
+}
 
-  std::set<Function *> getProgramConstructors(void) const;
+bool RemoveFunction::runOnModule(Module &M) {
+  auto modified = false;
+  errs() << this->prefix << "Start\n";
 
-  bool isTheLibraryFunctionPure(Function *libraryFunction);
+  /*
+   * Fetch the outputs of the passes we rely on.
+   */
+  auto &noelle = getAnalysis<Noelle>();
 
-  Function *getFunction(const std::string &name);
+  /*
+   * Fetch the function manager.
+   */
+  auto fm = noelle.getFunctionsManager();
 
-  CallGraph *getProgramCallGraph(void);
+  /*
+   * Fetch the function we want to remove.
+   */
+  errs() << this->prefix << "  Check if function \"" << this->functionName
+         << "\" exists\n";
+  auto f = fm->getFunction(this->functionName);
+  if (f == nullptr) {
+    errs() << this->prefix << "    The function does not exist\n";
+    return false;
+  }
 
-  Function *newFunction(const std::string &name, FunctionType &signature);
+  /*
+   * Delete the function
+   */
+  errs() << this->prefix << "    The function exists\n";
+  errs() << this->prefix << "  Remove the function\n";
+  fm->removeFunction(*f);
 
-  void removeFunction(Function &f);
-
-private:
-  Module &program;
-  PDGAnalysis &pdgAnalysis;
-  CallGraph *pcg;
-};
+  errs() << this->prefix << "Exit\n";
+  return true;
+}
 
 } // namespace llvm::noelle

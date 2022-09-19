@@ -134,4 +134,14 @@ Function *FunctionsManager::newFunction(const std::string &name,
   return newFunction;
 }
 
+Function *FunctionsManager::getFunction(const std::string &name) {
+  auto f = this->program.getFunction(name);
+
+  return f;
+}
+
+void FunctionsManager::removeFunction(Function &f) {
+  f.eraseFromParent();
+}
+
 } // namespace llvm::noelle

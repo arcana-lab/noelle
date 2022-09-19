@@ -1,0 +1,10 @@
+#!/bin/bash -e
+
+installDir
+
+# Delete dead functions until a fixed point is reached
+echo "NOELLE: DeadFunctions: Start" ;
+cmdToExecute="noelle-load -load ${installDir}/lib/RemoveFunction.so -noelle-rm-function $@"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+echo "NOELLE: DeadFunctions: Exit" ;

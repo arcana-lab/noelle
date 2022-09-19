@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 - 2021  Simone Campanoni
+ * Copyright 2021 - 2022  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,33 +21,31 @@
  */
 #pragma once
 
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/Noelle.hpp"
 
 namespace llvm::noelle {
 
-class FunctionsManager {
+class RemoveFunction : public ModulePass {
 public:
-  FunctionsManager(Module &m, PDGAnalysis &noellePDGAnalysis);
+  RemoveFunction();
 
-  Function *getEntryFunction(void) const;
+  bool doInitialization(Module &M) override;
 
-  std::set<Function *> getProgramConstructors(void) const;
+  bool runOnModule(Module &M) override;
 
-  bool isTheLibraryFunctionPure(Function *libraryFunction);
+  void getAnalysisUsage(AnalysisUsage &AU) const override;
 
-  Function *getFunction(const std::string &name);
-
-  CallGraph *getProgramCallGraph(void);
-
-  Function *newFunction(const std::string &name, FunctionType &signature);
-
-  void removeFunction(Function &f);
+  /*
+   * Class fields
+   */
+  static char ID;
 
 private:
-  Module &program;
-  PDGAnalysis &pdgAnalysis;
-  CallGraph *pcg;
+  /*
+   * Fields
+   */
+  std::string functionName;
+  std::string prefix;
 };
 
 } // namespace llvm::noelle
