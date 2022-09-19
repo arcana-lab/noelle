@@ -45,6 +45,7 @@ private:
    * Fields
    */
   bool enableTransformation;
+  std::string prefix;
 };
 
 } // namespace llvm::noelle
