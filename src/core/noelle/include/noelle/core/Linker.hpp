@@ -23,12 +23,13 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TypesManager.hpp"
+#include "noelle/core/LoopStructure.hpp"
 
 namespace llvm::noelle {
 
 class Linker {
 public:
-  Linker (Module &m, TypesManager *tm);
+  Linker(Module &m, TypesManager *tm);
 
   void linkTransformedLoopToOriginalFunction(
       BasicBlock *originalPreHeader,
@@ -38,13 +39,13 @@ public:
       Value *envIndexForExitVariable,
       std::vector<BasicBlock *> &loopExitBlocks);
 
-void substituteOriginalLoopWithTransformedLoop(
-    BasicBlock *originalPreHeader,
-    BasicBlock *startOfParLoopInOriginalFunc,
-    BasicBlock *endOfParLoopInOriginalFunc,
-    Value *envArray,
-    Value *envIndexForExitVariable,
-    std::vector<BasicBlock *> &loopExitBlocks);
+  void substituteOriginalLoopWithTransformedLoop(
+      LoopStructure *originalLoop,
+      BasicBlock *startOfParLoopInOriginalFunc,
+      BasicBlock *endOfParLoopInOriginalFunc,
+      Value *envArray,
+      Value *envIndexForExitVariable,
+      std::vector<BasicBlock *> &loopExitBlocks);
 
 private:
   Module &program;

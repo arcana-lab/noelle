@@ -24,11 +24,9 @@
 
 namespace llvm::noelle {
 
-Linker::Linker(Module &M, TypesManager *tm)
-  : program{M},
-    tm{tm}{
+Linker::Linker(Module &M, TypesManager *tm) : program{ M }, tm{ tm } {
 
-  return ;
+  return;
 }
 
 void Linker::linkTransformedLoopToOriginalFunction(
@@ -146,7 +144,7 @@ void Linker::linkTransformedLoopToOriginalFunction(
 }
 
 void Linker::substituteOriginalLoopWithTransformedLoop(
-    BasicBlock *originalPreHeader,
+    LoopStructure *originalLoop,
     BasicBlock *startOfParLoopInOriginalFunc,
     BasicBlock *endOfParLoopInOriginalFunc,
     Value *envArray,
@@ -156,6 +154,7 @@ void Linker::substituteOriginalLoopWithTransformedLoop(
   /*
    * Fetch the terminator of the preheader.
    */
+  auto originalPreHeader = originalLoop->getPreHeader();
   auto originalTerminator = originalPreHeader->getTerminator();
 
   /*
@@ -215,17 +214,21 @@ void Linker::substituteOriginalLoopWithTransformedLoop(
         if (bbIndex == -1) {
           continue;
         }
-        auto val = phi->getIncomingValue(bbIndex);
-        if (isa<Constant>(val)) {
-          phi->addIncoming(val, endOfParLoopInOriginalFunc);
-        }
+        phi->removeIncomingValue(bbIndex);
         continue;
       }
       break;
     }
   }
 
+  /*
+   * Delete the original loop.
+   */
+  for (auto bb : originalLoop->getBasicBlocks()){
+    bb->eraseFromParent();
+  }
+
   return;
 }
 
-}
+} // namespace llvm::noelle
