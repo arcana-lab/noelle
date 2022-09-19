@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 - 2021  Simone Campanoni
+ * Copyright 2021 - 2022  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,18 +22,21 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/TypesManager.hpp"
 
 namespace llvm::noelle {
 
-class TypesManager {
+class Linker {
 public:
-  TypesManager(Module &m);
+  Linker (Module &m, TypesManager *tm);
 
-  Type *getIntegerType(uint32_t bitwidth) const;
-
-  Type *getVoidPointerType(void) const;
-
-  Type *getVoidType(void) const;
+  void linkTransformedLoopToOriginalFunction(
+      BasicBlock *originalPreHeader,
+      BasicBlock *startOfParLoopInOriginalFunc,
+      BasicBlock *endOfParLoopInOriginalFunc,
+      Value *envArray,
+      Value *envIndexForExitVariable,
+      std::vector<BasicBlock *> &loopExitBlocks);
 
 private:
   Module &program;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -38,6 +38,7 @@
 #include "noelle/core/CompilationOptionsManager.hpp"
 #include "noelle/core/CFGAnalysis.hpp"
 #include "noelle/core/CFGTransformer.hpp"
+#include "noelle/core/Linker.hpp"
 
 namespace llvm::noelle {
 
@@ -72,6 +73,8 @@ public:
   ConstantsManager *getConstantsManager(void);
 
   MetadataManager *getMetadataManager(void);
+
+  Linker *getLinker(void);
 
   LoopNestingGraph *getLoopNestingGraphForProgram(void);
 
@@ -173,15 +176,6 @@ public:
 
   bool canFloatsBeConsideredRealNumbers(void) const;
 
-  void linkTransformedLoopToOriginalFunction(
-      Module *module,
-      BasicBlock *originalPreHeader,
-      BasicBlock *startOfParLoopInOriginalFunc,
-      BasicBlock *endOfParLoopInOriginalFunc,
-      Value *envArray,
-      Value *envIndexForExitVariable,
-      std::vector<BasicBlock *> &loopExitBlocks);
-
   bool verifyCode(void) const;
 
   ~Noelle();
@@ -208,6 +202,7 @@ private:
   ConstantsManager *cm;
   CompilationOptionsManager *om;
   MetadataManager *mm;
+  Linker *linker;
 
   uint32_t fetchTheNextValue(std::stringstream &stream);
 

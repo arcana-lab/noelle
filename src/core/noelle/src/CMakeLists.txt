@@ -10,6 +10,7 @@ set(Srcs
   TypesManager.cpp
   ConstantsManager.cpp
   CompilationOptionsManager.cpp
+  Linker.cpp
 )
 
 # Compilation flags

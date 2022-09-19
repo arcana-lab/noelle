@@ -16,6 +16,7 @@ install(
   include/noelle/core/TypesManager.hpp
   include/noelle/core/ConstantsManager.hpp
   include/noelle/core/CompilationOptionsManager.hpp
+  include/noelle/core/Linker.hpp
   DESTINATION 
   include/noelle/core
   )

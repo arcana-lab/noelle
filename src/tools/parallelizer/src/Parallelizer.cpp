@@ -195,8 +195,8 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
           ? usedTechnique->getIndexOfEnvironmentVariable(exitBlockID)
           : -1);
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
-  par.linkTransformedLoopToOriginalFunction(loopFunction->getParent(),
-                                            loopPreHeader,
+  auto linker = par.getLinker();
+  linker->linkTransformedLoopToOriginalFunction(loopPreHeader,
                                             entryPoint,
                                             exitPoint,
                                             envArray,
