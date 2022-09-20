@@ -23,6 +23,13 @@ include_directories(
   ${CMAKE_INSTALL_PREFIX}/include
   ${CMAKE_INSTALL_PREFIX}/include/svf)
 
+# Output LLVM modules to the install directory
+# set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_INSTALL_BINDIR})
+# set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_INSTALL_LIBDIR})
+
+message("Install BIN: ${CMAKE_INSTALL_BINDIR}")
+message("Install LIB: ${CMAKE_INSTALL_LIBDIR}")
+
 # List of NOELLE core modules
 # NOTE: If you add a module, you MUST add it here
 set(core_dirs
@@ -56,22 +63,32 @@ set(core_dirs
   unique_ir_marker
   )
 
-
+# Fetch all of the subdirectories
+#SUBDIRLIST(core_dirs ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Building a list of all NOELLE include dirs to reference
-set(noelle_include_dirs "")
+set(noelle_core_include_dirs ${noelle_include_list})
 foreach(core_dir ${core_dirs})
-  set(noelle_include_dirs
-    ${noelle_include_dirs}
-    ${CMAKE_CURRENT_SOURCE_DIR}/${core_dir}/include)
+  # Install header files
+  file(GLOB_RECURSE noelle_include ${CMAKE_CURRENT_SOURCE_DIR}/${core_dir}/include "*.h*")
+  install(FILES ${noelle_include}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/noelle/core)
+
+  # Apend this include dir for compilation
+  list(APPEND noelle_core_include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/${core_dir}/include)
 endforeach()
-set_property(GLOBAL PROPERTY NOELLE_INCLUDE_DIRS "${noelle_include_dirs}")
+set_property(GLOBAL PROPERTY NOELLE_CORE_INCLUDE_DIRS "${noelle_core_include_dirs}")
 
 # Add all include directories
-get_property(noelle_include_dirs GLOBAL PROPERTY NOELLE_INCLUDE_DIRS)
-include_directories(${noelle_include_dirs})
+get_property(noelle_core_include_dirs GLOBAL PROPERTY NOELLE_CORE_INCLUDE_DIRS)
+include_directories(${noelle_core_include_dirs})
 
 # Add each Pass
 foreach(core_dir ${core_dirs})
-  add_subdirectory(${core_dir})
+  set(dir_cmake ${CMAKE_CURRENT_SOURCE_DIR}/${core_dir}/CMakeLists.txt)
+  if(EXISTS ${dir_cmake})
+    add_subdirectory(${core_dir})
+  else()
+    message("could not find ${dir_cmake}")
+  endif()
 endforeach()

@@ -53,22 +53,29 @@ set(tool_dirs
 # Add all include directories
 set(noelle_tool_include_dirs "")
 foreach(tool_dir ${tool_dirs})
-  set(noelle_tool_include_dirs
-    ${noelle_tool_include_dirs}
-    ${CMAKE_CURRENT_SOURCE_DIR}/${tool_dir}/include
-    PARENT_SCOPE)
+  # Install header files
+  file(GLOB_RECURSE noelle_include ${CMAKE_CURRENT_SOURCE_DIR}/${tool_dir}/include "*.h*")
+  install(FILES ${noelle_include}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/noelle/tools)
+
+  list(APPEND noelle_tool_include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/${tool_dir}/include)
 endforeach()
 set_property(GLOBAL PROPERTY NOELLE_TOOL_INCLUDE_DIRS "${noelle_tool_include_dirs}")
 
 #Add all include directories
-get_property(noelle_include_dirs GLOBAL PROPERTY NOELLE_INCLUDE_DIRS)
-include_directories(${noelle_include_dirs})
+get_property(noelle_core_include_dirs GLOBAL PROPERTY NOELLE_CORE_INCLUDE_DIRS)
+include_directories(${noelle_core_include_dirs})
 
 get_property(noelle_tool_include_dirs GLOBAL PROPERTY NOELLE_TOOL_INCLUDE_DIRS)
 include_directories(${noelle_tool_include_dirs})
 
 # Add each Tool
 foreach(tool_dir ${tool_dirs})
-  add_subdirectory(${tool_dir})
+  set(dir_cmake ${CMAKE_CURRENT_SOURCE_DIR}/${core_dir}/CMakeLists.txt)
+  if(EXISTS ${dir_cmake})
+    add_subdirectory(${tool_dir})
+  else()
+    message("could not find ${dir_cmake}")
+  endif()
 endforeach()
                   
