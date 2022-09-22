@@ -87,4 +87,33 @@ LoopCarriedVariable *Reduction::getLoopCarriedVariable(void) const {
   return this->lcVariable;
 }
 
+Value *Reduction::getInitialValue(Instruction *producer) const {
+
+  /*
+   * Fetch the loop-carried variable.
+   */
+  auto lcVar = this->getLoopCarriedVariable();
+
+  /*
+   * Fetch the PHI in the header.
+   */
+  auto headerProducerPHI = lcVar->getLoopEntryPHIForValueOfVariable(producer);
+  assert(headerProducerPHI != nullptr);
+
+  /*
+   * Get the index of the pre-header.
+   */
+  auto loopPreHeader = this->loop->getPreHeader();
+  assert(loopPreHeader != nullptr);
+  auto initValPHIIndex = headerProducerPHI->getBasicBlockIndex(loopPreHeader);
+
+  /*
+   * Fetch the initial value.
+   */
+  auto initialValue = headerProducerPHI->getIncomingValue(initValPHIIndex);
+  assert(initialValue != nullptr);
+
+  return initialValue;
+}
+
 } // namespace llvm::noelle

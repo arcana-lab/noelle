@@ -24,7 +24,8 @@
 namespace llvm::noelle {
 
 SCCAttrs::SCCAttrs(SCC *s, AccumulatorOpInfo &opInfo, LoopStructure *loop)
-  : scc{ s },
+  : loop{ loop },
+    scc{ s },
     sccType{ SCCType::SEQUENTIAL },
     accumOpInfo{ opInfo },
     PHINodes{},

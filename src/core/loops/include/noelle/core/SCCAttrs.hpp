@@ -193,6 +193,9 @@ public:
 
   ~SCCAttrs();
 
+protected:
+  LoopStructure *loop;
+
 private:
   SCC *scc;
   SCCType sccType;

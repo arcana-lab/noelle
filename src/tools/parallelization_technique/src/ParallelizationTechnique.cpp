@@ -280,15 +280,11 @@ BasicBlock *ParallelizationTechnique::
     assert(producerSCCAttributes != nullptr);
 
     /*
-     * Get the accumulator.
+     * Get the information about the reduction.
      */
     reducableBinaryOps[envID] = producerSCCAttributes->getReductionOperation();
-
-    auto loopEntryProducerPHI =
-        this->fetchLoopEntryPHIOfProducer(LDI, producer);
-    auto initValPHIIndex =
-        loopEntryProducerPHI->getBasicBlockIndex(loopPreHeader);
-    auto initialValue = loopEntryProducerPHI->getIncomingValue(initValPHIIndex);
+    auto initialValue =
+        producerSCCAttributes->getInitialValue(cast<Instruction>(producer));
     initialValues[envID] =
         castToCorrectReducibleType(builder, initialValue, producer->getType());
   }

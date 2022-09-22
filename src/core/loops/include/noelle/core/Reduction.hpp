@@ -41,6 +41,8 @@ public:
 
   LoopCarriedVariable *getLoopCarriedVariable(void) const override;
 
+  Value *getInitialValue(Instruction *producer) const;
+
 private:
   Instruction::BinaryOps reductionOperation;
   LoopCarriedVariable *lcVariable;
