@@ -283,10 +283,11 @@ BasicBlock *ParallelizationTechnique::
      * Get the information about the reduction.
      */
     reducableBinaryOps[envID] = producerSCCAttributes->getReductionOperation();
-    auto initialValue =
-        producerSCCAttributes->getInitialValue(cast<Instruction>(producer));
+    auto initialValue = producerSCCAttributes->getInitialValue();
     initialValues[envID] =
-        castToCorrectReducibleType(builder, initialValue, producer->getType());
+        this->castToCorrectReducibleType(builder,
+                                         initialValue,
+                                         producer->getType());
   }
 
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
@@ -1167,9 +1168,9 @@ Instruction *ParallelizationTechnique::
     IRBuilder<> builderAtValue(predecessorTerminator);
 
     auto correctlyTypedValue =
-        castToCorrectReducibleType(builderAtValue,
-                                   lastDominatingIntermediateValue,
-                                   producer->getType());
+        this->castToCorrectReducibleType(builderAtValue,
+                                         lastDominatingIntermediateValue,
+                                         producer->getType());
     phiNode->addIncoming(correctlyTypedValue, predecessor);
   }
 

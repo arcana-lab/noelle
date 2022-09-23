@@ -495,4 +495,8 @@ bool LoopCarriedVariable::hasRoundingError(
   return true;
 }
 
+Value *LoopCarriedVariable::getInitialValue(void) const {
+  return this->initialValue;
+}
+
 } // namespace llvm::noelle

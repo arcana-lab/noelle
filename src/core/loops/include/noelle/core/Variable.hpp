@@ -82,6 +82,8 @@ public:
 
   PHINode *getLoopEntryPHIForValueOfVariable(Value *value) const;
 
+  Value *getInitialValue(void) const;
+
   virtual ~LoopCarriedVariable();
 
 private:

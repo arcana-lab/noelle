@@ -34,15 +34,32 @@ Reduction::Reduction(SCC *s,
   assert(this->lcVariable != nullptr);
 
   /*
+   * Fetch the initial value of the reduced variable.
+   * This is the value the variable has just before jumping into the loop.
+   */
+  this->initialValue = this->lcVariable->getInitialValue();
+  assert(this->initialValue != nullptr);
+
+  /*
+   * Initialize the reduction object.
+   */
+  this->initializeObject(this->initialValue);
+
+  return;
+}
+
+void Reduction::initializeObject(Value *initialValue) {
+
+  /*
    * Find the PHI of the SCC.
    * An SCC must have a PHI, it must be the only PHI in the header of the loop.
    * Notice that the PHI is the only instruction that is guaranteed to have the
    * correct type of the source-level variable being updated by this IR-level
    * SCC (the accumulator IR instruction does not.)
    */
-  auto header = loop->getHeader();
+  auto header = this->loop->getHeader();
   PHINode *phiInst = nullptr;
-  for (auto n : s->getNodes()) {
+  for (auto n : this->scc->getNodes()) {
     auto inst = cast<Instruction>(n->getT());
     if (inst->getParent() != header) {
       continue;
@@ -55,7 +72,7 @@ Reduction::Reduction(SCC *s,
     errs()
         << "Reduction: ERROR = the PHI node could not be found in the header of the loop.\n";
     errs() << "Reduction: SCC = ";
-    s->print(errs());
+    this->scc->print(errs());
     errs() << "\n";
     errs() << "Reduction: Loop = ";
     loop->print(errs());
@@ -70,7 +87,7 @@ Reduction::Reduction(SCC *s,
   auto firstAccumI = *(this->getAccumulators().begin());
   auto binOpCode = firstAccumI->getOpcode();
   this->reductionOperation =
-      opInfo.accumOpForType(binOpCode, phiInst->getType());
+      this->accumOpInfo.accumOpForType(binOpCode, phiInst->getType());
 
   return;
 }
@@ -87,33 +104,8 @@ LoopCarriedVariable *Reduction::getLoopCarriedVariable(void) const {
   return this->lcVariable;
 }
 
-Value *Reduction::getInitialValue(Instruction *producer) const {
-
-  /*
-   * Fetch the loop-carried variable.
-   */
-  auto lcVar = this->getLoopCarriedVariable();
-
-  /*
-   * Fetch the PHI in the header.
-   */
-  auto headerProducerPHI = lcVar->getLoopEntryPHIForValueOfVariable(producer);
-  assert(headerProducerPHI != nullptr);
-
-  /*
-   * Get the index of the pre-header.
-   */
-  auto loopPreHeader = this->loop->getPreHeader();
-  assert(loopPreHeader != nullptr);
-  auto initValPHIIndex = headerProducerPHI->getBasicBlockIndex(loopPreHeader);
-
-  /*
-   * Fetch the initial value.
-   */
-  auto initialValue = headerProducerPHI->getIncomingValue(initValPHIIndex);
-  assert(initialValue != nullptr);
-
-  return initialValue;
+Value *Reduction::getInitialValue(void) const {
+  return this->initialValue;
 }
 
 } // namespace llvm::noelle

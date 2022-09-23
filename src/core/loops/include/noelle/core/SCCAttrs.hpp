@@ -195,8 +195,6 @@ public:
 
 protected:
   LoopStructure *loop;
-
-private:
   SCC *scc;
   SCCType sccType;
   std::set<BasicBlock *> bbs;

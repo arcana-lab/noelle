@@ -41,11 +41,14 @@ public:
 
   LoopCarriedVariable *getLoopCarriedVariable(void) const override;
 
-  Value *getInitialValue(Instruction *producer) const;
+  Value *getInitialValue(void) const;
 
 private:
   Instruction::BinaryOps reductionOperation;
   LoopCarriedVariable *lcVariable;
+  Value *initialValue;
+
+  void initializeObject(Value *initialValue);
 };
 
 } // namespace llvm::noelle
