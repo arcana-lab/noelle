@@ -78,7 +78,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
    * Tag SCCs depending on their characteristics.
    */
   loopSCCDAG->iterateOverSCCs(
-      [this, &SE, loopNode, rootLoop, &ivs, &loopGoverningIVs](
+      [this, &SE, loopNode, rootLoop, &ivs, &loopGoverningIVs, &DS](
           SCC *scc) -> bool {
         /*
          * Allocate the metadata about this SCC.
@@ -87,7 +87,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
         auto isReducable = lcVar != nullptr;
         SCCAttrs *sccInfo = nullptr;
         if (isReducable) {
-          sccInfo = new Reduction(scc, this->accumOpInfo, rootLoop, lcVar);
+          sccInfo = new Reduction(scc, this->accumOpInfo, rootLoop, lcVar, DS);
         } else {
           sccInfo = new SCCAttrs(scc, this->accumOpInfo, rootLoop);
         }

@@ -1343,6 +1343,12 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
   assert(environment != nullptr);
 
   /*
+   * Fetch the SCCDAG.
+   */
+  auto sccManager = LDI->getSCCManager();
+  auto sccdag = sccManager->getSCCDAG();
+
+  /*
    * Iterate over live-out variables.
    */
   for (auto envID : environment->getEnvIDsOfLiveOutVars()) {
@@ -1364,9 +1370,11 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
      */
     auto producer = environment->getProducer(envID);
     assert(producer != nullptr);
-    auto loopEntryProducerPHI =
-        this->fetchLoopEntryPHIOfProducer(LDI, producer);
+    auto producerSCC = sccdag->sccOfValue(producer);
+    auto reductionVar = static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
+    auto loopEntryProducerPHI = reductionVar->getPhiThatAccumulatesValuesBetweenLoopIterations();
     assert(loopEntryProducerPHI != nullptr);
+    assert(loopEntryProducerPHI == this->fetchLoopEntryPHIOfProducer(LDI, producer));
 
     /*
      * Fetch the related instruction of the producer that has been created

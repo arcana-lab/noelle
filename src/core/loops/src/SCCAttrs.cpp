@@ -71,7 +71,7 @@ void SCCAttrs::setType(SCCAttrs::SCCType t) {
   return;
 }
 
-iterator_range<SCCAttrs::phi_iterator> SCCAttrs::getPHIs(void) {
+iterator_range<SCCAttrs::phi_iterator> SCCAttrs::getPHIs(void) const {
   return make_range(this->PHINodes.begin(), this->PHINodes.end());
 }
 

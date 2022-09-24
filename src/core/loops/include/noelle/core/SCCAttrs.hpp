@@ -115,7 +115,7 @@ public:
   /*
    * Get the PHIs.
    */
-  iterator_range<phi_iterator> getPHIs(void);
+  iterator_range<phi_iterator> getPHIs(void) const;
 
   /*
    * Check if the SCC contains a PHI instruction.

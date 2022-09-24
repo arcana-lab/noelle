@@ -23,6 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCCAttrs.hpp"
+#include "noelle/core/DominatorSummary.hpp"
 
 namespace llvm::noelle {
 
@@ -31,7 +32,8 @@ public:
   Reduction(SCC *s,
             AccumulatorOpInfo &opInfo,
             LoopStructure *loop,
-            LoopCarriedVariable *variable);
+            LoopCarriedVariable *variable,
+            DominatorSummary &dom);
 
   Reduction() = delete;
 
@@ -43,12 +45,15 @@ public:
 
   Value *getInitialValue(void) const;
 
+  PHINode *getPhiThatAccumulatesValuesBetweenLoopIterations(void) const ;
+
 private:
   Instruction::BinaryOps reductionOperation;
   LoopCarriedVariable *lcVariable;
   Value *initialValue;
+  PHINode *accumulator;
 
-  void initializeObject(Value *initialValue);
+  void initializeObject(Value *initialValue, LoopCarriedVariable *variable, DominatorSummary &dom);
 };
 
 } // namespace llvm::noelle

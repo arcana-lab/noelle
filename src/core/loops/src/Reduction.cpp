@@ -26,9 +26,11 @@ namespace llvm::noelle {
 Reduction::Reduction(SCC *s,
                      AccumulatorOpInfo &opInfo,
                      LoopStructure *loop,
-                     LoopCarriedVariable *variable)
+                     LoopCarriedVariable *variable,
+                     DominatorSummary &dom)
   : SCCAttrs(s, opInfo, loop),
-    lcVariable{ variable } {
+    lcVariable{ variable },
+    accumulator {nullptr} {
   assert(s != nullptr);
   assert(loop != nullptr);
   assert(this->lcVariable != nullptr);
@@ -43,12 +45,12 @@ Reduction::Reduction(SCC *s,
   /*
    * Initialize the reduction object.
    */
-  this->initializeObject(this->initialValue);
+  this->initializeObject(this->initialValue, this->lcVariable, dom);
 
   return;
 }
 
-void Reduction::initializeObject(Value *initialValue) {
+void Reduction::initializeObject(Value *initialValue, LoopCarriedVariable *variable, DominatorSummary &dom){
 
   /*
    * Find the PHI of the SCC.
@@ -89,6 +91,28 @@ void Reduction::initializeObject(Value *initialValue) {
   this->reductionOperation =
       this->accumOpInfo.accumOpForType(binOpCode, phiInst->getType());
 
+  /*
+   * Fetch the PHI
+   */
+  PHINode *phi = nullptr;
+  for (auto phiCandidate : this->getPHIs()){
+    auto found = true;
+    for (auto currentPhi : this->getPHIs()){
+      if (!dom.DT.dominates(phiCandidate, currentPhi)){
+        found = false;
+        break ;
+      }
+    }
+    if (found){
+      phi = phiCandidate;
+      break ;
+    }
+  }
+  if (phi == nullptr){
+    abort();
+  }
+  this->accumulator = phi;
+
   return;
 }
 
@@ -106,6 +130,10 @@ LoopCarriedVariable *Reduction::getLoopCarriedVariable(void) const {
 
 Value *Reduction::getInitialValue(void) const {
   return this->initialValue;
+}
+  
+PHINode *Reduction::getPhiThatAccumulatesValuesBetweenLoopIterations(void) const {
+  return this->accumulator;
 }
 
 } // namespace llvm::noelle
