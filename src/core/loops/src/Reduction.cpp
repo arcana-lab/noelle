@@ -30,7 +30,8 @@ Reduction::Reduction(SCC *s,
                      DominatorSummary &dom)
   : SCCAttrs(s, opInfo, loop),
     lcVariable{ variable },
-    accumulator {nullptr} {
+    accumulator{ nullptr },
+    identity{ nullptr } {
   assert(s != nullptr);
   assert(loop != nullptr);
   assert(this->lcVariable != nullptr);
@@ -50,7 +51,9 @@ Reduction::Reduction(SCC *s,
   return;
 }
 
-void Reduction::initializeObject(Value *initialValue, LoopCarriedVariable *variable, DominatorSummary &dom){
+void Reduction::initializeObject(Value *initialValue,
+                                 LoopCarriedVariable *variable,
+                                 DominatorSummary &dom) {
 
   /*
    * Find the PHI of the SCC.
@@ -95,23 +98,30 @@ void Reduction::initializeObject(Value *initialValue, LoopCarriedVariable *varia
    * Fetch the PHI
    */
   PHINode *phi = nullptr;
-  for (auto phiCandidate : this->getPHIs()){
+  for (auto phiCandidate : this->getPHIs()) {
     auto found = true;
-    for (auto currentPhi : this->getPHIs()){
-      if (!dom.DT.dominates(phiCandidate, currentPhi)){
+    for (auto currentPhi : this->getPHIs()) {
+      if (!dom.DT.dominates(phiCandidate, currentPhi)) {
         found = false;
-        break ;
+        break;
       }
     }
-    if (found){
+    if (found) {
       phi = phiCandidate;
-      break ;
+      break;
     }
   }
-  if (phi == nullptr){
+  if (phi == nullptr) {
     abort();
   }
   this->accumulator = phi;
+
+  /*
+   * Set the identity value
+   */
+  this->identity =
+      this->accumOpInfo.generateIdentityFor(firstAccumI,
+                                            this->accumulator->getType());
 
   return;
 }
@@ -131,9 +141,14 @@ LoopCarriedVariable *Reduction::getLoopCarriedVariable(void) const {
 Value *Reduction::getInitialValue(void) const {
   return this->initialValue;
 }
-  
-PHINode *Reduction::getPhiThatAccumulatesValuesBetweenLoopIterations(void) const {
+
+PHINode *Reduction::getPhiThatAccumulatesValuesBetweenLoopIterations(
+    void) const {
   return this->accumulator;
+}
+
+Value *Reduction::getIdentityValue(void) const {
+  return this->identity;
 }
 
 } // namespace llvm::noelle

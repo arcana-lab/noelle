@@ -1371,10 +1371,11 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
     auto producer = environment->getProducer(envID);
     assert(producer != nullptr);
     auto producerSCC = sccdag->sccOfValue(producer);
-    auto reductionVar = static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
-    auto loopEntryProducerPHI = reductionVar->getPhiThatAccumulatesValuesBetweenLoopIterations();
+    auto reductionVar =
+        static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
+    auto loopEntryProducerPHI =
+        reductionVar->getPhiThatAccumulatesValuesBetweenLoopIterations();
     assert(loopEntryProducerPHI != nullptr);
-    assert(loopEntryProducerPHI == this->fetchLoopEntryPHIOfProducer(LDI, producer));
 
     /*
      * Fetch the related instruction of the producer that has been created
@@ -1394,10 +1395,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
      * For example, if the variable reduced is an accumulator where "+" is used
      * to accumulate values, then "0" is the identity.
      */
-    auto identityV = this->getIdentityValueForEnvironmentValue(
-        LDI,
-        envID,
-        loopEntryProducerPHI->getType());
+    auto identityV = reductionVar->getIdentityValue();
 
     /*
      * Set the initial value for the private variable.

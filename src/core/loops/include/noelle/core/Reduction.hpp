@@ -45,15 +45,20 @@ public:
 
   Value *getInitialValue(void) const;
 
-  PHINode *getPhiThatAccumulatesValuesBetweenLoopIterations(void) const ;
+  Value *getIdentityValue(void) const;
+
+  PHINode *getPhiThatAccumulatesValuesBetweenLoopIterations(void) const;
 
 private:
   Instruction::BinaryOps reductionOperation;
   LoopCarriedVariable *lcVariable;
   Value *initialValue;
   PHINode *accumulator;
+  Value *identity;
 
-  void initializeObject(Value *initialValue, LoopCarriedVariable *variable, DominatorSummary &dom);
+  void initializeObject(Value *initialValue,
+                        LoopCarriedVariable *variable,
+                        DominatorSummary &dom);
 };
 
 } // namespace llvm::noelle

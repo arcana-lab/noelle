@@ -2,11 +2,34 @@
 
 installDir
 
+function display_help {
+  echo "USAGE: `basename $0` IR_FILE [-o OUTPUT_IR][-target ARCHITECTURE]" ;
+  return ;
+}
+
+# Fetch the inputs
 inputIR=$1
+outputIR=$3
+
+# Get the options
+while getopts ":h" option; do
+  case $option in
+    h) # display Help
+      display_help
+      exit;;
+      
+    \?) # Invalid option
+      echo "Error: Invalid option"
+      exit;;
+  esac
+done
+echo "CIAO"
+exit
+
+# Set the variables
 afterLoopMetadata="afterLoopMetadata.bc"
 intermediateResult="baseline_with_parallel_plan.bc" ;
 intermediateResult_unoptimized="parallelized_unoptimized.bc" ;
-outputIR=$3
 
 # Step 0: Add loop ID to all loops
 cmdToExecute="noelle-meta-loop-embed ${inputIR} -o ${afterLoopMetadata}"
