@@ -92,13 +92,23 @@ bool Planner::runOnModule(Module &M) {
   auto modified = false;
   uint32_t parallelizationOrderIndex = 0;
   auto mm = noelle.getMetadataManager();
+  uint64_t programMaxTimeSaved = 0;
+  uint64_t programMaxTimeSavedWithDOALLOnly = 0;
   for (auto tree : forest->getTrees()) {
 
     /*
      * Select the loops to parallelize.
      */
+    uint64_t maxTimeSaved = 0;
+    uint64_t maxTimeSavedWithDOALLOnly = 0;
     auto loopsToParallelize =
-        this->selectTheOrderOfLoopsToParallelize(noelle, profiles, tree);
+        this->selectTheOrderOfLoopsToParallelize(noelle,
+                                                 profiles,
+                                                 tree,
+                                                 maxTimeSaved,
+                                                 maxTimeSavedWithDOALLOnly);
+    programMaxTimeSaved += maxTimeSaved;
+    programMaxTimeSavedWithDOALLOnly += maxTimeSavedWithDOALLOnly;
 
     /*
      * Attach metadata representing the loop's order in the parallelization plan
@@ -121,6 +131,20 @@ bool Planner::runOnModule(Module &M) {
       delete loop;
     }
   }
+
+  /*
+   * Print statistics.
+   */
+  auto savedTimeTotal = ((double)programMaxTimeSaved)
+                        / ((double)profiles->getTotalInstructions());
+  savedTimeTotal *= 100;
+  errs() << "Planner:   Maximum time saved = " << savedTimeTotal << "% ("
+         << programMaxTimeSaved << ")\n";
+  savedTimeTotal = ((double)programMaxTimeSavedWithDOALLOnly)
+                   / ((double)profiles->getTotalInstructions());
+  savedTimeTotal *= 100;
+  errs() << "Planner:   Maximum time saved with DOALL only = " << savedTimeTotal
+         << "% (" << programMaxTimeSavedWithDOALLOnly << ")\n";
 
   errs() << "Planner: Exit\n";
   return modified;

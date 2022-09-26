@@ -198,7 +198,9 @@ void Planner::removeLoopsNotWorthParallelizing(
 std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
     Noelle &noelle,
     Hot *profiles,
-    noelle::StayConnectedNestedLoopForestNode *tree) {
+    noelle::StayConnectedNestedLoopForestNode *tree,
+    uint64_t &maxTimeSaved,
+    uint64_t &maxTimeSavedWithDOALLOnly) {
   std::vector<LoopDependenceInfo *> selectedLoops{};
 
   /*
@@ -211,9 +213,12 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
    * per loop.
    */
   std::map<LoopDependenceInfo *, uint64_t> timeSavedLoops;
-  auto selector = [&noelle, &timeSavedLoops, profiles](
-                      StayConnectedNestedLoopForestNode *n,
-                      uint32_t treeLevel) -> bool {
+  std::map<LoopStructure *, bool> doallLoops;
+  std::map<LoopStructure *, uint64_t> timeSavedPerLoop;
+  auto selector =
+      [&noelle, &timeSavedLoops, &timeSavedPerLoop, profiles, &doallLoops](
+          StayConnectedNestedLoopForestNode *n,
+          uint32_t treeLevel) -> bool {
     /*
      * Fetch the loop.
      */
@@ -250,10 +255,20 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
     }
 
     /*
+     * Tag DOALL loops.
+     */
+    if (biggestSCCTime == 0) {
+      doallLoops[ls] = true;
+    } else {
+      doallLoops[ls] = false;
+    }
+
+    /*
      * Compute the maximum amount of time saved by any parallelization
      * technique.
      */
     timeSavedLoops[ldi] = 0;
+    timeSavedPerLoop[ls] = 0;
     if (profiles->getIterations(ls) > 0) {
       auto instsPerIteration =
           profiles->getAverageTotalInstructionsPerIteration(ls);
@@ -264,6 +279,7 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
           (double)(instsPerIteration - instsInBiggestSCCPerIteration);
       auto timeSaved = timeSavedPerIteration * profiles->getIterations(ls);
       timeSavedLoops[ldi] = (uint64_t)timeSaved;
+      timeSavedPerLoop[ls] = (uint64_t)timeSaved;
     }
 
     return false;
@@ -318,6 +334,14 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
   if (selectedLoops.size() == 0) {
     return {};
   }
+
+  /*
+   * Evaluate savings
+   */
+  auto timeSavedPair =
+      this->evaluateSavings(noelle, tree, timeSavedPerLoop, doallLoops);
+  maxTimeSaved = timeSavedPair.first;
+  maxTimeSavedWithDOALLOnly = timeSavedPair.second;
 
   /*
    * Sort the loops depending on the amount of time that can be saved by a
