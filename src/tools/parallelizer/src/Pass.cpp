@@ -166,13 +166,6 @@ bool Parallelizer::runOnModule(Module &M) {
     }
 
     /*
-     * We are parallelizing a loop.
-     * Therefore, this loop must have an ID.
-     */
-    assert(loopIDOpt);
-    auto loopID = loopIDOpt.value();
-
-    /*
      * Parallelize the current loop.
      */
     auto loopIsParallelized = this->parallelizeLoop(ldi, noelle, heuristics);
@@ -182,7 +175,7 @@ bool Parallelizer::runOnModule(Module &M) {
      */
     if (loopIsParallelized) {
       errs()
-          << "Parallelizer:    Loop " << loopID << " has been parallelized\n";
+          << "Parallelizer:    Keep track of basic blocks being modified by the parallelization\n";
       modified = true;
       for (auto bb : ls->getBasicBlocks()) {
         modifiedBBs[bb] = true;
