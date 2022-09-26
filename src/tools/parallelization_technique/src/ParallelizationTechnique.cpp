@@ -816,6 +816,12 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
   auto cfgAnalysis = this->noelle.getCFGAnalysis();
 
   /*
+   * Fetch the loop SCCDAG
+   */
+  auto sccManager = LDI->getSCCManager();
+  auto loopSCCDAG = sccManager->getSCCDAG();
+
+  /*
    * Iterate over live-out variables and inject stores at the end of the
    * execution of the function of the task to propagate the new live-out values
    * back to the caller of the parallelized loop.
@@ -862,11 +868,20 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
     if (isReduced) {
 
       /*
+       * Fetch the reduction
+       */
+      auto producerSCC = loopSCCDAG->sccOfValue(producer);
+      auto reductionVariable =
+          static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
+      assert(reductionVariable != nullptr);
+
+      /*
        * Fetch the operator of the accumulator instruction for this reducable
        * variable Store the identity value of the operator
        */
-      auto identityV =
-          this->getIdentityValueForEnvironmentValue(LDI, envID, envType);
+      auto identityV = reductionVariable->getIdentityValue();
+      assert(identityV
+             == this->getIdentityValueForEnvironmentValue(LDI, envID, envType));
       auto newStore = entryBuilder.CreateStore(identityV, envPtr);
 
       /*
