@@ -168,10 +168,6 @@ protected:
   void setReducableVariablesToBeginAtIdentityValue(LoopDependenceInfo *LDI,
                                                    int taskIndex);
 
-  Value *getIdentityValueForEnvironmentValue(LoopDependenceInfo *LDI,
-                                             int environmentID,
-                                             Type *typeForValue);
-
   Value *castToCorrectReducibleType(IRBuilder<> &builder,
                                     Value *value,
                                     Type *targetType);

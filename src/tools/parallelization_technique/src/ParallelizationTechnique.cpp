@@ -880,8 +880,6 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
        * variable Store the identity value of the operator
        */
       auto identityV = reductionVariable->getIdentityValue();
-      assert(identityV
-             == this->getIdentityValueForEnvironmentValue(LDI, envID, envType));
       auto newStore = entryBuilder.CreateStore(identityV, envPtr);
 
       /*
@@ -1441,55 +1439,6 @@ PHINode *ParallelizationTechnique::fetchLoopEntryPHIOfProducer(
       headerProducerPHI != nullptr
       && "The reducible variable should be described by a single PHI in the header");
   return headerProducerPHI;
-}
-
-Value *ParallelizationTechnique::getIdentityValueForEnvironmentValue(
-    LoopDependenceInfo *LDI,
-    int environmentID,
-    Type *typeForValue) {
-
-  /*
-   * Fetch the SCC manager.
-   */
-  auto sccManager = LDI->getSCCManager();
-
-  /*
-   * Fetch the environment of the loop
-   */
-  auto environment = LDI->getEnvironment();
-  assert(environment != nullptr);
-
-  /*
-   * Fetch the producer of new values of the current environment variable.
-   */
-  auto producer = environment->getProducer(environmentID);
-
-  /*
-   * Fetch the SCC that this producer belongs to.
-   */
-  auto producerSCC = sccManager->getSCCDAG()->sccOfValue(producer);
-  assert(producerSCC != nullptr
-         && "The environment value doesn't belong to a loop SCC");
-
-  /*
-   * Fetch the attributes about the producer SCC.
-   */
-  auto sccAttrs = sccManager->getSCCAttrs(producerSCC);
-  assert(sccAttrs->numberOfAccumulators() > 0
-         && "The environment value isn't accumulated!");
-
-  /*
-   * Fetch the accumulator.
-   */
-  auto firstAccumI = *(sccAttrs->getAccumulators().begin());
-
-  /*
-   * Fetch the identity.
-   */
-  auto identityValue =
-      sccManager->accumOpInfo.generateIdentityFor(firstAccumI, typeForValue);
-
-  return identityValue;
 }
 
 void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
