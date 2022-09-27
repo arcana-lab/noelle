@@ -148,9 +148,6 @@ protected:
       BasicBlock *insertBasicBlock,
       DominatorSummary &taskDS);
 
-  PHINode *fetchLoopEntryPHIOfProducer(LoopDependenceInfo *LDI,
-                                       Value *producer);
-
   void generateCodeToStoreExitBlockIndex(LoopDependenceInfo *LDI,
                                          int taskIndex);
 

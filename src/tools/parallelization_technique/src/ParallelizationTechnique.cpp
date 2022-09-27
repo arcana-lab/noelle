@@ -1417,30 +1417,6 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
   }
 }
 
-PHINode *ParallelizationTechnique::fetchLoopEntryPHIOfProducer(
-    LoopDependenceInfo *LDI,
-    Value *producer) {
-
-  /*
-   * Fetch the SCC manager.
-   */
-  auto sccManager = LDI->getSCCManager();
-
-  auto sccdag = sccManager->getSCCDAG();
-  auto producerSCC = sccdag->sccOfValue(producer);
-
-  auto sccInfo = sccManager->getSCCAttrs(producerSCC);
-  auto reducibleVariable = sccInfo->getLoopCarriedVariable();
-  assert(reducibleVariable != nullptr);
-
-  auto headerProducerPHI =
-      reducibleVariable->getLoopEntryPHIForValueOfVariable(producer);
-  assert(
-      headerProducerPHI != nullptr
-      && "The reducible variable should be described by a single PHI in the header");
-  return headerProducerPHI;
-}
-
 void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
     LoopDependenceInfo *LDI,
     int taskIndex) {
