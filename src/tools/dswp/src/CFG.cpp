@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,7 @@
  */
 #include "DSWP.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void DSWP::generateLoopSubsetForStage(LoopDependenceInfo *LDI, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
@@ -131,9 +130,14 @@ void DSWP::generateLoopSubsetForStage(LoopDependenceInfo *LDI, int taskIndex) {
    */
   for (auto B : loopSummary->getBasicBlocks()) {
     auto clonedB = task->getCloneOfOriginalBasicBlock(B);
-    if (clonedB->getTerminator())
+    if (clonedB->getTerminator()) {
       continue;
+    }
     clonedB->eraseFromParent();
     task->removeOriginalBasicBlock(B);
   }
+
+  return;
 }
+
+} // namespace llvm::noelle
