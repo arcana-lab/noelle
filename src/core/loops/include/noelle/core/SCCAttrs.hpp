@@ -143,21 +143,6 @@ public:
   iterator_range<instruction_iterator> getAccumulators(void);
 
   /*
-   * Return the single accumulator if it exists. nullptr otherwise.
-   */
-  Instruction *getSingleAccumulator(void);
-
-  /*
-   * Check if the SCC contains an accumulator.
-   */
-  bool doesItContainThisInstructionAsAccumulator(Instruction *inst);
-
-  /*
-   * Return the number of accumulators included in the SCC.
-   */
-  uint32_t numberOfAccumulators(void);
-
-  /*
    * If only one loop carried variable is contained, return that variable
    */
   virtual LoopCarriedVariable *getLoopCarriedVariable(void) const;

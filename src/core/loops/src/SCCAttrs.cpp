@@ -83,20 +83,12 @@ bool SCCAttrs::doesItContainThisPHI(PHINode *phi) {
   return this->PHINodes.find(phi) != this->PHINodes.end();
 }
 
-bool SCCAttrs::doesItContainThisInstructionAsAccumulator(Instruction *inst) {
-  return this->accumulators.find(inst) != this->accumulators.end();
-}
-
 bool SCCAttrs::isCommutative(void) const {
   return this->commutative;
 }
 
 uint32_t SCCAttrs::numberOfPHIs(void) {
   return this->PHINodes.size();
-}
-
-uint32_t SCCAttrs::numberOfAccumulators(void) {
-  return this->accumulators.size();
 }
 
 PHINode *SCCAttrs::getSinglePHI(void) {
@@ -111,15 +103,6 @@ PHINode *SCCAttrs::getSinglePHI(void) {
 PHINode *SCCAttrs::getSingleHeaderPHI(void) {
   return this->headerPHINodes.size() != 1 ? nullptr
                                           : *this->headerPHINodes.begin();
-}
-
-Instruction *SCCAttrs::getSingleAccumulator(void) {
-  if (this->accumulators.size() != 1) {
-    return nullptr;
-  }
-
-  auto singleAccumulator = *this->accumulators.begin();
-  return singleAccumulator;
 }
 
 void SCCAttrs::collectPHIsAndAccumulators(LoopStructure &LS) {

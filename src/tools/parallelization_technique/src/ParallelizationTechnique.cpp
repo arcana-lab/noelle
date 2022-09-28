@@ -1104,10 +1104,20 @@ Instruction *ParallelizationTechnique::
   for (auto originalPHI : sccManager->getSCCAttrs(producerSCC)->getPHIs()) {
     intermediateValues.insert(task->getCloneOfOriginalInstruction(originalPHI));
   }
-  for (auto originalI :
-       sccManager->getSCCAttrs(producerSCC)->getAccumulators()) {
-    intermediateValues.insert(task->getCloneOfOriginalInstruction(originalI));
-  }
+  auto f = [&intermediateValues, task](Instruction *i) -> bool {
+    if (isa<LoadInst>(i)) {
+      return false;
+    }
+    if (isa<StoreInst>(i)) {
+      return false;
+    }
+    if (isa<CallBase>(i)) {
+      return false;
+    }
+    intermediateValues.insert(task->getCloneOfOriginalInstruction(i));
+    return false;
+  };
+  producerSCC->iterateOverInstructions(f);
 
   /*
    * If in the insert block there already exists a single intermediate,
