@@ -28,10 +28,12 @@ Reduction::Reduction(SCC *s,
                      LoopStructure *loop,
                      LoopCarriedVariable *variable,
                      DominatorSummary &dom)
-  : SCCAttrs(s, opInfo, loop),
+  : SCCAttrs(s, loop),
+    accumOpInfo{ opInfo },
     lcVariable{ variable },
     accumulator{ nullptr },
-    identity{ nullptr } {
+    identity{ nullptr },
+    accumulators{} {
   assert(s != nullptr);
   assert(loop != nullptr);
   assert(this->lcVariable != nullptr);
@@ -42,6 +44,11 @@ Reduction::Reduction(SCC *s,
    */
   this->initialValue = this->lcVariable->getInitialValue();
   assert(this->initialValue != nullptr);
+
+  /*
+   * Collect the accumulators included in the SCC.
+   */
+  this->collectAccumulators(*loop);
 
   /*
    * Initialize the reduction object.
@@ -149,6 +156,53 @@ PHINode *Reduction::getPhiThatAccumulatesValuesBetweenLoopIterations(
 
 Value *Reduction::getIdentityValue(void) const {
   return this->identity;
+}
+
+iterator_range<SCCAttrs::instruction_iterator> Reduction::getAccumulators(
+    void) {
+  return make_range(this->accumulators.begin(), this->accumulators.end());
+}
+
+void Reduction::collectAccumulators(LoopStructure &LS) {
+
+  /*
+   * Iterate over elements of the SCC to collect PHIs and accumulators.
+   */
+  for (auto iNodePair : this->scc->internalNodePairs()) {
+
+    /*
+     * Fetch the current element of the SCC.
+     */
+    auto V = iNodePair.first;
+
+    /*
+     * Check if it is a PHI.
+     */
+    if (auto phi = dyn_cast<PHINode>(V)) {
+      continue;
+    }
+
+    /*
+     * Check if it is an accumulator.
+     */
+    if (auto I = dyn_cast<Instruction>(V)) {
+
+      /*
+       * Fetch the opcode.
+       */
+      auto binOp = I->getOpcode();
+
+      /*
+       * Check if this is an opcode we handle.
+       */
+      if (accumOpInfo.accumOps.find(binOp) != accumOpInfo.accumOps.end()) {
+        this->accumulators.insert(I);
+        continue;
+      }
+    }
+  }
+
+  return;
 }
 
 } // namespace llvm::noelle

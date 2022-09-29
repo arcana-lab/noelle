@@ -89,7 +89,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
         if (isReducable) {
           sccInfo = new Reduction(scc, this->accumOpInfo, rootLoop, lcVar, DS);
         } else {
-          sccInfo = new SCCAttrs(scc, this->accumOpInfo, rootLoop);
+          sccInfo = new SCCAttrs(scc, rootLoop);
         }
         assert(sccInfo != nullptr);
         this->sccToInfo[scc] = sccInfo;

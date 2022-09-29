@@ -24,6 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCCAttrs.hpp"
 #include "noelle/core/DominatorSummary.hpp"
+#include "noelle/core/AccumulatorOpInfo.hpp"
 
 namespace llvm::noelle {
 
@@ -47,18 +48,24 @@ public:
 
   Value *getIdentityValue(void) const;
 
+  iterator_range<instruction_iterator> getAccumulators(void);
+
   PHINode *getPhiThatAccumulatesValuesBetweenLoopIterations(void) const;
 
 private:
+  AccumulatorOpInfo accumOpInfo;
   Instruction::BinaryOps reductionOperation;
   LoopCarriedVariable *lcVariable;
   Value *initialValue;
   PHINode *accumulator;
   Value *identity;
+  std::set<Instruction *> accumulators;
 
   void initializeObject(Value *initialValue,
                         LoopCarriedVariable *variable,
                         DominatorSummary &dom);
+
+  void collectAccumulators(LoopStructure &LS);
 };
 
 } // namespace llvm::noelle

@@ -22,7 +22,6 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/AccumulatorOpInfo.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/Variable.hpp"
 #include "noelle/core/MemoryCloningAnalysis.hpp"
@@ -53,7 +52,7 @@ public:
   /*
    * Constructor
    */
-  SCCAttrs(SCC *s, AccumulatorOpInfo &opInfo, LoopStructure *loop);
+  SCCAttrs(SCC *s, LoopStructure *loop);
 
   SCCAttrs() = delete;
 
@@ -138,11 +137,6 @@ public:
   uint32_t numberOfPHIs(void);
 
   /*
-   * Get the accumulators.
-   */
-  iterator_range<instruction_iterator> getAccumulators(void);
-
-  /*
    * If only one loop carried variable is contained, return that variable
    */
   virtual LoopCarriedVariable *getLoopCarriedVariable(void) const;
@@ -183,10 +177,8 @@ protected:
   SCC *scc;
   SCCType sccType;
   std::set<BasicBlock *> bbs;
-  AccumulatorOpInfo accumOpInfo;
   std::set<Instruction *> controlFlowInsts;
   std::set<PHINode *> PHINodes;
-  std::set<Instruction *> accumulators;
   std::set<PHINode *> headerPHINodes;
 
   std::unordered_set<const ClonableMemoryLocation *> clonableMemoryLocations;
@@ -196,7 +188,7 @@ protected:
   bool hasIV;
   bool commutative;
 
-  void collectPHIsAndAccumulators(LoopStructure &LS);
+  void collectPHIs(LoopStructure &LS);
   void collectControlFlowInstructions(void);
 };
 

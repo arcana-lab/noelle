@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -23,14 +23,12 @@
 
 namespace llvm::noelle {
 
-SCCAttrs::SCCAttrs(SCC *s, AccumulatorOpInfo &opInfo, LoopStructure *loop)
+SCCAttrs::SCCAttrs(SCC *s, LoopStructure *loop)
   : loop{ loop },
     scc{ s },
     sccType{ SCCType::SEQUENTIAL },
-    accumOpInfo{ opInfo },
     PHINodes{},
     headerPHINodes{},
-    accumulators{},
     controlFlowInsts{},
     controlPairs{},
     isClonable{ false },
@@ -54,9 +52,9 @@ SCCAttrs::SCCAttrs(SCC *s, AccumulatorOpInfo &opInfo, LoopStructure *loop)
   this->collectControlFlowInstructions();
 
   /*
-   * Collect PHIs and accumulators included in the SCC.
+   * Collect PHIs included in the SCC.
    */
-  this->collectPHIsAndAccumulators(*loop);
+  this->collectPHIs(*loop);
 
   return;
 }
@@ -73,10 +71,6 @@ void SCCAttrs::setType(SCCAttrs::SCCType t) {
 
 iterator_range<SCCAttrs::phi_iterator> SCCAttrs::getPHIs(void) const {
   return make_range(this->PHINodes.begin(), this->PHINodes.end());
-}
-
-iterator_range<SCCAttrs::instruction_iterator> SCCAttrs::getAccumulators(void) {
-  return make_range(this->accumulators.begin(), this->accumulators.end());
 }
 
 bool SCCAttrs::doesItContainThisPHI(PHINode *phi) {
@@ -105,10 +99,10 @@ PHINode *SCCAttrs::getSingleHeaderPHI(void) {
                                           : *this->headerPHINodes.begin();
 }
 
-void SCCAttrs::collectPHIsAndAccumulators(LoopStructure &LS) {
+void SCCAttrs::collectPHIs(LoopStructure &LS) {
 
   /*
-   * Iterate over elements of the SCC to collect PHIs and accumulators.
+   * Iterate over elements of the SCC to collect PHIs.
    */
   for (auto iNodePair : this->scc->internalNodePairs()) {
 
@@ -126,25 +120,6 @@ void SCCAttrs::collectPHIsAndAccumulators(LoopStructure &LS) {
         this->headerPHINodes.insert(phi);
       }
       continue;
-    }
-
-    /*
-     * Check if it is an accumulator.
-     */
-    if (auto I = dyn_cast<Instruction>(V)) {
-
-      /*
-       * Fetch the opcode.
-       */
-      auto binOp = I->getOpcode();
-
-      /*
-       * Check if this is an opcode we handle.
-       */
-      if (accumOpInfo.accumOps.find(binOp) != accumOpInfo.accumOps.end()) {
-        this->accumulators.insert(I);
-        continue;
-      }
     }
   }
 
