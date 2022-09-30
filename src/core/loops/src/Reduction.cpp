@@ -24,12 +24,11 @@
 namespace llvm::noelle {
 
 Reduction::Reduction(SCC *s,
-                     AccumulatorOpInfo &opInfo,
                      LoopStructure *loop,
                      LoopCarriedVariable *variable,
                      DominatorSummary &dom)
   : SCCAttrs(s, loop),
-    accumOpInfo{ opInfo },
+    accumOpInfo{},
     lcVariable{ variable },
     accumulator{ nullptr },
     identity{ nullptr },

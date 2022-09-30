@@ -47,11 +47,6 @@ public:
   SCCDAGAttrs() = delete;
 
   /*
-   * Graph wide structures
-   */
-  AccumulatorOpInfo accumOpInfo;
-
-  /*
    * Dependencies in graph
    */
   std::map<SCC *, Criticisms> sccToLoopCarriedDependencies;

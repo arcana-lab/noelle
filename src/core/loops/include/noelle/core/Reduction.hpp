@@ -31,7 +31,6 @@ namespace llvm::noelle {
 class Reduction : public SCCAttrs {
 public:
   Reduction(SCC *s,
-            AccumulatorOpInfo &opInfo,
             LoopStructure *loop,
             LoopCarriedVariable *variable,
             DominatorSummary &dom);

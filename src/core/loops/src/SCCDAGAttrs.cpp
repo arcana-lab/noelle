@@ -87,7 +87,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
         auto isReducable = lcVar != nullptr;
         SCCAttrs *sccInfo = nullptr;
         if (isReducable) {
-          sccInfo = new Reduction(scc, this->accumOpInfo, rootLoop, lcVar, DS);
+          sccInfo = new Reduction(scc, rootLoop, lcVar, DS);
         } else {
           sccInfo = new SCCAttrs(scc, rootLoop);
         }
