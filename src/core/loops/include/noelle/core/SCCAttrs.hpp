@@ -136,11 +136,6 @@ public:
    */
   uint32_t numberOfPHIs(void);
 
-  /*
-   * If only one loop carried variable is contained, return that variable
-   */
-  virtual LoopCarriedVariable *getLoopCarriedVariable(void) const;
-
   const std::pair<Value *, Instruction *>
       *getSingleInstructionThatControlLoopExit(void);
 

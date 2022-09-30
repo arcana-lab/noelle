@@ -51,7 +51,8 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../talkdown/include
   ../../invariants/include
   ../../induction_variables/include
-  ../include 
+  ../include
+  ./
   ${CMAKE_INSTALL_PREFIX}/include
   )
 

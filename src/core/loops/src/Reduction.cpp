@@ -20,28 +20,29 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/Reduction.hpp"
+#include "AccumulatorOpInfo.hpp"
 
 namespace llvm::noelle {
+
+static AccumulatorOpInfo accumOpInfo;
 
 Reduction::Reduction(SCC *s,
                      LoopStructure *loop,
                      LoopCarriedVariable *variable,
                      DominatorSummary &dom)
   : SCCAttrs(s, loop),
-    accumOpInfo{},
-    lcVariable{ variable },
     accumulator{ nullptr },
     identity{ nullptr },
     accumulators{} {
   assert(s != nullptr);
   assert(loop != nullptr);
-  assert(this->lcVariable != nullptr);
+  assert(variable != nullptr);
 
   /*
    * Fetch the initial value of the reduced variable.
    * This is the value the variable has just before jumping into the loop.
    */
-  this->initialValue = this->lcVariable->getInitialValue();
+  this->initialValue = variable->getInitialValue();
   assert(this->initialValue != nullptr);
 
   /*
@@ -52,14 +53,12 @@ Reduction::Reduction(SCC *s,
   /*
    * Initialize the reduction object.
    */
-  this->initializeObject(this->initialValue, this->lcVariable, dom);
+  this->initializeObject(this->initialValue, dom);
 
   return;
 }
 
-void Reduction::initializeObject(Value *initialValue,
-                                 LoopCarriedVariable *variable,
-                                 DominatorSummary &dom) {
+void Reduction::initializeObject(Value *initialValue, DominatorSummary &dom) {
 
   /*
    * Find the PHI of the SCC.
@@ -98,7 +97,7 @@ void Reduction::initializeObject(Value *initialValue,
   auto firstAccumI = *(this->getAccumulators().begin());
   auto binOpCode = firstAccumI->getOpcode();
   this->reductionOperation =
-      this->accumOpInfo.accumOpForType(binOpCode, phiInst->getType());
+      accumOpInfo.accumOpForType(binOpCode, phiInst->getType());
 
   /*
    * Fetch the PHI
@@ -126,8 +125,8 @@ void Reduction::initializeObject(Value *initialValue,
    * Set the identity value
    */
   this->identity =
-      this->accumOpInfo.generateIdentityFor(firstAccumI,
-                                            this->accumulator->getType());
+      accumOpInfo.generateIdentityFor(firstAccumI,
+                                      this->accumulator->getType());
 
   return;
 }
@@ -138,10 +137,6 @@ Instruction::BinaryOps Reduction::getReductionOperation(void) const {
 
 bool Reduction::canExecuteReducibly(void) const {
   return true;
-}
-
-LoopCarriedVariable *Reduction::getLoopCarriedVariable(void) const {
-  return this->lcVariable;
 }
 
 Value *Reduction::getInitialValue(void) const {

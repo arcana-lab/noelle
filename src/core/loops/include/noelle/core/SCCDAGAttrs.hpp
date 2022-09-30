@@ -22,7 +22,6 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/AccumulatorOpInfo.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCAttrs.hpp"

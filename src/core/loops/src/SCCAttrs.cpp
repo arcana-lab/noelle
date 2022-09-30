@@ -210,10 +210,6 @@ void SCCAttrs::setSCCToBeClonable(bool isClonable) {
   return;
 }
 
-LoopCarriedVariable *SCCAttrs::getLoopCarriedVariable(void) const {
-  return nullptr;
-}
-
 void SCCAttrs::setSCCToBeClonableUsingLocalMemory(void) {
   this->isSCCClonableIntoLocalMemory = true;
 }
