@@ -51,11 +51,12 @@ private:
   Value *initialValue;
   PHINode *accumulator;
   Value *identity;
-  std::set<Instruction *> accumulators;
 
-  void initializeObject(Value *initialValue, DominatorSummary &dom);
+  void initializeObject(Value *initialValue,
+                        DominatorSummary &dom,
+                        LoopStructure &loop);
 
-  void collectAccumulators(LoopStructure &LS);
+  std::set<Instruction *> collectAccumulators(LoopStructure &LS);
 
   iterator_range<instruction_iterator> getAccumulators(void);
 };

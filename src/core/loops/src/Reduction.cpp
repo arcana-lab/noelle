@@ -32,8 +32,7 @@ Reduction::Reduction(SCC *s,
                      DominatorSummary &dom)
   : SCCAttrs(s, loop),
     accumulator{ nullptr },
-    identity{ nullptr },
-    accumulators{} {
+    identity{ nullptr } {
   assert(s != nullptr);
   assert(loop != nullptr);
   assert(variable != nullptr);
@@ -46,19 +45,16 @@ Reduction::Reduction(SCC *s,
   assert(this->initialValue != nullptr);
 
   /*
-   * Collect the accumulators included in the SCC.
-   */
-  this->collectAccumulators(*loop);
-
-  /*
    * Initialize the reduction object.
    */
-  this->initializeObject(this->initialValue, dom);
+  this->initializeObject(this->initialValue, dom, *loop);
 
   return;
 }
 
-void Reduction::initializeObject(Value *initialValue, DominatorSummary &dom) {
+void Reduction::initializeObject(Value *initialValue,
+                                 DominatorSummary &dom,
+                                 LoopStructure &loop) {
 
   /*
    * Find the PHI of the SCC.
@@ -92,9 +88,14 @@ void Reduction::initializeObject(Value *initialValue, DominatorSummary &dom) {
   assert(phiInst != nullptr);
 
   /*
+   * Fetch the accumulators.
+   */
+  auto accumulators = this->collectAccumulators(loop);
+
+  /*
    * Set the reduction operation.
    */
-  auto firstAccumI = *(this->getAccumulators().begin());
+  auto firstAccumI = *(accumulators().begin());
   auto binOpCode = firstAccumI->getOpcode();
   this->reductionOperation =
       accumOpInfo.accumOpForType(binOpCode, phiInst->getType());
@@ -152,12 +153,8 @@ Value *Reduction::getIdentityValue(void) const {
   return this->identity;
 }
 
-iterator_range<SCCAttrs::instruction_iterator> Reduction::getAccumulators(
-    void) {
-  return make_range(this->accumulators.begin(), this->accumulators.end());
-}
-
-void Reduction::collectAccumulators(LoopStructure &LS) {
+std::set<Instruction *> Reduction::collectAccumulators(LoopStructure &LS) {
+  std::set<Instruction *> accumulators;
 
   /*
    * Iterate over elements of the SCC to collect PHIs and accumulators.
@@ -190,13 +187,13 @@ void Reduction::collectAccumulators(LoopStructure &LS) {
        * Check if this is an opcode we handle.
        */
       if (accumOpInfo.accumOps.find(binOp) != accumOpInfo.accumOps.end()) {
-        this->accumulators.insert(I);
+        accumulators.insert(I);
         continue;
       }
     }
   }
 
-  return;
+  return accumulators;
 }
 
 } // namespace llvm::noelle
