@@ -52,6 +52,20 @@ Reduction::Reduction(SCC *s,
   return;
 }
 
+Reduction::Reduction(SCC *s,
+                     Value *initialValue,
+                     Instruction::BinaryOps reductionOperation,
+                     PHINode *accumulator,
+                     Value *identity)
+  : SCCAttrs(s, loop),
+    reductionOperation{ reductionOperation },
+    initialValue{ initialValue },
+    accumulator{ accumulator },
+    identity{ identity } {
+
+  return;
+}
+
 void Reduction::initializeObject(Value *initialValue,
                                  DominatorSummary &dom,
                                  LoopStructure &loop) {
@@ -81,7 +95,7 @@ void Reduction::initializeObject(Value *initialValue,
     this->scc->print(errs());
     errs() << "\n";
     errs() << "Reduction: Loop = ";
-    loop->print(errs());
+    loop.print(errs());
     errs() << "\n";
     abort();
   }
@@ -95,7 +109,7 @@ void Reduction::initializeObject(Value *initialValue,
   /*
    * Set the reduction operation.
    */
-  auto firstAccumI = *(accumulators().begin());
+  auto firstAccumI = *(accumulators.begin());
   auto binOpCode = firstAccumI->getOpcode();
   this->reductionOperation =
       accumOpInfo.accumOpForType(binOpCode, phiInst->getType());

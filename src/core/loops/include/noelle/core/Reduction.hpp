@@ -34,6 +34,12 @@ public:
             LoopCarriedVariable *variable,
             DominatorSummary &dom);
 
+  Reduction(SCC *s,
+            Value *initialValue,
+            Instruction::BinaryOps reductionOperation,
+            PHINode *accumulator,
+            Value *identity);
+
   Reduction() = delete;
 
   Instruction::BinaryOps getReductionOperation(void) const;
