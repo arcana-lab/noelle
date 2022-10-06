@@ -20,55 +20,64 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/Reduction.hpp"
-#include "AccumulatorOpInfo.hpp"
 
 namespace llvm::noelle {
 
-static AccumulatorOpInfo accumOpInfo;
-
-Reduction::Reduction(SCC *s,
-                     LoopStructure *loop,
-                     LoopCarriedVariable *variable,
-                     DominatorSummary &dom)
-  : SCCAttrs(s, loop),
+Reduction::Reduction(SCC *s, LoopStructure *loop, DominatorSummary &dom)
+  : SCCAttrs{ s, loop },
+    initialValue{ nullptr },
     accumulator{ nullptr },
     identity{ nullptr } {
-  assert(s != nullptr);
-  assert(loop != nullptr);
-  assert(variable != nullptr);
 
   /*
-   * Fetch the initial value of the reduced variable.
-   * This is the value the variable has just before jumping into the loop.
+   * Initialize the object.
    */
-  this->initialValue = variable->getInitialValue();
-  assert(this->initialValue != nullptr);
+  this->initializeObject(*loop);
 
   /*
-   * Initialize the reduction object.
+   * Fetch the accumulator
    */
-  this->initializeObject(this->initialValue, dom, *loop);
+  PHINode *phi = nullptr;
+  for (auto phiCandidate : this->getPHIs()) {
+    auto found = true;
+    for (auto currentPhi : this->getPHIs()) {
+      if (!dom.DT.dominates(phiCandidate, currentPhi)) {
+        found = false;
+        break;
+      }
+    }
+    if (found) {
+      phi = phiCandidate;
+      break;
+    }
+  }
+  if (phi == nullptr) {
+    abort();
+  }
+  this->accumulator = phi;
 
   return;
 }
 
 Reduction::Reduction(SCC *s,
+                     LoopStructure *loop,
                      Value *initialValue,
-                     Instruction::BinaryOps reductionOperation,
                      PHINode *accumulator,
                      Value *identity)
   : SCCAttrs(s, loop),
-    reductionOperation{ reductionOperation },
     initialValue{ initialValue },
     accumulator{ accumulator },
     identity{ identity } {
 
+  /*
+   * Initialize the object.
+   */
+  this->initializeObject(*loop);
+
   return;
 }
 
-void Reduction::initializeObject(Value *initialValue,
-                                 DominatorSummary &dom,
-                                 LoopStructure &loop) {
+void Reduction::initializeObject(LoopStructure &loop) {
 
   /*
    * Find the PHI of the SCC.
@@ -100,54 +109,9 @@ void Reduction::initializeObject(Value *initialValue,
     abort();
   }
   assert(phiInst != nullptr);
-
-  /*
-   * Fetch the accumulators.
-   */
-  auto accumulators = this->collectAccumulators(loop);
-
-  /*
-   * Set the reduction operation.
-   */
-  auto firstAccumI = *(accumulators.begin());
-  auto binOpCode = firstAccumI->getOpcode();
-  this->reductionOperation =
-      accumOpInfo.accumOpForType(binOpCode, phiInst->getType());
-
-  /*
-   * Fetch the PHI
-   */
-  PHINode *phi = nullptr;
-  for (auto phiCandidate : this->getPHIs()) {
-    auto found = true;
-    for (auto currentPhi : this->getPHIs()) {
-      if (!dom.DT.dominates(phiCandidate, currentPhi)) {
-        found = false;
-        break;
-      }
-    }
-    if (found) {
-      phi = phiCandidate;
-      break;
-    }
-  }
-  if (phi == nullptr) {
-    abort();
-  }
-  this->accumulator = phi;
-
-  /*
-   * Set the identity value
-   */
-  this->identity =
-      accumOpInfo.generateIdentityFor(firstAccumI,
-                                      this->accumulator->getType());
+  this->headerAccumulator = phiInst;
 
   return;
-}
-
-Instruction::BinaryOps Reduction::getReductionOperation(void) const {
-  return this->reductionOperation;
 }
 
 bool Reduction::canExecuteReducibly(void) const {
@@ -165,49 +129,6 @@ PHINode *Reduction::getPhiThatAccumulatesValuesBetweenLoopIterations(
 
 Value *Reduction::getIdentityValue(void) const {
   return this->identity;
-}
-
-std::set<Instruction *> Reduction::collectAccumulators(LoopStructure &LS) {
-  std::set<Instruction *> accumulators;
-
-  /*
-   * Iterate over elements of the SCC to collect PHIs and accumulators.
-   */
-  for (auto iNodePair : this->scc->internalNodePairs()) {
-
-    /*
-     * Fetch the current element of the SCC.
-     */
-    auto V = iNodePair.first;
-
-    /*
-     * Check if it is a PHI.
-     */
-    if (auto phi = dyn_cast<PHINode>(V)) {
-      continue;
-    }
-
-    /*
-     * Check if it is an accumulator.
-     */
-    if (auto I = dyn_cast<Instruction>(V)) {
-
-      /*
-       * Fetch the opcode.
-       */
-      auto binOp = I->getOpcode();
-
-      /*
-       * Check if this is an opcode we handle.
-       */
-      if (accumOpInfo.accumOps.find(binOp) != accumOpInfo.accumOps.end()) {
-        accumulators.insert(I);
-        continue;
-      }
-    }
-  }
-
-  return accumulators;
 }
 
 } // namespace llvm::noelle

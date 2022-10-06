@@ -21,7 +21,7 @@
  */
 #include "noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/Reduction.hpp"
+#include "noelle/core/BinaryReduction.hpp"
 #include "LoopCarriedDependencies.hpp"
 
 namespace llvm::noelle {
@@ -87,7 +87,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
         auto isReducable = lcVar != nullptr;
         SCCAttrs *sccInfo = nullptr;
         if (isReducable) {
-          sccInfo = new Reduction(scc, rootLoop, lcVar, DS);
+          sccInfo = new BinaryReduction(scc, rootLoop, lcVar, DS);
         } else {
           sccInfo = new SCCAttrs(scc, rootLoop);
         }

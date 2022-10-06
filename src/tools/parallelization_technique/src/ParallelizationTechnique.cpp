@@ -21,6 +21,7 @@
  */
 #include "noelle/tools/ParallelizationTechnique.hpp"
 #include "noelle/core/Reduction.hpp"
+#include "noelle/core/BinaryReduction.hpp"
 
 namespace llvm::noelle {
 
@@ -276,7 +277,7 @@ BasicBlock *ParallelizationTechnique::
     auto producer = environment->getProducer(envID);
     auto producerSCC = loopSCCDAG->sccOfValue(producer);
     auto producerSCCAttributes =
-        static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
+        static_cast<BinaryReduction *>(sccManager->getSCCAttrs(producerSCC));
     assert(producerSCCAttributes != nullptr);
 
     /*

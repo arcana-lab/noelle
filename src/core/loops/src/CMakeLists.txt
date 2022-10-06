@@ -11,6 +11,7 @@ set(Srcs
   LoopIterationDomainSpaceAnalysis.cpp
   SCCAttrs.cpp
   Reduction.cpp
+  BinaryReduction.cpp
   SCCDAGAttrs.cpp
   SCCDAGNormalizer.cpp
   LoopDependenceInfo.cpp

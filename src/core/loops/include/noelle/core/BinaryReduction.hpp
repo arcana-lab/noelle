@@ -22,38 +22,39 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/SCCAttrs.hpp"
+#include "noelle/core/Reduction.hpp"
 #include "noelle/core/DominatorSummary.hpp"
 
 namespace llvm::noelle {
 
-class Reduction : public SCCAttrs {
+class BinaryReduction : public Reduction {
 public:
-  Reduction() = delete;
+  BinaryReduction(SCC *s,
+                  LoopStructure *loop,
+                  LoopCarriedVariable *variable,
+                  DominatorSummary &dom);
 
-  Value *getInitialValue(void) const;
+  BinaryReduction(SCC *s,
+                  LoopStructure *loop,
+                  Value *initialValue,
+                  Instruction::BinaryOps reductionOperation,
+                  PHINode *accumulator,
+                  Value *identity);
 
-  Value *getIdentityValue(void) const;
+  BinaryReduction() = delete;
 
-  PHINode *getPhiThatAccumulatesValuesBetweenLoopIterations(void) const;
-
-  bool canExecuteReducibly(void) const override;
+  Instruction::BinaryOps getReductionOperation(void) const;
 
 protected:
-  Value *initialValue;
-  PHINode *accumulator;
-  Value *identity;
-  PHINode *headerAccumulator;
+  Instruction::BinaryOps reductionOperation;
 
-  Reduction(SCC *s, LoopStructure *loop, DominatorSummary &dom);
+  void setBinaryReductionInformation(Value *initialValue,
+                                     DominatorSummary &dom,
+                                     LoopStructure &loop);
 
-  Reduction(SCC *s,
-            LoopStructure *loop,
-            Value *initialValue,
-            PHINode *accumulator,
-            Value *identity);
+  std::set<Instruction *> collectAccumulators(LoopStructure &LS);
 
-  void initializeObject(LoopStructure &loop);
+  iterator_range<instruction_iterator> getAccumulators(void);
 };
 
 } // namespace llvm::noelle
