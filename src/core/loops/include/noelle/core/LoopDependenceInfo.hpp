@@ -35,6 +35,9 @@
 
 namespace llvm::noelle {
 
+void* getSCAFLoopAA();
+
+
 class LoopDependenceInfo {
 public:
   /*

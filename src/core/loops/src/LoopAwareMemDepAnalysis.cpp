@@ -21,6 +21,7 @@
  */
 #include "LoopAwareMemDepAnalysis.hpp"
 #include "noelle/core/DataFlow.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
 
 /*
  * SCAF headers
@@ -41,6 +42,14 @@ namespace llvm::noelle {
 static liberty::LoopAA *NoelleSCAFAA = nullptr;
 static liberty::ModuleLoops *ModuleLoops = nullptr;
 #endif
+
+void *getSCAFLoopAA() {
+#ifdef ENABLE_SCAF
+  return NoelleSCAFAA;
+#else
+  return nullptr;
+#endif
+}
 
 class NoelleSCAFIntegration : public ModulePass {
 public:
