@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 - 2021  Simone Campanoni
+ * Copyright 2020 - 2022  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -41,6 +41,10 @@ public:
   CallGraph *getProgramCallGraph(void);
 
   Function *newFunction(const std::string &name, FunctionType &signature);
+
+  std::set<Function *> getFunctions(void) const;
+
+  std::set<Function *> getFunctionsReachableFrom(Function *startingPoint);
 
   void removeFunction(Function &f);
 

@@ -40,7 +40,7 @@ Noelle::Noelle()
     cm{ nullptr },
     om{ nullptr },
     mm{ nullptr },
-    linker{ nullptr }{
+    linker{ nullptr } {
   return;
 }
 
@@ -66,70 +66,6 @@ LLVMContext &Noelle::getProgramContext(void) const {
   auto &cxt = p->getContext();
 
   return cxt;
-}
-
-std::vector<Function *> *Noelle::getModuleFunctionsReachableFrom(
-    Module *module,
-    Function *startingPoint) {
-  auto functions = new std::vector<Function *>();
-
-  /*
-   * Fetch the call graph.
-   */
-  auto fm = this->getFunctionsManager();
-  auto callGraph = fm->getProgramCallGraph();
-
-  /*
-   * Compute the set of functions reachable from the starting point.
-   */
-  std::set<Function *> funcSet;
-  std::queue<Function *> funcToTraverse;
-  funcToTraverse.push(startingPoint);
-  while (!funcToTraverse.empty()) {
-    auto func = funcToTraverse.front();
-    funcToTraverse.pop();
-    if (funcSet.find(func) != funcSet.end())
-      continue;
-    funcSet.insert(func);
-
-    auto funcCGNode = callGraph->getFunctionNode(func);
-    for (auto outEdge : funcCGNode->getOutgoingEdges()) {
-      auto calleeNode = outEdge->getCallee();
-      auto F = calleeNode->getFunction();
-      if (!F) {
-        continue;
-      }
-      if (F->empty()) {
-        continue;
-      }
-      funcToTraverse.push(F);
-    }
-  }
-
-  /*
-   * Iterate over functions of the module and add to the vector only the ones
-   * that are reachable from the starting point. This will enforce that the
-   * order of the functions returned follows the one of the module.
-   */
-  for (auto &f : *module) {
-    if (funcSet.find(&f) == funcSet.end()) {
-      continue;
-    }
-    functions->push_back(&f);
-  }
-
-  /*
-   * Sort the functions.
-   */
-  auto compareFunctions = [](Function *f1, Function *f2) -> bool {
-    auto f1Name = f1->getName();
-    auto f2Name = f2->getName();
-    return (f1Name.compare(f2Name) < 0) ? true : false;
-  };
-
-  std::sort(functions->begin(), functions->end(), compareFunctions);
-
-  return functions;
 }
 
 uint32_t Noelle::fetchTheNextValue(std::stringstream &stream) {
@@ -241,9 +177,9 @@ ConstantsManager *Noelle::getConstantsManager(void) {
 
   return this->cm;
 }
-  
-Linker *Noelle::getLinker(void){
-  if (!this->linker){
+
+Linker *Noelle::getLinker(void) {
+  if (!this->linker) {
     auto tm = this->getTypesManager();
     this->linker = new Linker(*this->program, tm);
   }
