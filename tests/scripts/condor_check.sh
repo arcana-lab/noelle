@@ -216,5 +216,8 @@ else
   echo "  They are still running" ;
 fi
 
+# Delete empty directories
+find ./regression_* -type d -empty -delete ;
+
 # Clean 
 rm $currentResults ;
