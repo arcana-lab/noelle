@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -44,6 +44,8 @@ public:
   bool areGEPIndicesConstantOrIV(GetElementPtrInst *gep);
   bool areIdenticalGEPAccessesInSameLoop(GetElementPtrInst *gep1,
                                          GetElementPtrInst *gep2);
+
+  bool canPointToTheSameObject(Value *p1, Value *p2);
 
   bool isReadOnly(StringRef functionName);
   bool isMemoryless(StringRef functionName);
