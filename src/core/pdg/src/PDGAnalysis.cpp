@@ -692,21 +692,36 @@ void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
      * Fetch the source of the dependence.
      */
     auto source = edge->getOutgoingT();
-    if (!isa<Instruction>(source))
+    if (!isa<Instruction>(source)) {
       continue;
+    }
+
+    /*
+     * Check if the dependence can be removed because the instructions access
+     * separate memory regions.
+     */
+    auto i0 = edge->getOutgoingT();
+    auto i1 = edge->getIncomingT();
+    if (edge->isMemoryDependence() && (!isa<CallBase>(i0))
+        && (!isa<CallBase>(i1))
+        && (!this->allocAA->canPointToTheSameObject(edge->getOutgoingT(),
+                                                    edge->getIncomingT()))) {
+      removeEdges.insert(edge);
+      continue;
+    }
 
     /*
      * Check if the function of the dependence destiation cannot be reached from
      * main.
      */
     auto F = cast<Instruction>(source)->getFunction();
-    if (CGUnderMain.find(F) == CGUnderMain.end())
-      // continue;
-
-      if (edgeIsNotLoopCarriedMemoryDependency(edge)
-          || edgeIsAlongNonMemoryWritingFunctions(edge)) {
-        removeEdges.insert(edge);
-      }
+    if (CGUnderMain.find(F) == CGUnderMain.end()) {
+      continue;
+    }
+    if (edgeIsNotLoopCarriedMemoryDependency(edge)
+        || edgeIsAlongNonMemoryWritingFunctions(edge)) {
+      removeEdges.insert(edge);
+    }
   }
 
   /*
@@ -856,11 +871,6 @@ bool PDGAnalysis::isBackedgeIntoSameGlobal(DGEdge<Value> *edge) {
 }
 
 bool PDGAnalysis::isMemoryAccessIntoDifferentArrays(DGEdge<Value> *edge) {
-  if (!allocAA->canPointToTheSameObject(edge->getOutgoingT(),
-                                        edge->getIncomingT())) {
-    return true;
-  }
-
   Value *array1 = allocAA->getPrimitiveArrayAccess(edge->getOutgoingT()).first;
   Value *array2 = allocAA->getPrimitiveArrayAccess(edge->getIncomingT()).first;
   return (array1 && array2 && array1 != array2);

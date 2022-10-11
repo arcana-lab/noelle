@@ -593,7 +593,7 @@ bool AllocAA::canPointToTheSameObject(Value *p1, Value *p2) {
     loadInst = dyn_cast<LoadInst>(p2);
   }
   if (loadInst == nullptr) {
-    return false;
+    return true;
   }
 
   /*
@@ -604,18 +604,18 @@ bool AllocAA::canPointToTheSameObject(Value *p1, Value *p2) {
     storeInst = dyn_cast<StoreInst>(p2);
   }
   if (storeInst == nullptr) {
-    return false;
+    return true;
   }
 
   auto obj1 = dyn_cast<Argument>(loadInst->getPointerOperand());
   if (obj1 == nullptr) {
-    return false;
-  }
-  if (obj1->onlyReadsMemory()) {
     return true;
   }
+  if (obj1->onlyReadsMemory()) {
+    return false;
+  }
 
-  return false;
+  return true;
 }
 
 // Next there is code to register your pass to "opt"
