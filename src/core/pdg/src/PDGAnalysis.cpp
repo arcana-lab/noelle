@@ -714,10 +714,6 @@ void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
      * Check if the function of the dependence destiation cannot be reached from
      * main.
      */
-    auto F = cast<Instruction>(source)->getFunction();
-    if (CGUnderMain.find(F) == CGUnderMain.end()) {
-      continue;
-    }
     if (edgeIsNotLoopCarriedMemoryDependency(edge)
         || edgeIsAlongNonMemoryWritingFunctions(edge)) {
       removeEdges.insert(edge);
