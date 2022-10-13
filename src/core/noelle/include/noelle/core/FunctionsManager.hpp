@@ -23,12 +23,13 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/Hot.hpp"
 
 namespace llvm::noelle {
 
 class FunctionsManager {
 public:
-  FunctionsManager(Module &m, PDGAnalysis &noellePDGAnalysis);
+  FunctionsManager(Module &m, PDGAnalysis &noellePDGAnalysis, Hot *profiles);
 
   Function *getEntryFunction(void) const;
 
@@ -46,12 +47,15 @@ public:
 
   std::set<Function *> getFunctionsReachableFrom(Function *startingPoint);
 
+  void sortByHotness(std::vector<Function *> &functions);
+
   void removeFunction(Function &f);
 
 private:
   Module &program;
   PDGAnalysis &pdgAnalysis;
   CallGraph *pcg;
+  Hot *prof;
 };
 
 } // namespace llvm::noelle

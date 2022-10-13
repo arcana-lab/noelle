@@ -23,10 +23,13 @@
 
 namespace llvm::noelle {
 
-FunctionsManager::FunctionsManager(Module &m, PDGAnalysis &noellePDGAnalysis)
+FunctionsManager::FunctionsManager(Module &m,
+                                   PDGAnalysis &noellePDGAnalysis,
+                                   Hot *profiles)
   : program{ m },
     pdgAnalysis{ noellePDGAnalysis },
-    pcg{ nullptr } {
+    pcg{ nullptr },
+    prof{ profiles } {
   return;
 }
 
@@ -199,6 +202,25 @@ std::set<Function *> FunctionsManager::getFunctionsReachableFrom(
   }
 
   return functions;
+}
+
+void FunctionsManager::sortByHotness(std::vector<Function *> &functions) {
+
+  /*
+   * Define the order between functions.
+   */
+  auto compareLoops = [this](Function *f1, Function *f2) -> bool {
+    auto aInsts = this->prof->getTotalInstructions(f1);
+    auto bInsts = this->prof->getTotalInstructions(f2);
+    return aInsts > bInsts;
+  };
+
+  /*
+   * Sort the functions.
+   */
+  std::sort(functions.begin(), functions.end(), compareLoops);
+
+  return;
 }
 
 void FunctionsManager::removeFunction(Function &f) {

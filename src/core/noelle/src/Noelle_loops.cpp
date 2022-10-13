@@ -102,7 +102,37 @@ std::vector<LoopStructure *>
   auto functions = functionsManager->getFunctionsReachableFrom(mainFunction);
 
   /*
-   * Fetch the loops
+   * Check if we have the profiles.
+   * If we do, then we sort the functions from the hottest to the coldest.
+   */
+  auto prof = this->getProfiles();
+  if (prof->isAvailable()) {
+
+    /*
+     * Set the order to be the coverage one.
+     */
+    auto s = [functionsManager](
+                 std::set<Function *> fns) -> std::vector<Function *> {
+      std::vector<Function *> o;
+      for (auto f : fns) {
+        o.push_back(f);
+      }
+
+      functionsManager->sortByHotness(o);
+
+      return o;
+    };
+
+    /*
+     * Fetch the loops
+     */
+    auto loops = this->getLoopStructures(minimumHotness, functions, s);
+
+    return loops;
+  }
+
+  /*
+   * Fetch the loops using the default order.
    */
   auto loops = this->getLoopStructures(minimumHotness, functions);
 
@@ -112,6 +142,33 @@ std::vector<LoopStructure *>
 std::vector<LoopStructure *> *Noelle::getLoopStructures(
     double minimumHotness,
     const std::set<Function *> &functions) {
+
+  /*
+   * Set the order to be the one in std::set
+   */
+  auto s = [](std::set<Function *> fns) -> std::vector<Function *> {
+    std::vector<Function *> o;
+    for (auto f : fns) {
+      o.push_back(f);
+    }
+
+    return o;
+  };
+
+  /*
+   * Fetch the loops
+   */
+  auto loops = this->getLoopStructures(minimumHotness, functions, s);
+
+  return loops;
+}
+
+std::vector<LoopStructure *> *Noelle::getLoopStructures(
+    double minimumHotness,
+    const std::set<Function *> &functions,
+    std::function<std::vector<Function *>(std::set<Function *> functions)>
+        orderToFollow) {
+
   auto allLoops = new std::vector<LoopStructure *>();
 
   /*
@@ -126,7 +183,8 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "Noelle: Filter out cold code\n";
   }
-  for (auto function : functions) {
+  auto sortedFunctions = orderToFollow(functions);
+  for (auto function : sortedFunctions) {
 
     /*
      * Check if this is application code.

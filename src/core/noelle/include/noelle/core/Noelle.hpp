@@ -88,6 +88,12 @@ public:
       double minimumHotness,
       const std::set<Function *> &functions);
 
+  std::vector<LoopStructure *> *getLoopStructures(
+      double minimumHotness,
+      const std::set<Function *> &functions,
+      std::function<std::vector<Function *>(std::set<Function *> functions)>
+          orderToFollow);
+
   std::vector<LoopStructure *> *getLoopStructures(Function *function);
 
   std::vector<LoopStructure *> *getLoopStructures(Function *function,
