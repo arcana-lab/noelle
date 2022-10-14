@@ -678,8 +678,8 @@ void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
     }
 
     /*
-     * Check if the function of the dependence destiation cannot be reached from
-     * main.
+     * Check if the function of the dependence destination cannot be reached
+     * from main.
      */
     if (edgeIsNotLoopCarriedMemoryDependency(edge)
         || edgeIsAlongNonMemoryWritingFunctions(edge)) {
