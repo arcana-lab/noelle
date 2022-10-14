@@ -22,7 +22,6 @@ FRONTEND_OPTIONS=-O1 -Xclang -disable-llvm-passes
 PRE_MIDDLEEND_OPTIONS=-O0
 FRONTEND_FLAGS=-emit-llvm $(FRONTEND_OPTIONS)
 
-THREADER=Parallelizer_utils
 OPTIMIZED=parallelized
 OPTIMIZED_AUTOTUNED=parallelized_autotuned
 PRINT_OUTPUT_FILE=test.txt
@@ -56,7 +55,7 @@ baseline: baseline.bc
 testseq: baseline_pre.bc
 	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 	
-$(THREADER).bc: $(THREADER).cpp
+Parallelizer_utils.bc: Parallelizer_utils.cpp
 	$(CPP) $(RUNTIME_CFLAGS) $(INCLUDES) -std=c++14 -emit-llvm $(OPT_LEVEL) -c $^ -o $@
 
 $(OPTIMIZED): test_parallelized.bc
@@ -65,8 +64,8 @@ $(OPTIMIZED): test_parallelized.bc
 $(OPTIMIZED_AUTOTUNED): test_parallelized_autotuned.bc
 	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
 
-test_parallelized.bc: baseline_with_metadata.bc
-	noelle-parallelizer $^ -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
+test_parallelized.bc: baseline_with_metadata.bc Parallelizer_utils.bc
+	noelle-parallelizer $< -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
 
 test_parallelized_autotuned.bc: baseline_with_metadata.bc input.txt
 	noelle-parallelizer-autotuner --parallelizer-args="$< -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)" --libs="$(LIBS)" --input="input.txt" --autotuner-time="$(TIME)" --autotuner-numconf="$(NUM_CONF)"
@@ -78,17 +77,14 @@ baseline_with_metadata.bc: default.profraw baseline_pre.bc
 	noelle-meta-prof-embed $^ -o $@
 	noelle-meta-pdg-embed $@ -o $@
 
-baseline_with_runtime.bc: test.bc $(THREADER).bc
-	llvm-link $^ -o $@
-
-baseline_with_runtime_prof: baseline_with_runtime.bc
+baseline_with_runtime_prof: test.bc
 	noelle-prof-coverage $^ $@ $(LIBS)
 
 pre_profiles.profraw: baseline_with_runtime_prof input.txt
 	./$< `cat input.txt` 
 	mv default.profraw $@
 
-baseline_pre.bc: pre_profiles.profraw baseline_with_runtime.bc
+baseline_pre.bc: pre_profiles.profraw test.bc
 	noelle-meta-prof-embed $^ -o $@
 	noelle-pre $@ $(NOELLE_OPTIONS) $(TOOLS_OPTIONS)
 	noelle-meta-clean $@ $@

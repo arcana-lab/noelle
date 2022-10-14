@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 - 2021  Simone Campanoni
+ * Copyright 2021 - 2022  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,23 +21,31 @@
  */
 #pragma once
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/Noelle.hpp"
 
 namespace llvm::noelle {
 
-class TypesManager {
+class RemoveFunction : public ModulePass {
 public:
-  TypesManager(Module &m);
+  RemoveFunction();
 
-  Type *getIntegerType(uint32_t bitwidth) const;
+  bool doInitialization(Module &M) override;
 
-  Type *getVoidPointerType(void) const;
+  bool runOnModule(Module &M) override;
 
-  Type *getVoidType(void) const;
+  void getAnalysisUsage(AnalysisUsage &AU) const override;
+
+  /*
+   * Class fields
+   */
+  static char ID;
 
 private:
-  Module &program;
-  TypesManager *tm;
+  /*
+   * Fields
+   */
+  std::string functionName;
+  std::string prefix;
 };
 
 } // namespace llvm::noelle

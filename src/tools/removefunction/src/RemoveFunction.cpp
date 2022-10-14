@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 - 2021  Simone Campanoni
+ * Copyright 2021 - 2022  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,25 +19,52 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
-
-#include "noelle/core/SystemHeaders.hpp"
+#include "RemoveFunction.hpp"
 
 namespace llvm::noelle {
 
-class TypesManager {
-public:
-  TypesManager(Module &m);
+RemoveFunction::RemoveFunction()
+  : ModulePass{ ID },
+    functionName{ "" },
+    prefix{ "RemoveFunction: " } {
 
-  Type *getIntegerType(uint32_t bitwidth) const;
+  return;
+}
 
-  Type *getVoidPointerType(void) const;
+bool RemoveFunction::runOnModule(Module &M) {
+  auto modified = false;
+  errs() << this->prefix << "Start\n";
 
-  Type *getVoidType(void) const;
+  /*
+   * Fetch the outputs of the passes we rely on.
+   */
+  auto &noelle = getAnalysis<Noelle>();
 
-private:
-  Module &program;
-  TypesManager *tm;
-};
+  /*
+   * Fetch the function manager.
+   */
+  auto fm = noelle.getFunctionsManager();
+
+  /*
+   * Fetch the function we want to remove.
+   */
+  errs() << this->prefix << "  Check if function \"" << this->functionName
+         << "\" exists\n";
+  auto f = fm->getFunction(this->functionName);
+  if (f == nullptr) {
+    errs() << this->prefix << "    The function does not exist\n";
+    return false;
+  }
+
+  /*
+   * Delete the function
+   */
+  errs() << this->prefix << "    The function exists\n";
+  errs() << this->prefix << "  Remove the function\n";
+  fm->removeFunction(*f);
+
+  errs() << this->prefix << "Exit\n";
+  return true;
+}
 
 } // namespace llvm::noelle

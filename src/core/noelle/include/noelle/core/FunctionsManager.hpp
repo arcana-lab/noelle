@@ -36,9 +36,13 @@ public:
 
   bool isTheLibraryFunctionPure(Function *libraryFunction);
 
-  Function *newFunction(const std::string &name, FunctionType &signature);
+  Function *getFunction(const std::string &name);
 
   CallGraph *getProgramCallGraph(void);
+
+  Function *newFunction(const std::string &name, FunctionType &signature);
+
+  void removeFunction(Function &f);
 
 private:
   Module &program;

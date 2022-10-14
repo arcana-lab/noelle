@@ -195,13 +195,13 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
           ? usedTechnique->getIndexOfEnvironmentVariable(exitBlockID)
           : -1);
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
-  par.linkTransformedLoopToOriginalFunction(loopFunction->getParent(),
-                                            loopPreHeader,
-                                            entryPoint,
-                                            exitPoint,
-                                            envArray,
-                                            exitIndex,
-                                            loopExitBlocks);
+  auto linker = par.getLinker();
+  linker->linkTransformedLoopToOriginalFunction(loopPreHeader,
+                                                entryPoint,
+                                                exitPoint,
+                                                envArray,
+                                                exitIndex,
+                                                loopExitBlocks);
   assert(par.verifyCode());
 
   // if (verbose >= Verbosity::Maximal) {

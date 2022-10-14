@@ -39,7 +39,8 @@ Noelle::Noelle()
     tm{ nullptr },
     cm{ nullptr },
     om{ nullptr },
-    mm{ nullptr } {
+    mm{ nullptr },
+    linker{ nullptr } {
   return;
 }
 
@@ -129,118 +130,6 @@ std::vector<Function *> *Noelle::getModuleFunctionsReachableFrom(
   std::sort(functions->begin(), functions->end(), compareFunctions);
 
   return functions;
-}
-
-void Noelle::linkTransformedLoopToOriginalFunction(
-    Module *module,
-    BasicBlock *originalPreHeader,
-    BasicBlock *startOfParLoopInOriginalFunc,
-    BasicBlock *endOfParLoopInOriginalFunc,
-    Value *envArray,
-    Value *envIndexForExitVariable,
-    std::vector<BasicBlock *> &loopExitBlocks) {
-
-  /*
-   * Create the global variable for the parallelized loop.
-   */
-  auto globalBool = new GlobalVariable(*module,
-                                       int32,
-                                       /*isConstant=*/false,
-                                       GlobalValue::ExternalLinkage,
-                                       Constant::getNullValue(int32));
-  auto const0 = ConstantInt::get(int32, 0);
-  auto const1 = ConstantInt::get(int32, 1);
-
-  /*
-   * Fetch the terminator of the preheader.
-   */
-  auto originalTerminator = originalPreHeader->getTerminator();
-
-  /*
-   * Fetch the header of the original loop.
-   */
-  auto originalHeader = originalTerminator->getSuccessor(0);
-
-  /*
-   * Check if another invocation of the loop is running in parallel.
-   */
-  IRBuilder<> loopSwitchBuilder(originalTerminator);
-  auto globalLoad = loopSwitchBuilder.CreateLoad(globalBool);
-  auto compareInstruction = loopSwitchBuilder.CreateICmpEQ(globalLoad, const0);
-  loopSwitchBuilder.CreateCondBr(compareInstruction,
-                                 startOfParLoopInOriginalFunc,
-                                 originalHeader);
-  originalTerminator->eraseFromParent();
-
-  IRBuilder<> endBuilder(endOfParLoopInOriginalFunc);
-
-  /*
-   * Load exit block environment variable and branch to the correct loop exit
-   * block
-   */
-  if (loopExitBlocks.size() == 1) {
-    endBuilder.CreateBr(loopExitBlocks[0]);
-
-  } else {
-
-    /*
-     * Compute how many values can fit in a cache line.
-     */
-    auto valuesInCacheLine =
-        Architecture::getCacheLineBytes() / sizeof(int64_t);
-
-    auto exitEnvPtr = endBuilder.CreateInBoundsGEP(
-        envArray,
-        ArrayRef<Value *>({ cast<Value>(ConstantInt::get(int64, 0)),
-                            endBuilder.CreateMul(
-                                envIndexForExitVariable,
-                                ConstantInt::get(int64, valuesInCacheLine)) }));
-    auto exitEnvCast =
-        endBuilder.CreateIntCast(endBuilder.CreateLoad(exitEnvPtr),
-                                 int32,
-                                 /*isSigned=*/false);
-    auto exitSwitch = endBuilder.CreateSwitch(exitEnvCast, loopExitBlocks[0]);
-    for (int i = 1; i < loopExitBlocks.size(); ++i) {
-      exitSwitch->addCase(ConstantInt::get(int32, i), loopExitBlocks[i]);
-    }
-  }
-
-  /*
-   * NOTE(angelo): LCSSA constants need to be replicated for parallelized code
-   * path
-   */
-  for (auto bb : loopExitBlocks) {
-    for (auto &I : *bb) {
-      if (auto phi = dyn_cast<PHINode>(&I)) {
-        auto bbIndex = phi->getBasicBlockIndex(originalHeader);
-        if (bbIndex == -1) {
-          continue;
-        }
-        auto val = phi->getIncomingValue(bbIndex);
-        if (isa<Constant>(val)) {
-          phi->addIncoming(val, endOfParLoopInOriginalFunc);
-        }
-        continue;
-      }
-      break;
-    }
-  }
-
-  /*
-   * Set/Reset global variable so only one invocation of the loop is run in
-   * parallel at a time.
-   */
-  if (startOfParLoopInOriginalFunc == endOfParLoopInOriginalFunc) {
-    endBuilder.SetInsertPoint(&*endOfParLoopInOriginalFunc->begin());
-    endBuilder.CreateStore(const1, globalBool);
-  } else {
-    IRBuilder<> startBuilder(&*startOfParLoopInOriginalFunc->begin());
-    startBuilder.CreateStore(const1, globalBool);
-  }
-  endBuilder.SetInsertPoint(endOfParLoopInOriginalFunc->getTerminator());
-  endBuilder.CreateStore(const0, globalBool);
-
-  return;
 }
 
 uint32_t Noelle::fetchTheNextValue(std::stringstream &stream) {
@@ -351,6 +240,15 @@ ConstantsManager *Noelle::getConstantsManager(void) {
   }
 
   return this->cm;
+}
+
+Linker *Noelle::getLinker(void) {
+  if (!this->linker) {
+    auto tm = this->getTypesManager();
+    this->linker = new Linker(*this->program, tm);
+  }
+
+  return this->linker;
 }
 
 CompilationOptionsManager *Noelle::getCompilationOptionsManager(void) {
