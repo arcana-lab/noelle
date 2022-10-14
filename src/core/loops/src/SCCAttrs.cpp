@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -23,13 +23,12 @@
 
 namespace llvm::noelle {
 
-SCCAttrs::SCCAttrs(SCC *s, AccumulatorOpInfo &opInfo, LoopStructure *loop)
-  : scc{ s },
+SCCAttrs::SCCAttrs(SCC *s, LoopStructure *loop)
+  : loop{ loop },
+    scc{ s },
     sccType{ SCCType::SEQUENTIAL },
-    accumOpInfo{ opInfo },
     PHINodes{},
     headerPHINodes{},
-    accumulators{},
     controlFlowInsts{},
     controlPairs{},
     isClonable{ false },
@@ -53,9 +52,9 @@ SCCAttrs::SCCAttrs(SCC *s, AccumulatorOpInfo &opInfo, LoopStructure *loop)
   this->collectControlFlowInstructions();
 
   /*
-   * Collect PHIs and accumulators included in the SCC.
+   * Collect PHIs included in the SCC.
    */
-  this->collectPHIsAndAccumulators(*loop);
+  this->collectPHIs(*loop);
 
   return;
 }
@@ -70,20 +69,12 @@ void SCCAttrs::setType(SCCAttrs::SCCType t) {
   return;
 }
 
-iterator_range<SCCAttrs::phi_iterator> SCCAttrs::getPHIs(void) {
+iterator_range<SCCAttrs::phi_iterator> SCCAttrs::getPHIs(void) const {
   return make_range(this->PHINodes.begin(), this->PHINodes.end());
-}
-
-iterator_range<SCCAttrs::instruction_iterator> SCCAttrs::getAccumulators(void) {
-  return make_range(this->accumulators.begin(), this->accumulators.end());
 }
 
 bool SCCAttrs::doesItContainThisPHI(PHINode *phi) {
   return this->PHINodes.find(phi) != this->PHINodes.end();
-}
-
-bool SCCAttrs::doesItContainThisInstructionAsAccumulator(Instruction *inst) {
-  return this->accumulators.find(inst) != this->accumulators.end();
 }
 
 bool SCCAttrs::isCommutative(void) const {
@@ -92,10 +83,6 @@ bool SCCAttrs::isCommutative(void) const {
 
 uint32_t SCCAttrs::numberOfPHIs(void) {
   return this->PHINodes.size();
-}
-
-uint32_t SCCAttrs::numberOfAccumulators(void) {
-  return this->accumulators.size();
 }
 
 PHINode *SCCAttrs::getSinglePHI(void) {
@@ -112,19 +99,10 @@ PHINode *SCCAttrs::getSingleHeaderPHI(void) {
                                           : *this->headerPHINodes.begin();
 }
 
-Instruction *SCCAttrs::getSingleAccumulator(void) {
-  if (this->accumulators.size() != 1) {
-    return nullptr;
-  }
-
-  auto singleAccumulator = *this->accumulators.begin();
-  return singleAccumulator;
-}
-
-void SCCAttrs::collectPHIsAndAccumulators(LoopStructure &LS) {
+void SCCAttrs::collectPHIs(LoopStructure &LS) {
 
   /*
-   * Iterate over elements of the SCC to collect PHIs and accumulators.
+   * Iterate over elements of the SCC to collect PHIs.
    */
   for (auto iNodePair : this->scc->internalNodePairs()) {
 
@@ -142,25 +120,6 @@ void SCCAttrs::collectPHIsAndAccumulators(LoopStructure &LS) {
         this->headerPHINodes.insert(phi);
       }
       continue;
-    }
-
-    /*
-     * Check if it is an accumulator.
-     */
-    if (auto I = dyn_cast<Instruction>(V)) {
-
-      /*
-       * Fetch the opcode.
-       */
-      auto binOp = I->getOpcode();
-
-      /*
-       * Check if this is an opcode we handle.
-       */
-      if (accumOpInfo.accumOps.find(binOp) != accumOpInfo.accumOps.end()) {
-        this->accumulators.insert(I);
-        continue;
-      }
     }
   }
 
@@ -249,10 +208,6 @@ void SCCAttrs::setSCCToBeInductionVariable(bool hasIV) {
 void SCCAttrs::setSCCToBeClonable(bool isClonable) {
   this->isClonable = isClonable;
   return;
-}
-
-LoopCarriedVariable *SCCAttrs::getLoopCarriedVariable(void) const {
-  return nullptr;
 }
 
 void SCCAttrs::setSCCToBeClonableUsingLocalMemory(void) {

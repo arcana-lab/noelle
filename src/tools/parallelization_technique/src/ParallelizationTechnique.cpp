@@ -21,6 +21,7 @@
  */
 #include "noelle/tools/ParallelizationTechnique.hpp"
 #include "noelle/core/Reduction.hpp"
+#include "noelle/core/BinaryReduction.hpp"
 
 namespace llvm::noelle {
 
@@ -276,21 +277,18 @@ BasicBlock *ParallelizationTechnique::
     auto producer = environment->getProducer(envID);
     auto producerSCC = loopSCCDAG->sccOfValue(producer);
     auto producerSCCAttributes =
-        static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
+        static_cast<BinaryReduction *>(sccManager->getSCCAttrs(producerSCC));
     assert(producerSCCAttributes != nullptr);
 
     /*
-     * Get the accumulator.
+     * Get the information about the reduction.
      */
     reducableBinaryOps[envID] = producerSCCAttributes->getReductionOperation();
-
-    auto loopEntryProducerPHI =
-        this->fetchLoopEntryPHIOfProducer(LDI, producer);
-    auto initValPHIIndex =
-        loopEntryProducerPHI->getBasicBlockIndex(loopPreHeader);
-    auto initialValue = loopEntryProducerPHI->getIncomingValue(initValPHIIndex);
+    auto initialValue = producerSCCAttributes->getInitialValue();
     initialValues[envID] =
-        castToCorrectReducibleType(builder, initialValue, producer->getType());
+        this->castToCorrectReducibleType(builder,
+                                         initialValue,
+                                         producer->getType());
   }
 
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
@@ -819,6 +817,12 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
   auto cfgAnalysis = this->noelle.getCFGAnalysis();
 
   /*
+   * Fetch the loop SCCDAG
+   */
+  auto sccManager = LDI->getSCCManager();
+  auto loopSCCDAG = sccManager->getSCCDAG();
+
+  /*
    * Iterate over live-out variables and inject stores at the end of the
    * execution of the function of the task to propagate the new live-out values
    * back to the caller of the parallelized loop.
@@ -865,11 +869,18 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
     if (isReduced) {
 
       /*
+       * Fetch the reduction
+       */
+      auto producerSCC = loopSCCDAG->sccOfValue(producer);
+      auto reductionVariable =
+          static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
+      assert(reductionVariable != nullptr);
+
+      /*
        * Fetch the operator of the accumulator instruction for this reducable
        * variable Store the identity value of the operator
        */
-      auto identityV =
-          this->getIdentityValueForEnvironmentValue(LDI, envID, envType);
+      auto identityV = reductionVariable->getIdentityValue();
       auto newStore = entryBuilder.CreateStore(identityV, envPtr);
 
       /*
@@ -1094,10 +1105,20 @@ Instruction *ParallelizationTechnique::
   for (auto originalPHI : sccManager->getSCCAttrs(producerSCC)->getPHIs()) {
     intermediateValues.insert(task->getCloneOfOriginalInstruction(originalPHI));
   }
-  for (auto originalI :
-       sccManager->getSCCAttrs(producerSCC)->getAccumulators()) {
-    intermediateValues.insert(task->getCloneOfOriginalInstruction(originalI));
-  }
+  auto f = [&intermediateValues, task](Instruction *i) -> bool {
+    if (isa<LoadInst>(i)) {
+      return false;
+    }
+    if (isa<StoreInst>(i)) {
+      return false;
+    }
+    if (isa<CallBase>(i)) {
+      return false;
+    }
+    intermediateValues.insert(task->getCloneOfOriginalInstruction(i));
+    return false;
+  };
+  producerSCC->iterateOverInstructions(f);
 
   /*
    * If in the insert block there already exists a single intermediate,
@@ -1171,9 +1192,9 @@ Instruction *ParallelizationTechnique::
     IRBuilder<> builderAtValue(predecessorTerminator);
 
     auto correctlyTypedValue =
-        castToCorrectReducibleType(builderAtValue,
-                                   lastDominatingIntermediateValue,
-                                   producer->getType());
+        this->castToCorrectReducibleType(builderAtValue,
+                                         lastDominatingIntermediateValue,
+                                         producer->getType());
     phiNode->addIncoming(correctlyTypedValue, predecessor);
   }
 
@@ -1346,6 +1367,12 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
   assert(environment != nullptr);
 
   /*
+   * Fetch the SCCDAG.
+   */
+  auto sccManager = LDI->getSCCManager();
+  auto sccdag = sccManager->getSCCDAG();
+
+  /*
    * Iterate over live-out variables.
    */
   for (auto envID : environment->getEnvIDsOfLiveOutVars()) {
@@ -1367,8 +1394,11 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
      */
     auto producer = environment->getProducer(envID);
     assert(producer != nullptr);
+    auto producerSCC = sccdag->sccOfValue(producer);
+    auto reductionVar =
+        static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
     auto loopEntryProducerPHI =
-        this->fetchLoopEntryPHIOfProducer(LDI, producer);
+        reductionVar->getPhiThatAccumulatesValuesBetweenLoopIterations();
     assert(loopEntryProducerPHI != nullptr);
 
     /*
@@ -1389,89 +1419,13 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
      * For example, if the variable reduced is an accumulator where "+" is used
      * to accumulate values, then "0" is the identity.
      */
-    auto identityV = this->getIdentityValueForEnvironmentValue(
-        LDI,
-        envID,
-        loopEntryProducerPHI->getType());
+    auto identityV = reductionVar->getIdentityValue();
 
     /*
      * Set the initial value for the private variable.
      */
     producerClone->setIncomingValue(incomingIndex, identityV);
   }
-}
-
-PHINode *ParallelizationTechnique::fetchLoopEntryPHIOfProducer(
-    LoopDependenceInfo *LDI,
-    Value *producer) {
-
-  /*
-   * Fetch the SCC manager.
-   */
-  auto sccManager = LDI->getSCCManager();
-
-  auto sccdag = sccManager->getSCCDAG();
-  auto producerSCC = sccdag->sccOfValue(producer);
-
-  auto sccInfo = sccManager->getSCCAttrs(producerSCC);
-  auto reducibleVariable = sccInfo->getLoopCarriedVariable();
-  assert(reducibleVariable != nullptr);
-
-  auto headerProducerPHI =
-      reducibleVariable->getLoopEntryPHIForValueOfVariable(producer);
-  assert(
-      headerProducerPHI != nullptr
-      && "The reducible variable should be described by a single PHI in the header");
-  return headerProducerPHI;
-}
-
-Value *ParallelizationTechnique::getIdentityValueForEnvironmentValue(
-    LoopDependenceInfo *LDI,
-    int environmentID,
-    Type *typeForValue) {
-
-  /*
-   * Fetch the SCC manager.
-   */
-  auto sccManager = LDI->getSCCManager();
-
-  /*
-   * Fetch the environment of the loop
-   */
-  auto environment = LDI->getEnvironment();
-  assert(environment != nullptr);
-
-  /*
-   * Fetch the producer of new values of the current environment variable.
-   */
-  auto producer = environment->getProducer(environmentID);
-
-  /*
-   * Fetch the SCC that this producer belongs to.
-   */
-  auto producerSCC = sccManager->getSCCDAG()->sccOfValue(producer);
-  assert(producerSCC != nullptr
-         && "The environment value doesn't belong to a loop SCC");
-
-  /*
-   * Fetch the attributes about the producer SCC.
-   */
-  auto sccAttrs = sccManager->getSCCAttrs(producerSCC);
-  assert(sccAttrs->numberOfAccumulators() > 0
-         && "The environment value isn't accumulated!");
-
-  /*
-   * Fetch the accumulator.
-   */
-  auto firstAccumI = *(sccAttrs->getAccumulators().begin());
-
-  /*
-   * Fetch the identity.
-   */
-  auto identityValue =
-      sccManager->accumOpInfo.generateIdentityFor(firstAccumI, typeForValue);
-
-  return identityValue;
 }
 
 void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(

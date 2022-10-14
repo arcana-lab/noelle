@@ -11,6 +11,7 @@ set(Srcs
   LoopIterationDomainSpaceAnalysis.cpp
   SCCAttrs.cpp
   Reduction.cpp
+  BinaryReduction.cpp
   SCCDAGAttrs.cpp
   SCCDAGNormalizer.cpp
   LoopDependenceInfo.cpp
@@ -51,7 +52,8 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../talkdown/include
   ../../invariants/include
   ../../induction_variables/include
-  ../include 
+  ../include
+  ./
   ${CMAKE_INSTALL_PREFIX}/include
   )
 

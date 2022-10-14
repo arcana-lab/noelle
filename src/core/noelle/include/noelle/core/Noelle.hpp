@@ -84,10 +84,26 @@ public:
 
   std::vector<LoopStructure *> *getLoopStructures(double minimumHotness);
 
+  std::vector<LoopStructure *> *getLoopStructures(
+      double minimumHotness,
+      const std::set<Function *> &functions);
+
+  std::vector<LoopStructure *> *getLoopStructures(
+      double minimumHotness,
+      const std::set<Function *> &functions,
+      std::function<std::vector<Function *>(std::set<Function *> functions)>
+          orderToFollow);
+
   std::vector<LoopStructure *> *getLoopStructures(Function *function);
 
   std::vector<LoopStructure *> *getLoopStructures(Function *function,
                                                   double minimumHotness);
+
+  std::vector<LoopStructure *> *getLoopStructuresReachableFromEntryFunction(
+      void);
+
+  std::vector<LoopStructure *> *getLoopStructuresReachableFromEntryFunction(
+      double minimumHotness);
 
   std::vector<LoopDependenceInfo *> *getLoops(void);
 
@@ -229,10 +245,6 @@ private:
 
   bool isLoopHot(LoopStructure *loopStructure, double minimumHotness);
   bool isFunctionHot(Function *function, double minimumHotness);
-
-  std::vector<Function *> *getModuleFunctionsReachableFrom(
-      Module *module,
-      Function *startingPoint);
 };
 
 } // namespace llvm::noelle

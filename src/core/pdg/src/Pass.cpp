@@ -81,7 +81,6 @@ void PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
-  AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<AllocAA>();
   AU.addRequired<TalkDown>();
   AU.setPreservesAll();
@@ -124,24 +123,6 @@ bool PDGAnalysis::runOnModule(Module &M) {
      * options specified.
      */
     this->getPDG();
-  }
-
-  /*
-   * Check if we should dumpt the PDG
-   */
-  if (this->dumpPDG) {
-
-    /*
-     * Dump the PDG
-     */
-    auto localPDGPrinter = new PDGPrinter();
-    auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
-    auto getLoopInfo = [this](Function *f) -> LoopInfo & {
-      auto &LI = getAnalysis<LoopInfoWrapperPass>(*f).getLoopInfo();
-      return LI;
-    };
-    auto currentPDG = this->getPDG();
-    localPDGPrinter->printPDG(M, callGraph, currentPDG, getLoopInfo);
   }
 
   return false;

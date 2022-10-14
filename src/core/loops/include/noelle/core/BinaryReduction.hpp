@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 - 2022  Simone Campanoni
+ * Copyright 2022  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,40 +22,39 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
-#include "noelle/core/Hot.hpp"
+#include "noelle/core/Reduction.hpp"
+#include "noelle/core/DominatorSummary.hpp"
 
 namespace llvm::noelle {
 
-class FunctionsManager {
+class BinaryReduction : public Reduction {
 public:
-  FunctionsManager(Module &m, PDGAnalysis &noellePDGAnalysis, Hot *profiles);
+  BinaryReduction(SCC *s,
+                  LoopStructure *loop,
+                  LoopCarriedVariable *variable,
+                  DominatorSummary &dom);
 
-  Function *getEntryFunction(void) const;
+  BinaryReduction(SCC *s,
+                  LoopStructure *loop,
+                  Value *initialValue,
+                  Instruction::BinaryOps reductionOperation,
+                  PHINode *accumulator,
+                  Value *identity);
 
-  std::set<Function *> getProgramConstructors(void) const;
+  BinaryReduction() = delete;
 
-  bool isTheLibraryFunctionPure(Function *libraryFunction);
+  Instruction::BinaryOps getReductionOperation(void) const;
 
-  Function *getFunction(const std::string &name);
+protected:
+  Instruction::BinaryOps reductionOperation;
 
-  CallGraph *getProgramCallGraph(void);
+  void setBinaryReductionInformation(Value *initialValue,
+                                     DominatorSummary &dom,
+                                     LoopStructure &loop);
 
-  Function *newFunction(const std::string &name, FunctionType &signature);
+  std::set<Instruction *> collectAccumulators(LoopStructure &LS);
 
-  std::set<Function *> getFunctions(void) const;
-
-  std::set<Function *> getFunctionsReachableFrom(Function *startingPoint);
-
-  void sortByHotness(std::vector<Function *> &functions);
-
-  void removeFunction(Function &f);
-
-private:
-  Module &program;
-  PDGAnalysis &pdgAnalysis;
-  CallGraph *pcg;
-  Hot *prof;
+  iterator_range<instruction_iterator> getAccumulators(void);
 };
 
 } // namespace llvm::noelle

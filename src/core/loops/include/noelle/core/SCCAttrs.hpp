@@ -22,7 +22,6 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/AccumulatorOpInfo.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/Variable.hpp"
 #include "noelle/core/MemoryCloningAnalysis.hpp"
@@ -53,7 +52,7 @@ public:
   /*
    * Constructor
    */
-  SCCAttrs(SCC *s, AccumulatorOpInfo &opInfo, LoopStructure *loop);
+  SCCAttrs(SCC *s, LoopStructure *loop);
 
   SCCAttrs() = delete;
 
@@ -115,7 +114,7 @@ public:
   /*
    * Get the PHIs.
    */
-  iterator_range<phi_iterator> getPHIs(void);
+  iterator_range<phi_iterator> getPHIs(void) const;
 
   /*
    * Check if the SCC contains a PHI instruction.
@@ -136,31 +135,6 @@ public:
    * Return the number of PHIs included in the SCC.
    */
   uint32_t numberOfPHIs(void);
-
-  /*
-   * Get the accumulators.
-   */
-  iterator_range<instruction_iterator> getAccumulators(void);
-
-  /*
-   * Return the single accumulator if it exists. nullptr otherwise.
-   */
-  Instruction *getSingleAccumulator(void);
-
-  /*
-   * Check if the SCC contains an accumulator.
-   */
-  bool doesItContainThisInstructionAsAccumulator(Instruction *inst);
-
-  /*
-   * Return the number of accumulators included in the SCC.
-   */
-  uint32_t numberOfAccumulators(void);
-
-  /*
-   * If only one loop carried variable is contained, return that variable
-   */
-  virtual LoopCarriedVariable *getLoopCarriedVariable(void) const;
 
   const std::pair<Value *, Instruction *>
       *getSingleInstructionThatControlLoopExit(void);
@@ -193,14 +167,13 @@ public:
 
   ~SCCAttrs();
 
-private:
+protected:
+  LoopStructure *loop;
   SCC *scc;
   SCCType sccType;
   std::set<BasicBlock *> bbs;
-  AccumulatorOpInfo accumOpInfo;
   std::set<Instruction *> controlFlowInsts;
   std::set<PHINode *> PHINodes;
-  std::set<Instruction *> accumulators;
   std::set<PHINode *> headerPHINodes;
 
   std::unordered_set<const ClonableMemoryLocation *> clonableMemoryLocations;
@@ -210,7 +183,7 @@ private:
   bool hasIV;
   bool commutative;
 
-  void collectPHIsAndAccumulators(LoopStructure &LS);
+  void collectPHIs(LoopStructure &LS);
   void collectControlFlowInstructions(void);
 };
 

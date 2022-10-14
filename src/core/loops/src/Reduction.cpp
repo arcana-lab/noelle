@@ -23,15 +23,61 @@
 
 namespace llvm::noelle {
 
+Reduction::Reduction(SCC *s, LoopStructure *loop, DominatorSummary &dom)
+  : SCCAttrs{ s, loop },
+    initialValue{ nullptr },
+    accumulator{ nullptr },
+    identity{ nullptr } {
+
+  /*
+   * Initialize the object.
+   */
+  this->initializeObject(*loop);
+
+  /*
+   * Fetch the accumulator
+   */
+  PHINode *phi = nullptr;
+  for (auto phiCandidate : this->getPHIs()) {
+    auto found = true;
+    for (auto currentPhi : this->getPHIs()) {
+      if (!dom.DT.dominates(phiCandidate, currentPhi)) {
+        found = false;
+        break;
+      }
+    }
+    if (found) {
+      phi = phiCandidate;
+      break;
+    }
+  }
+  if (phi == nullptr) {
+    abort();
+  }
+  this->accumulator = phi;
+
+  return;
+}
+
 Reduction::Reduction(SCC *s,
-                     AccumulatorOpInfo &opInfo,
                      LoopStructure *loop,
-                     LoopCarriedVariable *variable)
-  : SCCAttrs(s, opInfo, loop),
-    lcVariable{ variable } {
-  assert(s != nullptr);
-  assert(loop != nullptr);
-  assert(this->lcVariable != nullptr);
+                     Value *initialValue,
+                     PHINode *accumulator,
+                     Value *identity)
+  : SCCAttrs(s, loop),
+    initialValue{ initialValue },
+    accumulator{ accumulator },
+    identity{ identity } {
+
+  /*
+   * Initialize the object.
+   */
+  this->initializeObject(*loop);
+
+  return;
+}
+
+void Reduction::initializeObject(LoopStructure &loop) {
 
   /*
    * Find the PHI of the SCC.
@@ -40,9 +86,9 @@ Reduction::Reduction(SCC *s,
    * correct type of the source-level variable being updated by this IR-level
    * SCC (the accumulator IR instruction does not.)
    */
-  auto header = loop->getHeader();
+  auto header = this->loop->getHeader();
   PHINode *phiInst = nullptr;
-  for (auto n : s->getNodes()) {
+  for (auto n : this->scc->getNodes()) {
     auto inst = cast<Instruction>(n->getT());
     if (inst->getParent() != header) {
       continue;
@@ -55,36 +101,34 @@ Reduction::Reduction(SCC *s,
     errs()
         << "Reduction: ERROR = the PHI node could not be found in the header of the loop.\n";
     errs() << "Reduction: SCC = ";
-    s->print(errs());
+    this->scc->print(errs());
     errs() << "\n";
     errs() << "Reduction: Loop = ";
-    loop->print(errs());
+    loop.print(errs());
     errs() << "\n";
     abort();
   }
   assert(phiInst != nullptr);
-
-  /*
-   * Set the reduction operation.
-   */
-  auto firstAccumI = *(this->getAccumulators().begin());
-  auto binOpCode = firstAccumI->getOpcode();
-  this->reductionOperation =
-      opInfo.accumOpForType(binOpCode, phiInst->getType());
+  this->headerAccumulator = phiInst;
 
   return;
-}
-
-Instruction::BinaryOps Reduction::getReductionOperation(void) const {
-  return this->reductionOperation;
 }
 
 bool Reduction::canExecuteReducibly(void) const {
   return true;
 }
 
-LoopCarriedVariable *Reduction::getLoopCarriedVariable(void) const {
-  return this->lcVariable;
+Value *Reduction::getInitialValue(void) const {
+  return this->initialValue;
+}
+
+PHINode *Reduction::getPhiThatAccumulatesValuesBetweenLoopIterations(
+    void) const {
+  return this->accumulator;
+}
+
+Value *Reduction::getIdentityValue(void) const {
+  return this->identity;
 }
 
 } // namespace llvm::noelle

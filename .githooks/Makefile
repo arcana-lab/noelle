@@ -1,6 +1,6 @@
-GIT_ROOT=$(shell git rev-parse --show-toplevel)
+GIT_ROOT=$(shell git rev-parse --git-common-dir)
 
-GIT_HOOKS_DIR=$(GIT_ROOT)/.git/hooks
+GIT_HOOKS_DIR=$(GIT_ROOT)/hooks
 
 HOOK_NAMES=pre-commit
 GIT_HOOKS=$(addprefix $(GIT_HOOKS_DIR)/, $(HOOK_NAMES))

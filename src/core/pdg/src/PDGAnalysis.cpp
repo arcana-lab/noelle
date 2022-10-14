@@ -31,7 +31,6 @@ PDGAnalysis::PDGAnalysis()
   : ModulePass{ ID },
     M{ nullptr },
     programDependenceGraph{ nullptr },
-    CGUnderMain{},
     dfa{},
     embedPDG{ false },
     dumpPDG{ false },
@@ -473,7 +472,6 @@ void PDGAnalysis::trimDGUsingCustomAliasAnalysis(PDG *pdg) {
   /*
    * Fetch AllocAA
    */
-  collectCGUnderFunctionMain(*this->M);
   this->allocAA = &getAnalysis<AllocAA>();
   if (this->disableAllocAA) {
     return;
@@ -489,37 +487,6 @@ void PDGAnalysis::trimDGUsingCustomAliasAnalysis(PDG *pdg) {
    */
   auto &talkDown = getAnalysis<TalkDown>();
   // TODO
-
-  return;
-}
-
-void PDGAnalysis::collectCGUnderFunctionMain(Module &M) {
-  auto main = M.getFunction("main");
-  auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
-  std::queue<Function *> funcToTraverse;
-  std::set<Function *> reached;
-  funcToTraverse.push(main);
-  reached.insert(main);
-  while (!funcToTraverse.empty()) {
-    auto func = funcToTraverse.front();
-    funcToTraverse.pop();
-
-    auto funcCGNode = callGraph[func];
-    for (auto &callRecord :
-         make_range(funcCGNode->begin(), funcCGNode->end())) {
-      auto F = callRecord.second->getFunction();
-      if (!F || F->empty())
-        continue;
-
-      if (reached.find(F) != reached.end())
-        continue;
-      reached.insert(F);
-      funcToTraverse.push(F);
-    }
-  }
-
-  CGUnderMain.clear();
-  CGUnderMain.insert(reached.begin(), reached.end());
 
   return;
 }
@@ -692,18 +659,29 @@ void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
      * Fetch the source of the dependence.
      */
     auto source = edge->getOutgoingT();
-    if (!isa<Instruction>(source))
+    if (!isa<Instruction>(source)) {
       continue;
+    }
+
+    /*
+     * Check if the dependence can be removed because the instructions access
+     * separate memory regions.
+     */
+    auto i0 = edge->getOutgoingT();
+    auto i1 = edge->getIncomingT();
+    if (edge->isMemoryDependence() && (!isa<CallBase>(i0))
+        && (!isa<CallBase>(i1))
+        && (!this->allocAA->canPointToTheSameObject(edge->getOutgoingT(),
+                                                    edge->getIncomingT()))) {
+      removeEdges.insert(edge);
+      continue;
+    }
 
     /*
      * Check if the function of the dependence destiation cannot be reached from
      * main.
      */
-    auto F = cast<Instruction>(source)->getFunction();
-    if (CGUnderMain.find(F) == CGUnderMain.end())
-      continue;
-
-    if (false || edgeIsNotLoopCarriedMemoryDependency(edge)
+    if (edgeIsNotLoopCarriedMemoryDependency(edge)
         || edgeIsAlongNonMemoryWritingFunctions(edge)) {
       removeEdges.insert(edge);
     }
@@ -752,7 +730,7 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency(DGEdge<Value> *edge) {
     assert(isa<LoadInst>(incomingT) && isa<StoreInst>(outgoingT));
   }
 
-  bool loopCarried = true;
+  auto loopCarried = true;
   if (isMemoryAccessIntoDifferentArrays(edge)
       || isBackedgeIntoSameGlobal(edge)) {
     loopCarried = false;

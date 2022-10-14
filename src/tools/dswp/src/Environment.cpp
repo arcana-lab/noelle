@@ -35,14 +35,24 @@ void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
    * Fetch the SCC manager
    */
   auto sccManager = LDI->getSCCManager();
+  assert(sccManager != nullptr);
   auto sccdag = sccManager->getSCCDAG();
+  assert(sccdag != nullptr);
 
   /*
    * Collect live-in information
    */
   for (auto envID : environment->getEnvIDsOfLiveInVars()) {
-    auto producer = environment->getProducer(envID);
 
+    /*
+     * Fetch the producer of the live-in value.
+     */
+    auto producer = environment->getProducer(envID);
+    assert(producer != nullptr);
+
+    /*
+     * Check the uses of the live-in value.
+     */
     for (auto consumer : environment->consumersOf(producer)) {
 
       /*
@@ -70,6 +80,8 @@ void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
       envBuilder->getUser(id)->addLiveIn(envID);
     }
   }
+
+  return;
 }
 
 void DSWP::collectLiveOutEnvInfo(LoopDependenceInfo *LDI) {

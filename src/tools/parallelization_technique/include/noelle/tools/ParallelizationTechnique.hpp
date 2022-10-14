@@ -148,9 +148,6 @@ protected:
       BasicBlock *insertBasicBlock,
       DominatorSummary &taskDS);
 
-  PHINode *fetchLoopEntryPHIOfProducer(LoopDependenceInfo *LDI,
-                                       Value *producer);
-
   void generateCodeToStoreExitBlockIndex(LoopDependenceInfo *LDI,
                                          int taskIndex);
 
@@ -167,10 +164,6 @@ protected:
 
   void setReducableVariablesToBeginAtIdentityValue(LoopDependenceInfo *LDI,
                                                    int taskIndex);
-
-  Value *getIdentityValueForEnvironmentValue(LoopDependenceInfo *LDI,
-                                             int environmentID,
-                                             Type *typeForValue);
 
   Value *castToCorrectReducibleType(IRBuilder<> &builder,
                                     Value *value,

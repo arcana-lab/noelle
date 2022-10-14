@@ -63,7 +63,6 @@ private:
   PDG *programDependenceGraph;
   std::unordered_map<Function *, PDG *> functionToFDGMap;
   AllocAA *allocAA;
-  std::set<Function *> CGUnderMain;
   TalkDown *talkdown;
   DataFlowAnalysis dfa;
   PDGVerbosity verbose;
@@ -127,10 +126,6 @@ private:
                               unordered_map<Value *, MDNode *> &);
 
   void trimDGUsingCustomAliasAnalysis(PDG *pdg);
-
-  // TODO: Find a way to extract this into a helper module for all passes in the
-  // PDG project
-  void collectCGUnderFunctionMain(Module &M);
 
   PDG *constructPDGFromAnalysis(Module &M);
   PDG *constructFunctionDGFromAnalysis(Function &F);
