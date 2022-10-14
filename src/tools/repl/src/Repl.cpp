@@ -167,10 +167,17 @@ bool OptRepl::runOnModule(Module &M) {
   }
 
   rl_attempted_completion_function = completer;
+  int selectLoopId = -1;
   // the main repl while loop
   while (true) {
     string query;
-    char *buf = readline("(noelle-repl) ");
+    stringstream ss;
+    ss << "(noelle-repl";
+    if (selectLoopId != -1) {
+      ss << " loop " << selectLoopId;
+    }
+    ss << ") ";
+    char *buf = readline(ss.str().c_str());
     query = (const char *)(buf);
     if (query.size() > 0) {
       add_history(buf);
@@ -200,21 +207,21 @@ bool OptRepl::runOnModule(Module &M) {
     };
 
     // select one loop
-    auto selectFn = [&loopIdMap, &parser, &selectedLoop, &selectedPDG, &selectedSCCDAG, &instIdMap, &instIdLookupMap]() {
-      int loopId = parser.getActionId();
-      if (loopId == -1) {
+    auto selectFn = [&selectLoopId, &loopIdMap, &parser, &selectedLoop, &selectedPDG, &selectedSCCDAG, &instIdMap, &instIdLookupMap]() {
+      selectLoopId = parser.getActionId();
+      if (selectLoopId == -1) {
         outs() << "No number specified\n";
         return;
       }
 
-      if (loopIdMap.find(loopId) == loopIdMap.end()) {
-        outs() << "Loop " << loopId << " does not exist\n";
+      if (loopIdMap.find(selectLoopId) == loopIdMap.end()) {
+        outs() << "Loop " << selectLoopId << " does not exist\n";
         return;
       }
 
-      auto loop = loopIdMap[loopId];
+      auto loop = loopIdMap[selectLoopId];
       auto ls = loop->getLoopStructure();
-      outs() << "Selecting loop " << loopId << ": ";
+      outs() << "Selecting loop " << selectLoopId << ": ";
       outs() << ls->getHeader()->getParent()->getName()
              << "::" << ls->getHeader()->getName() << '\n';
       selectedLoop = loop;
