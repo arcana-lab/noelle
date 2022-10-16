@@ -85,8 +85,7 @@ bool Parallelizer::runOnModule(Module &M) {
    * Fetch all the loops we want to parallelize.
    */
   errs() << "Parallelizer:  Fetching the program loops\n";
-  auto loops = noelle.getLoopStructuresReachableFromEntryFunction();
-  auto forest = noelle.organizeLoopsInTheirNestingForest(*loops);
+  auto forest = noelle.getLoopNestingForest();
   if (forest->getNumberOfLoops() == 0) {
     errs() << "Parallelizer:    There is no loop to consider\n";
 
