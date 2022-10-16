@@ -219,6 +219,7 @@ bool DeadFunctionEliminator::runOnModule(Module &M) {
     modified = true;
   }
 
+  errs() << this->prefix << "Exit\n";
   return modified;
 }
 
