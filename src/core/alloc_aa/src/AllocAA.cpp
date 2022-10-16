@@ -607,7 +607,19 @@ bool AllocAA::canPointToTheSameObject(Value *p1, Value *p2) {
     return true;
   }
 
-  auto obj1 = dyn_cast<Argument>(loadInst->getPointerOperand());
+  /*
+   * Fetch the pointer to the object accessed by the load instruction.
+   */
+  auto loadPtr = loadInst->getPointerOperand();
+  if (auto gep = dyn_cast<GetElementPtrInst>(loadPtr)) {
+    loadPtr = gep->getPointerOperand();
+  }
+  assert(loadPtr != nullptr);
+
+  /*
+   * Check if the object is read-only
+   */
+  auto obj1 = dyn_cast<Argument>(loadPtr);
   if (obj1 == nullptr) {
     return true;
   }
