@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020  Simone Campanoni
+ * Copyright 2019 - 2022  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,7 @@
 #include "noelle/tools/LoopInvariantCodeMotion.hpp"
 #include "Mem2RegNonAlloca.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 LoopInvariantCodeMotion::LoopInvariantCodeMotion(Noelle &noelle)
   : noelle{ noelle } {
@@ -53,3 +52,5 @@ bool LoopInvariantCodeMotion::extractInvariantsFromLoop(
 
   return false;
 }
+
+} // namespace llvm::noelle

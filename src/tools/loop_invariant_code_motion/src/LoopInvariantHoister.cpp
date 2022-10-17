@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2021  Simone Campanoni
+ * Copyright 2019 - 2022  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
   auto header = loopStructure->getHeader();
   auto preHeader = loopStructure->getPreHeader();
   auto loopFunction = header->getParent();
-  errs() << "LICM:  Loop \"" << *header->getTerminator() << "\"\n";
+  errs() << "LICM:  Loop \"" << *header->getFirstNonPHI() << "\"\n";
 
   /*
    * Compute the dominators.
