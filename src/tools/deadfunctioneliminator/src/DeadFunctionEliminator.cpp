@@ -181,8 +181,23 @@ bool DeadFunctionEliminator::runOnModule(Module &M) {
   }
   for (auto island : liveIslands) {
     errs() << this->prefix << "    Island\n";
+
+    /*
+     * Sort the functions using their pointers.
+     * This guarantee determinism because the pointers reflect their position in
+     * the bitcode file.
+     */
+    std::vector<Function *> sortedNodes;
     for (auto node : island->getFunctionNodes()) {
       auto f = node->getFunction();
+      sortedNodes.push_back(f);
+    }
+    std::sort(sortedNodes.begin(), sortedNodes.end());
+
+    /*
+     * Print the functions
+     */
+    for (auto f : sortedNodes) {
       errs() << this->prefix << "      " << f->getName() << "\n";
     }
   }
