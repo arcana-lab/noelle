@@ -206,8 +206,9 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace(
   }
 
   for (auto memoryAccessor : memoryAccessors) {
-    if (!SE.isSCEVable(memoryAccessor->getType()))
+    if (!SE.isSCEVable(memoryAccessor->getType())) {
       continue;
+    }
 
     /*
      * Construct memory space object to track this accessor
@@ -227,7 +228,7 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace(
     for (auto user : memoryAccessor->users()) {
       if (isa<StoreInst>(user) || isa<LoadInst>(user)
           || isa<GetElementPtrInst>(user)) {
-        Instruction *accessor = cast<Instruction>(user);
+        auto accessor = cast<Instruction>(user);
         accessSpaceByInstruction.insert(
             std::make_pair(accessor, memAccessSpace));
       }
@@ -249,8 +250,9 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace(
         continue;
       break;
     }
-    if (!accessedType)
+    if (!accessedType) {
       continue;
+    }
 
     /*
      * De-linearize step 0: get element size
@@ -263,8 +265,9 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace(
     // "\n"; memAccessSpace->memoryAccessorSCEV->print(errs() << "Accessor SCEV:
     // "); errs() << "\n";
 
-    if (!memAccessSpace->elementSize)
+    if (!memAccessSpace->elementSize) {
       continue;
+    }
 
     /*
      * De-linearize: collect parametric SCEV terms, dimension sizes, and
@@ -272,8 +275,9 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace(
      */
     auto basePointer = dyn_cast<SCEVUnknown>(
         SE.getPointerBase(memAccessSpace->memoryAccessorSCEV));
-    if (!basePointer)
+    if (!basePointer) {
       continue;
+    }
 
     auto accessFunction =
         SE.getMinusSCEV(memAccessSpace->memoryAccessorSCEV, basePointer);
@@ -312,7 +316,7 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace(
      * All dimension's subscripts must be single add-recursive expressions
      * i.e. delinearization must have been factored out all dimensions
      */
-    bool isFullyDelinearized = true;
+    auto isFullyDelinearized = true;
     for (auto i = 0; i < memAccessSpace->subscripts.size(); ++i) {
       auto subscriptI = memAccessSpace->subscripts[i];
       if (auto addRecSubscript = dyn_cast<SCEVAddRecExpr>(subscriptI)) {
@@ -364,74 +368,91 @@ void LoopIterationDomainSpaceAnalysis::
     // overlapping: "); errs() << "\n";
 
     /*
-     * Each inner dimension's accesses must be bounded not to spill over into
-     * another dimension
+     * Check if the SCEV has the nuw and nsw attributes.
+     * In that case, overflow is not possible.
      */
-    if (!isInnerDimensionSubscriptsBounded(SE, memAccessSpace.get()))
-      continue;
-
-    // errs() << "\tAccessor has bounded inner dimension accesses\n";
-
-    /*
-     * At least one dimension's subscript's IV must evolve in the top-most loop
-     * All dimension's subscripts must be governed by an IV and be bounded by
-     * the dimension's size
-     */
-    bool atLeastOneTopLevelNonOverlappingIV = false;
-    auto rootLoopStructure = this->loops->getLoop();
-    for (auto idx = 0; idx < memAccessSpace->subscriptIVs.size(); ++idx) {
-      auto instIVPair = memAccessSpace->subscriptIVs[idx];
-      auto inst = instIVPair.first;
-      auto iv = instIVPair.second;
-      if (!iv)
-        continue;
-
-      // inst->print(errs() << "Checking if I is non-overlapping root subscript:
-      // "); errs() << "\n";
-
-      auto loopEntryPHI = iv->getLoopEntryPHI();
-      auto loopEntryPHISCEV = cast<SCEVAddRecExpr>(SE.getSCEV(loopEntryPHI));
-      auto loopStructure =
-          this->loops->getInnermostLoopThatContains(loopEntryPHI);
-      bool isRootLoopIV = (rootLoopStructure == loopStructure);
-      if (!isRootLoopIV)
-        continue;
-
-      // SE.getSCEV(inst)->print(errs() << "\tSCEV for root I: "); errs() <<
-      // "\n";
+    auto space = memAccessSpace.get();
+    auto isOverFlowPossible = true;
+    auto scevExpression = dyn_cast<SCEVNAryExpr>(space->memoryAccessorSCEV);
+    if (scevExpression != nullptr) {
+      if (scevExpression->hasNoSignedWrap()
+          && scevExpression->hasNoUnsignedWrap()) {
+        isOverFlowPossible = false;
+      }
+    }
+    if (isOverFlowPossible) {
 
       /*
-       * If the IV is the root loop's IV, the accesses must be one-to-one
+       * Each inner dimension's accesses must be bounded not to spill over into
+       * another dimension
        */
-      bool isIV = iv->isIVInstruction(inst);
-      bool isDerivedFromIV = iv->isDerivedFromIVInstructions(inst);
-      assert(
-          (isIV || isDerivedFromIV)
-          && "Subscript associated to IV has invalid associated instruction");
-
-      bool isOneToOne;
-      if (isIV) {
-        // HACK: Currently relies on de-linearization to determine if wrap is
-        // likely
-        // TODO: Also check loop governing IV attribution for signed guard
-        bool isWrapping = false;
-        isOneToOne = !isWrapping;
-      } else {
-        isOneToOne = isOneToOneFunctionOnIV(rootLoopStructure, iv, inst);
-      }
-
-      // errs() << "\t Is one to one? : " << isOneToOne << "\n";
-
-      if (!isOneToOne)
+      if (!isInnerDimensionSubscriptsBounded(SE, space))
         continue;
-      atLeastOneTopLevelNonOverlappingIV |= isRootLoopIV;
+
+      // errs() << "\tAccessor has bounded inner dimension accesses\n";
+
+      /*
+       * At least one dimension's subscript's IV must evolve in the top-most
+       * loop All dimension's subscripts must be governed by an IV and be
+       * bounded by the dimension's size
+       */
+      auto atLeastOneTopLevelNonOverlappingIV = false;
+      auto rootLoopStructure = this->loops->getLoop();
+      for (auto idx = 0; idx < memAccessSpace->subscriptIVs.size(); ++idx) {
+        auto instIVPair = memAccessSpace->subscriptIVs[idx];
+        auto inst = instIVPair.first;
+        auto iv = instIVPair.second;
+        if (!iv)
+          continue;
+
+        // inst->print(errs() << "Checking if I is non-overlapping root
+        // subscript:
+        // "); errs() << "\n";
+
+        auto loopEntryPHI = iv->getLoopEntryPHI();
+        auto loopEntryPHISCEV = cast<SCEVAddRecExpr>(SE.getSCEV(loopEntryPHI));
+        auto loopStructure =
+            this->loops->getInnermostLoopThatContains(loopEntryPHI);
+        bool isRootLoopIV = (rootLoopStructure == loopStructure);
+        if (!isRootLoopIV)
+          continue;
+
+        // SE.getSCEV(inst)->print(errs() << "\tSCEV for root I: "); errs() <<
+        // "\n";
+
+        /*
+         * If the IV is the root loop's IV, the accesses must be one-to-one
+         */
+        bool isIV = iv->isIVInstruction(inst);
+        bool isDerivedFromIV = iv->isDerivedFromIVInstructions(inst);
+        assert(
+            (isIV || isDerivedFromIV)
+            && "Subscript associated to IV has invalid associated instruction");
+
+        bool isOneToOne;
+        if (isIV) {
+          // HACK: Currently relies on de-linearization to determine if wrap is
+          // likely
+          // TODO: Also check loop governing IV attribution for signed guard
+          bool isWrapping = false;
+          isOneToOne = !isWrapping;
+        } else {
+          isOneToOne = isOneToOneFunctionOnIV(rootLoopStructure, iv, inst);
+        }
+
+        // errs() << "\t Is one to one? : " << isOneToOne << "\n";
+
+        if (!isOneToOne)
+          continue;
+        atLeastOneTopLevelNonOverlappingIV |= isRootLoopIV;
+      }
+      if (!atLeastOneTopLevelNonOverlappingIV)
+        continue;
     }
-    if (!atLeastOneTopLevelNonOverlappingIV)
-      continue;
 
-    // memAccessSpace->memoryAccessor->print(errs() << "Is non-overlapping: ");
-    // errs() << "\n";
-
+    /*
+     * The space is not overlapping between iterations
+     */
     nonOverlappingAccessesBetweenIterations.insert(memAccessSpace.get());
   }
 
@@ -631,7 +652,6 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded(
   //   subscriptSCEV->print(errs() << "Subscript " << i << ": "); errs() <<
   //   "\n"; inst->print(errs() << "\tInst: "); errs() << "\n";
   // }
-
   if (space->subscriptIVs.size() == 0
       || space->subscriptIVs.size() != space->sizes.size()) {
     return false;
@@ -650,8 +670,9 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded(
       return true;
     auto scevConstant1 = dyn_cast<SCEVConstant>(scev1);
     auto scevConstant2 = dyn_cast<SCEVConstant>(scev2);
-    if (!scevConstant1 || !scevConstant2)
+    if (!scevConstant1 || !scevConstant2) {
       return false;
+    }
     return scevConstant1->getValue()->getSExtValue()
            == scevConstant2->getValue()->getSExtValue();
   };
@@ -667,8 +688,9 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded(
     auto instIVPair = space->subscriptIVs[i];
     auto inst = instIVPair.first;
     auto iv = instIVPair.second;
-    if (!inst)
+    if (!inst) {
       return false;
+    }
 
     /*
      * In case the subscript SCEV was composed by the Delinearization class
@@ -676,8 +698,9 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded(
      * the matched instruction
      */
     auto subscriptSCEV = SE.getSCEV(inst);
-    if (!subscriptSCEV)
+    if (!subscriptSCEV) {
       return false;
+    }
 
     if (isa<SCEVSignExtendExpr>(subscriptSCEV)
         || isa<SCEVTruncateExpr>(subscriptSCEV)
@@ -686,8 +709,9 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded(
     }
 
     auto subscriptType = subscriptSCEV->getType();
-    if (!isa<IntegerType>(subscriptType))
+    if (!isa<IntegerType>(subscriptType)) {
       return false;
+    }
 
     auto zeroConstant =
         (ConstantInt *)ConstantInt::get(subscriptType, (int64_t)0);
@@ -831,12 +855,10 @@ bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded(
         }
       }
     }
-
     return false;
   }
 
   // errs() << "Is bounded\n";
-
   return true;
 }
 
