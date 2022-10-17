@@ -375,8 +375,77 @@ void LoopIterationDomainSpaceAnalysis::
     auto isOverFlowPossible = true;
     auto scevExpression = dyn_cast<SCEVNAryExpr>(space->memoryAccessorSCEV);
     if (scevExpression != nullptr) {
-      if (scevExpression->hasNoSignedWrap()
-          && scevExpression->hasNoUnsignedWrap()) {
+
+      /*
+       * Find the single operand that computes the offset of an object.
+       */
+      auto isBound = true;
+      auto foundOffsetExpression = false;
+      for (auto operandID = 0; operandID < scevExpression->getNumOperands();
+           operandID++) {
+        auto operand = scevExpression->getOperand(operandID);
+
+        /*
+         * Check if the current operand is a constant (so an object pointer)
+         */
+        if (isa<SCEVConstant>(operand)) {
+          continue;
+        }
+        if (auto scevUnknown = dyn_cast<SCEVUnknown>(operand)) {
+          auto v = scevUnknown->getValue();
+          if (isa<Argument>(v)) {
+            continue;
+          }
+        }
+
+        /*
+         * Check if we found an operand that computes the offset with an
+         * arithmentic expression.
+         */
+        auto offsetExpression = dyn_cast<SCEVNAryExpr>(operand);
+        if (offsetExpression == nullptr) {
+
+          /*
+           * We do not know this operand, so we must be conservative: the
+           * computation of the address is not bounded.
+           */
+          isBound = false;
+          break;
+        }
+
+        /*
+         * We found an operand that computes the offset with an arithmentic
+         * expression. Check this is the only one.
+         */
+        if (foundOffsetExpression) {
+          isBound = false;
+          break;
+        }
+        foundOffsetExpression = true;
+        if (offsetExpression->hasNoSelfWrap()) {
+
+          /*
+           * The offset expression cannot wrap.
+           */
+          continue;
+        }
+        if (offsetExpression->hasNoSignedWrap()
+            && offsetExpression->hasNoUnsignedWrap()) {
+
+          /*
+           * The offset expression cannot wrap.
+           */
+          continue;
+        }
+
+        /*
+         * We found an arithmetic expression that computes the offset of a
+         * memory location and it can wrap. So this is not bound.
+         */
+        isBound = false;
+        break;
+      }
+      if (isBound && foundOffsetExpression) {
         isOverFlowPossible = false;
       }
     }
