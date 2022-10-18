@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Yian Su, Simone Campanoni
+ * Copyright 2016 - 2022  Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -25,19 +25,19 @@
 
 namespace llvm::noelle {
 
-struct CleanMetadata : public ModulePass {
+class CleanMetadata : public ModulePass {
 public:
   static char ID;
 
   CleanMetadata();
-
-  virtual ~CleanMetadata();
 
   bool doInitialization(Module &M) override;
 
   void getAnalysisUsage(AnalysisUsage &AU) const override;
 
   bool runOnModule(Module &M) override;
+
+  virtual ~CleanMetadata();
 
 private:
   bool cleanLoop;
