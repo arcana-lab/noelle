@@ -140,17 +140,6 @@ LoopGoverningIVUtility::LoopGoverningIVUtility(
   /*
    * Check if the loop has a while form.
    */
-  // errs() << "BOI\n";
-  // for (auto bb : this->loop->getBasicBlocks()) {
-  //   errs() << *bb << "\n";
-  // }
-  // errs() << "PREHEADER:\n" << *this->loop->getPreHeader() << "\n";
-  // errs() << "HEADER:\n" << *this->loop->getHeader() << "\n";
-  // for (auto bb : this->loop->getLatches()) {
-  //   errs() << "LATCH:\n" << *bb << "\n";
-  // }
-  // errs() << * this->attribution.getInductionVariable().getLoopEntryPHI() <<
-  // "\n";
   for (auto predecessorOfHeader : predecessors(this->loop->getHeader())) {
 
     /*
