@@ -456,11 +456,6 @@ void ParallelizationTechnique::cloneSequentialLoopSubset(
     std::set<Instruction *> subset) {
 
   /*
-   * Fetch the context of the program.
-   */
-  auto &cxt = this->noelle.getProgramContext();
-
-  /*
    * Fetch the task.
    */
   auto task = tasks[taskIndex];
