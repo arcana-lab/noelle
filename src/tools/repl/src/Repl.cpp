@@ -61,13 +61,49 @@ typedef map<DGNode<Value> *, unsigned> InstIdReverseMap_t;
 typedef map<unsigned, DGEdge<Value> *> DepIdMap_t;
 typedef map<DGEdge<Value> *, uint32_t> DepIdReverseMap_t;
 
+bool hasPDGAsMetadata(Module &M) {
+  if (auto n = M.getNamedMetadata("noelle.module.pdg")) {
+    if (auto m = dyn_cast<MDNode>(n->getOperand(0))) {
+      if (cast<MDString>(m->getOperand(0))->getString() == "true") {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+unsigned getNoelleInstId(DGNode<Value> *instNode) {
+  if (auto inst = dyn_cast<Instruction>(instNode->getT())) {
+    if (auto m = inst->getMetadata("noelle.pdg.inst.id")) {
+      if (auto cam = dyn_cast<ConstantAsMetadata>(m->getOperand(0))) {
+        if (auto constant = dyn_cast<ConstantInt>(cam->getValue())) {
+          return (unsigned)constant->getSExtValue();
+        }
+      }
+    }
+  }
+  assert(false && "found an instruction without instruction id\n");
+  exit(1);
+}
+
 // helper function to generate
-static unique_ptr<InstIdMap_t> createInstIdMap(PDG *pdg) {
+static unique_ptr<InstIdMap_t> createInstIdMap(Module &M, PDG *pdg) {
   auto instIdMap = std::make_unique<InstIdMap_t>();
-  unsigned instId = 0;
-  for (auto &instNode : pdg->getNodes()) {
-    instIdMap->insert(make_pair(instId, instNode));
-    instId++;
+  // the pdg is embedded as metadata in the module
+  // use noelle.pdg.inst.id as id for each instruction
+  if (hasPDGAsMetadata(M)) {
+    for (auto &instNode : pdg->getNodes()) {
+      unsigned noelleInstId = getNoelleInstId(instNode);
+      assert((instIdMap->find(noelleInstId) == instIdMap->end()) && "Found noelle instructions that share the same id\n");
+      instIdMap->insert(make_pair(noelleInstId, instNode));
+    }
+  } else {
+    unsigned instId = 0;
+    for (auto &instNode : pdg->getNodes()) {
+      instIdMap->insert(make_pair(instId, instNode));
+      instId++;
+    }
   }
 
   return instIdMap;
@@ -207,7 +243,7 @@ bool OptRepl::runOnModule(Module &M) {
     };
 
     // select one loop
-    auto selectFn = [&selectLoopId, &loopIdMap, &parser, &selectedLoop, &selectedPDG, &selectedSCCDAG, &instIdMap, &instIdLookupMap]() {
+    auto selectFn = [&M, &selectLoopId, &loopIdMap, &parser, &selectedLoop, &selectedPDG, &selectedSCCDAG, &instIdMap, &instIdLookupMap]() {
       selectLoopId = parser.getActionId();
       if (selectLoopId == -1) {
         outs() << "No number specified\n";
@@ -229,7 +265,7 @@ bool OptRepl::runOnModule(Module &M) {
       selectedPDG = std::make_unique<PDG>(*loop->getLoopDG());
       selectedSCCDAG = std::make_unique<SCCDAG>(selectedPDG.get());
 
-      instIdMap = createInstIdMap(selectedPDG.get());
+      instIdMap = createInstIdMap(M, selectedPDG.get());
       instIdLookupMap = createInstIdLookupMap(*instIdMap);
     };
 
