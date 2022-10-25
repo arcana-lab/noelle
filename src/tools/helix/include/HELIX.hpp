@@ -69,7 +69,7 @@ protected:
 
   virtual bool synchronizeTask(LoopDependenceInfo *LDI, Heuristics *h);
 
-  void addChunkFunctionExecutionAsideOriginalLoop(
+  virtual void addChunkFunctionExecutionAsideOriginalLoop(
       LoopDependenceInfo *LDI,
       uint64_t numberOfSequentialSegments);
 
