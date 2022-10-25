@@ -49,33 +49,6 @@ HELIX::HELIX(Noelle &n, bool forceParallelization)
   assert(this->taskDispatcherCS != nullptr);
   this->waitSSCall = program->getFunction("HELIX_wait");
   this->signalSSCall = program->getFunction("HELIX_signal");
-  if (!this->waitSSCall || !this->signalSSCall) {
-    errs()
-        << this->prefixString
-        << "ERROR = sync functions HELIX_wait, HELIX_signal were not both found.\n";
-    abort();
-  }
-
-  /*
-   * Fetch the LLVM types of the HELIX_dispatcher arguments.
-   */
-  auto tm = noelle.getTypesManager();
-  auto int8 = tm->getIntegerType(8);
-  auto int64 = tm->getIntegerType(64);
-  auto ptrType = tm->getVoidPointerType();
-  auto voidType = tm->getVoidType();
-
-  /*
-   * Create the LLVM signature of HELIX_dispatcher.
-   */
-  auto funcArgTypes = ArrayRef<Type *>({ ptrType,
-                                         ptrType,
-                                         ptrType,
-                                         ptrType,
-                                         int64,
-                                         int64,
-                                         PointerType::getUnqual(int64) });
-  this->taskSignature = FunctionType::get(voidType, funcArgTypes, false);
 
   return;
 }
@@ -173,6 +146,16 @@ bool HELIX::apply(LoopDependenceInfo *LDI, Heuristics *h) {
 void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
 
   /*
+   * Check if we have the APIs available.
+   */
+  if (!this->waitSSCall || !this->signalSSCall) {
+    errs()
+        << this->prefixString
+        << "ERROR = sync functions HELIX_wait, HELIX_signal were not both found.\n";
+    abort();
+  }
+
+  /*
    * Fetch the header.
    */
   auto loopStructure = LDI->getLoopStructure();
@@ -215,10 +198,28 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
   auto reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
 
   /*
+   * Define the signature of the task, which will be invoked by the HELIX
+   * dispatcher.
+   */
+  auto tm = noelle.getTypesManager();
+  auto int8 = tm->getIntegerType(8);
+  auto int64 = tm->getIntegerType(64);
+  auto ptrType = tm->getVoidPointerType();
+  auto voidType = tm->getVoidType();
+  auto funcArgTypes = ArrayRef<Type *>({ ptrType,
+                                         ptrType,
+                                         ptrType,
+                                         ptrType,
+                                         int64,
+                                         int64,
+                                         PointerType::getUnqual(int64) });
+  auto taskSignature = FunctionType::get(voidType, funcArgTypes, false);
+
+  /*
    * Generate empty tasks for the HELIX execution.
    */
   auto program = this->noelle.getProgram();
-  auto helixTask = new HELIXTask(this->taskSignature, *program);
+  auto helixTask = new HELIXTask(taskSignature, *program);
   this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { helixTask });
   auto ltm = LDI->getLoopTransformationsManager();
   this->numTaskInstances = ltm->getMaximumNumberOfCores();

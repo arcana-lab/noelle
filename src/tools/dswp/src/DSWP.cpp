@@ -40,19 +40,6 @@ DSWP::DSWP(Noelle &n, bool forceParallelization, bool enableSCCMerging)
   this->taskDispatcher = program->getFunction("NOELLE_DSWPDispatcher");
   assert(this->taskDispatcher != nullptr);
 
-  /*
-   * Fetch the function that executes a stage.
-   */
-  auto taskExecuter = program->getFunction("stageExecuter");
-  assert(taskExecuter != nullptr);
-
-  /*
-   * Define its signature.
-   */
-  auto taskArgType = taskExecuter->arg_begin()->getType();
-  this->taskSignature =
-      cast<FunctionType>(cast<PointerType>(taskArgType)->getElementType());
-
   return;
 }
 

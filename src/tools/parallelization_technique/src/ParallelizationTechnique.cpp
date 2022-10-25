@@ -29,7 +29,6 @@ ParallelizationTechnique::ParallelizationTechnique(Noelle &n)
   : noelle{ n },
     tasks{},
     envBuilder{ nullptr },
-    taskSignature{ nullptr },
     entryPointOfParallelizedLoop{ nullptr },
     exitPointOfParallelizedLoop{ nullptr },
     numTaskInstances{ 0 } {

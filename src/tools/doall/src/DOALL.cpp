@@ -31,18 +31,6 @@ DOALL::DOALL(Noelle &noelle)
     n{ noelle } {
 
   /*
-   * Define the signature of the task, which will be invoked by the DOALL
-   * dispatcher.
-   */
-  auto tm = this->n.getTypesManager();
-  auto funcArgTypes = ArrayRef<Type *>({ tm->getVoidPointerType(),
-                                         tm->getIntegerType(64),
-                                         tm->getIntegerType(64),
-                                         tm->getIntegerType(64) });
-  this->taskSignature =
-      FunctionType::get(tm->getVoidType(), funcArgTypes, false);
-
-  /*
    * Fetch the dispatcher to use to jump to a parallelized DOALL loop.
    */
   this->taskDispatcher =
@@ -252,9 +240,21 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   }
 
   /*
+   * Define the signature of the task, which will be invoked by the DOALL
+   * dispatcher.
+   */
+  auto tm = this->n.getTypesManager();
+  auto funcArgTypes = ArrayRef<Type *>({ tm->getVoidPointerType(),
+                                         tm->getIntegerType(64),
+                                         tm->getIntegerType(64),
+                                         tm->getIntegerType(64) });
+  auto taskSignature =
+      FunctionType::get(tm->getVoidType(), funcArgTypes, false);
+
+  /*
    * Generate an empty task for the parallel DOALL execution.
    */
-  auto chunkerTask = new DOALLTask(this->taskSignature, *this->n.getProgram());
+  auto chunkerTask = new DOALLTask(taskSignature, *this->n.getProgram());
   this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { chunkerTask });
   this->numTaskInstances = maxCores;
 
