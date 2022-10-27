@@ -197,7 +197,7 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l) {
       // intra-iteration version
       for (uint8_t i = 0; i <= 2; ++i) {
         if (disprovedIIDepTypes & (1 << i)) {
-          auto &e = edges[i];
+          auto e = edges[i];
           loopDG->removeEdge(e);
         }
       }
@@ -207,7 +207,7 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l) {
       uint8_t iiDepTypes = disprovedLCDepTypes - disprovedIIDepTypes;
       for (uint8_t i = 0; i <= 2; ++i) {
         if (iiDepTypes & (1 << i)) {
-          auto &e = edges[i];
+          auto e = edges[i];
           e->setLoopCarried(false);
         }
       }

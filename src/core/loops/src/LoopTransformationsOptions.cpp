@@ -89,4 +89,9 @@ bool LoopTransformationsManager::areLoopAwareAnalysesEnabled(void) const {
   return this->_areLoopAwareAnalysesEnabled;
 }
 
+std::unordered_set<LoopDependenceInfoOptimization> LoopTransformationsManager::
+    getOptimizationsEnabled(void) const {
+  return this->enabledOptimizations;
+}
+
 } // namespace llvm::noelle

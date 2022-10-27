@@ -35,5 +35,6 @@ uninstall: clean
 	rm -f enable ;
 	rm -rf install ;
 	cd external ; make $@
+	if test -d .githooks ; then cd .githooks ; make clean ; fi;
 
 .PHONY: src src-fast tests hooks format clean uninstall external

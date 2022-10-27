@@ -55,14 +55,15 @@ protected:
   Function *taskDispatcher;
   Noelle &n;
 
+  virtual void addChunkFunctionExecutionAsideOriginalLoop(
+      LoopDependenceInfo *LDI,
+      Function *loopFunction,
+      Noelle &par);
+
   /*
    * DOALL specific generation
    */
   void rewireLoopToIterateChunks(LoopDependenceInfo *LDI);
-
-  void addChunkFunctionExecutionAsideOriginalLoop(LoopDependenceInfo *LDI,
-                                                  Function *loopFunction,
-                                                  Noelle &par);
 
   void addJumpToLoop(LoopDependenceInfo *LDI, Task *t);
 

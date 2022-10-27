@@ -76,16 +76,118 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(void) {
 }
 
 std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
-  auto allLoops = new std::vector<LoopStructure *>();
+  auto fm = this->getFunctionsManager();
+  auto allFunctions = fm->getFunctions();
+  auto loops = this->getLoopStructures(minimumHotness, allFunctions);
+
+  return loops;
+}
+
+std::vector<LoopStructure *>
+    *Noelle::getLoopStructuresReachableFromEntryFunction(void) {
+  return this->getLoopStructuresReachableFromEntryFunction(this->minHot);
+}
+
+std::vector<LoopStructure *>
+    *Noelle::getLoopStructuresReachableFromEntryFunction(
+        double minimumHotness) {
 
   /*
-   * Fetch the list of functions of the module.
+   * Default function to include loops
    */
-  this->getFunctionsManager();
-  auto mainFunction = this->fm->getEntryFunction();
+  auto i = [](LoopStructure *l) -> bool { return true; };
+
+  /*
+   * Get the loops.
+   */
+  auto loops =
+      this->getLoopStructuresReachableFromEntryFunction(minimumHotness, i);
+
+  return loops;
+}
+
+std::vector<LoopStructure *>
+    *Noelle::getLoopStructuresReachableFromEntryFunction(
+        double minimumHotness,
+        std::function<bool(LoopStructure *)> includeLoop) {
+
+  /*
+   * Fetch the list of functions of the module reachable from main.
+   */
+  auto functionsManager = this->getFunctionsManager();
+  assert(functionsManager != nullptr);
+  auto mainFunction = functionsManager->getEntryFunction();
   assert(mainFunction != nullptr);
-  auto functions =
-      this->getModuleFunctionsReachableFrom(this->program, mainFunction);
+  auto functions = functionsManager->getFunctionsReachableFrom(mainFunction);
+
+  /*
+   * Set the order for the functions.
+   */
+  auto s = this->fetchFunctionsSorting();
+
+  /*
+   * Fetch the loops
+   */
+  auto loops =
+      this->getLoopStructures(minimumHotness, functions, s, includeLoop);
+
+  return loops;
+}
+
+std::vector<LoopStructure *> *Noelle::getLoopStructures(
+    double minimumHotness,
+    const std::set<Function *> &functions) {
+
+  /*
+   * Set the order for the functions.
+   */
+  auto s = this->fetchFunctionsSorting();
+
+  /*
+   * Default function to include loops
+   */
+  auto i = [](LoopStructure *l) -> bool { return true; };
+
+  /*
+   * Fetch the loops
+   */
+  auto loops = this->getLoopStructures(minimumHotness, functions, s, i);
+
+  return loops;
+}
+
+std::vector<LoopStructure *> *Noelle::getLoopStructures(
+    double minimumHotness,
+    std::function<bool(LoopStructure *)> includeLoop) {
+
+  /*
+   * Fetch all functions
+   */
+  auto fm = this->getFunctionsManager();
+  auto allFunctions = fm->getFunctions();
+
+  /*
+   * Fetch the sorting function.
+   */
+  auto s = this->fetchFunctionsSorting();
+
+  /*
+   * Fetch the loops
+   */
+  auto loops =
+      this->getLoopStructures(minimumHotness, allFunctions, s, includeLoop);
+
+  return loops;
+}
+
+std::vector<LoopStructure *> *Noelle::getLoopStructures(
+    double minimumHotness,
+    const std::set<Function *> &functions,
+    std::function<std::vector<Function *>(std::set<Function *> functions)>
+        orderOfFunctionsToFollow,
+    std::function<bool(LoopStructure *)> mustIncludeLoop) {
+
+  auto allLoops = new std::vector<LoopStructure *>();
 
   /*
    * Check if we should filter out loops.
@@ -99,7 +201,8 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "Noelle: Filter out cold code\n";
   }
-  for (auto function : *functions) {
+  auto sortedFunctions = orderOfFunctionsToFollow(functions);
+  for (auto function : sortedFunctions) {
 
     /*
      * Check if this is application code.
@@ -107,6 +210,7 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
     if (function->empty()) {
       continue;
     }
+    errs() << "Noelle:  Function \"" << function->getName() << "\"\n";
 
     /*
      * Check if the function is hot.
@@ -124,10 +228,6 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
      */
     auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
     if (std::distance(LI.begin(), LI.end()) == 0) {
-      if (this->verbose >= Verbosity::Maximal) {
-        errs() << "Noelle:  Function \"" << function->getName()
-               << "\" does not have loops\n";
-      }
       continue;
     }
 
@@ -141,7 +241,13 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
       /*
        * Check if the loop is hot enough.
        */
+      errs() << "Noelle:     Loop \"" << *loop->getHeader()->getFirstNonPHI()
+             << "\" (";
       auto loopStructure = new LoopStructure{ loop };
+      errs() << (this->getProfiles()->getDynamicTotalInstructionCoverage(
+                     loopStructure)
+                 * 100)
+             << "%)\n";
       auto loopHeader = loopStructure->getHeader();
       if (minimumHotness > 0) {
         if (!isLoopHot(loopStructure, minimumHotness)) {
@@ -158,6 +264,8 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
 
       /*
        * Check if we have to filter loops.
+       * If no INDEX_FILE exists or the caller wants to include the loop, then
+       * we must include it.
        */
       if (!filterLoops) {
 
@@ -176,9 +284,11 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
        * Check if more than one thread is assigned to the current loop.
        * If that's the case, then we have to enable that loop.
        */
+      errs() << "Noelle:      Current index = " << currentLoopIndex << "\n";
       auto maximumNumberOfCoresForTheParallelization =
           this->loopThreads[currentLoopIndex];
-      if (maximumNumberOfCoresForTheParallelization <= 1) {
+      if ((maximumNumberOfCoresForTheParallelization <= 1)
+          && (!mustIncludeLoop(loopStructure))) {
 
         /*
          * Only one thread has been assigned to the current loop.
@@ -189,6 +299,8 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
         delete loopStructure;
         continue;
       }
+      errs() << "Noelle:      Threads = "
+             << maximumNumberOfCoresForTheParallelization << "\n";
 
       /*
        * Safety code.
@@ -208,8 +320,6 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
           std::make_pair(loopHeader, currentLoopIndex));
     }
   }
-
-  delete functions;
 
   return allLoops;
 }
@@ -314,10 +424,6 @@ LoopDependenceInfo *Noelle::getLoop(
   }
 
   auto maximumNumberOfCoresForTheParallelization = this->loopThreads[loopIndex];
-  assert(
-      maximumNumberOfCoresForTheParallelization > 1
-      && "Noelle: passed user a filtered loop yet it only has max cores <= 1");
-
   auto ldi = this->getLoopDependenceInfoForLoop(
       header,
       funcPDG,
@@ -467,11 +573,10 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
   /*
    * Fetch the list of functions of the module.
    */
-  this->getFunctionsManager();
-  auto mainFunction = this->fm->getEntryFunction();
+  auto fm = this->getFunctionsManager();
+  auto mainFunction = fm->getEntryFunction();
   assert(mainFunction != nullptr);
-  auto functions =
-      this->getModuleFunctionsReachableFrom(this->program, mainFunction);
+  auto functions = fm->getFunctionsReachableFrom(mainFunction);
 
   /*
    * Check if we should filter out loops.
@@ -485,7 +590,7 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
     errs() << "Noelle: Filter out cold code\n";
   }
   auto nextLoopIndex = 0;
-  for (auto function : *functions) {
+  for (auto function : functions) {
 
     /*
      * Check if this is application code.
@@ -678,11 +783,6 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
     delete DS;
   }
 
-  /*
-   * Free the memory.
-   */
-  delete functions;
-
   return allLoops;
 }
 
@@ -696,11 +796,10 @@ uint32_t Noelle::getNumberOfProgramLoops(double minimumHotness) {
   /*
    * Fetch the list of functions of the module.
    */
-  this->getFunctionsManager();
-  auto mainFunction = this->fm->getEntryFunction();
+  auto fm = this->getFunctionsManager();
+  auto mainFunction = fm->getEntryFunction();
   assert(mainFunction != nullptr);
-  auto functions =
-      this->getModuleFunctionsReachableFrom(this->program, mainFunction);
+  auto functions = fm->getFunctionsReachableFrom(mainFunction);
 
   /*
    * Check if we should filter out loops.
@@ -711,7 +810,7 @@ uint32_t Noelle::getNumberOfProgramLoops(double minimumHotness) {
    * Append loops of each function.
    */
   auto currentLoopIndex = 0;
-  for (auto function : *functions) {
+  for (auto function : functions) {
 
     /*
      * Fetch the loop analysis.
@@ -795,11 +894,6 @@ uint32_t Noelle::getNumberOfProgramLoops(double minimumHotness) {
     }
   }
 
-  /*
-   * Free the memory.
-   */
-  delete functions;
-
   return counter;
 }
 
@@ -807,10 +901,16 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
 
   /*
    * Check the name of the file that lists the loops to consider.
+   */
+  if (!this->filterFileName) {
+    return false;
+  }
+
+  /*
    * Check that the file hasn't been read already
    */
-  if (!this->filterFileName || this->hasReadFilterFile) {
-    return false;
+  if (this->hasReadFilterFile) {
+    return true;
   }
 
   /*
@@ -905,7 +1005,11 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
     }
   }
 
+  /*
+   * Keep track that we have read the file
+   */
   this->hasReadFilterFile = true;
+
   return filterLoops;
 }
 
@@ -1101,11 +1205,10 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
   /*
    * Fetch the list of functions of the module.
    */
-  this->getFunctionsManager();
-  auto mainFunction = this->fm->getEntryFunction();
+  auto fm = this->getFunctionsManager();
+  auto mainFunction = fm->getEntryFunction();
   assert(mainFunction != nullptr);
-  auto functions =
-      this->getModuleFunctionsReachableFrom(this->program, mainFunction);
+  auto functions = fm->getFunctionsReachableFrom(mainFunction);
 
   /*
    * Check if we should filter out loops.
@@ -1114,7 +1217,7 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
 
   //  add loops into the loop nesting graph
   std::vector<LoopStructure *> allLoops;
-  for (auto function : *functions) {
+  for (auto function : functions) {
     auto allLoopsOfFunction = this->getLoopStructures(function, filterLoops);
     allLoops.insert(allLoops.end(),
                     allLoopsOfFunction->begin(),
@@ -1126,7 +1229,6 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
   /*
    * Fetch the call graph.
    */
-  auto fm = this->getFunctionsManager();
   auto callGraph = fm->getProgramCallGraph();
 
   /*
@@ -1395,6 +1497,55 @@ StayConnectedNestedLoopForest *Noelle::organizeLoopsInTheirNestingForest(
   }
 
   return n;
+}
+
+std::function<std::vector<Function *>(std::set<Function *> fns)> Noelle::
+    fetchFunctionsSorting(void) {
+  std::function<std::vector<Function *>(std::set<Function *> fns)> s;
+
+  /*
+   * Fetch the functions manager.
+   */
+  auto functionsManager = this->getFunctionsManager();
+  assert(functionsManager != nullptr);
+
+  /*
+   * Check if we have the profiles.
+   * If we do, then we sort the functions from the hottest to the coldest.
+   */
+  auto prof = this->getProfiles();
+  if (prof->isAvailable()) {
+
+    /*
+     * Set the order to be the coverage one.
+     */
+    s = [functionsManager](
+            std::set<Function *> fns) -> std::vector<Function *> {
+      std::vector<Function *> o;
+      for (auto f : fns) {
+        o.push_back(f);
+      }
+
+      functionsManager->sortByHotness(o);
+
+      return o;
+    };
+
+  } else {
+
+    /*
+     * Fetch the loops using the default order.
+     */
+    s = [](std::set<Function *> fns) -> std::vector<Function *> {
+      std::vector<Function *> o;
+      for (auto f : fns) {
+        o.push_back(f);
+      }
+      return o;
+    };
+  }
+
+  return s;
 }
 
 } // namespace llvm::noelle

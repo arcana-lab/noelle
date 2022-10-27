@@ -12,6 +12,7 @@ add_subdirectory(src)
 install(
   FILES
   include/DSWP.hpp 
+  include/DSWPTask.hpp 
   DESTINATION 
   include/noelle/tools
   )

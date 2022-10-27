@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -38,6 +38,7 @@
 #include "noelle/core/CompilationOptionsManager.hpp"
 #include "noelle/core/CFGAnalysis.hpp"
 #include "noelle/core/CFGTransformer.hpp"
+#include "noelle/core/Linker.hpp"
 
 namespace llvm::noelle {
 
@@ -73,6 +74,8 @@ public:
 
   MetadataManager *getMetadataManager(void);
 
+  Linker *getLinker(void);
+
   LoopNestingGraph *getLoopNestingGraphForProgram(void);
 
   StayConnectedNestedLoopForest *getLoopNestingForest(void);
@@ -81,10 +84,50 @@ public:
 
   std::vector<LoopStructure *> *getLoopStructures(double minimumHotness);
 
+  std::vector<LoopStructure *> *getLoopStructures(
+      double minimumHotness,
+      const std::set<Function *> &functions);
+
+  /*
+   * @includeLoop return true if the loop given as input must be included (if
+   * hot enough). Return false if you want to use the default inclusion policy
+   * (INDEX_FILE).
+   */
+  std::vector<LoopStructure *> *getLoopStructures(
+      double minimumHotness,
+      std::function<bool(LoopStructure *)> includeLoop);
+
+  /*
+   * @includeLoop return true if the loop given as input must be included (if
+   * hot enough). Return false if you want to use the default inclusion policy
+   * (INDEX_FILE).
+   */
+  std::vector<LoopStructure *> *getLoopStructures(
+      double minimumHotness,
+      const std::set<Function *> &functions,
+      std::function<std::vector<Function *>(std::set<Function *> functions)>
+          orderOfFunctionsToFollow,
+      std::function<bool(LoopStructure *)> includeLoop);
+
   std::vector<LoopStructure *> *getLoopStructures(Function *function);
 
   std::vector<LoopStructure *> *getLoopStructures(Function *function,
                                                   double minimumHotness);
+
+  std::vector<LoopStructure *> *getLoopStructuresReachableFromEntryFunction(
+      void);
+
+  std::vector<LoopStructure *> *getLoopStructuresReachableFromEntryFunction(
+      double minimumHotness);
+
+  /*
+   * @includeLoop return true if the loop given as input must be included (if
+   * hot enough). Return false if you want to use the default inclusion policy
+   * (INDEX_FILE).
+   */
+  std::vector<LoopStructure *> *getLoopStructuresReachableFromEntryFunction(
+      double minimumHotness,
+      std::function<bool(LoopStructure *)> includeLoop);
 
   std::vector<LoopDependenceInfo *> *getLoops(void);
 
@@ -173,15 +216,6 @@ public:
 
   bool canFloatsBeConsideredRealNumbers(void) const;
 
-  void linkTransformedLoopToOriginalFunction(
-      Module *module,
-      BasicBlock *originalPreHeader,
-      BasicBlock *startOfParLoopInOriginalFunc,
-      BasicBlock *endOfParLoopInOriginalFunc,
-      Value *envArray,
-      Value *envIndexForExitVariable,
-      std::vector<BasicBlock *> &loopExitBlocks);
-
   bool verifyCode(void) const;
 
   ~Noelle();
@@ -208,6 +242,7 @@ private:
   ConstantsManager *cm;
   CompilationOptionsManager *om;
   MetadataManager *mm;
+  Linker *linker;
 
   uint32_t fetchTheNextValue(std::stringstream &stream);
 
@@ -236,9 +271,8 @@ private:
   bool isLoopHot(LoopStructure *loopStructure, double minimumHotness);
   bool isFunctionHot(Function *function, double minimumHotness);
 
-  std::vector<Function *> *getModuleFunctionsReachableFrom(
-      Module *module,
-      Function *startingPoint);
+  std::function<std::vector<Function *>(std::set<Function *> fns)>
+  fetchFunctionsSorting(void);
 };
 
 } // namespace llvm::noelle

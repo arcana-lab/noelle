@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Yian Su, Simone Campanoni
+ * Copyright 2016 - 2022  Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,7 @@
  */
 #include "noelle/core/CleanMetadata.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 CleanMetadata::CleanMetadata() : ModulePass{ ID }, cleanPDG{ false } {
   return;
@@ -97,3 +96,5 @@ void CleanMetadata::cleanProfMetadata(Module &M) {
 CleanMetadata::~CleanMetadata() {
   return;
 }
+
+} // namespace llvm::noelle

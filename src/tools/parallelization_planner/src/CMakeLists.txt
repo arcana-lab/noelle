@@ -2,6 +2,7 @@
 set(Srcs 
   Pass.cpp
   LoopSelector.cpp
+  LoopEvaluation.cpp
 )
 
 # Compilation flags

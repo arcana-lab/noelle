@@ -40,14 +40,12 @@ void PDGAnalysis::iterateInstForStore(PDG *pdg,
      * Check stores.
      */
     if (auto otherStore = dyn_cast<StoreInst>(I)) {
-      if (store != otherStore) {
-        this->addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg,
-                                                           F,
-                                                           AA,
-                                                           store,
-                                                           otherStore,
-                                                           DG_DATA_WAW);
-      }
+      this->addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg,
+                                                         F,
+                                                         AA,
+                                                         store,
+                                                         otherStore,
+                                                         DG_DATA_WAW);
       continue;
     }
 

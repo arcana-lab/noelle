@@ -19,6 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "noelle/core/Reduction.hpp"
 #include "HELIX.hpp"
 #include "HELIXTask.hpp"
 #include "llvm/IR/Type.h"
@@ -26,6 +27,11 @@
 namespace llvm::noelle {
 
 void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
+
+  /*
+   * Fetch the loop environment.
+   */
+  auto loopEnvironment = LDI->getEnvironment();
 
   /*
    * Fetch loop and IV information.
@@ -441,8 +447,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     /*
      * Only work with duplicated producers
      */
-    auto originalProducer =
-        (Instruction *)LDI->getEnvironment()->getProducer(envID);
+    auto originalProducer = (Instruction *)loopEnvironment->getProducer(envID);
     if (this->lastIterationExecutionDuplicateMap.find(originalProducer)
         == this->lastIterationExecutionDuplicateMap.end())
       continue;
@@ -458,12 +463,20 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     }
 
     /*
+     * Fetch the reducable variable.
+     */
+    auto producerSCC = sccdag->sccOfValue(originalProducer);
+    auto reducableVariable =
+        static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
+    assert(reducableVariable != nullptr);
+
+    /*
      * We need a PHI after the last iteration block to track whether this core
      * will store an intermediate of this reduced live out of the last
      * iteration's value of it
      */
     auto originalIntermedateInHeader =
-        this->fetchLoopEntryPHIOfProducer(LDI, originalProducer);
+        reducableVariable->getPhiThatAccumulatesValuesBetweenLoopIterations();
     auto cloneIntermediateInHeader =
         task->getCloneOfOriginalInstruction(originalIntermedateInHeader);
     auto duplicateProducerInLastIterationBlock =

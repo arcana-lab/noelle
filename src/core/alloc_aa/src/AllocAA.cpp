@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,7 @@
  */
 #include "noelle/core/AllocAA.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 /*
  * Options of the custom allocation function based alias analysis pass.
@@ -584,6 +583,53 @@ Value *AllocAA::getMemoryPointerOperand(Value *V) {
   return nullptr;
 }
 
+bool AllocAA::canPointToTheSameObject(Value *p1, Value *p2) {
+
+  /*
+   * Fetch the load instruction
+   */
+  auto loadInst = dyn_cast<LoadInst>(p1);
+  if (!loadInst) {
+    loadInst = dyn_cast<LoadInst>(p2);
+  }
+  if (loadInst == nullptr) {
+    return true;
+  }
+
+  /*
+   * Fetch the store instruction
+   */
+  auto storeInst = dyn_cast<StoreInst>(p1);
+  if (!storeInst) {
+    storeInst = dyn_cast<StoreInst>(p2);
+  }
+  if (storeInst == nullptr) {
+    return true;
+  }
+
+  /*
+   * Fetch the pointer to the object accessed by the load instruction.
+   */
+  auto loadPtr = loadInst->getPointerOperand();
+  if (auto gep = dyn_cast<GetElementPtrInst>(loadPtr)) {
+    loadPtr = gep->getPointerOperand();
+  }
+  assert(loadPtr != nullptr);
+
+  /*
+   * Check if the object is read-only
+   */
+  auto obj1 = dyn_cast<Argument>(loadPtr);
+  if (obj1 == nullptr) {
+    return true;
+  }
+  if (obj1->onlyReadsMemory()) {
+    return false;
+  }
+
+  return true;
+}
+
 // Next there is code to register your pass to "opt"
 char AllocAA::ID = 0;
 static RegisterPass<AllocAA> X("AllocAA", "Dependence Graph modifier");
@@ -604,3 +650,5 @@ static RegisterStandardPasses _RegPass2(
         PM.add(_PassMaker = new AllocAA());
       }
     }); // ** for -O0
+
+} // namespace llvm::noelle

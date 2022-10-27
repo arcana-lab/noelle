@@ -35,12 +35,6 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop(
   auto loopFunction = loopSummary->getFunction();
 
   /*
-   * Create the entry and exit points of the function that will include the
-   * parallelized loop.
-   */
-  auto &cxt = loopFunction->getContext();
-
-  /*
    * Create the environment.
    * This will append store instructions to entryPointOfParallelizedLoop to
    * initialize the environment array.

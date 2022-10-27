@@ -25,7 +25,8 @@ namespace llvm::noelle {
 
 DeadFunctionEliminator::DeadFunctionEliminator()
   : ModulePass{ ID },
-    enableTransformation{ true } {
+    enableTransformation{ true },
+    prefix{ "DeadFunctionEliminator: " } {
 
   return;
 }
@@ -39,7 +40,7 @@ bool DeadFunctionEliminator::runOnModule(Module &M) {
     return false;
   }
   auto modified = false;
-  errs() << "DeadFunctionEliminator: Start\n";
+  errs() << this->prefix << "Start\n";
 
   /*
    * Fetch the outputs of the passes we rely on.
@@ -56,6 +57,9 @@ bool DeadFunctionEliminator::runOnModule(Module &M) {
    * Check if there are functions with only one caller.
    * Inline them.
    */
+  errs()
+      << this->prefix
+      << "  Inline functions that are invoked only by one call instruction and that do not escape into memory\n";
   for (auto node : pcg->getFunctionNodes()) {
 
     /*
@@ -136,29 +140,32 @@ bool DeadFunctionEliminator::runOnModule(Module &M) {
        * This is an indirect call.
        * Translate it to a direct call.
        */
-      errs()
-          << "DeadFunctionEliminator: Found an opportunity to devirtualize\n";
+      errs() << this->prefix << "    Found an opportunity to devirtualize\n";
       // TODO
       continue;
     }
     assert(callInst->getCalledFunction() == nodeFunction);
-    errs() << "DeadFunctionEliminator: Inline " << *callInst << " into "
+    errs() << this->prefix << "    Inline " << *callInst << " into "
            << callInst->getFunction()->getName() << "\n";
     InlineFunctionInfo IFI;
     modified |= InlineFunction(callInst, IFI);
   }
   if (modified) {
+    errs() << this->prefix << "Exit\n";
     return true;
   }
 
   /*
    * Fetch the islands.
    */
+  errs() << this->prefix << "  Get the islands\n";
   auto islands = pcg->getIslands();
 
   /*
    * Fetch the island of the entry method of the program.
    */
+  errs() << this->prefix
+         << "  Identify the islands reachable from the entry points\n";
   auto entryF = fm->getEntryFunction();
   auto entryIsland = islands[entryF];
   std::unordered_set<CallGraph *> liveIslands{ entryIsland };
@@ -172,10 +179,33 @@ bool DeadFunctionEliminator::runOnModule(Module &M) {
     assert(ctorIsland != nullptr);
     liveIslands.insert(ctorIsland);
   }
+  for (auto island : liveIslands) {
+    errs() << this->prefix << "    Island\n";
+
+    /*
+     * Sort the functions using their pointers.
+     * This guarantee determinism because the pointers reflect their position in
+     * the bitcode file.
+     */
+    std::vector<Function *> sortedNodes;
+    for (auto node : island->getFunctionNodes()) {
+      auto f = node->getFunction();
+      sortedNodes.push_back(f);
+    }
+    std::sort(sortedNodes.begin(), sortedNodes.end());
+
+    /*
+     * Print the functions
+     */
+    for (auto f : sortedNodes) {
+      errs() << this->prefix << "      " << f->getName() << "\n";
+    }
+  }
 
   /*
    * Delete dead functions.
    */
+  errs() << this->prefix << "  Identify the functions that can be deleted\n";
   std::vector<Function *> toDelete;
   for (auto &F : M) {
 
@@ -196,8 +226,7 @@ bool DeadFunctionEliminator::runOnModule(Module &M) {
       continue;
     }
 
-    errs()
-        << "DeadFunctionEliminator: Function " << F.getName() << " is dead\n";
+    errs() << this->prefix << "    Function " << F.getName() << " is dead\n";
     toDelete.push_back(&F);
   }
   for (auto f : toDelete) {
@@ -205,6 +234,7 @@ bool DeadFunctionEliminator::runOnModule(Module &M) {
     modified = true;
   }
 
+  errs() << this->prefix << "Exit\n";
   return modified;
 }
 

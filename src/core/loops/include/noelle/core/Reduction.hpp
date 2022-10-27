@@ -23,27 +23,37 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCCAttrs.hpp"
+#include "noelle/core/DominatorSummary.hpp"
 
 namespace llvm::noelle {
 
 class Reduction : public SCCAttrs {
 public:
-  Reduction(SCC *s,
-            AccumulatorOpInfo &opInfo,
-            LoopStructure *loop,
-            LoopCarriedVariable *variable);
-
   Reduction() = delete;
 
-  Instruction::BinaryOps getReductionOperation(void) const;
+  Value *getInitialValue(void) const;
+
+  Value *getIdentityValue(void) const;
+
+  PHINode *getPhiThatAccumulatesValuesBetweenLoopIterations(void) const;
 
   bool canExecuteReducibly(void) const override;
 
-  LoopCarriedVariable *getLoopCarriedVariable(void) const override;
+protected:
+  Value *initialValue;
+  PHINode *accumulator;
+  Value *identity;
+  PHINode *headerAccumulator;
 
-private:
-  Instruction::BinaryOps reductionOperation;
-  LoopCarriedVariable *lcVariable;
+  Reduction(SCC *s, LoopStructure *loop, DominatorSummary &dom);
+
+  Reduction(SCC *s,
+            LoopStructure *loop,
+            Value *initialValue,
+            PHINode *accumulator,
+            Value *identity);
+
+  void initializeObject(LoopStructure &loop);
 };
 
 } // namespace llvm::noelle

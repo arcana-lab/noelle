@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -65,11 +65,11 @@ public:
   virtual ~HELIX();
 
 protected:
-  void createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h);
+  virtual void createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h);
 
-  bool synchronizeTask(LoopDependenceInfo *LDI, Heuristics *h);
+  virtual bool synchronizeTask(LoopDependenceInfo *LDI, Heuristics *h);
 
-  void addChunkFunctionExecutionAsideOriginalLoop(
+  virtual void addChunkFunctionExecutionAsideOriginalLoop(
       LoopDependenceInfo *LDI,
       uint64_t numberOfSequentialSegments);
 
@@ -130,11 +130,11 @@ protected:
       uint32_t taskIndex,
       BasicBlock &bb) override;
 
-private:
+  /*
+   * Fields
+   */
   Function *waitSSCall, *signalSSCall;
   LoopDependenceInfo *originalLDI;
-  PDG *taskFunctionDG;
-
   LoopEnvironmentBuilder *loopCarriedLoopEnvironmentBuilder;
   std::unordered_set<SpilledLoopCarriedDependency *> spills;
   std::unordered_map<Instruction *, Instruction *>
@@ -143,12 +143,14 @@ private:
   bool enableInliner;
   Function *taskDispatcherSS;
   Function *taskDispatcherCS;
-  std::string prefixString;
   void squeezeSequentialSegment(LoopDependenceInfo *LDI,
                                 DataFlowResult *reachabilityDFR,
                                 SequentialSegment *ss);
 
   DataFlowResult *computeReachabilityFromInstructions(LoopDependenceInfo *LDI);
+
+private:
+  std::string prefixString;
 };
 
 class SpilledLoopCarriedDependency {

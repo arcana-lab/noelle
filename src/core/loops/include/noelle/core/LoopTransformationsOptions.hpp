@@ -62,6 +62,9 @@ public:
 
   bool areLoopAwareAnalysesEnabled(void) const;
 
+  std::unordered_set<LoopDependenceInfoOptimization> getOptimizationsEnabled(
+      void) const;
+
 private:
   uint32_t chunkSize;
   uint32_t maxCores;

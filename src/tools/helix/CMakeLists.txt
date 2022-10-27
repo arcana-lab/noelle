@@ -12,6 +12,7 @@ add_subdirectory(src)
 install(
   FILES
   include/HELIX.hpp 
+  include/HELIXTask.hpp 
   include/SequentialSegment.hpp 
   DESTINATION 
   include/noelle/tools
