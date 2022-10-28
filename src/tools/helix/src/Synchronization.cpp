@@ -91,14 +91,9 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
    */
   std::vector<Value *> ssStates{};
   for (auto ss : *sss) {
-    this->ssPastPtrs.push_back(
-        this->getPointerOfSequentialSegment(helixTask,
-                                            helixTask->ssPastArrayArg,
-                                            ss->getID()));
-    this->ssFuturePtrs.push_back(
-        this->getPointerOfSequentialSegment(helixTask,
-                                            helixTask->ssFutureArrayArg,
-                                            ss->getID()));
+    this->computeAndCachePointerOfPastSequentialSegment(helixTask, ss->getID());
+    this->computeAndCachePointerOfFutureSequentialSegment(helixTask,
+                                                          ss->getID());
 
     /*
      * We must execute exactly one wait instruction for each sequential segment,
@@ -389,7 +384,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
 
 Value *HELIX::getPointerOfSequentialSegment(HELIXTask *helixTask,
                                             Value *ssArray,
-                                            int32_t ssID) {
+                                            uint32_t ssID) {
 
   /*
    * Fetch the builder that points to the entry basic block of the task
@@ -447,6 +442,43 @@ CallInst *HELIX::injectSignalCall(IRBuilder<> &builder, uint32_t ssID) {
   auto signal = builder.CreateCall(this->signalSSCall, { ptr });
 
   return signal;
+}
+
+void HELIX::computeAndCachePointerOfPastSequentialSegment(HELIXTask *helixTask,
+                                                          uint32_t ssID) {
+
+  /*
+   * Compute the pointer.
+   */
+  auto ptr = this->getPointerOfSequentialSegment(helixTask,
+                                                 helixTask->ssPastArrayArg,
+                                                 ssID);
+
+  /*
+   * Cache the pointer.
+   */
+  this->ssPastPtrs.push_back(ptr);
+
+  return;
+}
+
+void HELIX::computeAndCachePointerOfFutureSequentialSegment(
+    HELIXTask *helixTask,
+    uint32_t ssID) {
+
+  /*
+   * Compute the pointer.
+   */
+  auto ptr = this->getPointerOfSequentialSegment(helixTask,
+                                                 helixTask->ssFutureArrayArg,
+                                                 ssID);
+
+  /*
+   * Cache the pointer.
+   */
+  this->ssFuturePtrs.push_back(ptr);
+
+  return;
 }
 
 } // namespace llvm::noelle

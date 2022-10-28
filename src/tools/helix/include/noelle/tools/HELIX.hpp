@@ -122,13 +122,21 @@ protected:
   void addSynchronizations(LoopDependenceInfo *LDI,
                            std::vector<SequentialSegment *> *sss);
 
-  CallInst *injectWaitCall(IRBuilder<> &builder, uint32_t ssID);
+  virtual CallInst *injectWaitCall(IRBuilder<> &builder, uint32_t ssID);
 
-  CallInst *injectSignalCall(IRBuilder<> &builder, uint32_t ssID);
+  virtual CallInst *injectSignalCall(IRBuilder<> &builder, uint32_t ssID);
 
-  Value *getPointerOfSequentialSegment(HELIXTask *helixTask,
-                                       Value *ssArray,
-                                       int32_t ssID);
+  virtual void computeAndCachePointerOfPastSequentialSegment(
+      HELIXTask *helixTask,
+      uint32_t ssID);
+
+  virtual void computeAndCachePointerOfFutureSequentialSegment(
+      HELIXTask *helixTask,
+      uint32_t ssID);
+
+  virtual Value *getPointerOfSequentialSegment(HELIXTask *helixTask,
+                                               Value *ssArray,
+                                               uint32_t ssID);
 
   void inlineCalls(Task *task);
 
