@@ -122,7 +122,13 @@ protected:
   void addSynchronizations(LoopDependenceInfo *LDI,
                            std::vector<SequentialSegment *> *sss);
 
-  Value * getPointerOfSequentialSegment (HELIXTask *helixTask, Value *ssArray, int32_t ssID);
+  CallInst *injectWaitCall(IRBuilder<> &builder, uint32_t ssID);
+
+  CallInst *injectSignalCall(IRBuilder<> &builder, uint32_t ssID);
+
+  Value *getPointerOfSequentialSegment(HELIXTask *helixTask,
+                                       Value *ssArray,
+                                       int32_t ssID);
 
   void inlineCalls(Task *task);
 
@@ -154,6 +160,8 @@ protected:
 
 private:
   std::string prefixString;
+  std::vector<Value *> ssPastPtrs;
+  std::vector<Value *> ssFuturePtrs;
 };
 
 class SpilledLoopCarriedDependency {

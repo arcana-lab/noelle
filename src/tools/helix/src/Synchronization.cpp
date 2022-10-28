@@ -89,10 +89,16 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
    * Fetch sequential segments entry in the past and future array
    * Allocate space to track sequential segment entry state
    */
-  std::vector<Value *> ssPastPtrs{}, ssFuturePtrs{}, ssStates{};
+  std::vector<Value *> ssStates{};
   for (auto ss : *sss) {
-    ssPastPtrs.push_back(this->getPointerOfSequentialSegment(helixTask, helixTask->ssPastArrayArg, ss->getID()));
-    ssFuturePtrs.push_back(this->getPointerOfSequentialSegment(helixTask, helixTask->ssFutureArrayArg, ss->getID()));
+    this->ssPastPtrs.push_back(
+        this->getPointerOfSequentialSegment(helixTask,
+                                            helixTask->ssPastArrayArg,
+                                            ss->getID()));
+    this->ssFuturePtrs.push_back(
+        this->getPointerOfSequentialSegment(helixTask,
+                                            helixTask->ssFutureArrayArg,
+                                            ss->getID()));
 
     /*
      * We must execute exactly one wait instruction for each sequential segment,
@@ -153,8 +159,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
     auto ssWaitBB =
         BasicBlock::Create(cxt, ssWaitBBName, helixTask->getTaskBody());
     IRBuilder<> ssWaitBuilder(ssWaitBB);
-    auto wait = ssWaitBuilder.CreateCall(this->waitSSCall,
-                                         { ssPastPtrs.at(ss->getID()) });
+    auto wait = this->injectWaitCall(ssWaitBuilder, ss->getID());
     auto ssState = ssStates.at(ss->getID());
     ssWaitBuilder.CreateStore(ConstantInt::get(int64, 1), ssState);
     ssWaitBuilder.CreateBr(ssEntryBB);
@@ -196,9 +201,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
                                      ? terminator
                                      : justBeforeExit->getNextNode();
       IRBuilder<> beforeExitBuilder(insertPoint);
-      auto signal =
-          beforeExitBuilder.CreateCall(this->signalSSCall,
-                                       { ssFuturePtrs.at(ss->getID()) });
+      auto signal = this->injectSignalCall(beforeExitBuilder, ss->getID());
       helixTask->signals.insert(cast<CallInst>(signal));
       return;
     }
@@ -206,9 +209,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
     for (auto successorBlock : successors(block)) {
       IRBuilder<> beforeExitBuilder(
           successorBlock->getFirstNonPHIOrDbgOrLifetime());
-      auto signal =
-          beforeExitBuilder.CreateCall(this->signalSSCall,
-                                       { ssFuturePtrs.at(ss->getID()) });
+      auto signal = this->injectSignalCall(beforeExitBuilder, ss->getID());
       helixTask->signals.insert(cast<CallInst>(signal));
     }
   };
@@ -385,13 +386,16 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
 
   return;
 }
-  
-Value * HELIX::getPointerOfSequentialSegment (HELIXTask *helixTask, Value *ssArray, int32_t ssID){
+
+Value *HELIX::getPointerOfSequentialSegment(HELIXTask *helixTask,
+                                            Value *ssArray,
+                                            int32_t ssID) {
 
   /*
-   * Fetch the builder that points to the entry basic block of the task function.
+   * Fetch the builder that points to the entry basic block of the task
+   * function.
    */
-  IRBuilder<> entryBuilder{helixTask->getEntry()->getTerminator()};
+  IRBuilder<> entryBuilder{ helixTask->getEntry()->getTerminator() };
 
   /*
    * Fetch the integer type of 64 bits.
@@ -408,10 +412,41 @@ Value * HELIX::getPointerOfSequentialSegment (HELIXTask *helixTask, Value *ssArr
    * Fetch the pointer to the sequential segment entry.
    */
   auto ssArrayAsInt = entryBuilder.CreatePtrToInt(ssArray, int64);
-  auto ssEntryAsInt = entryBuilder.CreateAdd(ConstantInt::get(int64, ssOffset), ssArrayAsInt);
+  auto ssEntryAsInt =
+      entryBuilder.CreateAdd(ConstantInt::get(int64, ssOffset), ssArrayAsInt);
   auto ptr = entryBuilder.CreateIntToPtr(ssEntryAsInt, ssArray->getType());
 
   return ptr;
+}
+
+CallInst *HELIX::injectWaitCall(IRBuilder<> &builder, uint32_t ssID) {
+
+  /*
+   * Fetch the pointer to the sequential segment memory location.
+   */
+  auto ptr = this->ssPastPtrs.at(ssID);
+
+  /*
+   * Inject the Wait.
+   */
+  auto wait = builder.CreateCall(this->waitSSCall, { ptr });
+
+  return wait;
+}
+
+CallInst *HELIX::injectSignalCall(IRBuilder<> &builder, uint32_t ssID) {
+
+  /*
+   * Fetch the pointer to the sequential segment memory location.
+   */
+  auto ptr = this->ssFuturePtrs.at(ssID);
+
+  /*
+   * Inject the Signal.
+   */
+  auto signal = builder.CreateCall(this->signalSSCall, { ptr });
+
+  return signal;
 }
 
 } // namespace llvm::noelle
