@@ -29,10 +29,11 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Noelle.hpp"
-#include "HeuristicsPass.hpp"
-#include "noelle/tools/ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
-#include "SequentialSegment.hpp"
 #include "noelle/core/ControlFlowEquivalence.hpp"
+#include "noelle/tools/ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
+#include "noelle/tools/SequentialSegment.hpp"
+#include "noelle/tools/HELIXTask.hpp"
+#include "HeuristicsPass.hpp"
 
 namespace llvm::noelle {
 
@@ -120,6 +121,8 @@ protected:
 
   void addSynchronizations(LoopDependenceInfo *LDI,
                            std::vector<SequentialSegment *> *sss);
+
+  Value * getPointerOfSequentialSegment (HELIXTask *helixTask, Value *ssArray, int32_t ssID);
 
   void inlineCalls(Task *task);
 

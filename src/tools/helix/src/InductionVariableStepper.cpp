@@ -20,9 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/Reduction.hpp"
-#include "HELIX.hpp"
-#include "HELIXTask.hpp"
-#include "llvm/IR/Type.h"
+#include "noelle/tools/HELIX.hpp"
 
 namespace llvm::noelle {
 

@@ -19,9 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "HELIX.hpp"
-#include "HELIXTask.hpp"
 #include "noelle/core/Architecture.hpp"
+#include "noelle/tools/HELIX.hpp"
 
 namespace llvm::noelle {
 
@@ -87,33 +86,13 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
   }
 
   /*
-   * Define a helper to fetch the appropriate ss entry in synchronization arrays
-   */
-  auto fetchEntry = [&entryBuilder, int64](Value *ssArray,
-                                           int32_t ssID) -> Value * {
-    /*
-     * Compute the offset of the sequential segment entry.
-     */
-    auto ssOffset = ssID * Architecture::getCacheLineBytes();
-
-    /*
-     * Fetch the pointer to the sequential segment entry.
-     */
-    auto ssArrayAsInt = entryBuilder.CreatePtrToInt(ssArray, int64);
-    auto ssEntryAsInt =
-        entryBuilder.CreateAdd(ConstantInt::get(int64, ssOffset), ssArrayAsInt);
-    return entryBuilder.CreateIntToPtr(ssEntryAsInt, ssArray->getType());
-  };
-
-  /*
    * Fetch sequential segments entry in the past and future array
    * Allocate space to track sequential segment entry state
    */
   std::vector<Value *> ssPastPtrs{}, ssFuturePtrs{}, ssStates{};
   for (auto ss : *sss) {
-    ssPastPtrs.push_back(fetchEntry(helixTask->ssPastArrayArg, ss->getID()));
-    ssFuturePtrs.push_back(
-        fetchEntry(helixTask->ssFutureArrayArg, ss->getID()));
+    ssPastPtrs.push_back(this->getPointerOfSequentialSegment(helixTask, helixTask->ssPastArrayArg, ss->getID()));
+    ssFuturePtrs.push_back(this->getPointerOfSequentialSegment(helixTask, helixTask->ssFutureArrayArg, ss->getID()));
 
     /*
      * We must execute exactly one wait instruction for each sequential segment,
@@ -405,6 +384,34 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
   }
 
   return;
+}
+  
+Value * HELIX::getPointerOfSequentialSegment (HELIXTask *helixTask, Value *ssArray, int32_t ssID){
+
+  /*
+   * Fetch the builder that points to the entry basic block of the task function.
+   */
+  IRBuilder<> entryBuilder{helixTask->getEntry()->getTerminator()};
+
+  /*
+   * Fetch the integer type of 64 bits.
+   */
+  auto tm = this->noelle.getTypesManager();
+  auto int64 = tm->getIntegerType(64);
+
+  /*
+   * Compute the offset of the sequential segment entry.
+   */
+  auto ssOffset = ssID * Architecture::getCacheLineBytes();
+
+  /*
+   * Fetch the pointer to the sequential segment entry.
+   */
+  auto ssArrayAsInt = entryBuilder.CreatePtrToInt(ssArray, int64);
+  auto ssEntryAsInt = entryBuilder.CreateAdd(ConstantInt::get(int64, ssOffset), ssArrayAsInt);
+  auto ptr = entryBuilder.CreateIntToPtr(ssEntryAsInt, ssArray->getType());
+
+  return ptr;
 }
 
 } // namespace llvm::noelle

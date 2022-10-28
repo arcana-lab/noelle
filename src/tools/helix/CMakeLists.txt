@@ -11,9 +11,9 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/HELIX.hpp 
-  include/HELIXTask.hpp 
-  include/SequentialSegment.hpp 
+  include/noelle/tools/HELIX.hpp 
+  include/noelle/tools/HELIXTask.hpp 
+  include/noelle/tools/SequentialSegment.hpp 
   DESTINATION 
   include/noelle/tools
   )
