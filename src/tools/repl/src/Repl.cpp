@@ -534,6 +534,17 @@ bool OptRepl::runOnModule(Module &M) {
       // }
     };
 
+    auto saveFn = [&parser]() {
+      string fileName = parser.getStringAfterAction();
+      if (fileName == "") {
+        fileName = "repl_command_history.log";
+      }
+      // remove the current command from readline history
+      remove_history(history_length - 1);
+      write_history(fileName.c_str());
+      outs() << "command history (excluding \"save\" command) has been written into " << fileName << "\n";
+    };
+
     switch (parser.getAction()) {
     case ReplAction::Deps:
       depsFn();
@@ -555,6 +566,9 @@ bool OptRepl::runOnModule(Module &M) {
       break;
     case ReplAction::Modref:
       modrefFn();
+      break;
+    case ReplAction::Save:
+      saveFn();
       break;
     default:
       outs() << "SHOULD NOT HAPPEN\n";
