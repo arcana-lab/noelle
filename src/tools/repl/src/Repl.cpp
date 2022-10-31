@@ -326,9 +326,18 @@ bool OptRepl::runOnModule(Module &M) {
     };
 
     // show instructions with id
-    auto InstsFn = [&instIdMap]() {
-      for (auto &[instId, node] : *instIdMap) {
-        outs() << instId << "\t" << *node->getT() << "\n";
+    auto InstsFn = [&instIdMap, &parser]() {
+      int instId = parser.getActionId();
+      if (instId != -1) {
+        if (instIdMap->find(instId) == instIdMap->end()) {
+          outs() << "instId " << instId << " not found!\n";
+        } else {
+          outs() << instId << "\t" << *instIdMap->at(instId)->getT() << "\n";
+        }
+      } else {
+        for (auto &[instId, node] : *instIdMap) {
+          outs() << instId << "\t" << *node->getT() << "\n";
+        }
       }
     };
 
