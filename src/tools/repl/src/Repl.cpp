@@ -28,12 +28,6 @@
 // GNU Readline
 #include <readline/history.h>
 #include <readline/readline.h>
-// #include <string>
-
-// #include <algorithm>
-// #include <bits/stdint-uintn.h>
-// #include <cctype>
-// #include <iostream>
 
 using namespace llvm;
 using namespace std;
