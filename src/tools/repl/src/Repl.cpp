@@ -39,6 +39,8 @@ using namespace llvm;
 using namespace std;
 using namespace llvm::noelle;
 
+cl::opt<string> HistoryFileName("history", cl::desc("Specify command history file name"), cl::init(""));
+
 class OptRepl : public ModulePass {
   public:
     static char ID;
@@ -204,30 +206,18 @@ bool OptRepl::runOnModule(Module &M) {
 
   rl_attempted_completion_function = completer;
   int selectLoopId = -1;
-  // the main repl while loop
-  while (true) {
-    string query;
-    stringstream ss;
-    ss << "(noelle-repl";
-    if (selectLoopId != -1) {
-      ss << " loop " << selectLoopId;
-    }
-    ss << ") ";
-    char *buf = readline(ss.str().c_str());
-    query = (const char *)(buf);
-    if (query.size() > 0) {
-      add_history(buf);
-      free(buf); // free the buf readline created
-    }
-
+  bool quit = false;
+  auto mainLoop = [&](string &query) {
     // check if it's quit or unknown
     ReplParser parser(query);
-    if (parser.getAction() == ReplAction::Quit)
-      break;
+    if (parser.getAction() == ReplAction::Quit) {
+      quit = true;
+      return;
+    }
 
     if (parser.getAction() == ReplAction::Unknown) {
       outs() << "Unknown command!\n";
-      continue;
+      return;
     }
 
     // print all loops
@@ -285,23 +275,23 @@ bool OptRepl::runOnModule(Module &M) {
     // early checks for several actions that do not need the loop set
     if (parser.getAction() == ReplAction::Loops) {
       loopsFn();
-      continue;
+      return;
     }
 
     if (parser.getAction() == ReplAction::Select) {
       selectFn();
-      continue;
+      return;
     }
 
     if (parser.getAction() == ReplAction::Help){
       helpFn();
-      continue;
+      return;
     }
 
     // after this assume the loop has been selected
     if (!selectedLoop) {
       outs() << "No loops selected\n";
-      continue;
+      return;
     }
 
     // dump information about the loop
@@ -574,6 +564,38 @@ bool OptRepl::runOnModule(Module &M) {
       outs() << "SHOULD NOT HAPPEN\n";
       break;
     }
+  };
+
+  // execute command history file if specified
+  string historyFileName = HistoryFileName;
+  if (historyFileName != "") {
+    read_history(historyFileName.c_str());
+    // DISCUSSION: the last command won't get executed if using 'i < history_length'
+    for (int i = history_base; i <= history_length; i++) {
+      char *buf = history_get(i)->line;
+      string query = (const char *)(buf);
+      mainLoop(query);
+    }
+    clear_history();
+  }
+
+  // the main repl while loop
+  while (true) {
+    if (quit) {
+      break;
+    }
+
+    stringstream ss;
+    ss << "(noelle-repl";
+    if (selectLoopId != -1) ss << " loop " << selectLoopId;
+    ss << ") ";
+    char *buf = readline(ss.str().c_str());
+    string query = (const char *)(buf);
+    if (query.size() > 0) {
+      add_history(buf);
+      free(buf); // free the buf readline created
+    }
+    mainLoop(query);
   }
 
   return modified;
