@@ -650,6 +650,23 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
     //   errs() << "No location\n";
     //   scc->print(errs() << "Getting close\n", "", 100); errs() << "\n";
     // }
+
+    /*
+     * Check that there are as many clonable memory locations as there are
+     * pointers passed to call.
+     */
+    if (auto call = dyn_cast<CallInst>(inst)) {
+      int numPtrsPassedToCall = 0;
+      for (auto &arg : call->args()) {
+        if (arg->getType()->isPointerTy()) {
+          numPtrsPassedToCall += 1;
+        }
+      }
+      if (locs.size() != numPtrsPassedToCall) {
+        return;
+      }
+    }
+
     if (locs.empty()) {
 
       /*
