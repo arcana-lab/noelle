@@ -3,6 +3,7 @@ set(Srcs
   Pass.cpp
   LoopSelector.cpp
   LoopEvaluation.cpp
+  TimingModel.cpp
 )
 
 # Compilation flags
