@@ -147,6 +147,54 @@ LoopStructure *StayConnectedNestedLoopForestNode::getInnermostLoopThatContains(
   return innerLoop;
 }
 
+LoopStructure *StayConnectedNestedLoopForestNode::getOutermostLoopThatContains(
+    Instruction *i) {
+  auto bb = i->getParent();
+  auto ls = this->getOutermostLoopThatContains(bb);
+  return ls;
+}
+
+LoopStructure *StayConnectedNestedLoopForestNode::getOutermostLoopThatContains(
+    BasicBlock *bb) {
+
+  /*
+   * Check if the basic block is included in the current loop.
+   * If it isn't, then no inner loop can contains it.
+   */
+  if (!this->loop->isIncluded(bb)) {
+    return nullptr;
+  }
+
+  /*
+   * The basic block @bb is included.
+   * We now need to find the outermost loop that contains it.
+   */
+  LoopStructure *outerLoop = nullptr;
+  uint32_t outerLoopLevel = 0;
+  auto f = [bb, &outerLoop, &outerLoopLevel](
+               StayConnectedNestedLoopForestNode *n,
+               uint32_t treeLevel) -> bool {
+    auto nl = n->getLoop();
+    if (!nl->isIncluded(bb)) {
+      return false;
+    }
+    if (outerLoop == nullptr) {
+      outerLoop = nl;
+      outerLoopLevel = treeLevel;
+      return false;
+    }
+    assert(treeLevel != outerLoopLevel);
+    if (treeLevel < outerLoopLevel) {
+      outerLoop = nl;
+      outerLoopLevel = treeLevel;
+    }
+    return false;
+  };
+  this->visitPreOrder(f);
+
+  return outerLoop;
+}
+
 StayConnectedNestedLoopForestNode *StayConnectedNestedLoopForestNode::getParent(
     void) const {
   return this->parent;

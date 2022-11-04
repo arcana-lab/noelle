@@ -44,6 +44,10 @@ public:
 
   LoopStructure *getInnermostLoopThatContains(BasicBlock *bb);
 
+  LoopStructure *getOutermostLoopThatContains(Instruction *i);
+
+  LoopStructure *getOutermostLoopThatContains(BasicBlock *bb);
+
   std::set<StayConnectedNestedLoopForestNode *> getNodes(void);
 
   std::set<LoopStructure *> getLoops(void);
