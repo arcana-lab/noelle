@@ -22,8 +22,8 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/Dominators.hpp"
 #include "noelle/core/LoopStructure.hpp"
-#include "noelle/core/DominatorSummary.hpp"
 
 namespace llvm::noelle {
 

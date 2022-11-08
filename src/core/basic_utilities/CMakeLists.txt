@@ -12,7 +12,6 @@ add_subdirectory(src)
 install(
   FILES
   include/noelle/core/SystemHeaders.hpp 
-  include/noelle/core/DominatorSummary.hpp
   include/noelle/core/Queue.hpp
   include/noelle/core/ScalarEvolutionReferencer.hpp
   include/noelle/core/ScalarEvolutionDelinearization.hpp

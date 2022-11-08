@@ -1,14 +1,13 @@
 # Sources
 set(Srcs 
-  LoopDistribution.cpp
-  Pass.cpp
+  Dominators.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "LoopDistribution")
+set(PassName "Dominators")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -23,19 +22,8 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
+  ../include 
   ../../basic_utilities/include 
-  ../../dominators/include 
-  ../../transformations/include
-  ../../alloc_aa/include 
-  ../../loops/include 
-  ../../hotprofiler/include 
-  ../../talkdown/include
-  ../../dataflow/include
-  ../../callgraph/include
-  ../../induction_variables/include
-  ../include/ 
-  ./ 
-  ${CMAKE_INSTALL_PREFIX}/include
   )
 
 # Declare the LLVM pass to compile

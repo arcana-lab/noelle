@@ -21,6 +21,7 @@
  */
 #pragma once
 
+#include "noelle/core/Dominators.hpp"
 #include "noelle/core/LoopNestingGraph.hpp"
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Queue.hpp"
