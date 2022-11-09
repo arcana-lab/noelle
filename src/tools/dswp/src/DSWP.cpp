@@ -315,11 +315,6 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
       errs() << "DSWP:  Loaded live-in variables\n";
     }
 
-    // SubCFGs execGraph(*task->getTaskBody());
-    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("dswp-loop-" +
-    // std::to_string(LDI->getID()) + "-task-" + std::to_string(i) + ".dot",
-    // &execGraph); dumpToFile(*LDI);
-
     /*
      * HACK: For now, this must follow loading live-ins as this re-wiring
      * overrides the live-in mapping to use locally cloned memory instructions

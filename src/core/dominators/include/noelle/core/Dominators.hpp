@@ -75,6 +75,11 @@ public:
   DomNodeSummary *findNearestCommonDominator(DomNodeSummary *node1,
                                              DomNodeSummary *node2) const;
 
+  std::set<Instruction *> getDominatorsOf(const std::set<Instruction *> &s,
+                                          BasicBlock *dominatedBB) const;
+  std::set<Instruction *> getInstructionsThatDoNotDominateAnyOther(
+      const std::set<Instruction *> &s) const;
+
   raw_ostream &print(raw_ostream &stream, std::string prefixToUse = "") const;
 
   ~DomTreeSummary();

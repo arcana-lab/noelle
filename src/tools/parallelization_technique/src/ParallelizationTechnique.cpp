@@ -1148,35 +1148,13 @@ Instruction *ParallelizationTechnique::
        ++predIter) {
     auto predecessor = *predIter;
 
-    std::unordered_set<Instruction *> dominatingValues{};
-    for (auto intermediateValue : intermediateValues) {
-      auto intermediateBlock = intermediateValue->getParent();
-      if (DT.dominates(intermediateBlock, predecessor)) {
-        dominatingValues.insert(intermediateValue);
-      }
-    }
-
+    auto dominatingValues = DT.getDominatorsOf(intermediateValues, predecessor);
     assert(
         dominatingValues.size() > 0
         && "Cannot store reducible live out where no producer value dominates the point");
 
-    std::unordered_set<Instruction *> lastDominatingValues{};
-    for (auto value : dominatingValues) {
-      bool isDominatingOthers = false;
-      for (auto otherValue : dominatingValues) {
-        if (value == otherValue)
-          continue;
-        if (!DT.dominates(value, otherValue))
-          continue;
-        isDominatingOthers = true;
-        break;
-      }
-
-      if (isDominatingOthers)
-        continue;
-      lastDominatingValues.insert(value);
-    }
-
+    auto lastDominatingValues =
+        DT.getInstructionsThatDoNotDominateAnyOther(dominatingValues);
     assert(
         lastDominatingValues.size() == 1
         && "Cannot store reducible live out where no last produced value is known");
@@ -1685,85 +1663,6 @@ float ParallelizationTechnique::computeSequentialFractionOfExecution(
   }
 
   return sequentialInstructionCount / totalInstructionCount;
-}
-
-void ParallelizationTechnique::dumpToFile(LoopDependenceInfo &LDI) {
-  auto LS = LDI.getLoopStructure();
-
-  /*
-   * Get loop ID.
-   */
-  auto loopIDOpt = LS->getID();
-  assert(loopIDOpt); // ED: we are differentiating files based on loop ID.
-  auto loopID = loopIDOpt.value();
-
-  std::error_code EC;
-  raw_fd_ostream File("technique-dump-loop-" + std::to_string(loopID) + ".txt",
-                      EC,
-                      sys::fs::F_Text);
-
-  if (EC) {
-    errs() << "ERROR: Could not dump debug logs to file!";
-    return;
-  }
-
-  /*
-   * Fetch the SCC manager.
-   */
-  auto sccManager = LDI.getSCCManager();
-
-  auto allBBs = LS->getBasicBlocks();
-  std::set<BasicBlock *> bbs(allBBs.begin(), allBBs.end());
-  DGPrinter::writeGraph<SubCFGs, BasicBlock>(
-      "technique-original-loop-" + std::to_string(loopID) + ".dot",
-      new SubCFGs(bbs));
-  DGPrinter::writeGraph<SCCDAG, SCC>(
-      "technique-sccdag-loop-" + std::to_string(loopID) + ".dot",
-      sccManager->getSCCDAG());
-
-  for (int i = 0; i < tasks.size(); ++i) {
-    auto task = tasks[i];
-    File << "===========\n";
-    std::string taskName = "Task " + std::to_string(i) + ": ";
-    task->getTaskBody()->print(File << taskName << "function"
-                                    << "\n");
-    File << "\n";
-
-    File << taskName << "instruction clones"
-         << "\n";
-    for (auto origI : task->getOriginalInstructions()) {
-      origI->print(File << "Original: ");
-      File << "\n\t";
-      auto cloneI = task->getCloneOfOriginalInstruction(origI);
-      cloneI->print(File << "Cloned: ");
-      File << "\n";
-    }
-    File << "\n";
-
-    File << taskName << "basic block clones"
-         << "\n";
-    for (auto origBB : task->getOriginalBasicBlocks()) {
-      origBB->printAsOperand(File << "Original: ");
-      File << "\n\t";
-      auto cloneBB = task->getCloneOfOriginalBasicBlock(origBB);
-      cloneBB->printAsOperand(File << "Cloned: ");
-      File << "\n";
-    }
-    File << "\n";
-
-    File << taskName << "live in clones"
-         << "\n";
-    for (auto origLiveIn : task->getOriginalLiveIns()) {
-      origLiveIn->print(File << "Original: ");
-      File << "\n\t";
-      auto cloneLiveIn = task->getCloneOfOriginalLiveIn(origLiveIn);
-      cloneLiveIn->print(File << "Cloned: ");
-      File << "\n";
-    }
-    File << "\n";
-  }
-
-  File.close();
 }
 
 BasicBlock *ParallelizationTechnique::getParLoopEntryPoint(void) const {

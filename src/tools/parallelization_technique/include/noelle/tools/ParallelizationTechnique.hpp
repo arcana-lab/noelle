@@ -188,11 +188,6 @@ protected:
                                              Noelle &par) const;
 
   /*
-   * Debug
-   */
-  void dumpToFile(LoopDependenceInfo &LDI);
-
-  /*
    * Fields
    */
   Noelle &noelle;

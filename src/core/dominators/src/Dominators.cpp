@@ -325,6 +325,65 @@ std::set<DomNodeSummary *> DomTreeSummary::dominates(
   return dominators;
 }
 
+std::set<Instruction *> DomTreeSummary::getDominatorsOf(
+    const std::set<Instruction *> &s,
+    BasicBlock *dominatedBB) const {
+  std::set<Instruction *> r{};
+
+  /*
+   * Consider all elements of the set.
+   */
+  for (auto value : s) {
+
+    /*
+     * Check if @value dominates @dominatedBB
+     */
+    auto valueBB = value->getParent();
+    if (this->dominates(valueBB, dominatedBB)) {
+      r.insert(value);
+    }
+  }
+
+  return r;
+}
+
+std::set<Instruction *> DomTreeSummary::
+    getInstructionsThatDoNotDominateAnyOther(
+        const std::set<Instruction *> &s) const {
+  std::set<Instruction *> r{};
+
+  /*
+   * Consider all elements of the set.
+   */
+  for (auto value : s) {
+
+    /*
+     * Check if @value dominates any other
+     */
+    auto isDominatingOthers = false;
+    for (auto otherValue : s) {
+      if (value == otherValue) {
+        continue;
+      }
+      if (!this->dominates(value, otherValue)) {
+        continue;
+      }
+      isDominatingOthers = true;
+      break;
+    }
+    if (isDominatingOthers) {
+      continue;
+    }
+
+    /*
+     * Value does not dominate anyone
+     */
+    r.insert(value);
+  }
+
+  return r;
+}
+
 BasicBlock *DomTreeSummary::findNearestCommonDominator(BasicBlock *B1,
                                                        BasicBlock *B2) const {
   assert(B1 != nullptr);
