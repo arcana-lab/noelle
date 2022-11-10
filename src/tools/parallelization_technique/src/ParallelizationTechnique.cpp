@@ -414,11 +414,6 @@ void ParallelizationTechnique::cloneSequentialLoop(LoopDependenceInfo *LDI,
   assert(taskIndex < this->tasks.size());
 
   /*
-   * Fetch the context of the program.
-   */
-  auto &cxt = this->noelle.getProgramContext();
-
-  /*
    * Fetch the task.
    */
   auto task = this->tasks[taskIndex];
@@ -1085,9 +1080,10 @@ Instruction *ParallelizationTechnique::
    */
   auto sccManager = LDI->getSCCManager();
 
+  /*
+   * Fetch the task.
+   */
   auto task = this->tasks[taskIndex];
-  auto &DT = taskDS.DT;
-  auto &PDT = taskDS.PDT;
 
   /*
    * Fetch all clones of intermediate values of the producer
@@ -1123,7 +1119,8 @@ Instruction *ParallelizationTechnique::
     if (intermediateValue->getParent() != insertBasicBlock)
       continue;
     if (lastIntermediateAtInsertBlock
-        && DT.dominates(intermediateValue, lastIntermediateAtInsertBlock))
+        && taskDS.DT.dominates(intermediateValue,
+                               lastIntermediateAtInsertBlock))
       continue;
     lastIntermediateAtInsertBlock = intermediateValue;
   }
@@ -1148,13 +1145,14 @@ Instruction *ParallelizationTechnique::
        ++predIter) {
     auto predecessor = *predIter;
 
-    auto dominatingValues = DT.getDominatorsOf(intermediateValues, predecessor);
+    auto dominatingValues =
+        taskDS.DT.getDominatorsOf(intermediateValues, predecessor);
     assert(
         dominatingValues.size() > 0
         && "Cannot store reducible live out where no producer value dominates the point");
 
     auto lastDominatingValues =
-        DT.getInstructionsThatDoNotDominateAnyOther(dominatingValues);
+        taskDS.DT.getInstructionsThatDoNotDominateAnyOther(dominatingValues);
     assert(
         lastDominatingValues.size() == 1
         && "Cannot store reducible live out where no last produced value is known");
