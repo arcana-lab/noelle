@@ -22,11 +22,6 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-// #include <sstream>
-// #include <string>
-// #include <map>
-// #include <vector>
-// #include <algorithm>
 using std::string, std::map, std::vector;
 
 // All possible actions
@@ -42,6 +37,7 @@ enum ReplAction {
   RemoveAll,
   Parallelize,
   Modref,
+  Save,
   Unknown = -1
 };
 
@@ -69,6 +65,7 @@ const map<string, ReplAction> ReplActions = {
   {"parallelize", ReplAction::Parallelize},
   {"p", ReplAction::Parallelize},
   {"modref", ReplAction::Modref},
+  {"save", ReplAction::Save},
 };
 
 // a helper to get the vocabulary of Repl, to help the auto completion
@@ -94,6 +91,7 @@ const map<ReplAction, string> HelpText = {
   {RemoveAll, "removeAll/ra $inst_id: \tremove all dependences from and to a instruction from the loop"},
   {Parallelize, "paralelize/p: \tparallelize the selected loop with current dependences"},
   {Modref, "modref/mr $inst_id1, $inst_id2: \tquery the modref between two instructions"},
+  {Save, "save repl commands to an output file"},
   {Quit, "quit/q: quit the repl"},
 };
 

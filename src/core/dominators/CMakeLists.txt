@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.13)
-project(HELIX)
+project(Dominators)
 
 # Dependences
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
@@ -11,9 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/noelle/tools/HELIX.hpp 
-  include/noelle/tools/HELIXTask.hpp 
-  include/noelle/tools/SequentialSegment.hpp 
+  include/noelle/core/Dominators.hpp
   DESTINATION 
-  include/noelle/tools
+  include/noelle/core
   )

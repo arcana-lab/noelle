@@ -1,6 +1,5 @@
 # Sources
 set(Srcs 
-  DominatorSummary.cpp
   ScalarEvolutionReferencer.cpp
   ScalarEvolutionReferenceTreeExpander.cpp
   ScalarEvolutionDelinearization.cpp

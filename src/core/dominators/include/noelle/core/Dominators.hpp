@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,8 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+
+#include "llvm/Analysis/PostDominators.h"
 
 #include "noelle/core/SystemHeaders.hpp"
 
@@ -56,26 +58,14 @@ private:
 class DomTreeSummary {
 public:
   DomTreeSummary(DominatorTree &DT);
+
   DomTreeSummary(PostDominatorTree &PDT);
+
   DomTreeSummary(DomTreeSummary &DTS, std::set<BasicBlock *> &bbSubset);
-  ~DomTreeSummary();
 
   void transferToClones(
       std::unordered_map<BasicBlock *, BasicBlock *> &bbCloneMap);
-  raw_ostream &print(raw_ostream &stream, std::string prefixToUse = "") const;
 
-private:
-  DomTreeSummary(std::set<DTAliases::Node *> nodes);
-  DomTreeSummary(std::set<DomNodeSummary *> nodesSubset);
-
-  template <typename TreeType>
-  std::set<DTAliases::Node *> collectNodesOfTree(TreeType &T);
-  std::set<DomNodeSummary *> filterNodes(std::set<DomNodeSummary *> &nodes,
-                                         std::set<BasicBlock *> &bbSubset);
-  template <typename NodeType>
-  void cloneNodes(std::set<NodeType *> &nodes);
-
-public:
   DomNodeSummary *getNode(BasicBlock *B) const;
   bool dominates(Instruction *I, Instruction *J) const;
   bool dominates(BasicBlock *B1, BasicBlock *B2) const;
@@ -85,10 +75,28 @@ public:
   DomNodeSummary *findNearestCommonDominator(DomNodeSummary *node1,
                                              DomNodeSummary *node2) const;
 
+  std::set<Instruction *> getDominatorsOf(const std::set<Instruction *> &s,
+                                          BasicBlock *dominatedBB) const;
+  std::set<Instruction *> getInstructionsThatDoNotDominateAnyOther(
+      const std::set<Instruction *> &s) const;
+
+  raw_ostream &print(raw_ostream &stream, std::string prefixToUse = "") const;
+
+  ~DomTreeSummary();
+
 private:
   std::set<DomNodeSummary *> nodes;
   std::unordered_map<BasicBlock *, DomNodeSummary *> bbNodeMap;
   bool post;
+
+  DomTreeSummary(std::set<DTAliases::Node *> nodes);
+  DomTreeSummary(std::set<DomNodeSummary *> nodesSubset);
+  template <typename TreeType>
+  std::set<DTAliases::Node *> collectNodesOfTree(TreeType &T);
+  std::set<DomNodeSummary *> filterNodes(std::set<DomNodeSummary *> &nodes,
+                                         std::set<BasicBlock *> &bbSubset);
+  template <typename NodeType>
+  void cloneNodes(std::set<NodeType *> &nodes);
 };
 
 class DominatorSummary {

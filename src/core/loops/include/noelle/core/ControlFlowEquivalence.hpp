@@ -23,7 +23,7 @@
 
 #include <memory>
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/DominatorSummary.hpp"
+#include "noelle/core/Dominators.hpp"
 #include "noelle/core/StayConnectedNestedLoopForest.hpp"
 
 namespace llvm::noelle {

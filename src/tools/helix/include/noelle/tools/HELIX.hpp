@@ -29,10 +29,11 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Noelle.hpp"
-#include "HeuristicsPass.hpp"
-#include "noelle/tools/ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
-#include "SequentialSegment.hpp"
 #include "noelle/core/ControlFlowEquivalence.hpp"
+#include "noelle/tools/ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
+#include "noelle/tools/SequentialSegment.hpp"
+#include "noelle/tools/HELIXTask.hpp"
+#include "HeuristicsPass.hpp"
 
 namespace llvm::noelle {
 
@@ -121,6 +122,22 @@ protected:
   void addSynchronizations(LoopDependenceInfo *LDI,
                            std::vector<SequentialSegment *> *sss);
 
+  virtual CallInst *injectWaitCall(IRBuilder<> &builder, uint32_t ssID);
+
+  virtual CallInst *injectSignalCall(IRBuilder<> &builder, uint32_t ssID);
+
+  virtual void computeAndCachePointerOfPastSequentialSegment(
+      HELIXTask *helixTask,
+      uint32_t ssID);
+
+  virtual void computeAndCachePointerOfFutureSequentialSegment(
+      HELIXTask *helixTask,
+      uint32_t ssID);
+
+  virtual Value *getPointerOfSequentialSegment(HELIXTask *helixTask,
+                                               Value *ssArray,
+                                               uint32_t ssID);
+
   void inlineCalls(Task *task);
 
   void rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI);
@@ -151,6 +168,8 @@ protected:
 
 private:
   std::string prefixString;
+  std::vector<Value *> ssPastPtrs;
+  std::vector<Value *> ssFuturePtrs;
 };
 
 class SpilledLoopCarriedDependency {

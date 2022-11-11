@@ -187,11 +187,27 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
     stream << prefixString << "    Loop-carried dependences\n";
     sccManager->iterateOverLoopCarriedDependences(
         scc,
-        [this, &stream, &prefixString](DGEdge<Value> *dep) -> bool {
+        [this, scc, &stream, &prefixString](DGEdge<Value> *dep) -> bool {
+          /*
+           * Fetch the instructions involved in the dependence
+           */
           auto fromInst = dep->getOutgoingT();
           auto toInst = dep->getIncomingT();
-          stream << prefixString << "      " << *fromInst << " ---> "
-                 << *toInst;
+
+          /*
+           * Check that both instructions belong to the SCC.
+           */
+          std::string fromInstClarification{};
+          if (scc->fetchNode(fromInst) == nullptr) {
+            fromInstClarification.append(" (outside the SCC) ");
+          }
+          std::string toInstClarification{};
+          if (scc->fetchNode(toInst) == nullptr) {
+            toInstClarification.append(" (outside the SCC) ");
+          }
+          stream << prefixString << "      " << *fromInst
+                 << fromInstClarification << " ---> " << *toInst
+                 << toInstClarification;
 
           /*
            * Control dependences.

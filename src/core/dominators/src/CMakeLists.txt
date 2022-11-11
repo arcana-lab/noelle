@@ -1,16 +1,13 @@
 # Sources
 set(Srcs 
-  Pass.cpp
-  LoopSelector.cpp
-  LoopEvaluation.cpp
-  TimingModel.cpp
+  Dominators.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Planner")
+set(PassName "Dominators")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -24,17 +21,9 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS}
-  ../../heuristics/include 
-  ../../parallelization_technique/include 
-  ../../dswp/include 
-  ../../doall/include 
-  ../../helix/include 
-  ../../loop_distribution/include
-  ../../talkdown/include
-  ../include
-  ./
-  ${CMAKE_INSTALL_PREFIX}/include
+include_directories(${LLVM_INCLUDE_DIRS} 
+  ../include 
+  ../../basic_utilities/include 
   )
 
 # Declare the LLVM pass to compile

@@ -26,6 +26,7 @@ include_directories(
   ${LLVM_INCLUDE_DIRS} 
   ../include 
   ../../basic_utilities/include 
+  ../../dominators/include 
   ../../loop_structure/include 
   ${CMAKE_INSTALL_PREFIX}/include
   )

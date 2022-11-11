@@ -58,7 +58,6 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/DataLayout.h"
-#include "llvm/IR/Dominators.h"
 #include <llvm/IR/InstVisitor.h>
 #include "llvm/IR/InstIterator.h"
 #include "llvm/Support/raw_ostream.h"
@@ -71,7 +70,6 @@
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/CallGraph.h"
 #include "llvm/Analysis/AssumptionCache.h"
-#include "llvm/Analysis/PostDominators.h"
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/CFG.h"

@@ -21,40 +21,21 @@
  */
 #pragma once
 
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Reduction.hpp"
-#include "noelle/core/Dominators.hpp"
+#include "noelle/core/Noelle.hpp"
 
 namespace llvm::noelle {
 
-class BinaryReduction : public Reduction {
+class LoopTimingModel {
 public:
-  BinaryReduction(SCC *s,
-                  LoopStructure *loop,
-                  LoopCarriedVariable *variable,
-                  DominatorSummary &dom);
+  LoopTimingModel(Noelle &noelle, LoopDependenceInfo &ldi);
 
-  BinaryReduction(SCC *s,
-                  LoopStructure *loop,
-                  Value *initialValue,
-                  Instruction::BinaryOps reductionOperation,
-                  PHINode *accumulator,
-                  Value *identity);
+  uint64_t getTimeSavedByParallelizingLoop(void);
 
-  BinaryReduction() = delete;
-
-  Instruction::BinaryOps getReductionOperation(void) const;
+  uint64_t getTimeSpentInCriticalPathPerIteration(void);
 
 protected:
-  Instruction::BinaryOps reductionOperation;
-
-  void setBinaryReductionInformation(Value *initialValue,
-                                     DominatorSummary &dom,
-                                     LoopStructure &loop);
-
-  std::set<Instruction *> collectAccumulators(LoopStructure &LS);
-
-  iterator_range<instruction_iterator> getAccumulators(void);
+  Noelle &n;
+  LoopDependenceInfo &loop;
 };
 
 } // namespace llvm::noelle

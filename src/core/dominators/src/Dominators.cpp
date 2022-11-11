@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "noelle/core/DominatorSummary.hpp"
+#include "noelle/core/Dominators.hpp"
 
 namespace llvm::noelle {
 
@@ -323,6 +323,65 @@ std::set<DomNodeSummary *> DomTreeSummary::dominates(
     node = node->parent;
   }
   return dominators;
+}
+
+std::set<Instruction *> DomTreeSummary::getDominatorsOf(
+    const std::set<Instruction *> &s,
+    BasicBlock *dominatedBB) const {
+  std::set<Instruction *> r{};
+
+  /*
+   * Consider all elements of the set.
+   */
+  for (auto value : s) {
+
+    /*
+     * Check if @value dominates @dominatedBB
+     */
+    auto valueBB = value->getParent();
+    if (this->dominates(valueBB, dominatedBB)) {
+      r.insert(value);
+    }
+  }
+
+  return r;
+}
+
+std::set<Instruction *> DomTreeSummary::
+    getInstructionsThatDoNotDominateAnyOther(
+        const std::set<Instruction *> &s) const {
+  std::set<Instruction *> r{};
+
+  /*
+   * Consider all elements of the set.
+   */
+  for (auto value : s) {
+
+    /*
+     * Check if @value dominates any other
+     */
+    auto isDominatingOthers = false;
+    for (auto otherValue : s) {
+      if (value == otherValue) {
+        continue;
+      }
+      if (!this->dominates(value, otherValue)) {
+        continue;
+      }
+      isDominatingOthers = true;
+      break;
+    }
+    if (isDominatingOthers) {
+      continue;
+    }
+
+    /*
+     * Value does not dominate anyone
+     */
+    r.insert(value);
+  }
+
+  return r;
 }
 
 BasicBlock *DomTreeSummary::findNearestCommonDominator(BasicBlock *B1,

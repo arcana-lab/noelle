@@ -27,7 +27,7 @@
 #include "noelle/core/ScalarEvolutionReferencer.hpp"
 #include "noelle/core/StayConnectedNestedLoopForest.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
-#include "noelle/core/DominatorSummary.hpp"
+#include "noelle/core/Dominators.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/Invariants.hpp"

@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Planner.hpp"
+#include "TimingModel.hpp"
 
 namespace llvm::noelle {
 
@@ -230,34 +231,14 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
     auto ldi = noelle.getLoop(ls, optimizations);
 
     /*
-     * Fetch the set of sequential SCCs.
+     * Compute the timing model for this loop.
      */
-    auto sequentialSCCs =
-        DOALL::getSCCsThatBlockDOALLToBeApplicable(ldi, noelle);
-
-    /*
-     * Find the biggest sequential SCC.
-     */
-    uint64_t biggestSCCTime = 0;
-    for (auto sequentialSCC : sequentialSCCs) {
-
-      /*
-       * Fetch the time spent in the current SCC.
-       */
-      auto sequentialSCCTime = profiles->getTotalInstructions(sequentialSCC);
-
-      /*
-       * Compute the biggest SCC.
-       */
-      if (sequentialSCCTime > biggestSCCTime) {
-        biggestSCCTime = sequentialSCCTime;
-      }
-    }
+    auto loopTimeModel = new LoopTimingModel(noelle, *ldi);
 
     /*
      * Tag DOALL loops.
      */
-    if (biggestSCCTime == 0) {
+    if (loopTimeModel->getTimeSpentInCriticalPathPerIteration() == 0) {
       doallLoops[ls] = true;
     } else {
       doallLoops[ls] = false;
@@ -267,20 +248,12 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
      * Compute the maximum amount of time saved by any parallelization
      * technique.
      */
-    timeSavedLoops[ldi] = 0;
-    timeSavedPerLoop[ls] = 0;
+    uint64_t timeSaved = 0;
     if (profiles->getIterations(ls) > 0) {
-      auto instsPerIteration =
-          profiles->getAverageTotalInstructionsPerIteration(ls);
-      auto instsInBiggestSCCPerIteration =
-          ((double)biggestSCCTime) / ((double)profiles->getIterations(ls));
-      assert(instsInBiggestSCCPerIteration <= instsPerIteration);
-      auto timeSavedPerIteration =
-          (double)(instsPerIteration - instsInBiggestSCCPerIteration);
-      auto timeSaved = timeSavedPerIteration * profiles->getIterations(ls);
-      timeSavedLoops[ldi] = (uint64_t)timeSaved;
-      timeSavedPerLoop[ls] = (uint64_t)timeSaved;
+      timeSaved = loopTimeModel->getTimeSavedByParallelizingLoop();
     }
+    timeSavedLoops[ldi] = (uint64_t)timeSaved;
+    timeSavedPerLoop[ls] = (uint64_t)timeSaved;
 
     return false;
   };

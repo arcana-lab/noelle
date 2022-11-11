@@ -19,8 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "HELIX.hpp"
-#include "HELIXTask.hpp"
+#include "noelle/tools/HELIX.hpp"
 #include "DOALL.hpp"
 
 namespace llvm::noelle {
