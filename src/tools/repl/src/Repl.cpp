@@ -41,7 +41,7 @@ class OptRepl : public ModulePass {
   public:
     static char ID;
     void getAnalysisUsage(AnalysisUsage &au) const;
-    StringRef getPassName() const { return "remed-selector"; }
+    StringRef getPassName() const { return "Repl"; }
     bool runOnModule(Module &M);
     OptRepl() : ModulePass(ID) {}
 };
@@ -131,6 +131,7 @@ void ReplDriver::selectFn() {
   selectedSCCDAG = std::make_unique<SCCDAG>(selectedPDG.get());
 
   createInstIdMap(M, selectedPDG.get());
+  createInstIdLookupMap();
 }
 
 void ReplDriver::helpFn() {

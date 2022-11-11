@@ -239,9 +239,9 @@ class ReplDriver {
     unique_ptr<DepIdMap_t> depIdMap;
     shared_ptr<DepIdReverseMap_t> depIdLookupMap;
 
-    void createInstIdLookupMap(InstIdMap_t m) {
+    void createInstIdLookupMap() {
       auto lookupMap = std::make_unique<InstIdReverseMap_t>();
-      for (auto &[instId, node] : m) {
+      for (auto &[instId, node] : *instIdMap) {
         lookupMap->insert(make_pair(node, instId));
       }
 
