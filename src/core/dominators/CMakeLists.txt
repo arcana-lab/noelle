@@ -12,6 +12,7 @@ add_subdirectory(src)
 install(
   FILES
   include/noelle/core/Dominators.hpp
+  include/noelle/core/DominatorNode.hpp
   DESTINATION 
   include/noelle/core
   )

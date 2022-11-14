@@ -1,6 +1,7 @@
 # Sources
 set(Srcs 
   Dominators.cpp
+  DominatorNode.cpp
 )
 
 # Compilation flags
