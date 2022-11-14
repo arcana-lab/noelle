@@ -35,15 +35,19 @@ using namespace llvm::noelle;
 
 using namespace Repl;
 
-cl::opt<string> HistoryFileName("history", cl::desc("Specify command history file name"), cl::init(""));
+cl::opt<string> HistoryFileName("history",
+                                cl::desc("Specify command history file name"),
+                                cl::init(""));
 
 class OptRepl : public ModulePass {
-  public:
-    static char ID;
-    void getAnalysisUsage(AnalysisUsage &au) const;
-    StringRef getPassName() const { return "Repl"; }
-    bool runOnModule(Module &M);
-    OptRepl() : ModulePass(ID) {}
+public:
+  static char ID;
+  void getAnalysisUsage(AnalysisUsage &au) const;
+  StringRef getPassName() const {
+    return "Repl";
+  }
+  bool runOnModule(Module &M);
+  OptRepl() : ModulePass(ID) {}
 };
 
 char OptRepl::ID = 0;
@@ -55,7 +59,7 @@ void OptRepl::getAnalysisUsage(AnalysisUsage &au) const {
 }
 
 // a simple autocompletion generator
-char* completion_generator(const char* text, int state) {
+char *completion_generator(const char *text, int state) {
   // This function is called with state=0 the first time; subsequent calls are
   // with a nonzero state. state=0 can be used to perform one-time
   // initialization for this completion session.
@@ -71,8 +75,8 @@ char* completion_generator(const char* text, int state) {
     // Collect a vector of matches: vocabulary words that begin with text.
     std::string textstr = std::string(text);
     for (auto word : ReplVocab) {
-      if (word.size() >= textstr.size() &&
-          word.compare(0, textstr.size(), textstr) == 0) {
+      if (word.size() >= textstr.size()
+          && word.compare(0, textstr.size(), textstr) == 0) {
         matches.push_back(word);
       }
     }
@@ -87,7 +91,7 @@ char* completion_generator(const char* text, int state) {
   }
 }
 
-char** completer(const char* text, int start, int end) {
+char **completer(const char *text, int start, int end) {
   // Don't do filename completion even if our generator finds no matches.
   rl_attempted_completion_over = 1;
 
@@ -124,7 +128,7 @@ void ReplDriver::selectFn() {
   auto ls = loop->getLoopStructure();
   outs() << "Selecting loop " << selectedLoopId << ": ";
   outs() << ls->getHeader()->getParent()->getName()
-    << "::" << ls->getHeader()->getName() << '\n';
+         << "::" << ls->getHeader()->getName() << '\n';
   selectedLoop = loop;
 
   selectedPDG = std::make_unique<PDG>(*loop->getLoopDG());
@@ -153,10 +157,9 @@ void ReplDriver::dumpFn() {
   auto ls = selectedLoop->getLoopStructure();
   ls->print(outs());
   outs() << "Number of instructions: "
-    << selectedPDG->getNumberOfInstructionsIncluded() << "\n";
+         << selectedPDG->getNumberOfInstructionsIncluded() << "\n";
   outs() << "Number of dependences: "
-    << selectedPDG->getNumberOfDependencesBetweenInstructions()
-    << "\n";
+         << selectedPDG->getNumberOfDependencesBetweenInstructions() << "\n";
   outs() << "Number of SCCs: " << selectedSCCDAG->numNodes();
 
   outs() << "\n";
@@ -169,7 +172,7 @@ void ReplDriver::dumpFn() {
   outs() << "\n";
 }
 
-void ReplDriver::instsFn(){
+void ReplDriver::instsFn() {
   int instId = parser.getActionId();
   if (instId != -1) {
     if (instIdMap->find(instId) == instIdMap->end()) {
@@ -300,17 +303,19 @@ void ReplDriver::saveFn() {
   // remove the current command from readline history
   remove_history(history_length - 1);
   write_history(fileName.c_str());
-  outs() << "command history (excluding \"save\" command) has been written into " << fileName << "\n";
+  outs()
+      << "command history (excluding \"save\" command) has been written into "
+      << fileName << "\n";
 }
 
 string ReplDriver::prompt() {
   stringstream ss;
   ss << "(noelle-repl";
-  if (selectedLoopId != -1) ss << " loop " << selectedLoopId;
+  if (selectedLoopId != -1)
+    ss << " loop " << selectedLoopId;
   ss << ") ";
   return ss.str();
 }
-
 
 bool OptRepl::runOnModule(Module &M) {
   bool modified = false;
@@ -325,7 +330,8 @@ bool OptRepl::runOnModule(Module &M) {
   string historyFileName = HistoryFileName;
   if (historyFileName != "") {
     read_history(historyFileName.c_str());
-    // DISCUSSION: the last command won't get executed if using 'i < history_length'
+    // DISCUSSION: the last command won't get executed if using 'i <
+    // history_length'
     for (int i = history_base; i <= history_length; i++) {
       char *buf = history_get(i)->line;
       string query = (const char *)(buf);
@@ -341,6 +347,10 @@ bool OptRepl::runOnModule(Module &M) {
     }
 
     char *buf = readline(driver.prompt().c_str());
+    if (!buf) {
+      outs() << "Quit\n";
+      break;
+    }
     string query = (const char *)(buf);
     if (query.size() > 0) {
       add_history(buf);

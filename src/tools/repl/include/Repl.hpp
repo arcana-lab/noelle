@@ -184,203 +184,206 @@ public:
 };
 
 class ReplDriver {
-  protected:
-    using ActionFunc = std::function<void()>;
-    const map<ReplAction, string> HelpText = {
-      {Help, "help/h (command): \tprint help message (for certain command)"},
-      {Loops, "loops/ls: \tprint all loops with loop id"},
-      {Select, "select/s \t$loop_id: select a loop to work with"},
-      {Dump, "dump (-v):\t dump the loop information (verbose: dump the loop instructions)"},
-      {Insts, "insts/is: \tshow instructions with instruction id"},
-      {Deps, "deps/ds (from $inst_id_from) (to $inst_id_to): \tshow dependences with dependence id (from or to certain instructions)"},
-      {Remove, "remove/r $dep_id: \tremove a certain dependence from the loop"},
-      {RemoveAll, "removeAll/ra $inst_id: \tremove all dependences from and to a instruction from the loop"},
-      {Parallelize, "paralelize/p: \tparallelize the selected loop with current dependences"},
-      {Modref, "modref/mr $inst_id1, $inst_id2: \tquery the modref between two instructions"},
-      {Save, "save repl commands to an output file"},
-      {Quit, "quit/q: quit the repl"}
-    };
+protected:
+  using ActionFunc = std::function<void()>;
+  const map<ReplAction, string> HelpText = {
+    { Help, "help/h (command): \tprint help message (for certain command)" },
+    { Loops, "loops/ls: \tprint all loops with loop id" },
+    { Select, "select/s \t$loop_id: select a loop to work with" },
+    { Dump,
+      "dump (-v):\t dump the loop information (verbose: dump the loop instructions)" },
+    { Insts, "insts/is: \tshow instructions with instruction id" },
+    { Deps,
+      "deps/ds (from $inst_id_from) (to $inst_id_to): \tshow dependences with dependence id (from or to certain instructions)" },
+    { Remove, "remove/r $dep_id: \tremove a certain dependence from the loop" },
+    { RemoveAll,
+      "removeAll/ra $inst_id: \tremove all dependences from and to a instruction from the loop" },
+    { Parallelize,
+      "paralelize/p: \tparallelize the selected loop with current dependences" },
+    { Modref,
+      "modref/mr $inst_id1, $inst_id2: \tquery the modref between two instructions" },
+    { Save, "save repl commands to an output file" },
+    { Quit, "quit/q: quit the repl" }
+  };
 
-    map<ReplAction, ActionFunc> actionFuncs;
+  map<ReplAction, ActionFunc> actionFuncs;
 
-  private:
-    Module &M;
-    Noelle &noelle;
+private:
+  Module &M;
+  Noelle &noelle;
 
-    Hot *profiles;
-    std::vector<llvm::noelle::LoopDependenceInfo *> *loops;
+  Hot *profiles;
+  std::vector<llvm::noelle::LoopDependenceInfo *> *loops;
 
-    ReplParser parser;
-    /// The Driver State
-    struct State {
-      bool is_terminate = false;
-    };
+  ReplParser parser;
+  /// The Driver State
+  struct State {
+    bool is_terminate = false;
+  };
 
-    State state;
-    // FIXME: put in the state
-    int selectedLoopId = -1;
-    // the selected information
-    llvm::Function *selectedFunction; // TODO: not used yet
-    LoopDependenceInfo *selectedLoop;
-    unique_ptr<PDG> selectedPDG;
-    unique_ptr<SCCDAG> selectedSCCDAG;
+  State state;
+  // FIXME: put in the state
+  int selectedLoopId = -1;
+  // the selected information
+  llvm::Function *selectedFunction; // TODO: not used yet
+  LoopDependenceInfo *selectedLoop;
+  unique_ptr<PDG> selectedPDG;
+  unique_ptr<SCCDAG> selectedSCCDAG;
 
-    using InstIdMap_t  = map<unsigned, DGNode<Value> *>;
-    using InstIdReverseMap_t  = map<DGNode<Value> *, unsigned>;
-    using DepIdMap_t  = map<unsigned, DGEdge<Value> *>;
-    using DepIdReverseMap_t  = map<DGEdge<Value> *, unsigned>;
+  using InstIdMap_t = map<unsigned, DGNode<Value> *>;
+  using InstIdReverseMap_t = map<DGNode<Value> *, unsigned>;
+  using DepIdMap_t = map<unsigned, DGEdge<Value> *>;
+  using DepIdReverseMap_t = map<DGEdge<Value> *, unsigned>;
 
+  // store the loopID
+  map<unsigned, LoopDependenceInfo *> loopIdMap;
 
-    // store the loopID
-    map<unsigned, LoopDependenceInfo *> loopIdMap;
+  unique_ptr<InstIdMap_t> instIdMap;
+  unique_ptr<InstIdReverseMap_t> instIdLookupMap;
+  unique_ptr<DepIdMap_t> depIdMap;
+  shared_ptr<DepIdReverseMap_t> depIdLookupMap;
 
-    unique_ptr<InstIdMap_t> instIdMap;
-    unique_ptr<InstIdReverseMap_t> instIdLookupMap;
-    unique_ptr<DepIdMap_t> depIdMap;
-    shared_ptr<DepIdReverseMap_t> depIdLookupMap;
-
-    void createInstIdLookupMap() {
-      auto lookupMap = std::make_unique<InstIdReverseMap_t>();
-      for (auto &[instId, node] : *instIdMap) {
-        lookupMap->insert(make_pair(node, instId));
-      }
-
-      instIdLookupMap = std::move(lookupMap);
+  void createInstIdLookupMap() {
+    auto lookupMap = std::make_unique<InstIdReverseMap_t>();
+    for (auto &[instId, node] : *instIdMap) {
+      lookupMap->insert(make_pair(node, instId));
     }
 
-    static bool hasPDGAsMetadata(Module &M) {
-      if (auto n = M.getNamedMetadata("noelle.module.pdg")) {
-        if (auto m = dyn_cast<MDNode>(n->getOperand(0))) {
-          if (cast<MDString>(m->getOperand(0))->getString() == "true") {
-            return true;
+    instIdLookupMap = std::move(lookupMap);
+  }
+
+  static bool hasPDGAsMetadata(Module &M) {
+    if (auto n = M.getNamedMetadata("noelle.module.pdg")) {
+      if (auto m = dyn_cast<MDNode>(n->getOperand(0))) {
+        if (cast<MDString>(m->getOperand(0))->getString() == "true") {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  static unsigned getNoelleInstId(DGNode<Value> *instNode) {
+    if (auto inst = dyn_cast<Instruction>(instNode->getT())) {
+      if (auto m = inst->getMetadata("noelle.pdg.inst.id")) {
+        if (auto cam = dyn_cast<ConstantAsMetadata>(m->getOperand(0))) {
+          if (auto constant = dyn_cast<ConstantInt>(cam->getValue())) {
+            return (unsigned)constant->getSExtValue();
           }
         }
       }
-
-      return false;
     }
+    assert(false && "found an instruction without instruction id\n");
+  }
 
-    static unsigned getNoelleInstId(DGNode<Value> *instNode) {
-      if (auto inst = dyn_cast<Instruction>(instNode->getT())) {
-        if (auto m = inst->getMetadata("noelle.pdg.inst.id")) {
-          if (auto cam = dyn_cast<ConstantAsMetadata>(m->getOperand(0))) {
-            if (auto constant = dyn_cast<ConstantInt>(cam->getValue())) {
-              return (unsigned)constant->getSExtValue();
-            }
-          }
-        }
+  void createInstIdMap(Module &M, PDG *pdg) {
+    auto instIdMap = std::make_unique<InstIdMap_t>();
+    // the pdg is embedded as metadata in the module
+    // use noelle.pdg.inst.id as id for each instruction
+    if (hasPDGAsMetadata(M)) {
+      for (auto &instNode : pdg->getNodes()) {
+        unsigned noelleInstId = getNoelleInstId(instNode);
+        assert((instIdMap->find(noelleInstId) == instIdMap->end())
+               && "Found noelle instructions that share the same id\n");
+        instIdMap->insert(make_pair(noelleInstId, instNode));
       }
-      assert(false && "found an instruction without instruction id\n");
-    }
-
-    void createInstIdMap(Module &M, PDG *pdg) {
-      auto instIdMap = std::make_unique<InstIdMap_t>();
-      // the pdg is embedded as metadata in the module
-      // use noelle.pdg.inst.id as id for each instruction
-      if (hasPDGAsMetadata(M)) {
-        for (auto &instNode : pdg->getNodes()) {
-          unsigned noelleInstId = getNoelleInstId(instNode);
-          assert((instIdMap->find(noelleInstId) == instIdMap->end()) && "Found noelle instructions that share the same id\n");
-          instIdMap->insert(make_pair(noelleInstId, instNode));
-        }
-      } else {
-        unsigned instId = 0;
-        for (auto &instNode : pdg->getNodes()) {
-          instIdMap->insert(make_pair(instId, instNode));
-          instId++;
-        }
-      }
-
-      this->instIdMap = std::move(instIdMap);
-    }
-
-
-    void createDepIdLookupMap(DepIdMap_t m) {
-      auto lookupMap = std::make_shared<DepIdReverseMap_t>();
-      for (auto &[instId, node] : m) {
-        lookupMap->insert(make_pair(node, instId));
-      }
-
-      depIdLookupMap = std::move(lookupMap);
-    }
-
-
-    // helper function for dumping edge
-    void dumpEdge(unsigned depId, DGEdge<Value> *edge) {
-      auto idA = instIdLookupMap->at(edge->getOutgoingNode());
-      auto idB = instIdLookupMap->at(edge->getIncomingNode());
-      outs() << depId << "\t" << idA << "->" << idB << ":\t" << edge->toString() << (edge->isLoopCarriedDependence() ? "(LC)" : "(LL)")
-             << "\n";
-    };
-
-  public:
-
-    ReplDriver(llvm::noelle::Noelle &noelle, Module &m) : noelle(noelle), M(m), parser("") {
-      actionFuncs = {
-        {Help, [this] { this->helpFn(); }},
-        {Loops, [this] { this->loopsFn(); }},
-        {Select, [this] { this->selectFn(); }},
-        {Dump, [this] { this->dumpFn(); }},
-        {Insts, [this] { this->instsFn(); }},
-        {Deps, [this] { this->depsFn(); }},
-        {Remove, [this] { this->removeFn(); }},
-        {RemoveAll, [this] { this->removeAllFn(); }},
-        {Parallelize, [this] { this->parallelizeFn(); }},
-        {Modref, [this] { this->modrefFn(); }},
-        {Save, [this] { this->saveFn(); }},
-        {Quit, [this] { this->quitFn(); }}
-      };
-      profiles = noelle.getProfiles();
-      loops = noelle.getLoops();
-
-      // get all loops and assign them id based on hotness decrementally
-      {
-        noelle.sortByHotness(*loops);
-        unsigned loopId = 0;
-        for (auto loop : *loops) {
-           loopIdMap[loopId++] = loop;
-          continue;
-        }
+    } else {
+      unsigned instId = 0;
+      for (auto &instNode : pdg->getNodes()) {
+        instIdMap->insert(make_pair(instId, instNode));
+        instId++;
       }
     }
 
-    virtual void helpFn();
-    virtual void loopsFn();
-    virtual void selectFn();
-    virtual void dumpFn();
-    virtual void instsFn();
-    virtual void depsFn();
-    virtual void removeFn();
-    virtual void removeAllFn();
-    virtual void parallelizeFn();
-    virtual void modrefFn();
-    virtual void saveFn();
-    virtual void quitFn();
+    this->instIdMap = std::move(instIdMap);
+  }
 
-    virtual ~ReplDriver() = default;
-
-    virtual string prompt();
-
-    /// @brief Run one action
-    /// @param action The action to run
-    /// @return true if the action is quit
-    /// @return false if the action is not quit
-    virtual void run(string &query) {
-      parser.parse(query);
-      auto action = parser.getAction();
-      if (action == ReplAction::Unknown) {
-        outs() << "Unknown command!\n";
-      }
-      auto actionFunc = actionFuncs[action];
-      actionFunc();
+  void createDepIdLookupMap(DepIdMap_t m) {
+    auto lookupMap = std::make_shared<DepIdReverseMap_t>();
+    for (auto &[instId, node] : m) {
+      lookupMap->insert(make_pair(node, instId));
     }
 
-    bool hasTerminated() {
-      return state.is_terminate;
+    depIdLookupMap = std::move(lookupMap);
+  }
+
+  // helper function for dumping edge
+  void dumpEdge(unsigned depId, DGEdge<Value> *edge) {
+    auto idA = instIdLookupMap->at(edge->getOutgoingNode());
+    auto idB = instIdLookupMap->at(edge->getIncomingNode());
+    outs() << depId << "\t" << idA << "->" << idB << ":\t" << edge->toString()
+           << (edge->isLoopCarriedDependence() ? "(LC)" : "(LL)") << "\n";
+  };
+
+public:
+  ReplDriver(llvm::noelle::Noelle &noelle, Module &m)
+    : noelle(noelle),
+      M(m),
+      parser("") {
+    actionFuncs = { { Help, [this] { this->helpFn(); } },
+                    { Loops, [this] { this->loopsFn(); } },
+                    { Select, [this] { this->selectFn(); } },
+                    { Dump, [this] { this->dumpFn(); } },
+                    { Insts, [this] { this->instsFn(); } },
+                    { Deps, [this] { this->depsFn(); } },
+                    { Remove, [this] { this->removeFn(); } },
+                    { RemoveAll, [this] { this->removeAllFn(); } },
+                    { Parallelize, [this] { this->parallelizeFn(); } },
+                    { Modref, [this] { this->modrefFn(); } },
+                    { Save, [this] { this->saveFn(); } },
+                    { Quit, [this] { this->quitFn(); } } };
+
+    createLoopMap();
+  }
+
+  // get all loops and assign them id based on hotness decrementally
+  virtual void createLoopMap() {
+    profiles = noelle.getProfiles();
+    loops = noelle.getLoops();
+    noelle.sortByHotness(*loops);
+    unsigned loopId = 0;
+    for (auto loop : *loops) {
+      loopIdMap[loopId++] = loop;
+      continue;
     }
+  }
+
+  virtual void helpFn();
+  virtual void loopsFn();
+  virtual void selectFn();
+  virtual void dumpFn();
+  virtual void instsFn();
+  virtual void depsFn();
+  virtual void removeFn();
+  virtual void removeAllFn();
+  virtual void parallelizeFn();
+  virtual void modrefFn();
+  virtual void saveFn();
+  virtual void quitFn();
+
+  virtual ~ReplDriver() = default;
+
+  virtual string prompt();
+
+  /// @brief Run one action
+  /// @param action The action to run
+  /// @return true if the action is quit
+  /// @return false if the action is not quit
+  virtual void run(string &query) {
+    parser.parse(query);
+    auto action = parser.getAction();
+    if (action == ReplAction::Unknown) {
+      outs() << "Unknown command!\n";
+      return;
+    }
+    auto actionFunc = actionFuncs[action];
+    actionFunc();
+  }
+
+  bool hasTerminated() {
+    return state.is_terminate;
+  }
 };
 
-
 } // namespace Repl
-
-
