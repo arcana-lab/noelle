@@ -22,52 +22,9 @@
 #pragma once
 
 #include "noelle/core/DominatorNode.hpp"
+#include "noelle/core/DominatorForest.hpp"
 
 namespace llvm::noelle {
-
-class DomTreeSummary {
-public:
-  DomTreeSummary(DominatorTree &DT);
-
-  DomTreeSummary(PostDominatorTree &PDT);
-
-  DomTreeSummary(DomTreeSummary &DTS, std::set<BasicBlock *> &bbSubset);
-
-  void transferToClones(
-      std::unordered_map<BasicBlock *, BasicBlock *> &bbCloneMap);
-
-  DominatorNode *getNode(BasicBlock *B) const;
-  bool dominates(Instruction *I, Instruction *J) const;
-  bool dominates(BasicBlock *B1, BasicBlock *B2) const;
-  bool dominates(DominatorNode *node1, DominatorNode *node2) const;
-  std::set<DominatorNode *> dominates(DominatorNode *node) const;
-  BasicBlock *findNearestCommonDominator(BasicBlock *B1, BasicBlock *B2) const;
-  DominatorNode *findNearestCommonDominator(DominatorNode *node1,
-                                            DominatorNode *node2) const;
-
-  std::set<Instruction *> getDominatorsOf(const std::set<Instruction *> &s,
-                                          BasicBlock *dominatedBB) const;
-  std::set<Instruction *> getInstructionsThatDoNotDominateAnyOther(
-      const std::set<Instruction *> &s) const;
-
-  raw_ostream &print(raw_ostream &stream, std::string prefixToUse = "") const;
-
-  ~DomTreeSummary();
-
-private:
-  std::set<DominatorNode *> nodes;
-  std::unordered_map<BasicBlock *, DominatorNode *> bbNodeMap;
-  bool post;
-
-  DomTreeSummary(std::set<DTAliases::Node *> nodes);
-  DomTreeSummary(std::set<DominatorNode *> nodesSubset);
-  template <typename TreeType>
-  std::set<DTAliases::Node *> collectNodesOfTree(TreeType &T);
-  std::set<DominatorNode *> filterNodes(std::set<DominatorNode *> &nodes,
-                                        std::set<BasicBlock *> &bbSubset);
-  template <typename NodeType>
-  void cloneNodes(std::set<NodeType *> &nodes);
-};
 
 class DominatorSummary {
 public:
@@ -77,7 +34,7 @@ public:
   void transferSummaryToClones(
       std::unordered_map<BasicBlock *, BasicBlock *> &bbCloneMap);
 
-  DomTreeSummary DT, PDT;
+  DominatorForest DT, PDT;
 };
 
 } // namespace llvm::noelle

@@ -43,7 +43,7 @@ public:
 
   raw_ostream &print(raw_ostream &stream, std::string prefixToUse = "");
 
-  friend class DomTreeSummary;
+  friend class DominatorForest;
 
 private:
   BasicBlock *B;
