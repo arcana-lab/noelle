@@ -323,6 +323,7 @@ bool OptRepl::runOnModule(Module &M) {
   auto &noelle = getAnalysis<Noelle>();
 
   ReplDriver driver(noelle, M);
+  driver.createLoopMap();
 
   rl_attempted_completion_function = completer;
 

@@ -208,7 +208,6 @@ protected:
 
   map<ReplAction, ActionFunc> actionFuncs;
 
-private:
   Module &M;
   Noelle &noelle;
 
@@ -333,8 +332,6 @@ public:
                     { Modref, [this] { this->modrefFn(); } },
                     { Save, [this] { this->saveFn(); } },
                     { Quit, [this] { this->quitFn(); } } };
-
-    createLoopMap();
   }
 
   // get all loops and assign them id based on hotness decrementally
