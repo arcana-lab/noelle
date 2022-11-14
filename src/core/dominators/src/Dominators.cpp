@@ -35,10 +35,4 @@ DominatorSummary::DominatorSummary(DominatorSummary &ds,
   : DT{ ds.DT, bbSubset },
     PDT{ ds.PDT, bbSubset } {}
 
-void DominatorSummary::transferSummaryToClones(
-    std::unordered_map<BasicBlock *, BasicBlock *> &bbCloneMap) {
-  DT.transferToClones(bbCloneMap);
-  PDT.transferToClones(bbCloneMap);
-}
-
 } // namespace llvm::noelle

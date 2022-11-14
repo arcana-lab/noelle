@@ -31,9 +31,6 @@ public:
   DominatorSummary(DominatorTree &DT, PostDominatorTree &PDT);
   DominatorSummary(DominatorSummary &DS, std::set<BasicBlock *> &bbSubset);
 
-  void transferSummaryToClones(
-      std::unordered_map<BasicBlock *, BasicBlock *> &bbCloneMap);
-
   DominatorForest DT, PDT;
 };
 
