@@ -56,9 +56,10 @@ InductionVariableManager::InductionVariableManager(
     this->loopToIVsMap[loop] = std::unordered_set<InductionVariable *>();
 
     /*
-     * Fetch the loop header.
+     * Fetch the loop header and pre-header.
      */
     auto header = loop->getHeader();
+    auto preHeader = loop->getPreHeader();
 
     /*
      * Iterate over all phis within the loop header.
@@ -68,31 +69,34 @@ InductionVariableManager::InductionVariableManager(
       /*
        * Check if LLVM considers this PHI to be an induction variable
        */
-      InductionDescriptor ID = InductionDescriptor();
-      bool llvmDeterminedValidIV;
+      InductionDescriptor ID{};
+      auto llvmDeterminedValidIV = false;
       bool llvmLoopValidForInductionAnalysis =
-          phi.getBasicBlockIndex(LLVMLoop.getLoopPreheader()) >= 0;
-
+          (phi.getBasicBlockIndex(preHeader) >= 0);
       if (llvmLoopValidForInductionAnalysis
           && InductionDescriptor::isInductionPHI(&phi, &LLVMLoop, &SE, ID)) {
         llvmDeterminedValidIV = true;
+
       } else if (phi.getType()->isFloatingPointTy()
                  && InductionDescriptor::isFPInductionPHI(&phi,
                                                           &LLVMLoop,
                                                           &SE,
                                                           ID)) {
         llvmDeterminedValidIV = true;
-      } else {
-        llvmDeterminedValidIV = false;
       }
 
-      bool noelleDeterminedValidIV = true;
       /*
-       * Check if the PHI node can be analyzed by the SCEV analysis.
+       * Check if NOELLE considers this PHI an induction variable.
+       *
+       * First, let's check if the PHI node can be analyzed by the SCEV
+       * analysis.
        */
+      auto noelleDeterminedValidIV = true;
       if (!SE.isSCEVable(phi.getType())) {
         noelleDeterminedValidIV = false;
+
       } else {
+
         /*
          * Fetch the SCEV and check if it suggests this is an induction
          * variable.
@@ -117,7 +121,6 @@ InductionVariableManager::InductionVariableManager(
                                    loopEnv,
                                    referentialExpander);
       } else if (llvmDeterminedValidIV) {
-        // Construct from LLVM abstraction
         IV = new InductionVariable(loop,
                                    IVM,
                                    SE,
@@ -126,7 +129,16 @@ InductionVariableManager::InductionVariableManager(
                                    loopEnv,
                                    referentialExpander,
                                    ID);
-      } else {
+      }
+
+      /*
+       * Check if we succeeded to have an IV.
+       */
+      if (IV == nullptr) {
+
+        /*
+         * The current PHI is not an IV.
+         */
         continue;
       }
 
