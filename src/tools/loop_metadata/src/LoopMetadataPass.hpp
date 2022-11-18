@@ -40,7 +40,9 @@ public:
   void getAnalysisUsage(AnalysisUsage &AU) const override;
 
 private:
-  bool setIDs(Module &M, Noelle &noelle);
+  bool setIDs(Module &M);
+
+  std::vector<LoopStructure *> getLoopStructuresOnly(Module &M);
 };
 
 } // namespace llvm::noelle
