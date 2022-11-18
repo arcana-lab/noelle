@@ -145,6 +145,8 @@ void LoopStats::printStatsHumanReadable(Hot *profiles) {
       << "      Average coverage of sequential SCCs: "
       << (averageSequentialSCCLLVM / ((double)profiles->getTotalInstructions()))
       << " %\n";
+  errs() << "      Total number of dynamic IR instructions of program: "
+         << profiles->getTotalInstructions() << " \n";
 
   return;
 }
