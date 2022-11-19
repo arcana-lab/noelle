@@ -27,10 +27,9 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/Invariants.hpp"
 #include "noelle/core/Dominators.hpp"
+#include "noelle/core/ClonableMemoryObject.hpp"
 
 namespace llvm::noelle {
-
-class ClonableMemoryLocation;
 
 class MemoryCloningAnalysis {
 public:
@@ -45,81 +44,6 @@ public:
 private:
   std::unordered_set<std::unique_ptr<ClonableMemoryLocation>>
       clonableMemoryLocations;
-};
-
-class ClonableMemoryLocation {
-public:
-  ClonableMemoryLocation(AllocaInst *allocation,
-                         uint64_t sizeInBits,
-                         LoopStructure *loop,
-                         DominatorSummary &DS,
-                         PDG *ldg);
-
-  AllocaInst *getAllocation(void) const;
-
-  std::unordered_set<Instruction *> getLoopInstructionsUsingLocation(
-      void) const;
-
-  std::unordered_set<Instruction *> getInstructionsUsingLocationOutsideLoop(
-      void) const;
-
-  bool isInstructionCastOrGEPOfLocation(Instruction *I) const;
-  bool isInstructionStoringLocation(Instruction *I) const;
-  bool isInstructionLoadingLocation(Instruction *I) const;
-
-  bool mustAliasAMemoryLocationWithinObject(Value *ptr) const;
-
-  bool isClonableLocation(void) const;
-
-  static bool isMemCpyInstrinsicCall(CallInst *call);
-
-private:
-  AllocaInst *allocation;
-  Type *allocatedType;
-  uint64_t sizeInBits;
-  LoopStructure *loop;
-  bool isClonable;
-  bool isScopeWithinLoop;
-
-  std::unordered_set<Instruction *> castsAndGEPs;
-  std::unordered_set<Instruction *> storingInstructions;
-  std::unordered_set<Instruction *> loadInstructions;
-  std::unordered_set<Instruction *> nonStoringInstructions;
-
-  bool identifyStoresAndOtherUsers(LoopStructure *loop, DominatorSummary &DS);
-
-  bool isThereRAWThroughMemoryFromOutsideLoop(LoopStructure *loop,
-                                              AllocaInst *al,
-                                              PDG *ldg) const;
-
-  bool isThereRAWThroughMemoryFromOutsideLoop(
-      LoopStructure *loop,
-      AllocaInst *al,
-      PDG *ldg,
-      std::unordered_set<Instruction *> insts) const;
-
-  /*
-   * A set of storing instructions that completely override the allocation's
-   * values before any use it dominates gets to using the allocation
-   */
-  struct OverrideSet {
-    BasicBlock *dominatingBlockOfNonStoringInsts;
-    std::unordered_set<Instruction *> initialStoringInstructions;
-    std::unordered_set<Instruction *> subsequentNonStoringInstructions;
-  };
-  std::unordered_set<std::unique_ptr<OverrideSet>> overrideSets;
-
-  bool identifyInitialStoringInstructions(LoopStructure *loop,
-                                          DominatorSummary &DS);
-
-  bool areOverrideSetsFullyCoveringTheAllocationSpace(void) const;
-
-  bool isOverrideSetFullyCoveringTheAllocationSpace(
-      OverrideSet *overrideSet) const;
-
-  void setObjectScope(AllocaInst *allocation,
-                      LoopStructure *loop,
-                      DominatorSummary &ds);
 };
 
 } // namespace llvm::noelle

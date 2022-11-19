@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,7 @@
  */
 #include "noelle/core/MemoryCloningAnalysis.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
                                              DominatorSummary &DS,
@@ -31,24 +30,17 @@ MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
   assert(ldg != nullptr);
 
   /*
-   * Collect allocations at the top of the function
-   *
-   * NOTE: The assumption is that all AllocaInst are stated before any other
-   * instructions
+   * Collect objects allocated on the stack.
+   * We assume such objects are allocated at the entry point of the function.
    */
   std::unordered_set<AllocaInst *> allocations;
   auto function = loop->getFunction();
   auto &entryBlock = function->getEntryBlock();
   for (auto &I : entryBlock) {
-
-    /*
-     * We only handle stack objects.
-     */
     auto alloca = dyn_cast<AllocaInst>(&I);
     if (alloca == nullptr) {
       continue;
     }
-
     allocations.insert(alloca);
   }
 
@@ -795,3 +787,5 @@ bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace(
 
   return false;
 }
+
+} // namespace llvm::noelle
