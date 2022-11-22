@@ -17,6 +17,7 @@ set(Srcs
   LoopDependenceInfo.cpp
   SCCDAGPartition.cpp
   LoopTransformationsOptions.cpp
+  ClonableMemoryObject.cpp
 )
 
 # Compilation flags

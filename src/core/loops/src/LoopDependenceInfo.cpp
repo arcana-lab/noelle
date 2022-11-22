@@ -173,6 +173,7 @@ LoopDependenceInfo::LoopDependenceInfo(
     for (auto memObject :
          this->memoryCloningAnalysis->getClonableMemoryLocations()) {
       auto stackObject = memObject->getAllocation();
+      errs() << "LDI: " << *stackObject << "\n";
       stackObjectsThatWillBeCloned.insert(stackObject);
     }
   }
@@ -523,16 +524,18 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
     if (!producer || !consumer) {
       continue;
     }
-
+    errs() << "LDI: Producer = " << *producer << "\n";
+    errs() << "LDI: Consumer = " << *consumer << "\n";
     auto locationsProducer =
         this->memoryCloningAnalysis->getClonableMemoryLocationsFor(producer);
     auto locationsConsumer =
         this->memoryCloningAnalysis->getClonableMemoryLocationsFor(consumer);
     if (locationsProducer.empty() || locationsConsumer.empty()) {
+      errs() << "LDI:   NOOO0\n";
       continue;
     }
 
-    bool isRAW = false;
+    auto isRAW = false;
     for (auto locationP : locationsProducer) {
       for (auto locationC : locationsConsumer) {
         if (edge->isRAWDependence()
@@ -541,7 +544,7 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
           isRAW = true;
       }
     }
-    bool isWAR = false;
+    auto isWAR = false;
     for (auto locationP : locationsProducer) {
       for (auto locationC : locationsConsumer) {
         if (edge->isWARDependence()
@@ -550,7 +553,7 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
           isWAR = true;
       }
     }
-    bool isWAW = false;
+    auto isWAW = false;
     for (auto locationP : locationsProducer) {
       for (auto locationC : locationsConsumer) {
         if (edge->isWAWDependence()
@@ -561,6 +564,7 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
     }
 
     if (!isRAW && !isWAR && !isWAW) {
+      errs() << "LDI:   NOOO1\n";
       continue;
     }
     // producer->print(errs() << "Found alloca location for producer: "); errs()
