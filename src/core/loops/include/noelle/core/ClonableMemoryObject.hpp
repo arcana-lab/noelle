@@ -74,6 +74,16 @@ private:
                                               AllocaInst *al,
                                               PDG *ldg) const;
 
+  bool isThereRAWThroughMemoryBetweenLoopIterations(LoopStructure *loop,
+                                                    AllocaInst *al,
+                                                    PDG *ldg) const;
+
+  bool isThereRAWThroughMemoryBetweenLoopIterations(
+      LoopStructure *loop,
+      AllocaInst *al,
+      PDG *ldg,
+      const std::unordered_set<Instruction *> &insts) const;
+
   bool isThereRAWThroughMemoryFromOutsideLoop(
       LoopStructure *loop,
       AllocaInst *al,
