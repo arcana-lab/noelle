@@ -197,6 +197,8 @@ private:
 
   bool isInIndependentRegion(Instruction *, Instruction *);
 
+  bool canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge);
+
   static const StringSet<> externalFuncsHaveNoSideEffectOrHandledBySVF;
 
   static const StringSet<> externalThreadSafeFunctions;
