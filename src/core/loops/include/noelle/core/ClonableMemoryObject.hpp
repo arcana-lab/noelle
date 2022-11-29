@@ -70,9 +70,9 @@ private:
 
   bool identifyStoresAndOtherUsers(LoopStructure *loop, DominatorSummary &DS);
 
-  bool isThereRAWThroughMemoryFromOutsideLoop(LoopStructure *loop,
-                                              AllocaInst *al,
-                                              PDG *ldg) const;
+  bool isThereRAWThroughMemoryFromLoopToOutside(LoopStructure *loop,
+                                                AllocaInst *al,
+                                                PDG *ldg) const;
 
   bool isThereRAWThroughMemoryBetweenLoopIterations(LoopStructure *loop,
                                                     AllocaInst *al,
@@ -84,7 +84,17 @@ private:
       PDG *ldg,
       const std::unordered_set<Instruction *> &insts) const;
 
-  bool isThereRAWThroughMemoryFromOutsideLoop(
+  bool isThereRAWThroughMemoryFromLoopToOutside(
+      LoopStructure *loop,
+      AllocaInst *al,
+      PDG *ldg,
+      std::unordered_set<Instruction *> insts) const;
+
+  bool isThereRAWThroughMemoryFromOutsideToLoop(LoopStructure *loop,
+                                                AllocaInst *al,
+                                                PDG *ldg) const;
+
+  bool isThereRAWThroughMemoryFromOutsideToLoop(
       LoopStructure *loop,
       AllocaInst *al,
       PDG *ldg,

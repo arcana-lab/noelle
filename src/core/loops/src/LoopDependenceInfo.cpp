@@ -524,14 +524,11 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
     if (!producer || !consumer) {
       continue;
     }
-    errs() << "LDI: Producer = " << *producer << "\n";
-    errs() << "LDI: Consumer = " << *consumer << "\n";
     auto locationsProducer =
         this->memoryCloningAnalysis->getClonableMemoryLocationsFor(producer);
     auto locationsConsumer =
         this->memoryCloningAnalysis->getClonableMemoryLocationsFor(consumer);
     if (locationsProducer.empty() || locationsConsumer.empty()) {
-      errs() << "LDI:   NOOO0\n";
       continue;
     }
 
@@ -564,7 +561,6 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
     }
 
     if (!isRAW && !isWAR && !isWAW) {
-      errs() << "LDI:   NOOO1\n";
       continue;
     }
     // producer->print(errs() << "Found alloca location for producer: "); errs()

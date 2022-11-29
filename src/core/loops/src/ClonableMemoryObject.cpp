@@ -153,7 +153,10 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
     this->isClonable = true;
     return;
   }
-  if (!this->isThereRAWThroughMemoryFromOutsideLoop(loop, allocation, ldg)) {
+  if ((!this->isThereRAWThroughMemoryFromLoopToOutside(loop, allocation, ldg))
+      && (!this->isThereRAWThroughMemoryFromOutsideToLoop(loop,
+                                                          allocation,
+                                                          ldg))) {
 
     /*
      * The stack object is not involved in any memory RAW data dependence
@@ -186,9 +189,9 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
   this->identifyInitialStoringInstructions(loop, DS);
   if (!this->isScopeWithinLoop) {
     if (false || (!this->areOverrideSetsFullyCoveringTheAllocationSpace())
-        || (this->isThereRAWThroughMemoryFromOutsideLoop(loop,
-                                                         allocation,
-                                                         ldg))) {
+        || (this->isThereRAWThroughMemoryFromLoopToOutside(loop,
+                                                           allocation,
+                                                           ldg))) {
       return;
     }
   }
@@ -513,7 +516,88 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryBetweenLoopIterations(
   return false;
 }
 
-bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop(
+bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideToLoop(
+    LoopStructure *loop,
+    AllocaInst *al,
+    PDG *ldg,
+    std::unordered_set<Instruction *> insts) const {
+
+  /*
+   * Check every instruction given as input.
+   */
+  for (auto inst : insts) {
+
+    /*
+     * Check if the inst is within the loop.
+     */
+    if (!loop->isIncluded(inst)) {
+      continue;
+    }
+
+    /*
+     * The inst is within the loop.
+     *
+     * Check if there is a memory dependence from an instruction outside the
+     * loop to this inst.
+     */
+    auto functor = [loop](Value *fromValue, DGEdge<Value> *d) -> bool {
+      assert(fromValue != nullptr);
+      assert(d != nullptr);
+
+      /*
+       * Check if the source of the dependence is with an instruction.
+       */
+      auto inst = dyn_cast<Instruction>(fromValue);
+      if (inst == nullptr) {
+        return false;
+      }
+
+      /*
+       * The source of the dependence is with an instruction.
+       *
+       * Check if the source of the dependence is outside the loop.
+       */
+      if (loop->isIncluded(inst)) {
+
+        /*
+         * The source is within the loop.
+         */
+        return false;
+      }
+
+      /*
+       * The source of the dependence is with an instruction that is outside the
+       * loop.
+       *
+       * Check if the dependence is a RAW.
+       */
+      if (!d->isRAWDependence()) {
+        return false;
+      }
+
+      /*
+       * We found a memory RAW from an instruction outside the loop to an
+       * instruction inside the loop.
+       *
+       * We can stop the iteration.
+       */
+      return true;
+    };
+
+    if (ldg->iterateOverDependencesTo(inst, false, true, false, functor)) {
+
+      /*
+       * We found a memory RAW from a store inside the loop to a load after the
+       * loop.
+       */
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool ClonableMemoryLocation::isThereRAWThroughMemoryFromLoopToOutside(
     LoopStructure *loop,
     AllocaInst *al,
     PDG *ldg,
@@ -594,7 +678,7 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop(
   return false;
 }
 
-bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop(
+bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideToLoop(
     LoopStructure *loop,
     AllocaInst *al,
     PDG *ldg) const {
@@ -603,15 +687,48 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop(
    * Check every read of the stack object.
    */
   if (false
-      || this->isThereRAWThroughMemoryFromOutsideLoop(loop,
-                                                      al,
-                                                      ldg,
-                                                      this->storingInstructions)
-      || this->isThereRAWThroughMemoryFromOutsideLoop(
+
+      || this->isThereRAWThroughMemoryFromOutsideToLoop(loop,
+                                                        al,
+                                                        ldg,
+                                                        this->loadInstructions)
+
+      || this->isThereRAWThroughMemoryFromOutsideToLoop(
           loop,
           al,
           ldg,
-          this->nonStoringInstructions)) {
+          this->nonStoringInstructions)
+
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+bool ClonableMemoryLocation::isThereRAWThroughMemoryFromLoopToOutside(
+    LoopStructure *loop,
+    AllocaInst *al,
+    PDG *ldg) const {
+
+  /*
+   * Check every read of the stack object.
+   */
+  if (false
+
+      || this->isThereRAWThroughMemoryFromLoopToOutside(
+          loop,
+          al,
+          ldg,
+          this->storingInstructions)
+
+      || this->isThereRAWThroughMemoryFromLoopToOutside(
+          loop,
+          al,
+          ldg,
+          this->nonStoringInstructions)
+
+  ) {
     return true;
   }
 
