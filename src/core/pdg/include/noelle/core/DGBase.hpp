@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Yian Su, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -24,15 +24,11 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
 #include <climits>
-#include <unordered_map>
 #include <queue>
 #include <set>
 #include <optional>
 
 #include "noelle/core/Assumptions.hpp"
-
-using namespace std;
-using namespace llvm;
 
 namespace llvm::noelle {
 
@@ -58,7 +54,7 @@ public:
 
   typedef typename std::set<DGEdge<T> *>::iterator edges_iterator;
   typedef typename std::set<DGEdge<T> *>::const_iterator edges_const_iterator;
-  typedef map<DGEdge<T> *, uint32_t> DepIdReverseMap_t;
+  typedef std::map<DGEdge<T> *, uint32_t> DepIdReverseMap_t;
 
   typedef typename std::map<T *, DGNode<T> *>::iterator node_map_iterator;
 
@@ -190,14 +186,14 @@ public:
   /*
    * Deal with the id for each edge and the corresponding map for debugging
    */
-  optional<uint32_t> getEdgeID(DGEdge<T> *edge) {
+  std::optional<uint32_t> getEdgeID(DGEdge<T> *edge) {
     if (depLookupMap && depLookupMap->find(edge) != depLookupMap->end())
       return depLookupMap->at(edge);
     else
       return std::nullopt;
   }
 
-  void setDepLookupMap(shared_ptr<DepIdReverseMap_t> depLookupMap) {
+  void setDepLookupMap(std::shared_ptr<DepIdReverseMap_t> depLookupMap) {
     this->depLookupMap = depLookupMap;
   }
 
@@ -218,6 +214,9 @@ public:
 
   raw_ostream &print(raw_ostream &stream);
 
+  static std::vector<DGEdge<T> *> sortDependences(
+      const std::set<DGEdge<T> *> &set);
+
 protected:
   int32_t nodeIdCounter;
   std::set<DGNode<T> *> allNodes;
@@ -225,7 +224,7 @@ protected:
   DGNode<T> *entryNode;
   std::map<T *, DGNode<T> *> internalNodeMap;
   std::map<T *, DGNode<T> *> externalNodeMap;
-  shared_ptr<DepIdReverseMap_t> depLookupMap = nullptr;
+  std::shared_ptr<DepIdReverseMap_t> depLookupMap = nullptr;
 };
 
 template <class T>
@@ -967,4 +966,56 @@ raw_ostream &DGEdgeBase<T, SubT>::print(raw_ostream &stream,
   stream << linePrefix << this->toString();
   return stream;
 }
+
+template <class T>
+std::vector<DGEdge<T> *> DG<T>::sortDependences(
+    const std::set<DGEdge<T> *> &set) {
+  std::vector<DGEdge<T> *> v;
+
+  /*
+   * Fetch all edges.
+   */
+  for (auto edge : set) {
+    assert(edge != nullptr);
+    v.push_back(edge);
+  }
+
+  /*
+   * Sort
+   */
+  auto sortingFunction = [](DGEdge<T> *d1, DGEdge<T> *d2) -> bool {
+    assert(d1 != nullptr);
+    assert(d2 != nullptr);
+
+    auto src1 = d1->getOutgoingT();
+    auto src2 = d2->getOutgoingT();
+    assert(src1 != nullptr);
+    assert(src2 != nullptr);
+    if (src1 < src2) {
+      return true;
+    }
+    if (src1 > src2) {
+      return false;
+    }
+    assert(src1 == src2);
+
+    auto dst1 = d1->getIncomingT();
+    auto dst2 = d2->getIncomingT();
+    assert(dst1 != nullptr);
+    assert(dst2 != nullptr);
+    if (dst1 < dst2) {
+      return true;
+    }
+    if (dst1 > dst2) {
+      return false;
+    }
+    assert(dst1 == dst2);
+
+    return false;
+  };
+  std::sort(v.begin(), v.end(), sortingFunction);
+
+  return v;
+}
+
 } // namespace llvm::noelle

@@ -38,8 +38,8 @@ public:
   /*
    * Iterators.
    */
-  typedef typename set<PHINode *>::iterator phi_iterator;
-  typedef typename set<Instruction *>::iterator instruction_iterator;
+  typedef typename std::set<PHINode *>::iterator phi_iterator;
+  typedef typename std::set<Instruction *>::iterator instruction_iterator;
 
   /*
    * Fields
