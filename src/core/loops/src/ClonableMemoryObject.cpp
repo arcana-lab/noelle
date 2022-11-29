@@ -115,10 +115,16 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
   this->setObjectScope(allocation, loop, DS);
 
   /*
+   * Identify the instructions that access the stack location.
+   */
+  if (!this->identifyStoresAndOtherUsers(loop, DS)) {
+    return;
+  }
+
+  /*
    * Check if the stack object has loop-carried RAW memory data dependences.
    * If it doesn't, then each iteration could have its own copy.
    */
-  errs() << "XAN: " << *allocation << "\n";
   if (this->isThereRAWThroughMemoryBetweenLoopIterations(loop,
                                                          allocation,
                                                          ldg)) {
@@ -129,7 +135,6 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
      */
     return;
   }
-  errs() << "XAN:   YAY0\n";
 
   /*
    * The stack object is not involved in any loop-carried RAW memory data
@@ -145,11 +150,8 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
      *
      * Therefore, the object is clonable.
      */
-    /*
     this->isClonable = true;
-    errs() << "XAN:   YAY1\n";
-    return ;
-    */
+    return;
   }
   if (!this->isThereRAWThroughMemoryFromOutsideLoop(loop, allocation, ldg)) {
 
@@ -159,11 +161,8 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
      *
      * Therefore, the object is clonable.
      */
-    /*
     this->isClonable = true;
-    errs() << "XAN:   YAY2\n";
-    return ;
-    */
+    return;
   }
 
   /*
@@ -171,19 +170,9 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
    * the loop.
    * TODO: Remove this when array/vector types are supported
    */
-  errs() << "XAN:   Let's see\n";
   this->allocatedType = allocation->getAllocatedType();
   if ((!this->isScopeWithinLoop) && (!allocatedType->isStructTy())
       && (!allocatedType->isIntegerTy())) {
-    errs() << "XAN: NOOOOO 0 " << *allocation << "\n";
-    return;
-  }
-
-  /*
-   * Identify the instructions that access the stack location.
-   */
-  if (!this->identifyStoresAndOtherUsers(loop, DS)) {
-    errs() << "XAN: NOOOOO 1\n";
     return;
   }
 
@@ -200,7 +189,6 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
         || (this->isThereRAWThroughMemoryFromOutsideLoop(loop,
                                                          allocation,
                                                          ldg))) {
-      errs() << "XAN: NOOOOO 2\n";
       return;
     }
   }
@@ -531,6 +519,9 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop(
     PDG *ldg,
     std::unordered_set<Instruction *> insts) const {
 
+  /*
+   * Check every instruction given as input.
+   */
   for (auto inst : insts) {
 
     /*
@@ -547,6 +538,9 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideLoop(
      * loop to this inst.
      */
     auto functor = [loop](Value *fromValue, DGEdge<Value> *d) -> bool {
+      assert(fromValue != nullptr);
+      assert(d != nullptr);
+
       /*
        * Check if the source of the dependence is with an instruction.
        */

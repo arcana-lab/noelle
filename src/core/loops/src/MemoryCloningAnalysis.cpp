@@ -79,7 +79,6 @@ MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
                                                              DS,
                                                              ldg);
     if (!location->isClonableLocation()) {
-      errs() << "XAN: NO 1\n";
       continue;
     }
 
@@ -109,7 +108,6 @@ const std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::
    * TODO: Determine if it is worth mapping from instructions to locations
    */
   for (auto &location : this->clonableMemoryLocations) {
-    errs() << "XAN: AAAA " << *location.get()->getAllocation() << "\n";
     if (location->getAllocation() == I) {
       locs.insert(location.get());
     }
