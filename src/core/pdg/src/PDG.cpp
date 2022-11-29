@@ -385,51 +385,11 @@ std::vector<Value *> PDG::getSortedValues(void) {
 }
 
 std::vector<DGEdge<Value> *> PDG::getSortedDependences(void) {
-  std::vector<DGEdge<Value> *> v;
 
   /*
-   * Fetch all edges.
+   * Sort the edges.
    */
-  auto edges = this->getEdges();
-  for (auto edge : edges) {
-    assert(edge != nullptr);
-    v.push_back(edge);
-  }
-
-  /*
-   * Sort
-   */
-  auto sortingFunction = [](DGEdge<Value> *d1, DGEdge<Value> *d2) -> bool {
-    assert(d1 != nullptr);
-    assert(d2 != nullptr);
-
-    auto src1 = d1->getOutgoingT();
-    auto src2 = d2->getOutgoingT();
-    assert(src1 != nullptr);
-    assert(src2 != nullptr);
-    if (src1 < src2) {
-      return true;
-    }
-    if (src1 > src2) {
-      return false;
-    }
-    assert(src1 == src2);
-
-    auto dst1 = d1->getIncomingT();
-    auto dst2 = d2->getIncomingT();
-    assert(dst1 != nullptr);
-    assert(dst2 != nullptr);
-    if (dst1 < dst2) {
-      return true;
-    }
-    if (dst1 > dst2) {
-      return false;
-    }
-    assert(dst1 == dst2);
-
-    return false;
-  };
-  std::sort(v.begin(), v.end(), sortingFunction);
+  auto v = DG<Value>::sortDependences(this->allEdges);
 
   return v;
 }
