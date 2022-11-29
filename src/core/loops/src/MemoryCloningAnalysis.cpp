@@ -86,6 +86,7 @@ MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
     /*
      * The stack object is clonable.
      */
+    errs() << "CLONABLE_OBJECT: " << *location->getAllocation() << "\n";
     this->clonableMemoryLocations.insert(std::move(location));
   }
 
