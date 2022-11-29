@@ -122,7 +122,7 @@ protected:
   void markValuesInSCC(void);
   void markEdgesAndSubEdges(void);
 
-  unordered_map<Value *, DGNode<SCC> *> valueToSCCNode;
+  std::unordered_map<Value *, DGNode<SCC> *> valueToSCCNode;
 
 private:
   /*

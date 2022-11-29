@@ -874,6 +874,7 @@ void SCCDAGAttrs::iterateOverLoopCarriedDependences(
   /*
    * Iterate over internal edges of the SCC.
    */
+  std::set<DGEdge<Value> *> lcDeps{};
   for (auto valuePair : scc->internalNodePairs()) {
     auto sccInternalNode = valuePair.second;
     for (auto edge : sccInternalNode->getIncomingEdges()) {
@@ -888,14 +889,26 @@ void SCCDAGAttrs::iterateOverLoopCarriedDependences(
       /*
        * The current edge is a loop-carried data dependence.
        */
-      auto result = func(edge);
+      lcDeps.insert(edge);
+    }
+  }
 
-      /*
-       * Check if the caller wants us to stop iterating.
-       */
-      if (result) {
-        return;
-      }
+  /*
+   * Sort the loop-carried dependences;
+   */
+  auto sortedDeps = DG<Value>::sortDependences(lcDeps);
+
+  /*
+   * Invoke the functor.
+   */
+  for (auto dep : sortedDeps) {
+    auto result = func(dep);
+
+    /*
+     * Check if the caller wants us to stop iterating.
+     */
+    if (result) {
+      return;
     }
   }
 
