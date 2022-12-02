@@ -503,6 +503,11 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
   assert(environment != nullptr);
 
   /*
+   * Fetch the types manager.
+   */
+  auto typesManager = this->noelle.getTypesManager();
+
+  /*
    * Check every stack object that can be safely cloned.
    */
   for (auto location : memoryCloningAnalysis->getClonableMemoryLocations()) {
@@ -537,9 +542,12 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
      * The stack object can be safely cloned (thanks to the object-cloning
      * analysis) and it is used by our loop.
      *
-     * First, we need to remove the alloca instruction to be a live-in.
+     * First, we need to remove the alloca instruction to be a live-in if the
+     * stack object doesn't need to be initialized.
      */
-    task->removeLiveIn(alloca);
+    if (!location->doPrivateCopiesNeedToBeInitialized()) {
+      task->removeLiveIn(alloca);
+    }
 
     /*
      * Now we need to traverse operands of loop instructions to clone
@@ -643,7 +651,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
            * cloned.
            */
           if (opJ == alloca) {
-            assert(!task->isAnOriginalLiveIn(opJ));
             continue;
           }
 
@@ -700,10 +707,108 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
     /*
      * Clone the stack object at the beginning of the task.
      */
-    auto allocaClone = alloca->clone();
+    auto allocaClone = cast<AllocaInst>(alloca->clone());
     auto firstInst = &*entryBlock.begin();
     entryBuilder.SetInsertPoint(firstInst);
     entryBuilder.Insert(allocaClone);
+
+    /*
+     * Initialize the private copy
+     */
+    if (location->doPrivateCopiesNeedToBeInitialized()) {
+
+      /*
+       * Fetch the pointer to the stack object that is passed as live-in.
+       */
+      Instruction *ptrToOriginalObjectInTask = alloca;
+      if (!task->isAnOriginalLiveIn(alloca)) {
+        ptrToOriginalObjectInTask = nullptr;
+        for (auto ptr : location->getPointersUsedToAccessObject()) {
+          if (task->isAnOriginalLiveIn(ptr) && isa<BitCastInst>(ptr)) {
+            ptrToOriginalObjectInTask = ptr;
+            break;
+          }
+        }
+      }
+      if (ptrToOriginalObjectInTask == nullptr) {
+        ptrToOriginalObjectInTask = alloca;
+
+        /*
+         * We must add a new live-in that is the pointer to the original stack
+         * object.
+         */
+        auto newLiveInEnvironmentID = environment->addLiveInValue(alloca, {});
+        this->envBuilder->addVariableToEnvironment(newLiveInEnvironmentID,
+                                                   alloca->getType());
+
+        /*
+         * Declare the new live-in of the loop is also a new live-in for the
+         * user (i.e., task) of the environment specified bt the input (i.e.,
+         * taskIndex).
+         */
+        envUser->addLiveIn(newLiveInEnvironmentID);
+
+        /*
+         * Add the load inside the task to load from the environment the new
+         * live-in.
+         */
+        IRBuilder<> entryBuilderAtTheEnd(&entryBlock);
+        auto lastInstruction = &*(--entryBlock.end());
+        entryBuilderAtTheEnd.SetInsertPoint(lastInstruction);
+        auto envVarPtr =
+            envUser->createEnvironmentVariablePointer(entryBuilderAtTheEnd,
+                                                      newLiveInEnvironmentID,
+                                                      alloca->getType());
+        auto environmentLocationLoad =
+            entryBuilderAtTheEnd.CreateLoad(envVarPtr);
+
+        /*
+         * Make the task aware that the new load represents the live-in value.
+         */
+        task->addLiveIn(alloca, environmentLocationLoad);
+      }
+      assert(ptrToOriginalObjectInTask != nullptr);
+      assert(task->isAnOriginalLiveIn(ptrToOriginalObjectInTask));
+
+      /*
+       * Fetch the original stack object.
+       */
+      auto ptrOfOriginalStackObject = cast<Instruction>(
+          task->getCloneOfOriginalLiveIn(ptrToOriginalObjectInTask));
+      assert(ptrOfOriginalStackObject != nullptr);
+
+      /*
+       * Initialize the private copy of the stack object.
+       */
+      auto t = allocaClone->getAllocatedType();
+      auto beforePtrOfOriginalStackObject =
+          ptrOfOriginalStackObject->getPrevNode();
+      entryBuilder.SetInsertPoint(ptrOfOriginalStackObject);
+      auto &DL = allocaClone->getFunction()->getParent()->getDataLayout();
+      auto sizeInBits = alloca->getAllocationSizeInBits(DL);
+      uint64_t bytes = 0;
+      if (sizeInBits.hasValue()) {
+        bytes = sizeInBits.getValue() / 8;
+      } else {
+        bytes = typesManager->getSizeOfType(t);
+      }
+      auto allocaCloneCasted = cast<Instruction>(
+          entryBuilder.CreateBitCast(allocaClone,
+                                     ptrOfOriginalStackObject->getType()));
+      auto initInst = entryBuilder.CreateMemCpy(allocaCloneCasted,
+                                                {},
+                                                ptrOfOriginalStackObject,
+                                                {},
+                                                bytes);
+      ptrOfOriginalStackObject->moveAfter(beforePtrOfOriginalStackObject);
+      allocaCloneCasted->moveAfter(allocaClone);
+
+      /*
+       * Register the task-private copy of @alloca as the clone of the live-in
+       * @alloca.
+       */
+      task->addLiveIn(ptrToOriginalObjectInTask, allocaCloneCasted);
+    }
 
     /*
      * Keep track of the original-clone mapping.
