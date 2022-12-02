@@ -46,12 +46,20 @@ public:
       void) const;
 
   bool isInstructionCastOrGEPOfLocation(Instruction *I) const;
+
   bool isInstructionStoringLocation(Instruction *I) const;
+
   bool isInstructionLoadingLocation(Instruction *I) const;
 
   bool mustAliasAMemoryLocationWithinObject(Value *ptr) const;
 
   bool isClonableLocation(void) const;
+
+  bool doPrivateCopiesNeedToBeInitialized(void) const;
+
+  uint64_t getSizeInBits(void) const;
+
+  std::unordered_set<Instruction *> getPointersUsedToAccessObject(void) const;
 
   static bool isMemCpyInstrinsicCall(CallInst *call);
 
@@ -62,6 +70,7 @@ private:
   LoopStructure *loop;
   bool isClonable;
   bool isScopeWithinLoop;
+  bool needInitialization;
 
   std::unordered_set<Instruction *> castsAndGEPs;
   std::unordered_set<Instruction *> storingInstructions;
@@ -69,6 +78,12 @@ private:
   std::unordered_set<Instruction *> nonStoringInstructions;
 
   bool identifyStoresAndOtherUsers(LoopStructure *loop, DominatorSummary &DS);
+
+  bool isThereAMemoryDependenceBetweenLoopIterations(
+      LoopStructure *loop,
+      AllocaInst *al,
+      PDG *ldg,
+      const std::unordered_set<Instruction *> &insts) const;
 
   bool isThereRAWThroughMemoryFromLoopToOutside(LoopStructure *loop,
                                                 AllocaInst *al,

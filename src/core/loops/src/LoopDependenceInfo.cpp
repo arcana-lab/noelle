@@ -172,8 +172,21 @@ LoopDependenceInfo::LoopDependenceInfo(
   if (this->memoryCloningAnalysis != nullptr) {
     for (auto memObject :
          this->memoryCloningAnalysis->getClonableMemoryLocations()) {
+
+      /*
+       * Check if the stack object needs to be initialized.
+       * If it does, then we need to have the original stack object as live-in.
+       */
+      if (memObject->doPrivateCopiesNeedToBeInitialized()) {
+        continue;
+      }
+
+      /*
+       * The stack object does not need to be initialized.
+       * So, we can avoid having the pointer to the original stack object as
+       * live-in.
+       */
       auto stackObject = memObject->getAllocation();
-      errs() << "LDI: " << *stackObject << "\n";
       stackObjectsThatWillBeCloned.insert(stackObject);
     }
   }
