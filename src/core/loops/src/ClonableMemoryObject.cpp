@@ -107,7 +107,10 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
     sizeInBits{ sizeInBits },
     loop{ loop },
     isClonable{ false },
-    isScopeWithinLoop{ false } {
+    isScopeWithinLoop{ false },
+    needInitialization{ false } {
+  errs() << "ClonableMemoryLocation: Start\n";
+  errs() << "ClonableMemoryLocation:   Object = " << *allocation << "\n";
 
   /*
    * Check if the current stack object's scope is the loop.
@@ -117,7 +120,34 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
   /*
    * Identify the instructions that access the stack location.
    */
+  this->allocatedType = allocation->getAllocatedType();
   if (!this->identifyStoresAndOtherUsers(loop, DS)) {
+    errs()
+        << "ClonableMemoryLocation:   We cannot identify memory accesses to it\n";
+    errs() << "ClonableMemoryLocation: Exit\n";
+    return;
+  }
+
+  /*
+   * Check if there is a need for cloning the stack object.
+   */
+  if ((!this->isThereAMemoryDependenceBetweenLoopIterations(
+          loop,
+          allocation,
+          ldg,
+          this->storingInstructions))
+      && (!this->isThereAMemoryDependenceBetweenLoopIterations(
+          loop,
+          allocation,
+          ldg,
+          this->nonStoringInstructions))
+      && (!this->isScopeWithinLoop)) {
+
+    /*
+     * There is no need to clone the stack object.
+     */
+    errs() << "ClonableMemoryLocation:   There is no need to clone it\n";
+    errs() << "ClonableMemoryLocation: Exit\n";
     return;
   }
 
@@ -133,6 +163,9 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
      * The stack object is involved in a loop-carried, RAW, memory data
      * dependence. It cannot be safely cloned.
      */
+    errs()
+        << "ClonableMemoryLocation:   There are RAW memory data dependences between loop iterations\n";
+    errs() << "ClonableMemoryLocation: Exit\n";
     return;
   }
 
@@ -151,20 +184,45 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
      * Therefore, the object is clonable.
      */
     this->isClonable = true;
+    errs() << "ClonableMemoryLocation:   It is clonable\n";
+    errs() << "ClonableMemoryLocation: Exit\n";
     return;
   }
-  if ((!this->isThereRAWThroughMemoryFromLoopToOutside(loop, allocation, ldg))
-      && (!this->isThereRAWThroughMemoryFromOutsideToLoop(loop,
-                                                          allocation,
-                                                          ldg))) {
+  if (!this->isThereRAWThroughMemoryFromLoopToOutside(loop, allocation, ldg)) {
+    errs() << "ClonableMemoryLocation:   It is clonable\n";
 
     /*
-     * The stack object is not involved in any memory RAW data dependence
-     * between code outside and inside the loop.
+     * The stack object is not involved in any memory RAW data dependence from
+     * code within the loop to code outside. In other words, values stored into
+     * the stack object within the loop are not read outside.
      *
-     * Therefore, the object is clonable.
+     * Check if values stored within the stack object outside the loop can be
+     * read in the loop.
      */
+    if (!this->isThereRAWThroughMemoryFromOutsideToLoop(loop,
+                                                        allocation,
+                                                        ldg)) {
+
+      /*
+       * The stack object is not involved in any memory RAW data dependence
+       * between code outside and inside the loop.
+       *
+       * Therefore, the object is clonable.
+       */
+      this->isClonable = true;
+      errs() << "ClonableMemoryLocation: Exit\n";
+      return;
+    }
+
+    /*
+     * Values stored in the stack object before executing the loop could be read
+     * within the loop. So we need to initialize the cloned object with the
+     * original stack object.
+     */
+    this->needInitialization = true;
     this->isClonable = true;
+    errs() << "ClonableMemoryLocation:   It requires initialization\n";
+    errs() << "ClonableMemoryLocation: Exit\n";
     return;
   }
 
@@ -173,9 +231,9 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
    * the loop.
    * TODO: Remove this when array/vector types are supported
    */
-  this->allocatedType = allocation->getAllocatedType();
   if ((!this->isScopeWithinLoop) && (!allocatedType->isStructTy())
       && (!allocatedType->isIntegerTy())) {
+    errs() << "ClonableMemoryLocation: Exit\n";
     return;
   }
 
@@ -188,10 +246,11 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
    */
   this->identifyInitialStoringInstructions(loop, DS);
   if (!this->isScopeWithinLoop) {
-    if (false || (!this->areOverrideSetsFullyCoveringTheAllocationSpace())
+    if ((!this->areOverrideSetsFullyCoveringTheAllocationSpace())
         || (this->isThereRAWThroughMemoryFromLoopToOutside(loop,
                                                            allocation,
                                                            ldg))) {
+      errs() << "ClonableMemoryLocation: Exit\n";
       return;
     }
   }
@@ -199,8 +258,10 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
   /*
    * The location is clonable.
    */
+  errs() << "ClonableMemoryLocation:   It is clonable\n";
   this->isClonable = true;
 
+  errs() << "ClonableMemoryLocation: Exit\n";
   return;
 }
 
@@ -422,6 +483,88 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryBetweenLoopIterations(
           ldg,
           this->loadInstructions)) {
     return true;
+  }
+
+  return false;
+}
+
+bool ClonableMemoryLocation::isThereAMemoryDependenceBetweenLoopIterations(
+    LoopStructure *loop,
+    AllocaInst *al,
+    PDG *ldg,
+    const std::unordered_set<Instruction *> &insts) const {
+
+  /*
+   * Check every instruction that could load from the stack location.
+   */
+  for (auto inst : insts) {
+
+    /*
+     * Check if the inst is within the loop.
+     */
+    if (!loop->isIncluded(inst)) {
+
+      /*
+       * The instruction is not included in the loop.
+       * We can skip it.
+       */
+      continue;
+    }
+
+    /*
+     * The inst is within the loop.
+     *
+     * Check if there is a loop-carried memory dependence from @inst to another
+     * instruction of the loop.
+     */
+    auto functor = [loop](Value *fromValue, DGEdge<Value> *d) -> bool {
+      /*
+       * Check if the source of the dependence is with an instruction.
+       */
+      auto inst = dyn_cast<Instruction>(fromValue);
+      if (inst == nullptr) {
+        return false;
+      }
+
+      /*
+       * The source of the dependence is with an instruction.
+       *
+       * Check if the source of the dependence is outside the loop.
+       */
+      if (!loop->isIncluded(inst)) {
+
+        /*
+         * The source is within the loop.
+         */
+        return false;
+      }
+
+      /*
+       * The source of the dependence is with an instruction that is outside the
+       * loop.
+       *
+       * Check if it is a loop-carried one.
+       */
+      if (!d->isLoopCarriedDependence()) {
+        return false;
+      }
+
+      /*
+       * We found a loop-carried, RAW, memory dependence to @inst.
+       * We can stop the search now.
+       */
+      return true;
+    };
+
+    if (ldg->iterateOverDependencesTo(inst, false, true, false, functor)
+        || ldg->iterateOverDependencesFrom(inst, false, true, false, functor)) {
+
+      /*
+       * We found a loop-carried, RAW, memory dependence that points to the load
+       * instruction @inst.
+       */
+      return true;
+    }
   }
 
   return false;
@@ -944,6 +1087,19 @@ bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace(
   }
 
   return false;
+}
+
+std::unordered_set<Instruction *> ClonableMemoryLocation::
+    getPointersUsedToAccessObject(void) const {
+  return this->castsAndGEPs;
+}
+
+bool ClonableMemoryLocation::doPrivateCopiesNeedToBeInitialized(void) const {
+  return this->needInitialization;
+}
+
+uint64_t ClonableMemoryLocation::getSizeInBits(void) const {
+  return this->sizeInBits;
 }
 
 } // namespace llvm::noelle
