@@ -35,6 +35,11 @@ public:
 
   Type *getVoidType(void) const;
 
+  /*
+   * Return the size in bytes.
+   */
+  uint64_t getSizeOfType(Type *t) const;
+
 private:
   Module &program;
   TypesManager *tm;
