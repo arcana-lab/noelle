@@ -50,4 +50,31 @@ Type *TypesManager::getVoidType(void) const {
   return voidType;
 }
 
+uint64_t TypesManager::getSizeOfType(Type *t) const {
+  assert(t != nullptr);
+
+  if (!t->isSized()) {
+    errs() << "NOELLE: ERROR = the type " << *t << " is not sized\n";
+    abort();
+  }
+  uint64_t s = 0;
+  if (t->isStructTy()) {
+    abort();
+
+  } else if (t->isArrayTy()) {
+    auto numOfElements = t->getArrayNumElements();
+    assert(numOfElements > 0);
+    auto elemT = t->getArrayElementType();
+    auto perElementSize = this->getSizeOfType(elemT);
+    assert(perElementSize > 0);
+    s = numOfElements * perElementSize;
+
+  } else {
+    s = t->getPrimitiveSizeInBits() / 8;
+  }
+  assert(s > 0);
+
+  return s;
+}
+
 } // namespace llvm::noelle
