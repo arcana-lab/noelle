@@ -28,6 +28,7 @@ MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
                                              PDG *ldg) {
   assert(loop != nullptr);
   assert(ldg != nullptr);
+  errs() << "MemoryCloningAnalysis: Start\n";
 
   /*
    * Collect objects allocated on the stack.
@@ -85,10 +86,16 @@ MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
     /*
      * The stack object is clonable.
      */
-    errs() << "CLONABLE_OBJECT: " << *location->getAllocation() << "\n";
+    errs() << "MemoryCloningAnalysis:   The stack object "
+           << *location->getAllocation() << " can be cloned\n";
+    if (location->doPrivateCopiesNeedToBeInitialized()) {
+      errs()
+          << "MemoryCloningAnalysis:     The private copies need to be initialized with the original object.\n";
+    }
     this->clonableMemoryLocations.insert(std::move(location));
   }
 
+  errs() << "MemoryCloningAnalysis: Exit\n";
   return;
 }
 
