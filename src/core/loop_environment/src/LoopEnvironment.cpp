@@ -216,12 +216,12 @@ bool LoopEnvironment::isLiveIn(Value *val) const {
 }
 
 uint64_t LoopEnvironment::addLiveInProducer(Value *producer) {
-  auto newID = addProducer(producer, true);
+  auto newID = this->addProducer(producer, true);
   return newID;
 }
 
 void LoopEnvironment::addLiveOutProducer(Value *producer) {
-  addProducer(producer, false);
+  this->addProducer(producer, false);
   return;
 }
 
