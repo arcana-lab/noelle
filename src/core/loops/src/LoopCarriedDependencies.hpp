@@ -47,7 +47,7 @@ public:
       SCCDAG &sccdag);
 
 private:
-  static LoopStructure *getLoopOfLCD(
+  static bool isALoopCarriedDependence(
       StayConnectedNestedLoopForestNode *loopNode,
       const DominatorSummary &DS,
       DGEdge<Value> *edge);

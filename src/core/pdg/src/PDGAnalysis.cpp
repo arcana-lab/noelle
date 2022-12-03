@@ -608,12 +608,8 @@ void PDGAnalysis::iterateInstForCall(PDG *pdg,
   /*
    * Check if the call instruction is pure.
    */
-  auto calleeFunction = call->getCalledFunction();
-  if (calleeFunction != nullptr) {
-    if (calleeFunction->empty()
-        && this->isTheLibraryFunctionPure(calleeFunction)) {
-      return;
-    }
+  if (this->hasNoMemoryOperations(call)) {
+    return;
   }
 
   /*
