@@ -56,6 +56,8 @@ public:
 
   void releaseCores(uint32_t coresReleased);
 
+  uint32_t getAvailableCores(void);
+
   DOALL_args_t *getDOALLArgs(uint32_t cores, uint32_t *index);
 
   void releaseDOALLArgs(uint32_t index);
@@ -961,6 +963,10 @@ DispatcherInfo NOELLE_DSWPDispatcher(void *env,
   dispatcherInfo.numberOfThreadsUsed = numberOfStages;
   return dispatcherInfo;
 }
+
+uint32_t NOELLE_getAvailableCores(void) {
+  return runtime.getAvailableCores();
+}
 }
 
 NoelleRuntime::NoelleRuntime() {
@@ -1099,6 +1105,19 @@ uint32_t NoelleRuntime::getMaximumNumberOfCores(void) {
   }
 
   return cores;
+}
+
+uint32_t NoelleRuntime::getAvailableCores(void) {
+
+  /*
+   * Get the number of cores available.
+   */
+  auto numCores = this->NOELLE_idleCores;
+  if (numCores < 1) {
+    numCores = 1;
+  }
+
+  return numCores;
 }
 
 NoelleRuntime::~NoelleRuntime(void) {
