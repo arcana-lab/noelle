@@ -128,9 +128,11 @@ bool PDGAnalysis::hasNoMemoryOperations(CallBase *call) {
    */
   auto calleeFunction = call->getCalledFunction();
   if (calleeFunction != nullptr) {
-    if (calleeFunction->empty()
-        && this->isTheLibraryFunctionPure(calleeFunction)) {
-      return true;
+    if (calleeFunction->empty()) {
+      if (this->isTheLibraryFunctionPure(calleeFunction)) {
+        return true;
+      }
+      return false;
     }
   }
 
