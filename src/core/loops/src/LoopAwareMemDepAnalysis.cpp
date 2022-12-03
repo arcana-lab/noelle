@@ -19,8 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "LoopAwareMemDepAnalysis.hpp"
 #include "noelle/core/DataFlow.hpp"
+#include "LoopAwareMemDepAnalysis.hpp"
 
 /*
  * SCAF headers
@@ -101,7 +101,8 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l) {
    * a small vector of found edges (0th element is for RAW, 1st for WAW, 2nd for
    * WAR)
    */
-  map<pair<Instruction *, Instruction *>, SmallVector<DGEdge<Value> *, 3>>
+  std::map<std::pair<Instruction *, Instruction *>,
+           SmallVector<DGEdge<Value> *, 3>>
       memDeps;
   for (auto edge : make_range(loopDG->begin_edges(), loopDG->end_edges())) {
 

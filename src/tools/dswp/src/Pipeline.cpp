@@ -45,9 +45,22 @@ void DSWP::generateStagesFromPartitionedSCCs(LoopDependenceInfo *LDI) {
   for (auto subset : depthOrdered) {
 
     /*
+     * Fetch the function that executes a stage.
+     */
+    auto taskExecuter = program->getFunction("stageExecuter");
+    assert(taskExecuter != nullptr);
+
+    /*
+     * Define its signature.
+     */
+    auto taskArgType = taskExecuter->arg_begin()->getType();
+    auto taskSignature =
+        cast<FunctionType>(cast<PointerType>(taskArgType)->getElementType());
+
+    /*
      * Create task (stage), populating its SCCs
      */
-    auto task = new DSWPTask(taskID, this->taskSignature, *program);
+    auto task = new DSWPTask(taskID, taskSignature, *program);
     taskID++;
     techniqueTasks.push_back(task);
     for (auto scc : subset->sccs) {

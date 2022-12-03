@@ -61,7 +61,10 @@ bool Planner::runOnModule(Module &M) {
    * Fetch all the loops we want to parallelize.
    */
   errs() << "Planner:  Fetching the program loops\n";
-  auto forest = noelle.getLoopNestingForest();
+  auto noOverrideDecision = [](LoopStructure *l) -> bool { return false; };
+  auto loops =
+      noelle.getLoopStructures(noelle.getMinimumHotness(), noOverrideDecision);
+  auto forest = noelle.organizeLoopsInTheirNestingForest(*loops);
   if (forest->getNumberOfLoops() == 0) {
     errs() << "Planner:    There is no loop to consider\n";
 

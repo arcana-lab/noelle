@@ -40,14 +40,12 @@ void PDGAnalysis::iterateInstForStore(PDG *pdg,
      * Check stores.
      */
     if (auto otherStore = dyn_cast<StoreInst>(I)) {
-      if (store != otherStore) {
-        this->addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg,
-                                                           F,
-                                                           AA,
-                                                           store,
-                                                           otherStore,
-                                                           DG_DATA_WAW);
-      }
+      this->addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg,
+                                                         F,
+                                                         AA,
+                                                         store,
+                                                         otherStore,
+                                                         DG_DATA_WAW);
       continue;
     }
 
@@ -116,6 +114,7 @@ void PDGAnalysis::iterateInstForLoad(PDG *pdg,
 }
 
 bool PDGAnalysis::hasNoMemoryOperations(CallBase *call) {
+  assert(call != nullptr);
 
   /*
    * Check if SVF is enabled.
@@ -129,7 +128,7 @@ bool PDGAnalysis::hasNoMemoryOperations(CallBase *call) {
    */
   auto calleeFunction = call->getCalledFunction();
   if (calleeFunction != nullptr) {
-    if (true && calleeFunction->empty()
+    if (calleeFunction->empty()
         && this->isTheLibraryFunctionPure(calleeFunction)) {
       return true;
     }
@@ -197,7 +196,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
      * SVF is enabled; let's use it.
      */
     auto weCanRelyOnSVF = cannotReachUnhandledExternalFunction(call);
-    if (true && weCanRelyOnSVF && hasNoMemoryOperations(call)) {
+    if (weCanRelyOnSVF && hasNoMemoryOperations(call)) {
       return;
     }
 
@@ -320,7 +319,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
      * SVF is enabled; let's use it.
      */
     auto weCanRelyOnSVF = cannotReachUnhandledExternalFunction(call);
-    if (true && weCanRelyOnSVF && hasNoMemoryOperations(call)) {
+    if (weCanRelyOnSVF && hasNoMemoryOperations(call)) {
       return;
     }
 
@@ -482,11 +481,11 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
      * SVF is enabled; let's use it.
      */
     auto weCanRelyOnSVF = cannotReachUnhandledExternalFunction(call);
-    if (true && weCanRelyOnSVF && hasNoMemoryOperations(call)) {
+    if (weCanRelyOnSVF && hasNoMemoryOperations(call)) {
       return;
     }
     weCanRelyOnSVF = cannotReachUnhandledExternalFunction(otherCall);
-    if (true && weCanRelyOnSVF && hasNoMemoryOperations(otherCall)) {
+    if (weCanRelyOnSVF && hasNoMemoryOperations(otherCall)) {
       return;
     }
 

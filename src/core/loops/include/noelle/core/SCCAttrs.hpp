@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCC.hpp"
-#include "noelle/core/Variable.hpp"
+#include "noelle/core/LoopStructure.hpp"
 #include "noelle/core/MemoryCloningAnalysis.hpp"
 
 namespace llvm::noelle {
@@ -38,8 +38,8 @@ public:
   /*
    * Iterators.
    */
-  typedef typename set<PHINode *>::iterator phi_iterator;
-  typedef typename set<Instruction *>::iterator instruction_iterator;
+  typedef typename std::set<PHINode *>::iterator phi_iterator;
+  typedef typename std::set<Instruction *>::iterator instruction_iterator;
 
   /*
    * Fields

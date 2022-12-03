@@ -19,9 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "HELIX.hpp"
-#include "HELIXTask.hpp"
 #include "noelle/core/Architecture.hpp"
+#include "noelle/tools/HELIX.hpp"
 
 namespace llvm::noelle {
 
@@ -87,33 +86,14 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
   }
 
   /*
-   * Define a helper to fetch the appropriate ss entry in synchronization arrays
-   */
-  auto fetchEntry = [&entryBuilder, int64](Value *ssArray,
-                                           int32_t ssID) -> Value * {
-    /*
-     * Compute the offset of the sequential segment entry.
-     */
-    auto ssOffset = ssID * Architecture::getCacheLineBytes();
-
-    /*
-     * Fetch the pointer to the sequential segment entry.
-     */
-    auto ssArrayAsInt = entryBuilder.CreatePtrToInt(ssArray, int64);
-    auto ssEntryAsInt =
-        entryBuilder.CreateAdd(ConstantInt::get(int64, ssOffset), ssArrayAsInt);
-    return entryBuilder.CreateIntToPtr(ssEntryAsInt, ssArray->getType());
-  };
-
-  /*
    * Fetch sequential segments entry in the past and future array
    * Allocate space to track sequential segment entry state
    */
-  std::vector<Value *> ssPastPtrs{}, ssFuturePtrs{}, ssStates{};
+  std::vector<Value *> ssStates{};
   for (auto ss : *sss) {
-    ssPastPtrs.push_back(fetchEntry(helixTask->ssPastArrayArg, ss->getID()));
-    ssFuturePtrs.push_back(
-        fetchEntry(helixTask->ssFutureArrayArg, ss->getID()));
+    this->computeAndCachePointerOfPastSequentialSegment(helixTask, ss->getID());
+    this->computeAndCachePointerOfFutureSequentialSegment(helixTask,
+                                                          ss->getID());
 
     /*
      * We must execute exactly one wait instruction for each sequential segment,
@@ -174,8 +154,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
     auto ssWaitBB =
         BasicBlock::Create(cxt, ssWaitBBName, helixTask->getTaskBody());
     IRBuilder<> ssWaitBuilder(ssWaitBB);
-    auto wait = ssWaitBuilder.CreateCall(this->waitSSCall,
-                                         { ssPastPtrs.at(ss->getID()) });
+    auto wait = this->injectWaitCall(ssWaitBuilder, ss->getID());
     auto ssState = ssStates.at(ss->getID());
     ssWaitBuilder.CreateStore(ConstantInt::get(int64, 1), ssState);
     ssWaitBuilder.CreateBr(ssEntryBB);
@@ -217,9 +196,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
                                      ? terminator
                                      : justBeforeExit->getNextNode();
       IRBuilder<> beforeExitBuilder(insertPoint);
-      auto signal =
-          beforeExitBuilder.CreateCall(this->signalSSCall,
-                                       { ssFuturePtrs.at(ss->getID()) });
+      auto signal = this->injectSignalCall(beforeExitBuilder, ss->getID());
       helixTask->signals.insert(cast<CallInst>(signal));
       return;
     }
@@ -227,9 +204,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
     for (auto successorBlock : successors(block)) {
       IRBuilder<> beforeExitBuilder(
           successorBlock->getFirstNonPHIOrDbgOrLifetime());
-      auto signal =
-          beforeExitBuilder.CreateCall(this->signalSSCall,
-                                       { ssFuturePtrs.at(ss->getID()) });
+      auto signal = this->injectSignalCall(beforeExitBuilder, ss->getID());
       helixTask->signals.insert(cast<CallInst>(signal));
     }
   };
@@ -403,6 +378,105 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
       }
     }
   }
+
+  return;
+}
+
+Value *HELIX::getPointerOfSequentialSegment(HELIXTask *helixTask,
+                                            Value *ssArray,
+                                            uint32_t ssID) {
+
+  /*
+   * Fetch the builder that points to the entry basic block of the task
+   * function.
+   */
+  IRBuilder<> entryBuilder{ helixTask->getEntry()->getTerminator() };
+
+  /*
+   * Fetch the integer type of 64 bits.
+   */
+  auto tm = this->noelle.getTypesManager();
+  auto int64 = tm->getIntegerType(64);
+
+  /*
+   * Compute the offset of the sequential segment entry.
+   */
+  auto ssOffset = ssID * Architecture::getCacheLineBytes();
+
+  /*
+   * Fetch the pointer to the sequential segment entry.
+   */
+  auto ssArrayAsInt = entryBuilder.CreatePtrToInt(ssArray, int64);
+  auto ssEntryAsInt =
+      entryBuilder.CreateAdd(ConstantInt::get(int64, ssOffset), ssArrayAsInt);
+  auto ptr = entryBuilder.CreateIntToPtr(ssEntryAsInt, ssArray->getType());
+
+  return ptr;
+}
+
+CallInst *HELIX::injectWaitCall(IRBuilder<> &builder, uint32_t ssID) {
+
+  /*
+   * Fetch the pointer to the sequential segment memory location.
+   */
+  auto ptr = this->ssPastPtrs.at(ssID);
+
+  /*
+   * Inject the Wait.
+   */
+  auto wait = builder.CreateCall(this->waitSSCall, { ptr });
+
+  return wait;
+}
+
+CallInst *HELIX::injectSignalCall(IRBuilder<> &builder, uint32_t ssID) {
+
+  /*
+   * Fetch the pointer to the sequential segment memory location.
+   */
+  auto ptr = this->ssFuturePtrs.at(ssID);
+
+  /*
+   * Inject the Signal.
+   */
+  auto signal = builder.CreateCall(this->signalSSCall, { ptr });
+
+  return signal;
+}
+
+void HELIX::computeAndCachePointerOfPastSequentialSegment(HELIXTask *helixTask,
+                                                          uint32_t ssID) {
+
+  /*
+   * Compute the pointer.
+   */
+  auto ptr = this->getPointerOfSequentialSegment(helixTask,
+                                                 helixTask->ssPastArrayArg,
+                                                 ssID);
+
+  /*
+   * Cache the pointer.
+   */
+  this->ssPastPtrs.push_back(ptr);
+
+  return;
+}
+
+void HELIX::computeAndCachePointerOfFutureSequentialSegment(
+    HELIXTask *helixTask,
+    uint32_t ssID) {
+
+  /*
+   * Compute the pointer.
+   */
+  auto ptr = this->getPointerOfSequentialSegment(helixTask,
+                                                 helixTask->ssFutureArrayArg,
+                                                 ssID);
+
+  /*
+   * Cache the pointer.
+   */
+  this->ssFuturePtrs.push_back(ptr);
 
   return;
 }

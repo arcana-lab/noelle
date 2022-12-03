@@ -1,3 +1,6 @@
+# Execution
+NUM_RUNS=30
+
 # Commands
 CC=clang
 CPP=clang++
@@ -36,7 +39,7 @@ NUM_CONF=500
 CPP_FILES := $(wildcard *.cpp)
 BC_FILES := $(notdir $(CPP_FILES:.cpp=.bc))
 
-all: baseline testseq $(OPTIMIZED)
+all: baseline $(OPTIMIZED)
 
 %.bc: %.c
 	$(CC) $(INCLUDES) $(FRONTEND_FLAGS) -c $< -o $@
@@ -46,15 +49,9 @@ all: baseline testseq $(OPTIMIZED)
 	$(CPP) $(INCLUDES) $(FRONTEND_FLAGS) -c $< -o $@
 	opt $(PRE_MIDDLEEND_OPTIONS) $@ -o $@
 
-%.ll: %.bc
-	llvm-dis $^
-
 baseline: baseline.bc
 	$(CPP) $(OPT_LEVEL) $^ -o $@
 
-testseq: baseline_pre.bc
-	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
-	
 Parallelizer_utils.bc: Parallelizer_utils.cpp
 	$(CPP) $(RUNTIME_CFLAGS) $(INCLUDES) -std=c++14 -emit-llvm $(OPT_LEVEL) -c $^ -o $@
 
@@ -99,19 +96,10 @@ input.txt:
 	@../../scripts/create_input.sh $@
 
 test_correctness: input.txt baseline $(OPTIMIZED)
-	./baseline `cat input.txt` &> output_baseline.txt ;
-	./parallelized `cat input.txt` &> output_parallelized.txt ;
-	cmp output_baseline.txt output_parallelized.txt || (echo "Error $$?"; exit 1)
-	./parallelized `cat input.txt` &> output_parallelized.txt ;
-	cmp output_baseline.txt output_parallelized.txt || (echo "Error $$?"; exit 1)
-	./parallelized `cat input.txt` &> output_parallelized.txt ;
-	cmp output_baseline.txt output_parallelized.txt || (echo "Error $$?"; exit 1)
-	./parallelized `cat input.txt` &> output_parallelized.txt ;
-	cmp output_baseline.txt output_parallelized.txt || (echo "Error $$?"; exit 1)
-	echo "Success"
+	@../../scripts/test_correctness.sh $(NUM_RUNS)
 
 clean:
-	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o baseline testseq $(OPTIMIZED) *.prof *.profraw *prof .*.dot
+	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o baseline $(OPTIMIZED) *.prof *.profraw *prof .*.dot
 	rm -f time_parallelized.txt compiler_output.txt input.txt ;
 	rm -f output*.txt ;
 	rm -f OUT ;

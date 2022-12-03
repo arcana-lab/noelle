@@ -78,7 +78,7 @@ void ControlFlowEquivalence::calculateControlFlowEquivalences(
    * Merge equivalence sets where:
    *   A |- B, B -| A, A & B are in the same inner-most loop
    */
-  std::queue<DomNodeSummary *> dtWorklist;
+  std::queue<DominatorNode *> dtWorklist;
   for (auto start : startBBs)
     dtWorklist.push(DS->DT.getNode(start));
   while (!dtWorklist.empty()) {

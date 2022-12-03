@@ -23,6 +23,7 @@ install(
   include/noelle/core/Reduction.hpp
   include/noelle/core/BinaryReduction.hpp
   include/noelle/core/LoopTransformationsOptions.hpp
+  include/noelle/core/ClonableMemoryObject.hpp
   DESTINATION 
   include/noelle/core
   )

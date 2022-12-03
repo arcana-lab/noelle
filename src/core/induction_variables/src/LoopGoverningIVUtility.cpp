@@ -243,12 +243,13 @@ void LoopGoverningIVUtility::updateConditionToCheckIfWeHavePastExitValue(
 
   /*
    * Check if the loop is a while one and the value used to compare against the
-   * exit condition value is not the PHI of the loop governing IV.
+   * exit condition value is not an instruction of the PHI of the loop governing
+   * IV.
    */
   auto &IV = this->attribution.getInductionVariable();
   if (this->isWhile
-      && (this->attribution.getValueToCompareAgainstExitConditionValue()
-          != IV.getLoopEntryPHI())) {
+      && (!IV.getAllInstructions().count(
+          this->attribution.getValueToCompareAgainstExitConditionValue()))) {
     cmpToUpdate->setPredicate(this->strictPredicate);
   }
 

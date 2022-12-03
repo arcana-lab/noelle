@@ -50,7 +50,7 @@
 #include "HeuristicsPass.hpp"
 #include "DSWP.hpp"
 #include "DOALL.hpp"
-#include "HELIX.hpp"
+#include "noelle/tools/HELIX.hpp"
 
 namespace llvm::noelle {
 

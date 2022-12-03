@@ -130,16 +130,32 @@ raw_ostream &SCC::print(raw_ostream &stream,
    * Print live-in and live-out values.
    */
   stream << prefixToUse << "External nodes: " << externalNodeMap.size() << "\n";
+  std::vector<DGNode<Value> *> externalNodesOfCurrentSCC{};
   for (auto nodePair : externalNodePairs()) {
-    nodePair.second->print(stream << prefixToUse << "\t") << "\n";
+    externalNodesOfCurrentSCC.push_back(nodePair.second);
+  }
+  auto sortingFunction = [](DGNode<Value> *n0, DGNode<Value> *n1) {
+    auto v0 = n0->getT();
+    auto v1 = n1->getT();
+    if (v0 < v1) {
+      return true;
+    }
+    return false;
+  };
+  std::sort(externalNodesOfCurrentSCC.begin(),
+            externalNodesOfCurrentSCC.end(),
+            sortingFunction);
+  for (auto extNode : externalNodesOfCurrentSCC) {
+    extNode->print(stream << prefixToUse << "\t") << "\n";
   }
 
   /*
    * Print the dependences that cross the SCC.
    */
-  stream << prefixToUse << "Edges: " << allEdges.size() << "\n";
+  auto sortedDeps = DG::sortDependences(allEdges);
+  stream << prefixToUse << "Edges: " << sortedDeps.size() << "\n";
   int edgesPrinted = 0;
-  for (auto edge : allEdges) {
+  for (auto edge : sortedDeps) {
     if (edgesPrinted++ >= maxEdges) {
       stream << prefixToUse << "\t....\n";
       break;

@@ -19,8 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "HELIX.hpp"
-#include "HELIXTask.hpp"
+#include "noelle/tools/HELIX.hpp"
 
 namespace llvm::noelle {
 
@@ -33,12 +32,6 @@ void HELIX::addChunkFunctionExecutionAsideOriginalLoop(
    */
   auto loopSummary = LDI->getLoopStructure();
   auto loopFunction = loopSummary->getFunction();
-
-  /*
-   * Create the entry and exit points of the function that will include the
-   * parallelized loop.
-   */
-  auto &cxt = loopFunction->getContext();
 
   /*
    * Create the environment.

@@ -6,14 +6,14 @@ DOALL_lbm	       6.261
 DOALL_limit	      20.118
 DOALL_object_cloning  22.170
 DOALL_reduction	       3.560
-DOALL_streamclusters  31.891
+DOALL_streamclusters  22.4
 DSWP_communication     1.221
 DSWP_limit	       7.059
 HELIX_challenge	       7.164
 HELIX_communication    1.152
 HELIX_criticalsection  0.083
 Loop_selection        20.26
-Scheduler              7.448
+Scheduler1             0.81
 Scheduler2             8.387
 Scheduler3             0.172
 Scheduler4             0.172

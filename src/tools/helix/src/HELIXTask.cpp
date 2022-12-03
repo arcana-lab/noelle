@@ -19,10 +19,9 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "HELIXTask.hpp"
+#include "noelle/tools/HELIXTask.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 HELIXTask::HELIXTask(FunctionType *taskSignature, Module &M)
   : Task{ 0, taskSignature, M } {
@@ -51,3 +50,5 @@ void HELIXTask::extractFuncArgs(void) {
 
   return;
 }
+
+} // namespace llvm::noelle

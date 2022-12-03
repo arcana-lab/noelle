@@ -63,14 +63,17 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
    * Print
    */
   if (verbose != Verbosity::Disabled) {
+
     /*
      * Get loop ID.
      */
     auto loopIDOpt = loopStructure->getID();
-    assert(loopIDOpt); // ED: we are parallelizing a loop, we are supposed to
-                       // have a loop ID.
+    assert(loopIDOpt);
     auto loopID = loopIDOpt.value();
 
+    /*
+     * Print the most important loop information.
+     */
     errs() << prefix << "Start\n";
     errs() << prefix << "  Function = \"" << loopFunction->getName() << "\"\n";
     errs() << prefix << "  Loop " << loopID << " = \""
@@ -80,6 +83,22 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
     errs() << prefix << "  Number of threads to extract = "
            << LDI->getLoopTransformationsManager()->getMaximumNumberOfCores()
            << "\n";
+
+    /*
+     * Print the loop environment.
+     */
+    errs() << prefix << "  Environment: live-in and live-out values\n";
+    auto env = LDI->getEnvironment();
+    for (auto envID : env->getEnvIDsOfLiveInVars()) {
+      auto producerOfLiveIn = env->getProducer(envID);
+      errs() << prefix << "  Environment:   Live-in " << envID << " = "
+             << *producerOfLiveIn << "\n";
+    }
+    for (auto envID : env->getEnvIDsOfLiveOutVars()) {
+      auto producer = env->getProducer(envID);
+      errs() << prefix << "  Environment:   Live-out " << envID << " = "
+             << *producer << "\n";
+    }
   }
 
   /*

@@ -21,6 +21,7 @@
  */
 #pragma once
 
+#include "noelle/core/Dominators.hpp"
 #include "noelle/core/LoopNestingGraph.hpp"
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Queue.hpp"
@@ -88,11 +89,26 @@ public:
       double minimumHotness,
       const std::set<Function *> &functions);
 
+  /*
+   * @includeLoop return true if the loop given as input must be included (if
+   * hot enough). Return false if you want to use the default inclusion policy
+   * (INDEX_FILE).
+   */
+  std::vector<LoopStructure *> *getLoopStructures(
+      double minimumHotness,
+      std::function<bool(LoopStructure *)> includeLoop);
+
+  /*
+   * @includeLoop return true if the loop given as input must be included (if
+   * hot enough). Return false if you want to use the default inclusion policy
+   * (INDEX_FILE).
+   */
   std::vector<LoopStructure *> *getLoopStructures(
       double minimumHotness,
       const std::set<Function *> &functions,
       std::function<std::vector<Function *>(std::set<Function *> functions)>
-          orderToFollow);
+          orderOfFunctionsToFollow,
+      std::function<bool(LoopStructure *)> includeLoop);
 
   std::vector<LoopStructure *> *getLoopStructures(Function *function);
 
@@ -104,6 +120,15 @@ public:
 
   std::vector<LoopStructure *> *getLoopStructuresReachableFromEntryFunction(
       double minimumHotness);
+
+  /*
+   * @includeLoop return true if the loop given as input must be included (if
+   * hot enough). Return false if you want to use the default inclusion policy
+   * (INDEX_FILE).
+   */
+  std::vector<LoopStructure *> *getLoopStructuresReachableFromEntryFunction(
+      double minimumHotness,
+      std::function<bool(LoopStructure *)> includeLoop);
 
   std::vector<LoopDependenceInfo *> *getLoops(void);
 
@@ -245,6 +270,9 @@ private:
 
   bool isLoopHot(LoopStructure *loopStructure, double minimumHotness);
   bool isFunctionHot(Function *function, double minimumHotness);
+
+  std::function<std::vector<Function *>(std::set<Function *> fns)>
+  fetchFunctionsSorting(void);
 };
 
 } // namespace llvm::noelle

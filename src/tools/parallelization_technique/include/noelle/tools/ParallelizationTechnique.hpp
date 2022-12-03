@@ -188,11 +188,6 @@ protected:
                                              Noelle &par) const;
 
   /*
-   * Debug
-   */
-  void dumpToFile(LoopDependenceInfo &LDI);
-
-  /*
    * Fields
    */
   Noelle &noelle;
@@ -202,7 +197,6 @@ protected:
   /*
    * Parallel task related information.
    */
-  FunctionType *taskSignature;
   BasicBlock *entryPointOfParallelizedLoop, *exitPointOfParallelizedLoop;
   std::vector<Task *> tasks;
   uint32_t numTaskInstances;

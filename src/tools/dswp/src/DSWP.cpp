@@ -40,19 +40,6 @@ DSWP::DSWP(Noelle &n, bool forceParallelization, bool enableSCCMerging)
   this->taskDispatcher = program->getFunction("NOELLE_DSWPDispatcher");
   assert(this->taskDispatcher != nullptr);
 
-  /*
-   * Fetch the function that executes a stage.
-   */
-  auto taskExecuter = program->getFunction("stageExecuter");
-  assert(taskExecuter != nullptr);
-
-  /*
-   * Define its signature.
-   */
-  auto taskArgType = taskExecuter->arg_begin()->getType();
-  this->taskSignature =
-      cast<FunctionType>(cast<PointerType>(taskArgType)->getElementType());
-
   return;
 }
 
@@ -327,11 +314,6 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
     if (this->verbose >= Verbosity::Maximal) {
       errs() << "DSWP:  Loaded live-in variables\n";
     }
-
-    // SubCFGs execGraph(*task->getTaskBody());
-    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("dswp-loop-" +
-    // std::to_string(LDI->getID()) + "-task-" + std::to_string(i) + ".dot",
-    // &execGraph); dumpToFile(*LDI);
 
     /*
      * HACK: For now, this must follow loading live-ins as this re-wiring

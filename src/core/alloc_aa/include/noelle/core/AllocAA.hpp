@@ -27,7 +27,7 @@ namespace llvm::noelle {
 
 enum class AllocAAVerbosity { Disabled, Minimal, Maximal };
 
-struct AllocAA : public ModulePass {
+class AllocAA : public ModulePass {
 public:
   static char ID;
 
@@ -83,5 +83,10 @@ private:
   Value *getLocalPrimitiveArray(Value *V);
   Value *getGlobalValuePrimitiveArray(Value *V);
   Value *getMemoryPointerOperand(Value *V);
+
+  Value *getBasePointer(Value *p);
+  bool canPointToTheSameObject_ArgumentAttributes(Value *p1, Value *p2);
+  bool canPointToTheSameObject_Globals(Value *p1, Value *p2);
 };
+
 } // namespace llvm::noelle

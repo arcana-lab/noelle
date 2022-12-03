@@ -19,8 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "HELIX.hpp"
 #include "llvm/IR/CFG.h"
+#include "noelle/tools/HELIX.hpp"
 #include "noelle/core/SCCPartitionScheduler.hpp"
 
 using namespace llvm;

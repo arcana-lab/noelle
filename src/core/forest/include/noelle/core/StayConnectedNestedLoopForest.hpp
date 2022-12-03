@@ -22,8 +22,8 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/Dominators.hpp"
 #include "noelle/core/LoopStructure.hpp"
-#include "noelle/core/DominatorSummary.hpp"
 
 namespace llvm::noelle {
 
@@ -43,6 +43,10 @@ public:
   LoopStructure *getInnermostLoopThatContains(Instruction *i);
 
   LoopStructure *getInnermostLoopThatContains(BasicBlock *bb);
+
+  LoopStructure *getOutermostLoopThatContains(Instruction *i);
+
+  LoopStructure *getOutermostLoopThatContains(BasicBlock *bb);
 
   std::set<StayConnectedNestedLoopForestNode *> getNodes(void);
 

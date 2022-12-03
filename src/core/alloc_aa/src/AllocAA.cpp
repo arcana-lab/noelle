@@ -586,6 +586,62 @@ Value *AllocAA::getMemoryPointerOperand(Value *V) {
 bool AllocAA::canPointToTheSameObject(Value *p1, Value *p2) {
 
   /*
+   * Exploit arguments.
+   */
+  if (!this->canPointToTheSameObject_ArgumentAttributes(p1, p2)) {
+    return false;
+  }
+
+  /*
+   * Exploit library knowledge.
+   */
+  if (!this->canPointToTheSameObject_Globals(p1, p2)) {
+    return false;
+  }
+
+  return true;
+}
+
+Value *AllocAA::getBasePointer(Value *p) {
+  assert(p != nullptr);
+
+  if (auto gep = dyn_cast<GetElementPtrInst>(p)) {
+    return gep->getPointerOperand();
+  }
+
+  return p;
+}
+
+bool AllocAA::canPointToTheSameObject_Globals(Value *p1, Value *p2) {
+
+  /*
+   * Fetch the base pointers.
+   */
+  auto b1 = this->getBasePointer(p1);
+  auto b2 = this->getBasePointer(p2);
+
+  /*
+   * Check if the base pointers are incompatible.
+   */
+  if (isa<GlobalValue>(b1) && isa<AllocaInst>(b2)) {
+    return false;
+  }
+  if (isa<GlobalValue>(b2) && isa<AllocaInst>(b1)) {
+    return false;
+  }
+  if (isa<GlobalValue>(b1) && isa<GlobalValue>(b2) && (b1 != b2)) {
+    return false;
+  }
+  if (isa<AllocaInst>(b1) && isa<AllocaInst>(b2) && (b1 != b2)) {
+    return false;
+  }
+
+  return true;
+}
+
+bool AllocAA::canPointToTheSameObject_ArgumentAttributes(Value *p1, Value *p2) {
+
+  /*
    * Fetch the load instruction
    */
   auto loadInst = dyn_cast<LoadInst>(p1);
@@ -607,7 +663,19 @@ bool AllocAA::canPointToTheSameObject(Value *p1, Value *p2) {
     return true;
   }
 
-  auto obj1 = dyn_cast<Argument>(loadInst->getPointerOperand());
+  /*
+   * Fetch the pointer to the object accessed by the load instruction.
+   */
+  auto loadPtr = loadInst->getPointerOperand();
+  if (auto gep = dyn_cast<GetElementPtrInst>(loadPtr)) {
+    loadPtr = gep->getPointerOperand();
+  }
+  assert(loadPtr != nullptr);
+
+  /*
+   * Check if the object is read-only
+   */
+  auto obj1 = dyn_cast<Argument>(loadPtr);
   if (obj1 == nullptr) {
     return true;
   }

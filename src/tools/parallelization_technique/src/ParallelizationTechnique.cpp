@@ -29,7 +29,6 @@ ParallelizationTechnique::ParallelizationTechnique(Noelle &n)
   : noelle{ n },
     tasks{},
     envBuilder{ nullptr },
-    taskSignature{ nullptr },
     entryPointOfParallelizedLoop{ nullptr },
     exitPointOfParallelizedLoop{ nullptr },
     numTaskInstances{ 0 } {
@@ -415,11 +414,6 @@ void ParallelizationTechnique::cloneSequentialLoop(LoopDependenceInfo *LDI,
   assert(taskIndex < this->tasks.size());
 
   /*
-   * Fetch the context of the program.
-   */
-  auto &cxt = this->noelle.getProgramContext();
-
-  /*
    * Fetch the task.
    */
   auto task = this->tasks[taskIndex];
@@ -454,11 +448,6 @@ void ParallelizationTechnique::cloneSequentialLoopSubset(
     LoopDependenceInfo *LDI,
     int taskIndex,
     std::set<Instruction *> subset) {
-
-  /*
-   * Fetch the context of the program.
-   */
-  auto &cxt = this->noelle.getProgramContext();
 
   /*
    * Fetch the task.
@@ -514,6 +503,11 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
   assert(environment != nullptr);
 
   /*
+   * Fetch the types manager.
+   */
+  auto typesManager = this->noelle.getTypesManager();
+
+  /*
    * Check every stack object that can be safely cloned.
    */
   for (auto location : memoryCloningAnalysis->getClonableMemoryLocations()) {
@@ -548,9 +542,12 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
      * The stack object can be safely cloned (thanks to the object-cloning
      * analysis) and it is used by our loop.
      *
-     * First, we need to remove the alloca instruction to be a live-in.
+     * First, we need to remove the alloca instruction to be a live-in if the
+     * stack object doesn't need to be initialized.
      */
-    task->removeLiveIn(alloca);
+    if (!location->doPrivateCopiesNeedToBeInitialized()) {
+      task->removeLiveIn(alloca);
+    }
 
     /*
      * Now we need to traverse operands of loop instructions to clone
@@ -654,7 +651,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
            * cloned.
            */
           if (opJ == alloca) {
-            assert(!task->isAnOriginalLiveIn(opJ));
             continue;
           }
 
@@ -711,10 +707,108 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
     /*
      * Clone the stack object at the beginning of the task.
      */
-    auto allocaClone = alloca->clone();
+    auto allocaClone = cast<AllocaInst>(alloca->clone());
     auto firstInst = &*entryBlock.begin();
     entryBuilder.SetInsertPoint(firstInst);
     entryBuilder.Insert(allocaClone);
+
+    /*
+     * Initialize the private copy
+     */
+    if (location->doPrivateCopiesNeedToBeInitialized()) {
+
+      /*
+       * Fetch the pointer to the stack object that is passed as live-in.
+       */
+      Instruction *ptrToOriginalObjectInTask = alloca;
+      if (!task->isAnOriginalLiveIn(alloca)) {
+        ptrToOriginalObjectInTask = nullptr;
+        for (auto ptr : location->getPointersUsedToAccessObject()) {
+          if (task->isAnOriginalLiveIn(ptr) && isa<BitCastInst>(ptr)) {
+            ptrToOriginalObjectInTask = ptr;
+            break;
+          }
+        }
+      }
+      if (ptrToOriginalObjectInTask == nullptr) {
+        ptrToOriginalObjectInTask = alloca;
+
+        /*
+         * We must add a new live-in that is the pointer to the original stack
+         * object.
+         */
+        auto newLiveInEnvironmentID = environment->addLiveInValue(alloca, {});
+        this->envBuilder->addVariableToEnvironment(newLiveInEnvironmentID,
+                                                   alloca->getType());
+
+        /*
+         * Declare the new live-in of the loop is also a new live-in for the
+         * user (i.e., task) of the environment specified bt the input (i.e.,
+         * taskIndex).
+         */
+        envUser->addLiveIn(newLiveInEnvironmentID);
+
+        /*
+         * Add the load inside the task to load from the environment the new
+         * live-in.
+         */
+        IRBuilder<> entryBuilderAtTheEnd(&entryBlock);
+        auto lastInstruction = &*(--entryBlock.end());
+        entryBuilderAtTheEnd.SetInsertPoint(lastInstruction);
+        auto envVarPtr =
+            envUser->createEnvironmentVariablePointer(entryBuilderAtTheEnd,
+                                                      newLiveInEnvironmentID,
+                                                      alloca->getType());
+        auto environmentLocationLoad =
+            entryBuilderAtTheEnd.CreateLoad(envVarPtr);
+
+        /*
+         * Make the task aware that the new load represents the live-in value.
+         */
+        task->addLiveIn(alloca, environmentLocationLoad);
+      }
+      assert(ptrToOriginalObjectInTask != nullptr);
+      assert(task->isAnOriginalLiveIn(ptrToOriginalObjectInTask));
+
+      /*
+       * Fetch the original stack object.
+       */
+      auto ptrOfOriginalStackObject = cast<Instruction>(
+          task->getCloneOfOriginalLiveIn(ptrToOriginalObjectInTask));
+      assert(ptrOfOriginalStackObject != nullptr);
+
+      /*
+       * Initialize the private copy of the stack object.
+       */
+      auto t = allocaClone->getAllocatedType();
+      auto beforePtrOfOriginalStackObject =
+          ptrOfOriginalStackObject->getPrevNode();
+      entryBuilder.SetInsertPoint(ptrOfOriginalStackObject);
+      auto &DL = allocaClone->getFunction()->getParent()->getDataLayout();
+      auto sizeInBits = alloca->getAllocationSizeInBits(DL);
+      uint64_t bytes = 0;
+      if (sizeInBits.hasValue()) {
+        bytes = sizeInBits.getValue() / 8;
+      } else {
+        bytes = typesManager->getSizeOfType(t);
+      }
+      auto allocaCloneCasted = cast<Instruction>(
+          entryBuilder.CreateBitCast(allocaClone,
+                                     ptrOfOriginalStackObject->getType()));
+      auto initInst = entryBuilder.CreateMemCpy(allocaCloneCasted,
+                                                {},
+                                                ptrOfOriginalStackObject,
+                                                {},
+                                                bytes);
+      ptrOfOriginalStackObject->moveAfter(beforePtrOfOriginalStackObject);
+      allocaCloneCasted->moveAfter(allocaClone);
+
+      /*
+       * Register the task-private copy of @alloca as the clone of the live-in
+       * @alloca.
+       */
+      task->addLiveIn(ptrToOriginalObjectInTask, allocaCloneCasted);
+    }
 
     /*
      * Keep track of the original-clone mapping.
@@ -1091,9 +1185,10 @@ Instruction *ParallelizationTechnique::
    */
   auto sccManager = LDI->getSCCManager();
 
+  /*
+   * Fetch the task.
+   */
   auto task = this->tasks[taskIndex];
-  auto &DT = taskDS.DT;
-  auto &PDT = taskDS.PDT;
 
   /*
    * Fetch all clones of intermediate values of the producer
@@ -1129,7 +1224,8 @@ Instruction *ParallelizationTechnique::
     if (intermediateValue->getParent() != insertBasicBlock)
       continue;
     if (lastIntermediateAtInsertBlock
-        && DT.dominates(intermediateValue, lastIntermediateAtInsertBlock))
+        && taskDS.DT.dominates(intermediateValue,
+                               lastIntermediateAtInsertBlock))
       continue;
     lastIntermediateAtInsertBlock = intermediateValue;
   }
@@ -1154,35 +1250,14 @@ Instruction *ParallelizationTechnique::
        ++predIter) {
     auto predecessor = *predIter;
 
-    std::unordered_set<Instruction *> dominatingValues{};
-    for (auto intermediateValue : intermediateValues) {
-      auto intermediateBlock = intermediateValue->getParent();
-      if (DT.dominates(intermediateBlock, predecessor)) {
-        dominatingValues.insert(intermediateValue);
-      }
-    }
-
+    auto dominatingValues =
+        taskDS.DT.getDominatorsOf(intermediateValues, predecessor);
     assert(
         dominatingValues.size() > 0
         && "Cannot store reducible live out where no producer value dominates the point");
 
-    std::unordered_set<Instruction *> lastDominatingValues{};
-    for (auto value : dominatingValues) {
-      bool isDominatingOthers = false;
-      for (auto otherValue : dominatingValues) {
-        if (value == otherValue)
-          continue;
-        if (!DT.dominates(value, otherValue))
-          continue;
-        isDominatingOthers = true;
-        break;
-      }
-
-      if (isDominatingOthers)
-        continue;
-      lastDominatingValues.insert(value);
-    }
-
+    auto lastDominatingValues =
+        taskDS.DT.getInstructionsThatDoNotDominateAnyOther(dominatingValues);
     assert(
         lastDominatingValues.size() == 1
         && "Cannot store reducible live out where no last produced value is known");
@@ -1691,85 +1766,6 @@ float ParallelizationTechnique::computeSequentialFractionOfExecution(
   }
 
   return sequentialInstructionCount / totalInstructionCount;
-}
-
-void ParallelizationTechnique::dumpToFile(LoopDependenceInfo &LDI) {
-  auto LS = LDI.getLoopStructure();
-
-  /*
-   * Get loop ID.
-   */
-  auto loopIDOpt = LS->getID();
-  assert(loopIDOpt); // ED: we are differentiating files based on loop ID.
-  auto loopID = loopIDOpt.value();
-
-  std::error_code EC;
-  raw_fd_ostream File("technique-dump-loop-" + std::to_string(loopID) + ".txt",
-                      EC,
-                      sys::fs::F_Text);
-
-  if (EC) {
-    errs() << "ERROR: Could not dump debug logs to file!";
-    return;
-  }
-
-  /*
-   * Fetch the SCC manager.
-   */
-  auto sccManager = LDI.getSCCManager();
-
-  auto allBBs = LS->getBasicBlocks();
-  std::set<BasicBlock *> bbs(allBBs.begin(), allBBs.end());
-  DGPrinter::writeGraph<SubCFGs, BasicBlock>(
-      "technique-original-loop-" + std::to_string(loopID) + ".dot",
-      new SubCFGs(bbs));
-  DGPrinter::writeGraph<SCCDAG, SCC>(
-      "technique-sccdag-loop-" + std::to_string(loopID) + ".dot",
-      sccManager->getSCCDAG());
-
-  for (int i = 0; i < tasks.size(); ++i) {
-    auto task = tasks[i];
-    File << "===========\n";
-    std::string taskName = "Task " + std::to_string(i) + ": ";
-    task->getTaskBody()->print(File << taskName << "function"
-                                    << "\n");
-    File << "\n";
-
-    File << taskName << "instruction clones"
-         << "\n";
-    for (auto origI : task->getOriginalInstructions()) {
-      origI->print(File << "Original: ");
-      File << "\n\t";
-      auto cloneI = task->getCloneOfOriginalInstruction(origI);
-      cloneI->print(File << "Cloned: ");
-      File << "\n";
-    }
-    File << "\n";
-
-    File << taskName << "basic block clones"
-         << "\n";
-    for (auto origBB : task->getOriginalBasicBlocks()) {
-      origBB->printAsOperand(File << "Original: ");
-      File << "\n\t";
-      auto cloneBB = task->getCloneOfOriginalBasicBlock(origBB);
-      cloneBB->printAsOperand(File << "Cloned: ");
-      File << "\n";
-    }
-    File << "\n";
-
-    File << taskName << "live in clones"
-         << "\n";
-    for (auto origLiveIn : task->getOriginalLiveIns()) {
-      origLiveIn->print(File << "Original: ");
-      File << "\n\t";
-      auto cloneLiveIn = task->getCloneOfOriginalLiveIn(origLiveIn);
-      cloneLiveIn->print(File << "Cloned: ");
-      File << "\n";
-    }
-    File << "\n";
-  }
-
-  File.close();
 }
 
 BasicBlock *ParallelizationTechnique::getParLoopEntryPoint(void) const {

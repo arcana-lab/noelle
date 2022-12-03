@@ -17,6 +17,7 @@ set(Srcs
   LoopDependenceInfo.cpp
   SCCDAGPartition.cpp
   LoopTransformationsOptions.cpp
+  ClonableMemoryObject.cpp
 )
 
 # Compilation flags
@@ -39,6 +40,7 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
   ../../basic_utilities/include 
+  ../../dominators/include 
   ../../transformations/include
   ../../callgraph/include
   ../../dataflow/include

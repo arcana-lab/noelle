@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,118 +19,50 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
-#include "noelle/core/DominatorSummary.hpp"
+#include "noelle/core/DominatorForest.hpp"
 
 namespace llvm::noelle {
 
-/*
- * Dominator Node Summary implementation
- */
-
-DomNodeSummary::DomNodeSummary(const DTAliases::Node &node)
-  : B{ node.getBlock() },
-    level{ node.getLevel() },
-    parent{ nullptr },
-    children{},
-    iDom{ nullptr } {
-
-  return;
-}
-
-DomNodeSummary::DomNodeSummary(const DomNodeSummary &node)
-  : B{ node.getBlock() },
-    level{ node.getLevel() },
-    parent{ nullptr },
-    children{},
-    iDom{ nullptr } {
-
-  return;
-}
-
-raw_ostream &DomNodeSummary::print(raw_ostream &stream, std::string prefix) {
-  stream << prefix << "Block: ";
-  if (getBlock())
-    getBlock()->printAsOperand(stream);
-  else
-    stream << "null";
-  stream << " Level: " << getLevel() << " Parent: ";
-  if (getParent() && getParent()->getBlock())
-    getParent()->getBlock()->printAsOperand(stream);
-  else
-    stream << "null";
-  stream << " I Dom: ";
-  if (getIDom() && getIDom()->getBlock())
-    getIDom()->getBlock()->printAsOperand(stream);
-  else
-    stream << "null";
-  stream << "\n" << prefix << "Children: ";
-  for (auto child : getChildren()) {
-    child->getBlock()->printAsOperand(stream << "\t");
-  }
-  return stream << "\n";
-}
-
-BasicBlock *DomNodeSummary::getBlock(void) const {
-  return B;
-}
-
-DomNodeSummary *DomNodeSummary::getParent(void) {
-  return parent;
-}
-
-std::vector<DomNodeSummary *> DomNodeSummary::getChildren(void) {
-  return children;
-}
-
-unsigned DomNodeSummary::getLevel(void) const {
-  return level;
-}
-
-DomNodeSummary *DomNodeSummary::getIDom(void) {
-  return iDom;
-}
-
-/*
- * Dominator Tree Summary implementation
- */
-
-DomTreeSummary::DomTreeSummary(DominatorTree &DT)
-  : DomTreeSummary{ collectNodesOfTree<DominatorTree>(DT) } {
+DominatorForest::DominatorForest(llvm::DominatorTree &DT)
+  : DominatorForest{ collectNodesOfTree<llvm::DominatorTree>(DT) } {
   this->post = false;
   return;
 }
 
-DomTreeSummary::DomTreeSummary(PostDominatorTree &PDT)
-  : DomTreeSummary{ collectNodesOfTree<PostDominatorTree>(PDT) } {
+DominatorForest::DominatorForest(llvm::PostDominatorTree &PDT)
+  : DominatorForest{ collectNodesOfTree<PostDominatorTree>(PDT) } {
   this->post = true;
   return;
 }
 
-DomTreeSummary::DomTreeSummary(std::set<DTAliases::Node *> nodeSubset)
+DominatorForest::DominatorForest(std::set<DTAliases::Node *> nodeSubset)
   : nodes{},
     bbNodeMap{} {
   this->cloneNodes<DTAliases::Node>(nodeSubset);
+  return;
 }
 
-DomTreeSummary::DomTreeSummary(DomTreeSummary &DTS,
-                               std::set<BasicBlock *> &bbSubset)
-  : DomTreeSummary{ filterNodes(DTS.nodes, bbSubset) } {}
+DominatorForest::DominatorForest(DominatorForest &DTS,
+                                 std::set<BasicBlock *> &bbSubset)
+  : DominatorForest{ filterNodes(DTS.nodes, bbSubset) } {
+  return;
+}
 
-DomTreeSummary::DomTreeSummary(std::set<DomNodeSummary *> nodeSubset)
+DominatorForest::DominatorForest(std::set<DominatorNode *> nodeSubset)
   : nodes{},
     bbNodeMap{} {
-  this->cloneNodes<DomNodeSummary>(nodeSubset);
+  this->cloneNodes<DominatorNode>(nodeSubset);
+  return;
 }
 
-DomTreeSummary::~DomTreeSummary() {
+DominatorForest::~DominatorForest() {
   for (auto node : nodes)
     delete node;
   nodes.clear();
   bbNodeMap.clear();
 }
 
-void DomTreeSummary::transferToClones(
+void DominatorForest::transferToClones(
     std::unordered_map<BasicBlock *, BasicBlock *> &bbCloneMap) {
   for (auto node : nodes) {
     assert(bbCloneMap.find(node->B) != bbCloneMap.end());
@@ -139,7 +71,7 @@ void DomTreeSummary::transferToClones(
 }
 
 template <typename TreeType>
-std::set<DTAliases::Node *> DomTreeSummary::collectNodesOfTree(TreeType &T) {
+std::set<DTAliases::Node *> DominatorForest::collectNodesOfTree(TreeType &T) {
   std::set<DTAliases::Node *> nodes;
   std::vector<DTAliases::Node *> worklist;
   auto &rootBlocks = T.getRoots();
@@ -147,7 +79,7 @@ std::set<DTAliases::Node *> DomTreeSummary::collectNodesOfTree(TreeType &T) {
     worklist.push_back(T.getNode(b));
 
   /*
-   * Workaround: An empty "exit node" exists for PostDominatorTree that isn't
+   * Workaround: An empty "exit node" exists for PostDominatorForest that isn't
    * accessible via getRoots()
    */
   worklist.push_back(T.getRootNode());
@@ -164,10 +96,10 @@ std::set<DTAliases::Node *> DomTreeSummary::collectNodesOfTree(TreeType &T) {
   return nodes;
 }
 
-std::set<DomNodeSummary *> DomTreeSummary::filterNodes(
-    std::set<DomNodeSummary *> &nodes,
+std::set<DominatorNode *> DominatorForest::filterNodes(
+    std::set<DominatorNode *> &nodes,
     std::set<BasicBlock *> &bbSubset) {
-  std::set<DomNodeSummary *> nodesSubset;
+  std::set<DominatorNode *> nodesSubset;
   for (auto node : nodes) {
     if (bbSubset.find(node->B) != bbSubset.end()) {
       nodesSubset.insert(node);
@@ -177,14 +109,14 @@ std::set<DomNodeSummary *> DomTreeSummary::filterNodes(
 }
 
 template <typename NodeType>
-void DomTreeSummary::cloneNodes(std::set<NodeType *> &nodesToClone) {
+void DominatorForest::cloneNodes(std::set<NodeType *> &nodesToClone) {
 
   /*
-   * Clone nodes using DomNodeSummary constructors. Track cloned pairs in map
+   * Clone nodes using DominatorNode constructors. Track cloned pairs in map
    */
-  std::unordered_map<NodeType *, DomNodeSummary *> nodeMap;
+  std::unordered_map<NodeType *, DominatorNode *> nodeMap;
   for (auto node : nodesToClone) {
-    auto summary = new DomNodeSummary(*node);
+    auto summary = new DominatorNode(*node);
     nodeMap[node] = summary;
     this->nodes.insert(summary);
     this->bbNodeMap[summary->B] = summary;
@@ -213,12 +145,12 @@ void DomTreeSummary::cloneNodes(std::set<NodeType *> &nodesToClone) {
   }
 }
 
-DomNodeSummary *DomTreeSummary::getNode(BasicBlock *B) const {
+DominatorNode *DominatorForest::getNode(BasicBlock *B) const {
   auto nodeIter = bbNodeMap.find(B);
   return nodeIter == bbNodeMap.end() ? nullptr : nodeIter->second;
 }
 
-bool DomTreeSummary::dominates(Instruction *I, Instruction *J) const {
+bool DominatorForest::dominates(Instruction *I, Instruction *J) const {
   auto B1 = I->getParent();
   auto B2 = J->getParent();
 
@@ -290,18 +222,18 @@ bool DomTreeSummary::dominates(Instruction *I, Instruction *J) const {
   return d;
 }
 
-bool DomTreeSummary::dominates(BasicBlock *B1, BasicBlock *B2) const {
+bool DominatorForest::dominates(BasicBlock *B1, BasicBlock *B2) const {
   auto nodeB1 = this->getNode(B1);
   auto nodeB2 = this->getNode(B2);
   assert(
       nodeB1 && nodeB2
-      && "The basic blocks provided to DomTreeSummary are not present in the tree");
+      && "The basic blocks provided to DominatorForest are not present in the tree");
   return this->dominates(nodeB1, nodeB2);
 }
 
-bool DomTreeSummary::dominates(DomNodeSummary *node1,
-                               DomNodeSummary *node2) const {
-  std::queue<DomNodeSummary *> worklist;
+bool DominatorForest::dominates(DominatorNode *node1,
+                                DominatorNode *node2) const {
+  std::queue<DominatorNode *> worklist;
   worklist.push(node1);
   while (!worklist.empty()) {
     auto node = worklist.front();
@@ -315,9 +247,9 @@ bool DomTreeSummary::dominates(DomNodeSummary *node1,
   return false;
 }
 
-std::set<DomNodeSummary *> DomTreeSummary::dominates(
-    DomNodeSummary *node) const {
-  std::set<DomNodeSummary *> dominators;
+std::set<DominatorNode *> DominatorForest::dominates(
+    DominatorNode *node) const {
+  std::set<DominatorNode *> dominators;
   while (node->parent) {
     dominators.insert(node);
     node = node->parent;
@@ -325,8 +257,67 @@ std::set<DomNodeSummary *> DomTreeSummary::dominates(
   return dominators;
 }
 
-BasicBlock *DomTreeSummary::findNearestCommonDominator(BasicBlock *B1,
-                                                       BasicBlock *B2) const {
+std::set<Instruction *> DominatorForest::getDominatorsOf(
+    const std::set<Instruction *> &s,
+    BasicBlock *dominatedBB) const {
+  std::set<Instruction *> r{};
+
+  /*
+   * Consider all elements of the set.
+   */
+  for (auto value : s) {
+
+    /*
+     * Check if @value dominates @dominatedBB
+     */
+    auto valueBB = value->getParent();
+    if (this->dominates(valueBB, dominatedBB)) {
+      r.insert(value);
+    }
+  }
+
+  return r;
+}
+
+std::set<Instruction *> DominatorForest::
+    getInstructionsThatDoNotDominateAnyOther(
+        const std::set<Instruction *> &s) const {
+  std::set<Instruction *> r{};
+
+  /*
+   * Consider all elements of the set.
+   */
+  for (auto value : s) {
+
+    /*
+     * Check if @value dominates any other
+     */
+    auto isDominatingOthers = false;
+    for (auto otherValue : s) {
+      if (value == otherValue) {
+        continue;
+      }
+      if (!this->dominates(value, otherValue)) {
+        continue;
+      }
+      isDominatingOthers = true;
+      break;
+    }
+    if (isDominatingOthers) {
+      continue;
+    }
+
+    /*
+     * Value does not dominate anyone
+     */
+    r.insert(value);
+  }
+
+  return r;
+}
+
+BasicBlock *DominatorForest::findNearestCommonDominator(BasicBlock *B1,
+                                                        BasicBlock *B2) const {
   assert(B1 != nullptr);
   assert(B2 != nullptr);
 
@@ -347,50 +338,33 @@ BasicBlock *DomTreeSummary::findNearestCommonDominator(BasicBlock *B1,
   return c->B;
 }
 
-DomNodeSummary *DomTreeSummary::findNearestCommonDominator(
-    DomNodeSummary *node1,
-    DomNodeSummary *node2) const {
+DominatorNode *DominatorForest::findNearestCommonDominator(
+    DominatorNode *node1,
+    DominatorNode *node2) const {
 
   /*
    * Helpers to determine whether a node n dominates node2
    */
   auto dominatorsOf2 = this->dominates(node2);
-  auto dominates2 = [&](DomNodeSummary *node) -> bool {
+  auto dominates2 = [&](DominatorNode *node) -> bool {
     return dominatorsOf2.find(node) != dominatorsOf2.end();
   };
 
   /*
    * Traversal of parents of node1 to find common dominator
    */
-  DomNodeSummary *node = node1;
+  DominatorNode *node = node1;
   while (node && !dominates2(node))
     node = node->parent;
   return node;
 }
 
-raw_ostream &DomTreeSummary::print(raw_ostream &stream,
-                                   std::string prefixToUse) const {
+raw_ostream &DominatorForest::print(raw_ostream &stream,
+                                    std::string prefixToUse) const {
   for (auto node : nodes) {
     node->print(stream, prefixToUse);
   }
   return stream;
-}
-
-DominatorSummary::DominatorSummary(DominatorTree &dt, PostDominatorTree &pdt)
-  : DT{ dt },
-    PDT{ pdt } {
-  return;
-}
-
-DominatorSummary::DominatorSummary(DominatorSummary &ds,
-                                   std::set<BasicBlock *> &bbSubset)
-  : DT{ ds.DT, bbSubset },
-    PDT{ ds.PDT, bbSubset } {}
-
-void DominatorSummary::transferSummaryToClones(
-    std::unordered_map<BasicBlock *, BasicBlock *> &bbCloneMap) {
-  DT.transferToClones(bbCloneMap);
-  PDT.transferToClones(bbCloneMap);
 }
 
 } // namespace llvm::noelle

@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
-#include "noelle/core/DominatorSummary.hpp"
+#include "noelle/core/Dominators.hpp"
 
 namespace llvm::noelle {
 

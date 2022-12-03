@@ -606,6 +606,17 @@ void PDGAnalysis::iterateInstForCall(PDG *pdg,
   }
 
   /*
+   * Check if the call instruction is pure.
+   */
+  auto calleeFunction = call->getCalledFunction();
+  if (calleeFunction != nullptr) {
+    if (calleeFunction->empty()
+        && this->isTheLibraryFunctionPure(calleeFunction)) {
+      return;
+    }
+  }
+
+  /*
    * Identify all dependences with @call.
    */
   for (auto I : dfr->OUT(call)) {
@@ -664,22 +675,17 @@ void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
     }
 
     /*
-     * Check if the dependence can be removed because the instructions access
+     * Check if the dependence can be removed because the instructions accessing
      * separate memory regions.
      */
-    auto i0 = edge->getOutgoingT();
-    auto i1 = edge->getIncomingT();
-    if (edge->isMemoryDependence() && (!isa<CallBase>(i0))
-        && (!isa<CallBase>(i1))
-        && (!this->allocAA->canPointToTheSameObject(edge->getOutgoingT(),
-                                                    edge->getIncomingT()))) {
+    if (edge->isMemoryDependence() && this->canMemoryEdgeBeRemoved(pdg, edge)) {
       removeEdges.insert(edge);
       continue;
     }
 
     /*
-     * Check if the function of the dependence destiation cannot be reached from
-     * main.
+     * Check if the function of the dependence destination cannot be reached
+     * from main.
      */
     if (edgeIsNotLoopCarriedMemoryDependency(edge)
         || edgeIsAlongNonMemoryWritingFunctions(edge)) {
@@ -695,6 +701,111 @@ void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
   }
 
   return;
+}
+
+bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge) {
+  assert(pdg != nullptr);
+  assert(edge != nullptr);
+
+  /*
+   * Fetch the instructions
+   */
+  auto i0 = edge->getOutgoingT();
+  auto i1 = edge->getIncomingT();
+
+  /*
+   * Handle the case where the two instructions are not calls.
+   */
+  if ((!isa<CallBase>(i0)) && (!isa<CallBase>(i1))) {
+    if (!this->allocAA->canPointToTheSameObject(i0, i1)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /*
+   * One of the instruction is a call.
+   *
+   * Fetch the call
+   */
+  auto callInst = dyn_cast<CallBase>(i0);
+  auto otherInst = i1;
+  if (!callInst) {
+    callInst = dyn_cast<CallBase>(i1);
+    otherInst = i0;
+  }
+  assert(callInst != nullptr);
+
+  /*
+   * We don't handle self dependences.
+   */
+  if (otherInst == callInst) {
+    return false;
+  }
+
+  /*
+   * Check if it invokes a library function.
+   */
+  auto callee = callInst->getCalledFunction();
+  if (callee == nullptr) {
+    return false;
+  }
+  if (!callee->empty()) {
+    return false;
+  }
+
+  /*
+   * The call invokes a library function.
+   *
+   * Check it invokes a known library function.
+   */
+  if (callee->getName().compare("printf") != 0) {
+    return false;
+  }
+
+  /*
+   * Exploit are knowledge of library calls to identify the set of pointers that
+   * are used to read memory by the library call.
+   */
+  std::unordered_set<Value *> objects;
+  for (auto argID = 0; argID < callInst->getNumArgOperands(); argID++) {
+    auto arg = callInst->getArgOperand(argID);
+    auto argType = arg->getType();
+    if (argType->isPointerTy()) {
+      objects.insert(arg);
+    }
+  }
+
+  /*
+   * Get the object accessed by the other instruction.
+   */
+  Value *o1 = nullptr;
+  if (auto st = dyn_cast<StoreInst>(otherInst)) {
+    o1 = st->getPointerOperand();
+  } else if (auto ld = dyn_cast<LoadInst>(otherInst)) {
+    o1 = ld;
+  }
+  if (o1 == nullptr) {
+    return false;
+  }
+
+  /*
+   * Check if the memory objects accessed cannot overlap between the two
+   * instructions.
+   */
+  auto doOverlap = false;
+  for (auto o0 : objects) {
+    if (this->allocAA->canPointToTheSameObject(o0, o1)) {
+      doOverlap = true;
+      break;
+    }
+  }
+  if (!doOverlap) {
+    return true;
+  }
+
+  return false;
 }
 
 // NOTE: Loads between random parts of separate GVs and both edges between GVs

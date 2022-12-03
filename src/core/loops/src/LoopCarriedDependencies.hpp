@@ -22,7 +22,7 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/DominatorSummary.hpp"
+#include "noelle/core/Dominators.hpp"
 #include "noelle/core/DGBase.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"

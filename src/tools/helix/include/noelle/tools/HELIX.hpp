@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -29,10 +29,11 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Noelle.hpp"
-#include "HeuristicsPass.hpp"
-#include "noelle/tools/ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
-#include "SequentialSegment.hpp"
 #include "noelle/core/ControlFlowEquivalence.hpp"
+#include "noelle/tools/ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
+#include "noelle/tools/SequentialSegment.hpp"
+#include "noelle/tools/HELIXTask.hpp"
+#include "HeuristicsPass.hpp"
 
 namespace llvm::noelle {
 
@@ -65,11 +66,11 @@ public:
   virtual ~HELIX();
 
 protected:
-  void createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h);
+  virtual void createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h);
 
-  bool synchronizeTask(LoopDependenceInfo *LDI, Heuristics *h);
+  virtual bool synchronizeTask(LoopDependenceInfo *LDI, Heuristics *h);
 
-  void addChunkFunctionExecutionAsideOriginalLoop(
+  virtual void addChunkFunctionExecutionAsideOriginalLoop(
       LoopDependenceInfo *LDI,
       uint64_t numberOfSequentialSegments);
 
@@ -121,6 +122,22 @@ protected:
   void addSynchronizations(LoopDependenceInfo *LDI,
                            std::vector<SequentialSegment *> *sss);
 
+  virtual CallInst *injectWaitCall(IRBuilder<> &builder, uint32_t ssID);
+
+  virtual CallInst *injectSignalCall(IRBuilder<> &builder, uint32_t ssID);
+
+  virtual void computeAndCachePointerOfPastSequentialSegment(
+      HELIXTask *helixTask,
+      uint32_t ssID);
+
+  virtual void computeAndCachePointerOfFutureSequentialSegment(
+      HELIXTask *helixTask,
+      uint32_t ssID);
+
+  virtual Value *getPointerOfSequentialSegment(HELIXTask *helixTask,
+                                               Value *ssArray,
+                                               uint32_t ssID);
+
   void inlineCalls(Task *task);
 
   void rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI);
@@ -130,7 +147,9 @@ protected:
       uint32_t taskIndex,
       BasicBlock &bb) override;
 
-private:
+  /*
+   * Fields
+   */
   Function *waitSSCall, *signalSSCall;
   LoopDependenceInfo *originalLDI;
   LoopEnvironmentBuilder *loopCarriedLoopEnvironmentBuilder;
@@ -141,12 +160,16 @@ private:
   bool enableInliner;
   Function *taskDispatcherSS;
   Function *taskDispatcherCS;
-  std::string prefixString;
   void squeezeSequentialSegment(LoopDependenceInfo *LDI,
                                 DataFlowResult *reachabilityDFR,
                                 SequentialSegment *ss);
 
   DataFlowResult *computeReachabilityFromInstructions(LoopDependenceInfo *LDI);
+
+private:
+  std::string prefixString;
+  std::vector<Value *> ssPastPtrs;
+  std::vector<Value *> ssFuturePtrs;
 };
 
 class SpilledLoopCarriedDependency {
