@@ -69,6 +69,10 @@ bool FunctionsManager::isTheLibraryFunctionPure(Function *libraryFunction) {
   return false;
 }
 
+bool FunctionsManager::canModifyMemory(Function &f) const {
+  return true;
+}
+
 std::set<Function *> FunctionsManager::getProgramConstructors(void) const {
   std::set<Function *> s;
 

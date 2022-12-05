@@ -37,6 +37,8 @@ public:
 
   bool isTheLibraryFunctionPure(Function *libraryFunction);
 
+  bool canModifyMemory(Function &f) const;
+
   Function *getFunction(const std::string &name);
 
   CallGraph *getProgramCallGraph(void);
