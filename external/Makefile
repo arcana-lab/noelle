@@ -1,22 +1,17 @@
 DEBUG?=0
 JOBS?=8
 SVF_BRANCH?=SVF-1.8
-SCAF_BRANCH?=v9.1.5
+SCAF_BRANCH?=bugfix
 
 all: compile
 
 compile: svf patch.tar scaf
 	cd svf ; tar xf ../patch.tar ;
 	./scripts/patch.sh
-	./scripts/scaf_patch_make.sh 
 ifeq ($(DEBUG), 1)
-	echo "Making debug SVF and SCAF"
 	cd svf ; ./build.sh debug;
-	cd scaf ; make scaf-debug;
 else
-	echo "Making release SVF and SCAF"
 	cd svf ; ./build.sh;
-	cd scaf ; make scaf-release;
 endif
 
 compile_without_scaf: svf patch.tar
@@ -32,6 +27,7 @@ patch.tar: patch svf
 
 scaf:
 	git clone -b $(SCAF_BRANCH) https://github.com/PrincetonUniversity/SCAF scaf
+	./scripts/scaf_install.sh $(DEBUG) ;
 
 clean:
 	./scripts/clean.sh
