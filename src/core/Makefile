@@ -1,4 +1,4 @@
-UTILS=transformations basic_utilities dominators task induction_variables loops loop_nesting_graph architecture clean_metadata callgraph scheduler metadata_manager loop_transformer
+UTILS=transformations basic_utilities dominators task induction_variables loop_sccdag_analysis loops loop_nesting_graph architecture clean_metadata callgraph scheduler metadata_manager loop_transformer
 ANALYSIS=pdg talkdown alloc_aa dataflow loop_structure loop_environment forest invariants
 ENABLERS=loop_distribution loop_unroll loop_whilifier outliner cfg_analysis cfg_transformer
 ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) hotprofiler unique_ir_marker noelle scripts
@@ -63,6 +63,9 @@ scheduler:
 	cd $@ ; ../../scripts/run_me.sh
 
 induction_variables:
+	cd $@ ; ../../scripts/run_me.sh
+
+loop_sccdag_analysis:
 	cd $@ ; ../../scripts/run_me.sh
 
 loops:

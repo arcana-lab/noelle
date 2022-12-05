@@ -37,6 +37,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_whilifier/include
   ../../loop_unroll/include
   ../../loop_distribution/include
+  ../../loop_sccdag_analysis/include
 	../include
 )
 
