@@ -32,7 +32,14 @@ void LoopCarriedDependencies::setLoopCarriedDependencies(
   }
 
   for (auto edge : dgForLoops.getEdges()) {
-    auto loop = LoopCarriedDependencies::getLoopOfLCD(loopNode, DS, edge);
+    if (!LoopCarriedDependencies::isALoopCarriedDependence(loopNode,
+                                                           DS,
+                                                           edge)) {
+      continue;
+    }
+
+    auto loop =
+        LoopCarriedDependencies::isALoopCarriedDependence(loopNode, DS, edge);
     if (!loop) {
       continue;
     }
@@ -42,7 +49,7 @@ void LoopCarriedDependencies::setLoopCarriedDependencies(
   return;
 }
 
-LoopStructure *LoopCarriedDependencies::getLoopOfLCD(
+bool LoopCarriedDependencies::isALoopCarriedDependence(
     StayConnectedNestedLoopForestNode *loopNode,
     const DominatorSummary &DS,
     DGEdge<Value> *edge) {
@@ -65,10 +72,10 @@ LoopStructure *LoopCarriedDependencies::getLoopOfLCD(
    * Only dependences between instructions can be loop-carried.
    */
   if (!isa<Instruction>(producer)) {
-    return nullptr;
+    return false;
   }
   if (!isa<Instruction>(consumer)) {
-    return nullptr;
+    return false;
   }
 
   /*
@@ -88,17 +95,68 @@ LoopStructure *LoopCarriedDependencies::getLoopOfLCD(
    * cannot be loop-carried.
    */
   if (!producerLoop || !consumerLoop) {
-    return nullptr;
+    return false;
   }
 
   /*
    * If the dependence is a control one and the two instructions belong to a
    * subloop, then this cannot be a loop-carried one for the target loop.
    */
-  if (true && edge->isControlDependence()
-      && (producerLoop != loopNode->getLoop())
+  if (edge->isControlDependence() && (producerLoop != loopNode->getLoop())
       && (consumerLoop != loopNode->getLoop())) {
-    return nullptr;
+    return false;
+  }
+
+  /*
+   * Check if both instructions will access the same element (variable, memory
+   * location) in the same iteration
+   */
+  auto doTheyTouchTheSameElementInTheSameIteration = true;
+  if (edge->isMemoryDependence()) {
+
+    /*
+     * Fetch the pointer of the location accessed by the producer.
+     */
+    Value *producerPointer = nullptr;
+    if (auto load = dyn_cast<LoadInst>(producerI)) {
+      producerPointer = load->getPointerOperand();
+    } else if (auto store = dyn_cast<StoreInst>(producerI)) {
+      producerPointer = store->getPointerOperand();
+    }
+
+    /*
+     * Fetch the pointer of the location accessed by the consumer.
+     */
+    Value *consumerPointer = nullptr;
+    if (auto load = dyn_cast<LoadInst>(consumerI)) {
+      consumerPointer = load->getPointerOperand();
+    } else if (auto store = dyn_cast<StoreInst>(consumerI)) {
+      consumerPointer = store->getPointerOperand();
+    }
+
+    /*
+     * If we cannot identify the single pointer for each instruction, then we
+     * cannot use dominance to determine whether the dependence is loop-carried
+     * or not.
+     */
+    if ((producerPointer == nullptr) || (consumerPointer == nullptr)) {
+      doTheyTouchTheSameElementInTheSameIteration = false;
+
+    } else {
+
+      /*
+       * Each instruction can only access a single memory location per
+       * iteration.
+       *
+       * Check whether they access the same location per iteration or not.
+       */
+      if (producerPointer == consumerPointer) {
+        doTheyTouchTheSameElementInTheSameIteration = false;
+      }
+    }
+  }
+  if (!doTheyTouchTheSameElementInTheSameIteration) {
+    return true;
   }
 
   if (producerI == consumerI || !DS.DT.dominates(producerI, consumerI)) {
@@ -125,7 +183,7 @@ LoopStructure *LoopCarriedDependencies::getLoopOfLCD(
                                                producerB,
                                                consumerB);
       if (mustProducerReachConsumerBeforeHeader) {
-        return nullptr;
+        return false;
       }
 
       /*
@@ -136,22 +194,18 @@ LoopStructure *LoopCarriedDependencies::getLoopOfLCD(
        * execution comes from the header rather than the producer of the
        * previous iteration
        */
-      if (true && DS.DT.dominates(consumerI, producerI)
+      if (DS.DT.dominates(consumerI, producerI)
           && DS.DT.dominates(topLoopHeaderBranch, consumerI)) {
         if (auto phiConsumer = dyn_cast<PHINode>(consumerI)) {
-          // errs() << "AAAA: producer = " << *producerI << "\n";
-          // errs() << "AAAA: consumer = " << *consumerI << "\n";
-          // errs() << "AAAA: Loop = " <<
-          // *producerLoop->getHeader()->getFirstNonPHIOrDbg() << "\n\n";
-          return nullptr;
+          return false;
         }
       }
     }
 
-    return consumerLoop;
+    return true;
   }
 
-  return nullptr;
+  return false;
 }
 
 std::set<DGEdge<Value> *> LoopCarriedDependencies::
