@@ -150,8 +150,19 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
        *
        * Check whether they access the same location per iteration or not.
        */
-      if (producerPointer == consumerPointer) {
+      if (producerPointer != consumerPointer) {
         doTheyTouchTheSameElementInTheSameIteration = false;
+
+      } else {
+        assert(producerPointer == consumerPointer);
+        auto pointerAsInst = dyn_cast<Instruction>(producerPointer);
+        if (pointerAsInst == nullptr) {
+          doTheyTouchTheSameElementInTheSameIteration = false;
+        } else {
+          if (topLoop->isIncluded(pointerAsInst)) {
+            doTheyTouchTheSameElementInTheSameIteration = false;
+          }
+        }
       }
     }
   }
@@ -159,6 +170,8 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
     return true;
   }
 
+  errs() << "Check: producer = " << *producerI << "\n";
+  errs() << "Check: consumer = " << *consumerI << "\n";
   if (producerI == consumerI || !DS.DT.dominates(producerI, consumerI)) {
     auto producerLevel = producerLoop->getNestingLevel();
     auto consumerLevel = consumerLoop->getNestingLevel();
