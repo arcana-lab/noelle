@@ -248,11 +248,12 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
                  * 100)
              << "%)\n";
 
+      auto loopIDOpt = loopStructure->getID();
+      assert(loopIDOpt);
+      auto currentLoopIndex = loopIDOpt.value();
+
       if (minimumHotness > 0) {
         if (!isLoopHot(loopStructure, minimumHotness)) {
-          auto loopIDOpt = loopStructure->getID();
-          assert(loopIDOpt);
-          auto currentLoopIndex = loopIDOpt.value();
           errs() << "Noelle:  Disable loop \"" << currentLoopIndex
                  << "\" as cold code\n";
           delete loopStructure;

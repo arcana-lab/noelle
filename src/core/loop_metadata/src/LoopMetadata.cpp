@@ -19,9 +19,9 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
 #include <algorithm>
 
-#include "noelle/core/SystemHeaders.hpp"
 #include "llvm/Analysis/LoopInfo.h"
 
 #include "LoopMetadataPass.hpp"
@@ -29,7 +29,7 @@
 using namespace llvm;
 using namespace llvm::noelle;
 
-std::vector<LoopStructure *> LoopMetadataPass::getLoopStructuresOnly(
+std::vector<LoopStructure *> LoopMetadataPass::getLoopStructuresWithoutNoelle(
     Module &M) {
   std::vector<LoopStructure *> loopStructures;
   for (auto &F : M) {
@@ -67,7 +67,7 @@ bool LoopMetadataPass::setIDs(Module &M) {
    * Fetch all the loops of the program.
    * Min hotness is set to 0.0 to ensure we get all loops.
    */
-  auto loopStructures = getLoopStructuresOnly(M);
+  auto loopStructures = getLoopStructuresWithoutNoelle(M);
 
   /*
    * Initial scan of current loop IDs.
@@ -92,16 +92,6 @@ bool LoopMetadataPass::setIDs(Module &M) {
   if (!currLoopIDs.empty()) {
     maxLoopID = *(currLoopIDs.rbegin());
   }
-
-  /*
-   * Sanity check: we assume that loop IDs
-   * got from 0 to max loop ID without interruption.
-   * Let's test this is true.
-   */
-  // for (uint64_t i = 0; i <= maxLoopID; ++i){
-  //  currLoopIDs.erase(i);
-  //}
-  // assert(currLoopIDs.size() == 0);
 
   /*
    * Set ID for all remaining loops in the module.

@@ -42,12 +42,6 @@ cp $IRFileOutput $IRFileInput ;
 echo "NOELLE: FixedPoint:   Run until a fixed point is reached" ;
 let c=0; 
 while true ; do
-  # Add loop ID to all loops
-  cmdToExecute="noelle-meta-loop-embed ${IRFileInput} -o ${IRFileOutput}"
-  echo $cmdToExecute ;
-  eval $cmdToExecute ;
-  cp $IRFileOutput $IRFileInput ;
-
   echo "NOELLE: FixedPoint:     Invocation $c" ;
 
   # Set the command to execute the enablers

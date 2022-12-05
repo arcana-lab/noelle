@@ -19,7 +19,9 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/SystemHeaders.hpp"
+
+#include "llvm/Analysis/LoopInfo.h"
+
 #include "LoopMetadataPass.hpp"
 
 using namespace llvm;
@@ -38,11 +40,6 @@ bool LoopMetadataPass::runOnModule(Module &M) {
   bool modified = false;
 
   /*
-   * Fetch noelle.
-   */
-  // auto &noelle = getAnalysis<Noelle>();
-
-  /*
    * Set loop ID metadata
    */
   modified |= this->setIDs(M);
@@ -55,7 +52,6 @@ void LoopMetadataPass::getAnalysisUsage(AnalysisUsage &AU) const {
   /*
    * Analyses.
    */
-  // AU.addRequired<Noelle>();
   AU.addRequired<LoopInfoWrapperPass>();
 
   return;

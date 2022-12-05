@@ -21,7 +21,7 @@
  */
 #pragma once
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Noelle.hpp"
+#include "noelle/core/LoopStructure.hpp"
 
 using namespace llvm;
 
@@ -42,7 +42,7 @@ public:
 private:
   bool setIDs(Module &M);
 
-  std::vector<LoopStructure *> getLoopStructuresOnly(Module &M);
+  std::vector<LoopStructure *> getLoopStructuresWithoutNoelle(Module &M);
 };
 
 } // namespace llvm::noelle
