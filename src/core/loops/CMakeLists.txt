@@ -11,7 +11,6 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/noelle/core/Variable.hpp
   include/noelle/core/ControlFlowEquivalence.hpp
   include/noelle/core/LoopDependenceInfo.hpp
   include/noelle/core/LoopIterationDomainSpaceAnalysis.hpp

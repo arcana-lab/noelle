@@ -1,12 +1,8 @@
 # Sources
 set(Srcs 
-  Variable.cpp
-  LoopCarriedCycle.cpp
-  LoopCarriedVariable.cpp
   AccumulatorOpInfo.cpp
   ControlFlowEquivalence.cpp
   LoopAwareMemDepAnalysis.cpp
-  LoopCarriedDependencies.cpp
   LoopIterationDomainSpaceAnalysis.cpp
   Reduction.cpp
   BinaryReduction.cpp

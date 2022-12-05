@@ -24,7 +24,6 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"
-#include "LoopCarriedDependencies.hpp"
 #include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
 #include "noelle/core/StayConnectedNestedLoopForest.hpp"
 

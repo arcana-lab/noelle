@@ -22,7 +22,7 @@
 #include "noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/BinaryReduction.hpp"
-#include "LoopCarriedDependencies.hpp"
+#include "noelle/core/LoopCarriedDependencies.hpp"
 
 namespace llvm::noelle {
 

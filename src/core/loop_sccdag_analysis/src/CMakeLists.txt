@@ -3,6 +3,10 @@ set(Srcs
   ClonableMemoryObject.cpp
   MemoryCloningAnalysis.cpp
   SCCAttrs.cpp
+  Variable.cpp
+  LoopCarriedCycle.cpp
+  LoopCarriedVariable.cpp
+  LoopCarriedDependencies.cpp
 )
 
 # Compilation flags
