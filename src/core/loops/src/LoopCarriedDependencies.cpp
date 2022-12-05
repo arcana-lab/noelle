@@ -112,6 +112,49 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
    * location) in the same iteration
    */
   auto doTheyTouchTheSameElementInTheSameIteration = true;
+  if (edge->isMemoryDependence()) {
+
+    /*
+     * Fetch the pointer of the location accessed by the producer.
+     */
+    Value *producerPointer = nullptr;
+    if (auto load = dyn_cast<LoadInst>(producerI)) {
+      producerPointer = load->getPointerOperand();
+    } else if (auto store = dyn_cast<StoreInst>(producerI)) {
+      producerPointer = store->getPointerOperand();
+    }
+
+    /*
+     * Fetch the pointer of the location accessed by the consumer.
+     */
+    Value *consumerPointer = nullptr;
+    if (auto load = dyn_cast<LoadInst>(consumerI)) {
+      consumerPointer = load->getPointerOperand();
+    } else if (auto store = dyn_cast<StoreInst>(consumerI)) {
+      consumerPointer = store->getPointerOperand();
+    }
+
+    /*
+     * If we cannot identify the single pointer for each instruction, then we
+     * cannot use dominance to determine whether the dependence is loop-carried
+     * or not.
+     */
+    if ((producerPointer == nullptr) || (consumerPointer == nullptr)) {
+      doTheyTouchTheSameElementInTheSameIteration = false;
+
+    } else {
+
+      /*
+       * Each instruction can only access a single memory location per
+       * iteration.
+       *
+       * Check whether they access the same location per iteration or not.
+       */
+      if (producerPointer == consumerPointer) {
+        doTheyTouchTheSameElementInTheSameIteration = false;
+      }
+    }
+  }
   if (!doTheyTouchTheSameElementInTheSameIteration) {
     return true;
   }

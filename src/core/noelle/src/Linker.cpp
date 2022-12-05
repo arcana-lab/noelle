@@ -63,11 +63,14 @@ void Linker::linkTransformedLoopToOriginalFunction(
    * Check if another invocation of the loop is running in parallel.
    */
   IRBuilder<> loopSwitchBuilder(originalTerminator);
-  auto globalLoad = loopSwitchBuilder.CreateLoad(globalBool);
-  auto compareInstruction = loopSwitchBuilder.CreateICmpEQ(globalLoad, const0);
+  auto coreChecker = this->program.getFunction("NOELLE_getAvailableCores");
+  auto callToCoreChecker =
+      loopSwitchBuilder.CreateCall(coreChecker->getFunctionType(), coreChecker);
+  auto compareInstruction =
+      loopSwitchBuilder.CreateICmpEQ(callToCoreChecker, const1);
   loopSwitchBuilder.CreateCondBr(compareInstruction,
-                                 startOfParLoopInOriginalFunc,
-                                 originalHeader);
+                                 originalHeader,
+                                 startOfParLoopInOriginalFunc);
   originalTerminator->eraseFromParent();
 
   IRBuilder<> endBuilder(endOfParLoopInOriginalFunc);
@@ -125,20 +128,6 @@ void Linker::linkTransformedLoopToOriginalFunction(
       break;
     }
   }
-
-  /*
-   * Set/Reset global variable so only one invocation of the loop is run in
-   * parallel at a time.
-   */
-  if (startOfParLoopInOriginalFunc == endOfParLoopInOriginalFunc) {
-    endBuilder.SetInsertPoint(&*endOfParLoopInOriginalFunc->begin());
-    endBuilder.CreateStore(const1, globalBool);
-  } else {
-    IRBuilder<> startBuilder(&*startOfParLoopInOriginalFunc->begin());
-    startBuilder.CreateStore(const1, globalBool);
-  }
-  endBuilder.SetInsertPoint(endOfParLoopInOriginalFunc->getTerminator());
-  endBuilder.CreateStore(const0, globalBool);
 
   return;
 }
