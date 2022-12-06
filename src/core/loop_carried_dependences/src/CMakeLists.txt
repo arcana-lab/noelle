@@ -1,18 +1,16 @@
 # Sources
 set(Srcs 
-  AccumulatorOpInfo.cpp
-  ClonableMemoryObject.cpp
-  MemoryCloningAnalysis.cpp
-  SCCAttrs.cpp
-  Reduction.cpp
-  BinaryReduction.cpp
+  Variable.cpp
+  LoopCarriedCycle.cpp
+  LoopCarriedVariable.cpp
+  LoopCarriedDependencies.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "LoopSCCAttributes")
+set(PassName "LoopCarriedDependencies")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -42,7 +40,6 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../talkdown/include
   ../../invariants/include
   ../../induction_variables/include
-  ../../loop_carried_dependences/include
   ../include
   ./
   ${CMAKE_INSTALL_PREFIX}/include

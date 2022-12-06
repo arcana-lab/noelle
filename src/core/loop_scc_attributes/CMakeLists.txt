@@ -14,8 +14,6 @@ install(
   include/noelle/core/ClonableMemoryObject.hpp
   include/noelle/core/MemoryCloningAnalysis.hpp
   include/noelle/core/SCCAttrs.hpp
-  include/noelle/core/Variable.hpp
-  include/noelle/core/LoopCarriedDependencies.hpp
   include/noelle/core/Reduction.hpp
   include/noelle/core/BinaryReduction.hpp
   DESTINATION 
