@@ -96,7 +96,6 @@ public:
   /*
    * Return the SCCDAG of the loop.
    */
-  // TODO: Return const reference to SCCDAG, not a raw pointer
   SCCDAG *getSCCDAG(void) const;
 
   /*
