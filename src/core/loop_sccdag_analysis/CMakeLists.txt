@@ -16,6 +16,8 @@ install(
   include/noelle/core/SCCAttrs.hpp
   include/noelle/core/Variable.hpp
   include/noelle/core/LoopCarriedDependencies.hpp
+  include/noelle/core/Reduction.hpp
+  include/noelle/core/BinaryReduction.hpp
   DESTINATION 
   include/noelle/core
   )

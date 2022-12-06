@@ -1,5 +1,6 @@
 # Sources
 set(Srcs 
+  AccumulatorOpInfo.cpp
   ClonableMemoryObject.cpp
   MemoryCloningAnalysis.cpp
   SCCAttrs.cpp
@@ -7,6 +8,8 @@ set(Srcs
   LoopCarriedCycle.cpp
   LoopCarriedVariable.cpp
   LoopCarriedDependencies.cpp
+  Reduction.cpp
+  BinaryReduction.cpp
 )
 
 # Compilation flags

@@ -1,11 +1,8 @@
 # Sources
 set(Srcs 
-  AccumulatorOpInfo.cpp
   ControlFlowEquivalence.cpp
   LoopAwareMemDepAnalysis.cpp
   LoopIterationDomainSpaceAnalysis.cpp
-  Reduction.cpp
-  BinaryReduction.cpp
   SCCDAGAttrs.cpp
   SCCDAGNormalizer.cpp
   LoopDependenceInfo.cpp

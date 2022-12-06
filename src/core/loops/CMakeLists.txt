@@ -17,8 +17,6 @@ install(
   include/noelle/core/SCCDAGAttrs.hpp
   include/noelle/core/SCCDAGNormalizer.hpp
   include/noelle/core/SCCDAGPartition.hpp
-  include/noelle/core/Reduction.hpp
-  include/noelle/core/BinaryReduction.hpp
   include/noelle/core/LoopTransformationsOptions.hpp
   DESTINATION 
   include/noelle/core
