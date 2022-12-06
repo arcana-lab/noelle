@@ -44,7 +44,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../talkdown/include
   ../../invariants/include
   ../../induction_variables/include
-  ../../loop_sccdag_analysis/include
+  ../../loop_scc_attributes/include
   ../include
   ./
   ${CMAKE_INSTALL_PREFIX}/include

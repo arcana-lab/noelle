@@ -16,7 +16,7 @@ set(Srcs
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "LoopSCCDAGAnalysis")
+set(PassName "LoopSCCAttributes")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
