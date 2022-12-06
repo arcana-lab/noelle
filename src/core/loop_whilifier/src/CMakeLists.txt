@@ -30,6 +30,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../noelle/include
   ../../callgraph/include
   ../../scheduler/include
+  ../../loop_content/include
   ../include/ 
   ./ 
   ${CMAKE_INSTALL_PREFIX}/include

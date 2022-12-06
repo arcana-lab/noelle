@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni, Brian Homerding
+ * Copyright 2022  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,31 +19,43 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/PDG.hpp"
-#include "LoopCarriedDependencies.hpp"
-#include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
-#include "noelle/core/StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/Reduction.hpp"
+#include "noelle/core/Dominators.hpp"
+#include "noelle/core/Variable.hpp"
 
 namespace llvm::noelle {
 
-// Perform loop-aware memory dependence analysis to refine the loop PDG
-void refinePDGWithLoopAwareMemDepAnalysis(
-    PDG *loopDG,
-    Loop *l,
-    LoopStructure *loopStructure,
-    StayConnectedNestedLoopForestNode *loops,
-    LoopIterationDomainSpaceAnalysis *LIDS);
+class BinaryReduction : public Reduction {
+public:
+  BinaryReduction(SCC *s,
+                  LoopStructure *loop,
+                  LoopCarriedVariable *variable,
+                  DominatorSummary &dom);
 
-// Refine the loop PDG with SCAF
-void refinePDGWithSCAF(PDG *loopDG, Loop *l);
+  BinaryReduction(SCC *s,
+                  LoopStructure *loop,
+                  Value *initialValue,
+                  Instruction::BinaryOps reductionOperation,
+                  PHINode *accumulator,
+                  Value *identity);
 
-void refinePDGWithLIDS(PDG *loopDG,
-                       LoopStructure *loopStructure,
-                       StayConnectedNestedLoopForestNode *loops,
-                       LoopIterationDomainSpaceAnalysis *LIDS);
+  BinaryReduction() = delete;
+
+  Instruction::BinaryOps getReductionOperation(void) const;
+
+protected:
+  Instruction::BinaryOps reductionOperation;
+
+  void setBinaryReductionInformation(Value *initialValue,
+                                     DominatorSummary &dom,
+                                     LoopStructure &loop);
+
+  std::set<Instruction *> collectAccumulators(LoopStructure &LS);
+
+  iterator_range<instruction_iterator> getAccumulators(void);
+};
 
 } // namespace llvm::noelle

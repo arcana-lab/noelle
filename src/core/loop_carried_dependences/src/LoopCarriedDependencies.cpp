@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "LoopCarriedDependencies.hpp"
+#include "noelle/core/LoopCarriedDependencies.hpp"
 
 namespace llvm::noelle {
 

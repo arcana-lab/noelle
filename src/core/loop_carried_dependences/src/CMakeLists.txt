@@ -1,30 +1,16 @@
 # Sources
 set(Srcs 
-  MemoryCloningAnalysis.cpp
   Variable.cpp
   LoopCarriedCycle.cpp
   LoopCarriedVariable.cpp
-  AccumulatorOpInfo.cpp
-  ControlFlowEquivalence.cpp
-  LoopAwareMemDepAnalysis.cpp
   LoopCarriedDependencies.cpp
-  LoopIterationDomainSpaceAnalysis.cpp
-  SCCAttrs.cpp
-  Reduction.cpp
-  BinaryReduction.cpp
-  SCCDAGAttrs.cpp
-  SCCDAGNormalizer.cpp
-  LoopDependenceInfo.cpp
-  SCCDAGPartition.cpp
-  LoopTransformationsOptions.cpp
-  ClonableMemoryObject.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Loops")
+set(PassName "LoopCarriedDependencies")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
