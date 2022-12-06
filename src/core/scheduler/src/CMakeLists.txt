@@ -31,7 +31,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_structure/include
   ../../loop_environment/include 
   ../../forest/include
-  ../../loops/include 
+  ../../loop_content/include 
   ../../hotprofiler/include 
   ../../talkdown/include
   ../../dataflow/include

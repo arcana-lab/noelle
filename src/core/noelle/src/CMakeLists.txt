@@ -39,7 +39,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../alloc_aa/include 
   ../../hotprofiler/include 
   ../../talkdown/include
-  ../../loops/include
+  ../../loop_content/include
   ../../loop_nesting_graph/include
   ../../callgraph/include
   ../../scheduler/include
