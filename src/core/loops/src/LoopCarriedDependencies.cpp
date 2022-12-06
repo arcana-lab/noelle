@@ -170,8 +170,6 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
     return true;
   }
 
-  errs() << "Check: producer = " << *producerI << "\n";
-  errs() << "Check: consumer = " << *consumerI << "\n";
   if (producerI == consumerI || !DS.DT.dominates(producerI, consumerI)) {
     auto producerLevel = producerLoop->getNestingLevel();
     auto consumerLevel = consumerLoop->getNestingLevel();
