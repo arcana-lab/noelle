@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/SCCDAGNormalizer.hpp"
-#include "LoopCarriedDependencies.hpp"
+#include "noelle/core/LoopCarriedDependencies.hpp"
 
 namespace llvm::noelle {
 

@@ -25,6 +25,7 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
+#include "noelle/core/LoopCarriedDependencies.hpp"
 
 namespace llvm::noelle {
 
@@ -228,7 +229,6 @@ LoopDependenceInfo::LoopDependenceInfo(
                                       loopDG,
                                       loopSCCDAG,
                                       this->loop,
-                                      SE,
                                       *inductionVariables,
                                       DS);
   this->domainSpaceAnalysis =

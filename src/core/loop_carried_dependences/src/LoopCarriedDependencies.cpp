@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "LoopCarriedDependencies.hpp"
+#include "noelle/core/LoopCarriedDependencies.hpp"
 
 namespace llvm::noelle {
 
@@ -150,8 +150,19 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
        *
        * Check whether they access the same location per iteration or not.
        */
-      if (producerPointer == consumerPointer) {
+      if (producerPointer != consumerPointer) {
         doTheyTouchTheSameElementInTheSameIteration = false;
+
+      } else {
+        assert(producerPointer == consumerPointer);
+        auto pointerAsInst = dyn_cast<Instruction>(producerPointer);
+        if (pointerAsInst == nullptr) {
+          doTheyTouchTheSameElementInTheSameIteration = false;
+        } else {
+          if (topLoop->isIncluded(pointerAsInst)) {
+            doTheyTouchTheSameElementInTheSameIteration = false;
+          }
+        }
       }
     }
   }

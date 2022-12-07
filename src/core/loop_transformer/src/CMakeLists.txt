@@ -32,11 +32,13 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../pdg/include
   ../../invariants/include
   ../../induction_variables/include
-  ../../loops/include
+  ../../loop_content/include
   ../../scheduler/include
   ../../loop_whilifier/include
   ../../loop_unroll/include
   ../../loop_distribution/include
+  ../../loop_carried_dependences/include
+  ../../loop_scc_attributes/include
 	../include
 )
 

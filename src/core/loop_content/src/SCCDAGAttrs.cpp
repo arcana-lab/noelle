@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
 #include "noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/BinaryReduction.hpp"
-#include "LoopCarriedDependencies.hpp"
+#include "noelle/core/LoopCarriedDependencies.hpp"
 
 namespace llvm::noelle {
 
@@ -30,7 +30,6 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
                          PDG *loopDG,
                          SCCDAG *loopSCCDAG,
                          StayConnectedNestedLoopForestNode *loopNode,
-                         ScalarEvolution &SE,
                          InductionVariableManager &IV,
                          DominatorSummary &DS)
   : enableFloatAsReal{ enableFloatAsReal },
@@ -78,7 +77,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
    * Tag SCCs depending on their characteristics.
    */
   loopSCCDAG->iterateOverSCCs(
-      [this, &SE, loopNode, rootLoop, &ivs, &loopGoverningIVs, &DS](
+      [this, loopNode, rootLoop, &ivs, &loopGoverningIVs, &DS](
           SCC *scc) -> bool {
         /*
          * Allocate the metadata about this SCC.
@@ -104,7 +103,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
                                                            loopGoverningIVs);
         sccInfo->setSCCToBeInductionVariable(doesSCCOnlyContainIV);
 
-        this->checkIfClonable(scc, SE, loopNode);
+        this->checkIfClonable(scc, loopNode);
 
         /*
          * Categorize the current SCC.
@@ -587,15 +586,14 @@ bool SCCDAGAttrs::checkIfIndependent(SCC *scc) {
 }
 
 void SCCDAGAttrs::checkIfClonable(SCC *scc,
-                                  ScalarEvolution &SE,
                                   StayConnectedNestedLoopForestNode *loopNode) {
 
   /*
    * Check the simple cases.
    * TODO: Separate out cases and catalog SCCs by those cases
    */
-  if (false || isClonableByInductionVars(scc)
-      || isClonableBySyntacticSugarInstrs(scc) || isClonableByCmpBrInstrs(scc)
+  if (isClonableByInductionVars(scc) || isClonableBySyntacticSugarInstrs(scc)
+      || isClonableByCmpBrInstrs(scc)
       || isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc,
                                                                  loopNode)) {
     this->getSCCAttrs(scc)->setSCCToBeClonable();
