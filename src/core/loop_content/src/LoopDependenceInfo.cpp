@@ -229,7 +229,6 @@ LoopDependenceInfo::LoopDependenceInfo(
                                       loopDG,
                                       loopSCCDAG,
                                       this->loop,
-                                      SE,
                                       *inductionVariables,
                                       DS);
   this->domainSpaceAnalysis =

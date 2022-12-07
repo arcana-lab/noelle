@@ -493,9 +493,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
   auto memoryCloningAnalysis = LDI->getMemoryCloningAnalysis();
   auto envUser = this->envBuilder->getUser(taskIndex);
 
-  task->getTaskBody()->print(errs());
-  rootLoop->getFunction()->print(errs());
-
   /*
    * Fetch the environment of the loop
    */
@@ -1769,13 +1766,15 @@ float ParallelizationTechnique::computeSequentialFractionOfExecution(
 }
 
 BasicBlock *ParallelizationTechnique::getParLoopEntryPoint(void) const {
-  return entryPointOfParallelizedLoop;
+  return this->entryPointOfParallelizedLoop;
 }
 
 BasicBlock *ParallelizationTechnique::getParLoopExitPoint(void) const {
-  return exitPointOfParallelizedLoop;
+  return this->exitPointOfParallelizedLoop;
 }
 
-ParallelizationTechnique::~ParallelizationTechnique() {}
+ParallelizationTechnique::~ParallelizationTechnique() {
+  return;
+}
 
 } // namespace llvm::noelle
