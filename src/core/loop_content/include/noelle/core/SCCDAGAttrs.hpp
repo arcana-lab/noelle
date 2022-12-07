@@ -39,7 +39,6 @@ public:
               PDG *loopDG,
               SCCDAG *loopSCCDAG,
               StayConnectedNestedLoopForestNode *loopNode,
-              ScalarEvolution &SE,
               InductionVariableManager &IV,
               DominatorSummary &DS);
 
@@ -131,9 +130,7 @@ private:
       StayConnectedNestedLoopForestNode *loop,
       std::set<InductionVariable *> &loopGoverningIVs,
       std::set<InductionVariable *> &IVs);
-  void checkIfClonable(SCC *scc,
-                       ScalarEvolution &SE,
-                       StayConnectedNestedLoopForestNode *loop);
+  void checkIfClonable(SCC *scc, StayConnectedNestedLoopForestNode *loop);
   void checkIfClonableByUsingLocalMemory(
       SCC *scc,
       StayConnectedNestedLoopForestNode *loop);
