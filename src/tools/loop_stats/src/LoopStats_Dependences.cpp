@@ -87,7 +87,6 @@ void LoopStats::collectStatsOnNoelleSCCs(Hot *profiles,
                                  loopDG,
                                  &loopInternalSCCDAG,
                                  loopHierarchy,
-                                 SE,
                                  inductionVariables,
                                  DS);
 
