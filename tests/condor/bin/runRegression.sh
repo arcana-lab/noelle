@@ -53,7 +53,7 @@ make input.txt
 for i in `seq 0 5` ; do
 
   # Run the parallelized binary
-  timeout 12h ./parallelized `cat input.txt` &> output_parallelized.txt ;
+  timeout 1h ./parallelized `cat input.txt` &> output_parallelized.txt ;
   if test $? -ne 0 ; then
     echo "ERROR: the following test did not pass because its parallel execution timed out" ;
     echo "  Test = `pwd`" ;
