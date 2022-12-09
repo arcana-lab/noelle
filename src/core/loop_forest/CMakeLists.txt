@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/noelle/core/StayConnectedNestedLoopForest.hpp
+  include/noelle/core/LoopForest.hpp
   DESTINATION 
   include/noelle/core
   )

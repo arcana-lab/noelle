@@ -107,7 +107,7 @@ bool Parallelizer::runOnModule(Module &M) {
   std::map<uint32_t, LoopDependenceInfo *> loopParallelizationOrder;
   for (auto tree : forest->getTrees()) {
     auto selector = [&noelle, &mm, &loopParallelizationOrder](
-                        StayConnectedNestedLoopForestNode *n,
+                        LoopForestNode *n,
                         uint32_t treeLevel) -> bool {
       auto ls = n->getLoop();
       if (!mm->doesHaveMetadata(ls, "noelle.parallelizer.looporder")) {

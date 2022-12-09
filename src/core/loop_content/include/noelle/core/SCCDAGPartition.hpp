@@ -25,7 +25,7 @@
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/DGGraphTraits.hpp"
-#include "noelle/core/StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/LoopForest.hpp"
 
 namespace llvm {
 namespace noelle {
@@ -84,7 +84,7 @@ public:
       SCCDAG *sccdag,
       std::unordered_set<SCCSet *> initialSets,
       std::unordered_map<SCC *, std::unordered_set<SCC *>> sccToParentsMap,
-      StayConnectedNestedLoopForestNode *loopNode);
+      LoopForestNode *loopNode);
 
   SCCDAGPartitioner() = delete;
 
@@ -142,8 +142,8 @@ private:
   std::unordered_map<SCC *, int> SCCDebugIndex;
 
   SCCDAGPartition *partition;
-  StayConnectedNestedLoopForestNode *rootLoop;
-  std::unordered_set<StayConnectedNestedLoopForestNode *> allLoops;
+  LoopForestNode *rootLoop;
+  std::unordered_set<LoopForestNode *> allLoops;
 };
 
 } // namespace noelle

@@ -79,7 +79,7 @@ void refinePDGWithLoopAwareMemDepAnalysis(
     PDG *loopDG,
     Loop *l,
     LoopStructure *loopStructure,
-    StayConnectedNestedLoopForestNode *loops,
+    LoopForestNode *loops,
     LoopIterationDomainSpaceAnalysis *LIDS) {
   refinePDGWithSCAF(loopDG, l);
 
@@ -272,7 +272,7 @@ DataFlowResult *computeReachabilityFromInstructions(
 
 void refinePDGWithLIDS(PDG *loopDG,
                        LoopStructure *loopStructure,
-                       StayConnectedNestedLoopForestNode *loops,
+                       LoopForestNode *loops,
                        LoopIterationDomainSpaceAnalysis *LIDS) {
 
   /*

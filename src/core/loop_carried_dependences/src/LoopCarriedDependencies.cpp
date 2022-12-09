@@ -24,7 +24,7 @@
 namespace llvm::noelle {
 
 void LoopCarriedDependencies::setLoopCarriedDependencies(
-    StayConnectedNestedLoopForestNode *loopNode,
+    LoopForestNode *loopNode,
     const DominatorSummary &DS,
     PDG &dgForLoops) {
   for (auto edge : dgForLoops.getEdges()) {
@@ -50,7 +50,7 @@ void LoopCarriedDependencies::setLoopCarriedDependencies(
 }
 
 bool LoopCarriedDependencies::isALoopCarriedDependence(
-    StayConnectedNestedLoopForestNode *loopNode,
+    LoopForestNode *loopNode,
     const DominatorSummary &DS,
     DGEdge<Value> *edge) {
 
@@ -220,10 +220,9 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
 }
 
 std::set<DGEdge<Value> *> LoopCarriedDependencies::
-    getLoopCarriedDependenciesForLoop(
-        const LoopStructure &LS,
-        StayConnectedNestedLoopForestNode *loopNode,
-        PDG &LoopDG) {
+    getLoopCarriedDependenciesForLoop(const LoopStructure &LS,
+                                      LoopForestNode *loopNode,
+                                      PDG &LoopDG) {
 
   std::set<DGEdge<Value> *> LCEdges;
   for (auto edge : LoopDG.getEdges()) {
@@ -245,10 +244,9 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::
 }
 
 std::set<DGEdge<Value> *> LoopCarriedDependencies::
-    getLoopCarriedDependenciesForLoop(
-        const LoopStructure &LS,
-        StayConnectedNestedLoopForestNode *loopNode,
-        SCCDAG &sccdag) {
+    getLoopCarriedDependenciesForLoop(const LoopStructure &LS,
+                                      LoopForestNode *loopNode,
+                                      SCCDAG &sccdag) {
 
   std::set<DGEdge<Value> *> LCEdges;
 

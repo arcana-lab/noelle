@@ -41,13 +41,13 @@ public:
    * Constructors.
    */
   LoopDependenceInfo(PDG *fG,
-                     StayConnectedNestedLoopForestNode *loopNode,
+                     LoopForestNode *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
                      ScalarEvolution &SE);
 
   LoopDependenceInfo(PDG *fG,
-                     StayConnectedNestedLoopForestNode *loopNode,
+                     LoopForestNode *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
                      ScalarEvolution &SE,
@@ -56,7 +56,7 @@ public:
 
   LoopDependenceInfo(
       PDG *fG,
-      StayConnectedNestedLoopForestNode *loopNode,
+      LoopForestNode *loopNode,
       Loop *l,
       DominatorSummary &DS,
       ScalarEvolution &SE,
@@ -65,7 +65,7 @@ public:
       std::unordered_set<LoopDependenceInfoOptimization> optimizations);
 
   LoopDependenceInfo(PDG *fG,
-                     StayConnectedNestedLoopForestNode *loopNode,
+                     LoopForestNode *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
                      ScalarEvolution &SE,
@@ -75,7 +75,7 @@ public:
 
   LoopDependenceInfo(
       PDG *fG,
-      StayConnectedNestedLoopForestNode *loop,
+      LoopForestNode *loop,
       Loop *l,
       DominatorSummary &DS,
       ScalarEvolution &SE,
@@ -86,7 +86,7 @@ public:
 
   LoopDependenceInfo(
       PDG *fG,
-      StayConnectedNestedLoopForestNode *loop,
+      LoopForestNode *loop,
       Loop *l,
       DominatorSummary &DS,
       ScalarEvolution &SE,
@@ -102,7 +102,7 @@ public:
    * Return the object containing all loop structures at and nested within this
    * loop
    */
-  StayConnectedNestedLoopForestNode *getLoopHierarchyStructures(void) const;
+  LoopForestNode *getLoopHierarchyStructures(void) const;
 
   /*
    * Return the object that describes the loop in terms of induction variables,
@@ -168,7 +168,7 @@ private:
   /*
    * Fields
    */
-  StayConnectedNestedLoopForestNode *loop;
+  LoopForestNode *loop;
 
   LoopEnvironment *environment;
 
@@ -200,22 +200,21 @@ private:
    */
   void fetchLoopAndBBInfo(Loop *l, ScalarEvolution &SE);
 
-  std::pair<PDG *, SCCDAG *> createDGsForLoop(
-      Loop *l,
-      StayConnectedNestedLoopForestNode *loopNode,
-      PDG *functionDG,
-      DominatorSummary &DS,
-      ScalarEvolution &SE);
+  std::pair<PDG *, SCCDAG *> createDGsForLoop(Loop *l,
+                                              LoopForestNode *loopNode,
+                                              PDG *functionDG,
+                                              DominatorSummary &DS,
+                                              ScalarEvolution &SE);
 
   uint64_t computeTripCounts(Loop *l, ScalarEvolution &SE);
 
   void removeUnnecessaryDependenciesThatCloningMemoryNegates(
-      StayConnectedNestedLoopForestNode *loopNode,
+      LoopForestNode *loopNode,
       PDG *loopInternalDG,
       DominatorSummary &DS);
 
   void removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions(
-      StayConnectedNestedLoopForestNode *loopNode,
+      LoopForestNode *loopNode,
       PDG *loopDG,
       DominatorSummary &DS);
 

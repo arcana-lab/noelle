@@ -21,8 +21,7 @@
  */
 #include "noelle/core/SCCDAGPartition.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 SCCDAGPartition::SCCDAGPartition(
     SCCDAG *sccdag,
@@ -304,7 +303,7 @@ SCCDAGPartitioner::SCCDAGPartitioner(
     SCCDAG *sccdag,
     std::unordered_set<SCCSet *> initialSets,
     std::unordered_map<SCC *, std::unordered_set<SCC *>> sccToParentsMap,
-    StayConnectedNestedLoopForestNode *loopNode)
+    LoopForestNode *loopNode)
   : rootLoop{ loopNode } {
 
   this->partition = new SCCDAGPartition(sccdag, initialSets, sccToParentsMap);
@@ -718,6 +717,8 @@ raw_ostream &SCCDAGPartitioner::printSet(raw_ostream &stream, SCCSet *set) {
   }
   return stream << "\n";
 }
+
+} // namespace llvm::noelle
 
 // raw_ostream &SCCDAGPartition::print (raw_ostream &stream, std::string prefix)
 // {
