@@ -1,16 +1,16 @@
 # Sources
-set(Srcs
-  LoopTransformer.cpp
-  Pass.cpp
+set(Srcs 
+  SCCDAGAttrs.cpp
+  SCCDAGPartition.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "LoopTransformer")
+set(PassName "LoopSCCDAGAttributes")
 
-# configure LLVM
+# configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
 
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
@@ -22,26 +22,28 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS}
-  ../../basic_utilities/include
+include_directories(${LLVM_INCLUDE_DIRS} 
+  ../../basic_utilities/include 
   ../../dominators/include 
   ../../transformations/include
+  ../../callgraph/include
+  ../../dataflow/include
+  ../../architecture/include 
+  ../../alloc_aa/include 
+  ../../pdg/include 
+  ../../hotprofiler/include 
   ../../loop_structure/include 
   ../../loop_environment/include 
   ../../loop_forest/include
-  ../../pdg/include
+  ../../talkdown/include
   ../../loop_invariants/include
   ../../loop_induction_variables/include
-  ../../loop_content/include
-  ../../scheduler/include
-  ../../loop_whilifier/include
-  ../../loop_unroll/include
-  ../../loop_distribution/include
-  ../../loop_carried_dependences/include
   ../../loop_scc_attributes/include
-  ../../loop_sccdag_attributes/include
-	../include
-)
+  ../../loop_carried_dependences/include
+  ../include
+  ./
+  ${CMAKE_INSTALL_PREFIX}/include
+  )
 
 # Declare the LLVM pass to compile
 add_llvm_library(${PassName} MODULE ${Srcs})
