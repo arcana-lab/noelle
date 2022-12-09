@@ -596,6 +596,15 @@ Function *HELIX::getTaskFunction(void) const {
   return tasks[0]->getTaskBody();
 }
 
+uint32_t HELIX::getMinimumNumberOfIdleCores(void) const {
+  if (this->originalLDI == nullptr) {
+    abort();
+  }
+  auto ltm = this->originalLDI->getLoopTransformationsManager();
+
+  return ltm->getMaximumNumberOfCores();
+}
+
 HELIX::~HELIX() {
   return;
 }

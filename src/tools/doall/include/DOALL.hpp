@@ -46,6 +46,8 @@ public:
   bool canBeAppliedToLoop(LoopDependenceInfo *LDI,
                           Heuristics *h) const override;
 
+  uint32_t getMinimumNumberOfIdleCores(void) const override;
+
   static std::set<SCC *> getSCCsThatBlockDOALLToBeApplicable(
       LoopDependenceInfo *LDI,
       Noelle &par);

@@ -47,6 +47,8 @@ public:
   bool canBeAppliedToLoop(LoopDependenceInfo *LDI,
                           Heuristics *h) const override;
 
+  uint32_t getMinimumNumberOfIdleCores(void) const override;
+
 protected:
   BasicBlock *getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
       LoopDependenceInfo *LDI,
@@ -54,6 +56,8 @@ protected:
       BasicBlock &bb) override;
 
 private:
+  uint32_t minCores;
+
   /*
    * CLI Options
    */

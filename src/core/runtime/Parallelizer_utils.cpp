@@ -965,7 +965,9 @@ DispatcherInfo NOELLE_DSWPDispatcher(void *env,
 }
 
 uint32_t NOELLE_getAvailableCores(void) {
-  return runtime.getAvailableCores();
+  auto idleCores = runtime.getAvailableCores();
+
+  return idleCores;
 }
 }
 
@@ -1098,7 +1100,7 @@ uint32_t NoelleRuntime::getMaximumNumberOfCores(void) {
      */
     auto envVar = getenv("NOELLE_CORES");
     if (envVar == nullptr) {
-      cores = (std::thread::hardware_concurrency() / 2) - 1;
+      cores = (std::thread::hardware_concurrency() / 2);
     } else {
       cores = atoi(envVar);
     }

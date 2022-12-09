@@ -215,12 +215,14 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
           : -1);
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
   auto linker = par.getLinker();
-  linker->linkTransformedLoopToOriginalFunction(loopPreHeader,
-                                                entryPoint,
-                                                exitPoint,
-                                                envArray,
-                                                exitIndex,
-                                                loopExitBlocks);
+  linker->linkTransformedLoopToOriginalFunction(
+      loopPreHeader,
+      entryPoint,
+      exitPoint,
+      envArray,
+      exitIndex,
+      loopExitBlocks,
+      usedTechnique->getMinimumNumberOfIdleCores());
   assert(par.verifyCode());
 
   // if (verbose >= Verbosity::Maximal) {

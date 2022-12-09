@@ -26,6 +26,7 @@ namespace llvm::noelle {
 DSWP::DSWP(Noelle &n, bool forceParallelization, bool enableSCCMerging)
   : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{ n,
                                                                     forceParallelization },
+    minCores{ 0 },
     enableMergingSCC{ enableSCCMerging },
     queues{},
     queueArrayType{ nullptr },
@@ -386,12 +387,21 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   delete this->originalFunctionDS;
 
   /*
+   * Set the minimum number of cores.
+   */
+  this->minCores = this->tasks.size();
+
+  /*
    * Exit
    */
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DSWP: Exit\n";
   }
   return true;
+}
+
+uint32_t DSWP::getMinimumNumberOfIdleCores(void) const {
+  return this->minCores;
 }
 
 } // namespace llvm::noelle

@@ -523,4 +523,8 @@ void DOALL::addJumpToLoop(LoopDependenceInfo *LDI, Task *t) {
   return;
 }
 
+uint32_t DOALL::getMinimumNumberOfIdleCores(void) const {
+  return 2;
+}
+
 } // namespace llvm::noelle

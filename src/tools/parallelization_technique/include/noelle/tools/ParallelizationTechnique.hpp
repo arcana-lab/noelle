@@ -61,6 +61,8 @@ public:
 
   BasicBlock *getParLoopExitPoint(void) const;
 
+  virtual uint32_t getMinimumNumberOfIdleCores(void) const = 0;
+
   /*
    * Destructor.
    */
