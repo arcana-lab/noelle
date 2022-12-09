@@ -69,8 +69,22 @@ bool FunctionsManager::isTheLibraryFunctionPure(Function *libraryFunction) {
   return false;
 }
 
-bool FunctionsManager::canModifyMemory(Function &f) const {
-  return true;
+bool FunctionsManager::canModifyMemory(Function &f) {
+  if (nonMemModifiersIsInitialized) {
+    return nonMemModifiers.find(&f) == nonMemModifiers.end();
+  }
+
+  /*
+   * Explore the call graph via breadth-first search
+   */
+  std::set<CallGraphFunctionNode *> nonExplored;
+  std::queue<CallGraphFunctionNode *> toTraverse;
+  auto pcg = this->getProgramCallGraph();
+  for (auto fn : pcg->getFunctionNodes()) {
+    nonExplored.insert(fn);
+  }
+
+  return nonMemModifiers.find(&f) == nonMemModifiers.end();
 }
 
 std::set<Function *> FunctionsManager::getProgramConstructors(void) const {

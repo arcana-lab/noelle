@@ -37,7 +37,7 @@ public:
 
   bool isTheLibraryFunctionPure(Function *libraryFunction);
 
-  bool canModifyMemory(Function &f) const;
+  bool canModifyMemory(Function &f);
 
   Function *getFunction(const std::string &name);
 
@@ -54,6 +54,8 @@ public:
   void removeFunction(Function &f);
 
 private:
+  std::set<Function *> nonMemModifiers;
+  bool nonMemModifiersIsInitialized;
   Module &program;
   PDGAnalysis &pdgAnalysis;
   CallGraph *pcg;
