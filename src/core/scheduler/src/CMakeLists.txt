@@ -36,8 +36,8 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../talkdown/include
   ../../dataflow/include
   ../../callgraph/include
-  ../../invariants/include
-  ../../induction_variables/include
+  ../../loop_invariants/include
+  ../../loop_induction_variables/include
   ../include/ 
   ./ 
   ${CMAKE_INSTALL_PREFIX}/include

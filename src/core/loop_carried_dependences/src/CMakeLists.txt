@@ -38,8 +38,8 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_environment/include 
   ../../loop_forest/include
   ../../talkdown/include
-  ../../invariants/include
-  ../../induction_variables/include
+  ../../loop_invariants/include
+  ../../loop_induction_variables/include
   ../include
   ./
   ${CMAKE_INSTALL_PREFIX}/include
