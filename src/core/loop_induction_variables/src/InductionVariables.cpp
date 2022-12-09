@@ -25,13 +25,12 @@
 
 namespace llvm::noelle {
 
-InductionVariableManager::InductionVariableManager(
-    StayConnectedNestedLoopForestNode *loopNode,
-    InvariantManager &IVM,
-    ScalarEvolution &SE,
-    SCCDAG &sccdag,
-    LoopEnvironment &loopEnv,
-    Loop &LLVMLoop)
+InductionVariableManager::InductionVariableManager(LoopForestNode *loopNode,
+                                                   InvariantManager &IVM,
+                                                   ScalarEvolution &SE,
+                                                   SCCDAG &sccdag,
+                                                   LoopEnvironment &loopEnv,
+                                                   Loop &LLVMLoop)
   : loop{ loopNode },
     loopToIVsMap{},
     loopToGoverningIVAttrMap{} {

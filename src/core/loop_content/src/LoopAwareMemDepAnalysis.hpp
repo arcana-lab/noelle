@@ -25,7 +25,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
-#include "noelle/core/StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/LoopForest.hpp"
 
 namespace llvm::noelle {
 
@@ -34,7 +34,7 @@ void refinePDGWithLoopAwareMemDepAnalysis(
     PDG *loopDG,
     Loop *l,
     LoopStructure *loopStructure,
-    StayConnectedNestedLoopForestNode *loops,
+    LoopForestNode *loops,
     LoopIterationDomainSpaceAnalysis *LIDS);
 
 // Refine the loop PDG with SCAF
@@ -42,7 +42,7 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l);
 
 void refinePDGWithLIDS(PDG *loopDG,
                        LoopStructure *loopStructure,
-                       StayConnectedNestedLoopForestNode *loops,
+                       LoopForestNode *loops,
                        LoopIterationDomainSpaceAnalysis *LIDS);
 
 } // namespace llvm::noelle

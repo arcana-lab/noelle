@@ -22,7 +22,7 @@
 #pragma once
 
 #include "noelle/core/PDG.hpp"
-#include "noelle/core/StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/LoopForest.hpp"
 
 namespace llvm::noelle {
 

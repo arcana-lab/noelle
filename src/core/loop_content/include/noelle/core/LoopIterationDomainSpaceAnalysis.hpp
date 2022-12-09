@@ -33,7 +33,7 @@ namespace llvm::noelle {
 
 class LoopIterationDomainSpaceAnalysis {
 public:
-  LoopIterationDomainSpaceAnalysis(StayConnectedNestedLoopForestNode *loops,
+  LoopIterationDomainSpaceAnalysis(LoopForestNode *loops,
                                    InductionVariableManager &ivManager,
                                    ScalarEvolution &SE);
 
@@ -55,7 +55,7 @@ private:
   /*
    * Long-lived references
    */
-  StayConnectedNestedLoopForestNode *loops;
+  LoopForestNode *loops;
   InductionVariableManager &ivManager;
 
   /*

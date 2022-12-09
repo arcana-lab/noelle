@@ -19,21 +19,18 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/LoopForest.hpp"
 
 namespace llvm::noelle {
 
-StayConnectedNestedLoopForestNode::StayConnectedNestedLoopForestNode(
-    StayConnectedNestedLoopForest *f,
-    LoopStructure *l)
-  : StayConnectedNestedLoopForestNode(f, l, nullptr) {
+LoopForestNode::LoopForestNode(LoopForest *f, LoopStructure *l)
+  : LoopForestNode(f, l, nullptr) {
   return;
 }
 
-StayConnectedNestedLoopForestNode::StayConnectedNestedLoopForestNode(
-    StayConnectedNestedLoopForest *f,
-    LoopStructure *l,
-    StayConnectedNestedLoopForestNode *parent)
+LoopForestNode::LoopForestNode(LoopForest *f,
+                               LoopStructure *l,
+                               LoopForestNode *parent)
   : forest{ f },
     loop{ l },
     parent{ parent } {
@@ -41,12 +38,11 @@ StayConnectedNestedLoopForestNode::StayConnectedNestedLoopForestNode(
   return;
 }
 
-LoopStructure *StayConnectedNestedLoopForestNode::getLoop(void) const {
+LoopStructure *LoopForestNode::getLoop(void) const {
   return this->loop;
 }
 
-bool StayConnectedNestedLoopForestNode::isIncludedInItsSubLoops(
-    Instruction *inst) const {
+bool LoopForestNode::isIncludedInItsSubLoops(Instruction *inst) const {
 
   /*
    * Check if the instruction is part of the loop.
@@ -77,7 +73,7 @@ bool StayConnectedNestedLoopForestNode::isIncludedInItsSubLoops(
   return false;
 }
 
-uint32_t StayConnectedNestedLoopForestNode::getNumberOfSubLoops(void) const {
+uint32_t LoopForestNode::getNumberOfSubLoops(void) const {
 
   /*
    * Check its children.
@@ -99,15 +95,13 @@ uint32_t StayConnectedNestedLoopForestNode::getNumberOfSubLoops(void) const {
   return subloops;
 }
 
-LoopStructure *StayConnectedNestedLoopForestNode::getInnermostLoopThatContains(
-    Instruction *i) {
+LoopStructure *LoopForestNode::getInnermostLoopThatContains(Instruction *i) {
   auto bb = i->getParent();
   auto ls = this->getInnermostLoopThatContains(bb);
   return ls;
 }
 
-LoopStructure *StayConnectedNestedLoopForestNode::getInnermostLoopThatContains(
-    BasicBlock *bb) {
+LoopStructure *LoopForestNode::getInnermostLoopThatContains(BasicBlock *bb) {
 
   /*
    * Check if the basic block is included in the current loop.
@@ -123,9 +117,8 @@ LoopStructure *StayConnectedNestedLoopForestNode::getInnermostLoopThatContains(
    */
   LoopStructure *innerLoop = nullptr;
   uint32_t innerLoopLevel = 0;
-  auto f = [bb, &innerLoop, &innerLoopLevel](
-               StayConnectedNestedLoopForestNode *n,
-               uint32_t treeLevel) -> bool {
+  auto f = [bb, &innerLoop, &innerLoopLevel](LoopForestNode *n,
+                                             uint32_t treeLevel) -> bool {
     auto nl = n->getLoop();
     if (!nl->isIncluded(bb)) {
       return false;
@@ -147,15 +140,13 @@ LoopStructure *StayConnectedNestedLoopForestNode::getInnermostLoopThatContains(
   return innerLoop;
 }
 
-LoopStructure *StayConnectedNestedLoopForestNode::getOutermostLoopThatContains(
-    Instruction *i) {
+LoopStructure *LoopForestNode::getOutermostLoopThatContains(Instruction *i) {
   auto bb = i->getParent();
   auto ls = this->getOutermostLoopThatContains(bb);
   return ls;
 }
 
-LoopStructure *StayConnectedNestedLoopForestNode::getOutermostLoopThatContains(
-    BasicBlock *bb) {
+LoopStructure *LoopForestNode::getOutermostLoopThatContains(BasicBlock *bb) {
 
   /*
    * Check if the basic block is included in the current loop.
@@ -171,9 +162,8 @@ LoopStructure *StayConnectedNestedLoopForestNode::getOutermostLoopThatContains(
    */
   LoopStructure *outerLoop = nullptr;
   uint32_t outerLoopLevel = 0;
-  auto f = [bb, &outerLoop, &outerLoopLevel](
-               StayConnectedNestedLoopForestNode *n,
-               uint32_t treeLevel) -> bool {
+  auto f = [bb, &outerLoop, &outerLoopLevel](LoopForestNode *n,
+                                             uint32_t treeLevel) -> bool {
     auto nl = n->getLoop();
     if (!nl->isIncluded(bb)) {
       return false;
@@ -195,17 +185,14 @@ LoopStructure *StayConnectedNestedLoopForestNode::getOutermostLoopThatContains(
   return outerLoop;
 }
 
-StayConnectedNestedLoopForestNode *StayConnectedNestedLoopForestNode::getParent(
-    void) const {
+LoopForestNode *LoopForestNode::getParent(void) const {
   return this->parent;
 }
 
-std::unordered_set<StayConnectedNestedLoopForestNode *>
-StayConnectedNestedLoopForestNode::getDescendants(void) {
-  std::unordered_set<StayConnectedNestedLoopForestNode *> s;
+std::unordered_set<LoopForestNode *> LoopForestNode::getDescendants(void) {
+  std::unordered_set<LoopForestNode *> s;
 
-  auto f = [this, &s](StayConnectedNestedLoopForestNode *n,
-                      uint32_t treeLevel) -> bool {
+  auto f = [this, &s](LoopForestNode *n, uint32_t treeLevel) -> bool {
     if (n == this) {
       return false;
     }
@@ -217,16 +204,14 @@ StayConnectedNestedLoopForestNode::getDescendants(void) {
   return s;
 }
 
-std::unordered_set<StayConnectedNestedLoopForestNode *>
-StayConnectedNestedLoopForestNode::getChildren(void) const {
+std::unordered_set<LoopForestNode *> LoopForestNode::getChildren(void) const {
   return this->children;
 }
 
-std::set<StayConnectedNestedLoopForestNode *>
-StayConnectedNestedLoopForestNode::getNodes(void) {
-  std::set<StayConnectedNestedLoopForestNode *> s;
+std::set<LoopForestNode *> LoopForestNode::getNodes(void) {
+  std::set<LoopForestNode *> s;
 
-  auto f = [&s](StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
+  auto f = [&s](LoopForestNode *n, uint32_t l) -> bool {
     s.insert(n);
     return false;
   };
@@ -235,10 +220,10 @@ StayConnectedNestedLoopForestNode::getNodes(void) {
   return s;
 }
 
-std::set<LoopStructure *> StayConnectedNestedLoopForestNode::getLoops(void) {
+std::set<LoopStructure *> LoopForestNode::getLoops(void) {
   std::set<LoopStructure *> s;
 
-  auto f = [&s](StayConnectedNestedLoopForestNode *n, uint32_t l) -> bool {
+  auto f = [&s](LoopForestNode *n, uint32_t l) -> bool {
     s.insert(n->getLoop());
     return false;
   };
@@ -247,21 +232,18 @@ std::set<LoopStructure *> StayConnectedNestedLoopForestNode::getLoops(void) {
   return s;
 }
 
-bool StayConnectedNestedLoopForestNode::visitPreOrder(
-    std::function<bool(StayConnectedNestedLoopForestNode *n,
-                       uint32_t treeLevel)> funcToInvoke) {
+bool LoopForestNode::visitPreOrder(
+    std::function<bool(LoopForestNode *n, uint32_t treeLevel)> funcToInvoke) {
   return this->visitPreOrder(funcToInvoke, 1);
 }
 
-bool StayConnectedNestedLoopForestNode::visitPostOrder(
-    std::function<bool(StayConnectedNestedLoopForestNode *n,
-                       uint32_t treeLevel)> funcToInvoke) {
+bool LoopForestNode::visitPostOrder(
+    std::function<bool(LoopForestNode *n, uint32_t treeLevel)> funcToInvoke) {
   return this->visitPostOrder(funcToInvoke, 1);
 }
 
-bool StayConnectedNestedLoopForestNode::visitPreOrder(
-    std::function<bool(StayConnectedNestedLoopForestNode *n,
-                       uint32_t treeLevel)> funcToInvoke,
+bool LoopForestNode::visitPreOrder(
+    std::function<bool(LoopForestNode *n, uint32_t treeLevel)> funcToInvoke,
     uint32_t treeLevel) {
 
   /*
@@ -283,9 +265,8 @@ bool StayConnectedNestedLoopForestNode::visitPreOrder(
   return false;
 }
 
-bool StayConnectedNestedLoopForestNode::visitPostOrder(
-    std::function<bool(StayConnectedNestedLoopForestNode *n,
-                       uint32_t treeLevel)> funcToInvoke,
+bool LoopForestNode::visitPostOrder(
+    std::function<bool(LoopForestNode *n, uint32_t treeLevel)> funcToInvoke,
     uint32_t treeLevel) {
 
   /*
@@ -307,7 +288,7 @@ bool StayConnectedNestedLoopForestNode::visitPostOrder(
   return false;
 }
 
-StayConnectedNestedLoopForestNode::~StayConnectedNestedLoopForestNode() {
+LoopForestNode::~LoopForestNode() {
 
   /*
    * Check if this object is an internal node of a tree.

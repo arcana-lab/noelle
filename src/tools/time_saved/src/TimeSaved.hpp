@@ -79,18 +79,18 @@ private:
   std::vector<LoopDependenceInfo *> selectTheOrderOfLoopsToParallelize(
       Noelle &noelle,
       Hot *profiles,
-      noelle::StayConnectedNestedLoopForestNode *tree,
+      noelle::LoopForestNode *tree,
       uint64_t &maxTimeSaved,
       uint64_t &maxTimeSavedWithDOALLOnly);
 
   std::pair<uint64_t, uint64_t> evaluateSavings(
       Noelle &noelle,
-      noelle::StayConnectedNestedLoopForestNode *tree,
+      noelle::LoopForestNode *tree,
       const std::map<LoopStructure *, uint64_t> &timeSaved,
       const std::map<LoopStructure *, bool> &doallLoops);
 
   uint64_t evaluateSavings(Noelle &noelle,
-                           noelle::StayConnectedNestedLoopForestNode *tree,
+                           noelle::LoopForestNode *tree,
                            const std::map<LoopStructure *, uint64_t> &timeSaved,
                            std::function<bool(LoopStructure *)> considerLoop);
 };

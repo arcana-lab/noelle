@@ -79,7 +79,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences(
       /*
        * Check if the current loop has been enabled.
        */
-      StayConnectedNestedLoopForestNode *summaryNode = nullptr;
+      LoopForestNode *summaryNode = nullptr;
       LoopStructure *summary = nullptr;
       for (auto enabledLoop : toCheck) {
         if (enabledLoop->getHeader() == LDI->getLoopStructure()->getHeader()) {

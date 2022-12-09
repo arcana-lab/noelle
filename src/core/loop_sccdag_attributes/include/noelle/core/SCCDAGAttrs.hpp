@@ -38,7 +38,7 @@ public:
   SCCDAGAttrs(bool enableFloatAsReal,
               PDG *loopDG,
               SCCDAG *loopSCCDAG,
-              StayConnectedNestedLoopForestNode *loopNode,
+              LoopForestNode *loopNode,
               InductionVariableManager &IV,
               DominatorSummary &DS);
 
@@ -68,8 +68,7 @@ public:
   /*
    * Methods on single SCC.
    */
-  bool isSCCContainedInSubloop(StayConnectedNestedLoopForestNode *loop,
-                               SCC *scc) const;
+  bool isSCCContainedInSubloop(LoopForestNode *loop, SCC *scc) const;
   SCCAttrs *getSCCAttrs(SCC *scc) const;
 
   /*
@@ -115,31 +114,26 @@ private:
    * Helper methods on SCCDAG
    */
   void collectSCCGraphAssumingDistributedClones();
-  void collectLoopCarriedDependencies(
-      StayConnectedNestedLoopForestNode *loopNode);
+  void collectLoopCarriedDependencies(LoopForestNode *loopNode);
 
   /*
    * Helper methods on single SCC
    */
-  LoopCarriedVariable *checkIfReducible(
-      SCC *scc,
-      StayConnectedNestedLoopForestNode *loop);
+  LoopCarriedVariable *checkIfReducible(SCC *scc, LoopForestNode *loop);
   bool checkIfIndependent(SCC *scc);
   bool checkIfSCCOnlyContainsInductionVariables(
       SCC *scc,
-      StayConnectedNestedLoopForestNode *loop,
+      LoopForestNode *loop,
       std::set<InductionVariable *> &loopGoverningIVs,
       std::set<InductionVariable *> &IVs);
-  void checkIfClonable(SCC *scc, StayConnectedNestedLoopForestNode *loop);
-  void checkIfClonableByUsingLocalMemory(
-      SCC *scc,
-      StayConnectedNestedLoopForestNode *loop);
+  void checkIfClonable(SCC *scc, LoopForestNode *loop);
+  void checkIfClonableByUsingLocalMemory(SCC *scc, LoopForestNode *loop);
   bool isClonableByInductionVars(SCC *scc) const;
   bool isClonableBySyntacticSugarInstrs(SCC *scc) const;
   bool isClonableByCmpBrInstrs(SCC *scc) const;
   bool isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(
       SCC *scc,
-      StayConnectedNestedLoopForestNode *loop) const;
+      LoopForestNode *loop) const;
 };
 
 } // namespace llvm::noelle

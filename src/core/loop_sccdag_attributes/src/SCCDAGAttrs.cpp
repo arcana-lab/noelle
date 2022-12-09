@@ -29,7 +29,7 @@ namespace llvm::noelle {
 SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
                          PDG *loopDG,
                          SCCDAG *loopSCCDAG,
-                         StayConnectedNestedLoopForestNode *loopNode,
+                         LoopForestNode *loopNode,
                          InductionVariableManager &IV,
                          DominatorSummary &DS)
   : enableFloatAsReal{ enableFloatAsReal },
@@ -275,9 +275,8 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable(LoopEnvironment *env) const {
   return true;
 }
 
-bool SCCDAGAttrs::isSCCContainedInSubloop(
-    StayConnectedNestedLoopForestNode *loop,
-    SCC *scc) const {
+bool SCCDAGAttrs::isSCCContainedInSubloop(LoopForestNode *loop,
+                                          SCC *scc) const {
   auto instInSubloops = true;
   auto topLoop = loop->getLoop();
   for (auto iNodePair : scc->internalNodePairs()) {
@@ -341,8 +340,7 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones() {
   return;
 }
 
-void SCCDAGAttrs::collectLoopCarriedDependencies(
-    StayConnectedNestedLoopForestNode *loopNode) {
+void SCCDAGAttrs::collectLoopCarriedDependencies(LoopForestNode *loopNode) {
 
   /*
    * Iterate over all the loops contained within the one handled by @this
@@ -384,7 +382,7 @@ void SCCDAGAttrs::collectLoopCarriedDependencies(
 
 bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables(
     SCC *scc,
-    StayConnectedNestedLoopForestNode *loopNode,
+    LoopForestNode *loopNode,
     std::set<InductionVariable *> &IVs,
     std::set<InductionVariable *> &loopGoverningIVs) {
 
@@ -455,9 +453,8 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables(
   return true;
 }
 
-LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(
-    SCC *scc,
-    StayConnectedNestedLoopForestNode *loopNode) {
+LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(SCC *scc,
+                                                   LoopForestNode *loopNode) {
 
   /*
    * Check if the SCC has loop-carried dependences.
@@ -585,8 +582,7 @@ bool SCCDAGAttrs::checkIfIndependent(SCC *scc) {
          == this->sccToLoopCarriedDependencies.end();
 }
 
-void SCCDAGAttrs::checkIfClonable(SCC *scc,
-                                  StayConnectedNestedLoopForestNode *loopNode) {
+void SCCDAGAttrs::checkIfClonable(SCC *scc, LoopForestNode *loopNode) {
 
   /*
    * Check the simple cases.
@@ -608,9 +604,8 @@ void SCCDAGAttrs::checkIfClonable(SCC *scc,
   return;
 }
 
-void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
-    SCC *scc,
-    StayConnectedNestedLoopForestNode *loopNode) {
+void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc,
+                                                    LoopForestNode *loopNode) {
 
   /*
    * Ignore SCC without loop carried dependencies
@@ -680,7 +675,7 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
 
 bool SCCDAGAttrs::isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(
     SCC *scc,
-    StayConnectedNestedLoopForestNode *loopNode) const {
+    LoopForestNode *loopNode) const {
 
   /*
    * FIXME: This check should not exist; instead, SCC where cloning

@@ -25,7 +25,7 @@
 #include "llvm/Analysis/IVDescriptors.h"
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/ScalarEvolutionReferencer.hpp"
-#include "noelle/core/StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/LoopForest.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
 #include "noelle/core/Dominators.hpp"
 #include "noelle/core/SCCDAG.hpp"
@@ -192,7 +192,7 @@ private:
 
 class InductionVariableManager {
 public:
-  InductionVariableManager(StayConnectedNestedLoopForestNode *loop,
+  InductionVariableManager(LoopForestNode *loop,
                            InvariantManager &IVM,
                            ScalarEvolution &SE,
                            SCCDAG &sccdag,
@@ -237,7 +237,7 @@ public:
   ~InductionVariableManager();
 
 private:
-  StayConnectedNestedLoopForestNode *loop;
+  LoopForestNode *loop;
   std::unordered_map<LoopStructure *, std::unordered_set<InductionVariable *>>
       loopToIVsMap;
   std::unordered_map<LoopStructure *, LoopGoverningIVAttribution *>

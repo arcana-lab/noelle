@@ -24,13 +24,12 @@
 
 namespace llvm::noelle {
 
-LoopCarriedVariable::LoopCarriedVariable(
-    const LoopStructure &loop,
-    StayConnectedNestedLoopForestNode *loopNode,
-    PDG &loopDG,
-    SCCDAG &sccdag,
-    SCC &sccContainingVariable,
-    PHINode *declarationPHI)
+LoopCarriedVariable::LoopCarriedVariable(const LoopStructure &loop,
+                                         LoopForestNode *loopNode,
+                                         PDG &loopDG,
+                                         SCCDAG &sccdag,
+                                         SCC &sccContainingVariable,
+                                         PHINode *declarationPHI)
   : outermostLoopOfVariable{ loop },
     declarationValue{ declarationPHI },
     isValid{ false } {

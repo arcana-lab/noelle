@@ -36,8 +36,7 @@ bool PDGStats::runOnModule(Module &M) {
   /*
    * Compute the loops for all functions.
    */
-  std::unordered_map<Function *, StayConnectedNestedLoopForest *>
-      programLoopForests;
+  std::unordered_map<Function *, LoopForest *> programLoopForests;
   std::unordered_map<Function *, std::vector<LoopDependenceInfo *> *>
       programLoops;
   std::unordered_map<LoopStructure *, LoopDependenceInfo *> lsToLDI;
@@ -118,8 +117,7 @@ void PDGStats::collectStatsForNodes(Function &F) {
 }
 
 void PDGStats::collectStatsForPotentialEdges(
-    std::unordered_map<Function *, StayConnectedNestedLoopForest *>
-        &programLoops,
+    std::unordered_map<Function *, LoopForest *> &programLoops,
     Function &F) {
 
   /*
@@ -155,9 +153,9 @@ void PDGStats::collectStatsForPotentialEdges(
   if (programLoops.find(&F) != programLoops.end()) {
     auto loopForest = programLoops[&F];
     for (auto loopTree : loopForest->getTrees()) {
-      auto visitor = [&totLoads, &totStores, &totCalls](
-                         StayConnectedNestedLoopForestNode *n,
-                         uint32_t level) -> bool {
+      auto visitor = [&totLoads,
+                      &totStores,
+                      &totCalls](LoopForestNode *n, uint32_t level) -> bool {
         auto currentLoop = n->getLoop();
         for (auto inst : currentLoop->getInstructions()) {
           if (isa<LoadInst>(inst)) {
@@ -186,8 +184,7 @@ void PDGStats::collectStatsForPotentialEdges(
 
 void PDGStats::printRefinedLoopGraphsForFunction(
     Noelle &noelle,
-    std::unordered_map<Function *, StayConnectedNestedLoopForest *>
-        &programLoops,
+    std::unordered_map<Function *, LoopForest *> &programLoops,
     std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
     Function &F) {
   auto loopCount = 0;
@@ -197,9 +194,8 @@ void PDGStats::printRefinedLoopGraphsForFunction(
   if (programLoops.find(&F) != programLoops.end()) {
     auto loopForest = programLoops[&F];
     for (auto loopTree : loopForest->getTrees()) {
-      auto visitor = [this, &lsToLDI, &loopCount, &F](
-                         StayConnectedNestedLoopForestNode *n,
-                         uint32_t level) -> bool {
+      auto visitor = [this, &lsToLDI, &loopCount, &F](LoopForestNode *n,
+                                                      uint32_t level) -> bool {
         /*
          * Fetch the loop.
          */
@@ -231,8 +227,7 @@ void PDGStats::printRefinedLoopGraphsForFunction(
 
 void PDGStats::collectStatsForLoopEdges(
     Noelle &noelle,
-    std::unordered_map<Function *, StayConnectedNestedLoopForest *>
-        &programLoops,
+    std::unordered_map<Function *, LoopForest *> &programLoops,
     std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
     Function &F) {
 
@@ -242,7 +237,7 @@ void PDGStats::collectStatsForLoopEdges(
   if (programLoops.find(&F) != programLoops.end()) {
     auto loopForest = programLoops[&F];
     for (auto loopTree : loopForest->getTrees()) {
-      auto visitor = [this, &lsToLDI](StayConnectedNestedLoopForestNode *n,
+      auto visitor = [this, &lsToLDI](LoopForestNode *n,
                                       uint32_t level) -> bool {
         /*
          * Fetch the loop.

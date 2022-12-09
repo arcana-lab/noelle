@@ -3,10 +3,8 @@ set(Srcs
   ControlFlowEquivalence.cpp
   LoopAwareMemDepAnalysis.cpp
   LoopIterationDomainSpaceAnalysis.cpp
-  SCCDAGAttrs.cpp
   SCCDAGNormalizer.cpp
   LoopDependenceInfo.cpp
-  SCCDAGPartition.cpp
   LoopTransformationsOptions.cpp
 )
 
@@ -40,11 +38,13 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../hotprofiler/include 
   ../../loop_structure/include 
   ../../loop_environment/include 
-  ../../forest/include
+  ../../loop_forest/include
   ../../talkdown/include
-  ../../invariants/include
-  ../../induction_variables/include
+  ../../loop_invariants/include
+  ../../loop_induction_variables/include
   ../../loop_scc_attributes/include
+  ../../loop_sccdag_attributes/include
+  ../../loop_carried_dependences/include
   ../include
   ./
   ${CMAKE_INSTALL_PREFIX}/include

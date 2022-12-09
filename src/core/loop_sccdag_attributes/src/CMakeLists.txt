@@ -1,17 +1,14 @@
 # Sources
 set(Srcs 
-  InductionVariables.cpp
-  InductionVariable.cpp
-  LoopGoverningIVAttribution.cpp
-  IVStepperUtility.cpp
-  LoopGoverningIVUtility.cpp
+  SCCDAGAttrs.cpp
+  SCCDAGPartition.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "InductionVariables")
+set(PassName "LoopSCCDAGAttributes")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -37,10 +34,14 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../hotprofiler/include 
   ../../loop_structure/include 
   ../../loop_environment/include 
-  ../../forest/include
+  ../../loop_forest/include
   ../../talkdown/include
-  ../../invariants/include
-  ../include 
+  ../../loop_invariants/include
+  ../../loop_induction_variables/include
+  ../../loop_scc_attributes/include
+  ../../loop_carried_dependences/include
+  ../include
+  ./
   ${CMAKE_INSTALL_PREFIX}/include
   )
 

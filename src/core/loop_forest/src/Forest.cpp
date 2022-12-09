@@ -19,22 +19,22 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/LoopForest.hpp"
 
 namespace llvm::noelle {
 
-StayConnectedNestedLoopForest::StayConnectedNestedLoopForest(
+LoopForest::LoopForest(
     std::vector<LoopStructure *> const &loops,
     std::unordered_map<Function *, DominatorSummary *> const &doms) {
 
   /*
    * Allocate the nodes.
    */
-  std::unordered_set<StayConnectedNestedLoopForestNode *> potentialTrees{};
+  std::unordered_set<LoopForestNode *> potentialTrees{};
   for (auto l : loops) {
     auto func = l->getFunction();
     auto header = l->getHeader();
-    auto n = new StayConnectedNestedLoopForestNode(this, l);
+    auto n = new LoopForestNode(this, l);
     this->nodes[l] = n;
     this->functionLoops[func].insert(l);
     this->headerLoops[header] = n;
@@ -72,7 +72,7 @@ StayConnectedNestedLoopForest::StayConnectedNestedLoopForest(
   return;
 }
 
-uint64_t StayConnectedNestedLoopForest::getNumberOfLoops(void) const {
+uint64_t LoopForest::getNumberOfLoops(void) const {
   uint64_t t = 0;
 
   /*
@@ -94,10 +94,10 @@ uint64_t StayConnectedNestedLoopForest::getNumberOfLoops(void) const {
   return t;
 }
 
-void StayConnectedNestedLoopForest::addChildrenToTree(
-    StayConnectedNestedLoopForestNode *root,
+void LoopForest::addChildrenToTree(
+    LoopForestNode *root,
     std::unordered_map<Function *, DominatorSummary *> const &doms,
-    std::unordered_set<StayConnectedNestedLoopForestNode *> &potentialTrees) {
+    std::unordered_set<LoopForestNode *> &potentialTrees) {
 
   /*
    * Fetch the loop.
@@ -218,13 +218,11 @@ void StayConnectedNestedLoopForest::addChildrenToTree(
   return;
 }
 
-std::unordered_set<StayConnectedNestedLoopForestNode *>
-StayConnectedNestedLoopForest::getTrees(void) const {
+std::unordered_set<LoopForestNode *> LoopForest::getTrees(void) const {
   return this->trees;
 }
 
-void StayConnectedNestedLoopForest::removeTree(
-    StayConnectedNestedLoopForestNode *tree) {
+void LoopForest::removeTree(LoopForestNode *tree) {
   assert(this->trees.find(tree) != this->trees.end());
   this->trees.erase(tree);
   assert(this->trees.find(tree) == this->trees.end());
@@ -232,8 +230,7 @@ void StayConnectedNestedLoopForest::removeTree(
   return;
 }
 
-void StayConnectedNestedLoopForest::addTree(
-    StayConnectedNestedLoopForestNode *tree) {
+void LoopForest::addTree(LoopForestNode *tree) {
   assert(this->trees.find(tree) == this->trees.end());
 
   this->trees.insert(tree);
@@ -241,14 +238,13 @@ void StayConnectedNestedLoopForest::addTree(
   return;
 }
 
-StayConnectedNestedLoopForest::~StayConnectedNestedLoopForest() {
+LoopForest::~LoopForest() {
   for (auto pair : this->nodes) {
     delete pair.second;
   }
 }
 
-StayConnectedNestedLoopForestNode *StayConnectedNestedLoopForest::getNode(
-    LoopStructure *loop) const {
+LoopForestNode *LoopForest::getNode(LoopStructure *loop) const {
 
   /*
    * Fetch the header
@@ -265,9 +261,8 @@ StayConnectedNestedLoopForestNode *StayConnectedNestedLoopForest::getNode(
   return n;
 }
 
-StayConnectedNestedLoopForestNode *StayConnectedNestedLoopForest::
-    getInnermostLoopThatContains(Instruction *i) const {
-  StayConnectedNestedLoopForestNode *n = nullptr;
+LoopForestNode *LoopForest::getInnermostLoopThatContains(Instruction *i) const {
+  LoopForestNode *n = nullptr;
 
   /*
    * Identify only the trees that are about the same function of the target
@@ -306,10 +301,9 @@ StayConnectedNestedLoopForestNode *StayConnectedNestedLoopForest::
      *
      * Fetch the innermost loop that contains it.
      */
-    StayConnectedNestedLoopForestNode *innermostLoop = nullptr;
-    auto finderFunction = [i, &innermostLoop](
-                              StayConnectedNestedLoopForestNode *n,
-                              uint32_t treeLevel) -> bool {
+    LoopForestNode *innermostLoop = nullptr;
+    auto finderFunction = [i, &innermostLoop](LoopForestNode *n,
+                                              uint32_t treeLevel) -> bool {
       /*
        * Fetch the loop
        */
@@ -328,8 +322,7 @@ StayConnectedNestedLoopForestNode *StayConnectedNestedLoopForest::
   return n;
 }
 
-StayConnectedNestedLoopForestNode *StayConnectedNestedLoopForest::
-    getInnermostLoopThatContains(BasicBlock *bb) const {
+LoopForestNode *LoopForest::getInnermostLoopThatContains(BasicBlock *bb) const {
   auto n = this->getInnermostLoopThatContains(&*bb->begin());
   return n;
 }
