@@ -19,6 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "noelle/core/Architecture.hpp"
 #include "noelle/tools/HELIX.hpp"
 #include "DOALL.hpp"
 
@@ -597,6 +598,7 @@ Function *HELIX::getTaskFunction(void) const {
 }
 
 uint32_t HELIX::getMinimumNumberOfIdleCores(void) const {
+  return Architecture::getNumberOfPhysicalCores();
   if (this->originalLDI == nullptr) {
     abort();
   }

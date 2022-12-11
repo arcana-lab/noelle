@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "DSWP.hpp"
+#include "noelle/core/Architecture.hpp"
 
 namespace llvm::noelle {
 
@@ -401,6 +402,7 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
 }
 
 uint32_t DSWP::getMinimumNumberOfIdleCores(void) const {
+  return Architecture::getNumberOfPhysicalCores();
   return this->minCores;
 }
 
