@@ -26,8 +26,6 @@ include_directories(
   ../include 
   ../../basic_utilities/include 
   ../../architecture/include 
-  ../../alloc_aa/include 
-  ../../pdg/include 
   ../../hotprofiler/include 
   ../../metadata_manager/include 
   ${CMAKE_INSTALL_PREFIX}/include

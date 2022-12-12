@@ -33,6 +33,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../dataflow/include
   ../../architecture/include 
   ../../alloc_aa/include 
+  ../../dg/include 
   ../../pdg/include 
   ../../hotprofiler/include 
   ../../loop_structure/include 

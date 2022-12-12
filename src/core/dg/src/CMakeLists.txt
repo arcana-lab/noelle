@@ -1,15 +1,13 @@
 # Sources
 set(Srcs 
-  LoopEnvironment.cpp
-  LoopEnvironmentUser.cpp
-  LoopEnvironmentBuilder.cpp
+  SubCFGs.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "LoopEnvironment")
+set(PassName "DG")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -23,17 +21,9 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(
-  ${LLVM_INCLUDE_DIRS} 
-  ../include 
-  ../../basic_utilities/include 
-  ../../architecture/include 
-  ../../alloc_aa/include 
-  ../../dg/include 
-  ../../pdg/include 
-  ../../hotprofiler/include 
-  ../../loop_structure/include
-  ${CMAKE_INSTALL_PREFIX}/include
+include_directories(${LLVM_INCLUDE_DIRS}
+  ../include
+  ../../basic_utilities/include
   )
 
 # Declare the LLVM pass to compile

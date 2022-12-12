@@ -8,7 +8,6 @@ set(Srcs
   PDGAnalysis_memory.cpp
   PDGAnalysis_callGraph.cpp
   AnalysisPass.cpp
-  SubCFGs.cpp
   PDG.cpp
   SCCDAG.cpp
   SCC.cpp
@@ -41,6 +40,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../talkdown/include 
   ../../dataflow/include
   ../../callgraph/include
+  ../../dg/include
   ${CMAKE_INSTALL_PREFIX}/include
   ${CMAKE_INSTALL_PREFIX}/include/svf
   )

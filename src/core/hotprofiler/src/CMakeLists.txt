@@ -33,6 +33,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../include 
   ../../basic_utilities/include 
   ../../loop_content/include
+  ../../dg/include
   ../../pdg/include
   ../../loop_structure/include
   )
