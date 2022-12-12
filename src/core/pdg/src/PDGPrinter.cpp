@@ -38,7 +38,6 @@
 #include <queue>
 
 #include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
 
 using namespace llvm;
 
