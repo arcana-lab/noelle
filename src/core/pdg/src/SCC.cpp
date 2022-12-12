@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "noelle/core/SCC.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 SCC::SCC(std::set<DGNode<Value> *> internalNodes) {
 
@@ -282,3 +281,5 @@ bool SCC::iterateOverAllValues(std::function<bool(Value *)> funcToInvoke) {
 SCC::~SCC() {
   return;
 }
+
+} // namespace llvm::noelle

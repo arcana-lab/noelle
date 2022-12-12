@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -38,8 +38,6 @@
 #include <queue>
 
 #include "noelle/core/PDGPrinter.hpp"
-
-using namespace llvm;
 
 namespace llvm::noelle {
 
@@ -263,4 +261,5 @@ void DGPrinter::groupNodesByCluster(
     clusterNodes[clusterName].insert(nodeName);
   }
 }
+
 } // namespace llvm::noelle

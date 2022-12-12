@@ -30,14 +30,14 @@
 namespace llvm::noelle {
 
 /*
- * SCCDAG of a loop.
+ * SCCDAG of a dependence graph.
  */
 class SCCDAG : public DG<SCC> {
 public:
   /*
    * Constructor.
    */
-  SCCDAG(PDG *loopDependenceGraph);
+  SCCDAG(PDG *dependenceGraph);
 
   /*
    * Check if @inst is included in the SCCDAG.
@@ -66,15 +66,16 @@ public:
   bool iterateOverInstructions(std::function<bool(Instruction *)> funcToInvoke);
 
   /*
-   * Iterate over live-ins and live-outs of the loop represented by the SCCDAG
-   * until @funcToInvoke returns true or no other live-in and live-out exist.
+   * Iterate over live-ins and live-outs of the code region represented by the
+   * SCCDAG until @funcToInvoke returns true or no other live-in and live-out
+   * exist.
    */
   bool iterateOverLiveInAndLiveOut(std::function<bool(Value *)> funcToInvoke);
 
   /*
    * Iterate over all instructions (internal and external) until @funcToInvoke
    * returns true or no other instruction exists. External nodes represent
-   * live-ins and live-outs of the loop represented by the SCCDAG.
+   * live-ins and live-outs of the code region represented by the SCCDAG.
    */
   bool iterateOverAllInstructions(
       std::function<bool(Instruction *)> funcToInvoke);
@@ -82,7 +83,7 @@ public:
   /*
    * Iterate over all values (internal and external) until @funcToInvoke returns
    * true or no other value exists. External values represent live-ins and
-   * live-outs of the loop represented by the SCCDAG.
+   * live-outs of the code region represented by the SCCDAG.
    */
   bool iterateOverAllValues(std::function<bool(Value *)> funcToInvoke);
 
@@ -143,4 +144,5 @@ private:
    */
   void computeReachabilityAmongSCCs(void);
 };
+
 } // namespace llvm::noelle
