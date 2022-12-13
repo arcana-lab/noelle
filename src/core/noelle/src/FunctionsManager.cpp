@@ -94,7 +94,6 @@ bool FunctionsManager::canModifyMemory(Function &f) {
   std::queue<CallGraphFunctionNode *> toTraverse;
   std::set<CallGraphFunctionNode *> enqueued;
   auto pcg = this->getProgramCallGraph();
-  errs() << "Init\n";
   for (auto fn : pcg->getFunctionNodes()) {
     auto f = fn->getFunction();
     bool isUnavailable = f->empty();
@@ -104,22 +103,18 @@ bool FunctionsManager::canModifyMemory(Function &f) {
      * For conservativeness unavailable functions are assumed to modify memory
      */
     if (isUnavailable || isModifier) {
-      errs() << "\t toTraverse\t+= " << f->getName() << "\n";
       toTraverse.push(fn);
       enqueued.insert(fn);
     } else {
-      errs() << "\t nonExplored\t+= " << f->getName() << "\n";
       nonExplored.insert(fn);
     }
   }
 
-  errs() << "Traversing\n";
   while (!toTraverse.empty()) {
     auto fn = toTraverse.front();
     auto f = fn->getFunction();
     toTraverse.pop();
     nonExplored.erase(fn);
-    errs() << "\tExploring: " << f->getName() << " " << f << "\n";
 
     /*
      * Adding incoming edges to the set of nodes to explore.
@@ -135,8 +130,6 @@ bool FunctionsManager::canModifyMemory(Function &f) {
         if (!alreadyEnqueued) {
           toTraverse.push(callerFuncNode);
           enqueued.insert(callerFuncNode);
-          errs() << "\t\ttoTraverse += " << callerFunc->getName() << " "
-                 << callerFunc << "\n";
         }
       }
     }
@@ -147,10 +140,8 @@ bool FunctionsManager::canModifyMemory(Function &f) {
    * from any node whose function call has a StoreInst, therefore they
    * represent calls to functions that cannot modify memory
    */
-  errs() << "Finish\n";
   for (auto fn : nonExplored) {
     auto f = fn->getFunction();
-    errs() << "\t" << f->getName() << "\n";
     this->nonMemModifiers.insert(f);
   }
   this->nonMemModifiersIsInitialized = true;
