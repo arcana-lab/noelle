@@ -29,7 +29,8 @@ FunctionsManager::FunctionsManager(Module &m,
   : program{ m },
     pdgAnalysis{ noellePDGAnalysis },
     pcg{ nullptr },
-    prof{ profiles } {
+    prof{ profiles },
+    nonMemModifiersIsInitialized{ false } {
   return;
 }
 
@@ -69,22 +70,94 @@ bool FunctionsManager::isTheLibraryFunctionPure(Function *libraryFunction) {
   return false;
 }
 
+bool FunctionsManager::hasStoreInst(Function &f) const {
+  for (const auto &inst : f) {
+    if (isa<StoreInst>(inst)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool FunctionsManager::canModifyMemory(Function &f) {
-  if (nonMemModifiersIsInitialized) {
-    return nonMemModifiers.find(&f) == nonMemModifiers.end();
+  if (this->nonMemModifiersIsInitialized) {
+    bool isMemModifier =
+        this->nonMemModifiers.find(&f) == this->nonMemModifiers.end();
+    return isMemModifier;
   }
 
   /*
-   * Explore the call graph via breadth-first search
+   * Explore the call graph via breadth-first search going from a node
+   * to its incident nodes.
    */
   std::set<CallGraphFunctionNode *> nonExplored;
   std::queue<CallGraphFunctionNode *> toTraverse;
+  std::set<CallGraphFunctionNode *> enqueued;
   auto pcg = this->getProgramCallGraph();
+  errs() << "Init\n";
   for (auto fn : pcg->getFunctionNodes()) {
-    nonExplored.insert(fn);
+    auto f = fn->getFunction();
+    bool isUnavailable = f->empty();
+    bool isModifier = this->hasStoreInst(*f);
+
+    /*
+     * For conservativeness unavailable functions are assumed to modify memory
+     */
+    if (isUnavailable || isModifier) {
+      errs() << "\t toTraverse\t+= " << f->getName() << "\n";
+      toTraverse.push(fn);
+      enqueued.insert(fn);
+    } else {
+      errs() << "\t nonExplored\t+= " << f->getName() << "\n";
+      nonExplored.insert(fn);
+    }
   }
 
-  return nonMemModifiers.find(&f) == nonMemModifiers.end();
+  errs() << "Traversing\n";
+  while (!toTraverse.empty()) {
+    auto fn = toTraverse.front();
+    auto f = fn->getFunction();
+    toTraverse.pop();
+    nonExplored.erase(fn);
+    errs() << "\tExploring: " << f->getName() << " " << f << "\n";
+
+    /*
+     * Adding incoming edges to the set of nodes to explore.
+     * No caller is added twice to the queue
+     */
+    for (auto incomingEdge : fn->getIncomingEdges()) {
+      auto callerFuncNode = incomingEdge->getCaller();
+      bool notYetExplored =
+          nonExplored.find(callerFuncNode) != nonExplored.end();
+      if (notYetExplored) {
+        auto callerFunc = callerFuncNode->getFunction();
+        bool alreadyEnqueued = enqueued.find(callerFuncNode) != enqueued.end();
+        if (!alreadyEnqueued) {
+          toTraverse.push(callerFuncNode);
+          enqueued.insert(callerFuncNode);
+          errs() << "\t\ttoTraverse += " << callerFunc->getName() << " "
+                 << callerFunc << "\n";
+        }
+      }
+    }
+  }
+
+  /*
+   * At this point, non-explored nodes are nodes that cannot be reached
+   * from any node whose function call has a StoreInst, therefore they
+   * represent calls to functions that cannot modify memory
+   */
+  errs() << "Finish\n";
+  for (auto fn : nonExplored) {
+    auto f = fn->getFunction();
+    errs() << "\t" << f->getName() << "\n";
+    this->nonMemModifiers.insert(f);
+  }
+  this->nonMemModifiersIsInitialized = true;
+
+  bool isMemModifier =
+      this->nonMemModifiers.find(&f) == this->nonMemModifiers.end();
+  return isMemModifier;
 }
 
 std::set<Function *> FunctionsManager::getProgramConstructors(void) const {

@@ -37,6 +37,8 @@ public:
 
   bool isTheLibraryFunctionPure(Function *libraryFunction);
 
+  bool hasStoreInst(Function &f) const;
+
   bool canModifyMemory(Function &f);
 
   Function *getFunction(const std::string &name);
