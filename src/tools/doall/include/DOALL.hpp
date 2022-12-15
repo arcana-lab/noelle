@@ -48,6 +48,8 @@ public:
 
   uint32_t getMinimumNumberOfIdleCores(void) const override;
 
+  std::string getName(void) const override;
+
   static std::set<SCC *> getSCCsThatBlockDOALLToBeApplicable(
       LoopDependenceInfo *LDI,
       Noelle &par);

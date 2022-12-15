@@ -65,6 +65,8 @@ public:
 
   uint32_t getMinimumNumberOfIdleCores(void) const override;
 
+  std::string getName(void) const override;
+
   virtual ~HELIX();
 
 protected:

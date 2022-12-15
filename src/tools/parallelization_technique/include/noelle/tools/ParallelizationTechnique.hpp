@@ -41,6 +41,14 @@ public:
    */
   ParallelizationTechnique(Noelle &n);
 
+  Value *getEnvArray(void) const;
+
+  uint32_t getIndexOfEnvironmentVariable(uint32_t id) const;
+
+  BasicBlock *getParLoopEntryPoint(void) const;
+
+  BasicBlock *getParLoopExitPoint(void) const;
+
   /*
    * Apply the parallelization technique to the loop LDI.
    */
@@ -53,15 +61,9 @@ public:
   virtual bool canBeAppliedToLoop(LoopDependenceInfo *LDI,
                                   Heuristics *h) const = 0;
 
-  Value *getEnvArray(void) const;
-
-  uint32_t getIndexOfEnvironmentVariable(uint32_t id) const;
-
-  BasicBlock *getParLoopEntryPoint(void) const;
-
-  BasicBlock *getParLoopExitPoint(void) const;
-
   virtual uint32_t getMinimumNumberOfIdleCores(void) const = 0;
+
+  virtual std::string getName(void) const = 0;
 
   /*
    * Destructor.

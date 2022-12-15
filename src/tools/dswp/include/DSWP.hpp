@@ -49,6 +49,8 @@ public:
 
   uint32_t getMinimumNumberOfIdleCores(void) const override;
 
+  std::string getName(void) const override;
+
 protected:
   BasicBlock *getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
       LoopDependenceInfo *LDI,
