@@ -406,4 +406,8 @@ uint32_t DSWP::getMinimumNumberOfIdleCores(void) const {
   return this->minCores;
 }
 
+std::string DSWP::getName(void) const {
+  return "DSWP";
+}
+
 } // namespace llvm::noelle

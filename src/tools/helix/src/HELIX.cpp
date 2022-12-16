@@ -622,6 +622,10 @@ uint32_t HELIX::getMinimumNumberOfIdleCores(void) const {
   return ltm->getMaximumNumberOfCores();
 }
 
+std::string HELIX::getName(void) const {
+  return "HELIX";
+}
+
 HELIX::~HELIX() {
   return;
 }

@@ -540,4 +540,8 @@ uint32_t DOALL::getMinimumNumberOfIdleCores(void) const {
   return 2;
 }
 
+std::string DOALL::getName(void) const {
+  return "DOALL";
+}
+
 } // namespace llvm::noelle

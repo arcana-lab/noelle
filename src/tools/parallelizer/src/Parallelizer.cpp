@@ -229,7 +229,8 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
   //   loopFunction->print(errs() << "Final printout:\n"); errs() << "\n";
   // }
   if (verbose != Verbosity::Disabled) {
-    errs() << prefix << "  The loop has been parallelized\n";
+    errs() << prefix << "  The loop has been parallelized with "
+           << usedTechnique->getName() << "\n";
     errs() << prefix << "Exit\n";
   }
 
