@@ -242,7 +242,9 @@ bool SCCDAGAttrs::isLoopGovernedBySCC(SCC *governingSCC) const {
   return topLevelSCC == governingSCC;
 }
 
-bool SCCDAGAttrs::areAllLiveOutValuesReducable(LoopEnvironment *env) const {
+std::set<uint32_t> SCCDAGAttrs::getLiveOutVariablesThatAreNotReducable(
+    LoopEnvironment *env) const {
+  std::set<uint32_t> s;
 
   /*
    * Iterate over live-out variables.
@@ -269,10 +271,10 @@ bool SCCDAGAttrs::areAllLiveOutValuesReducable(LoopEnvironment *env) const {
     /*
      * We found a live-out variable that cannot be reduced.
      */
-    return false;
+    s.insert(envID);
   }
 
-  return true;
+  return s;
 }
 
 bool SCCDAGAttrs::isSCCContainedInSubloop(LoopForestNode *loop,

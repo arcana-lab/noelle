@@ -95,9 +95,14 @@ bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
    * The loop must have all live-out variables to be reducable.
    */
   auto sccManager = LDI->getSCCManager();
-  if (!sccManager->areAllLiveOutValuesReducable(LDI->getEnvironment())) {
+  auto nonReducibleLiveOuts =
+      sccManager->getLiveOutVariablesThatAreNotReducable(LDI->getEnvironment());
+  if (nonReducibleLiveOuts.size() > 0) {
     if (this->verbose != Verbosity::Disabled) {
-      errs() << "DOALL:   Some live-out values are not reducable\n";
+      errs() << "DOALL:   The next live-out variables are not reducable\n";
+      for (auto envID : nonReducibleLiveOuts) {
+        errs() << "DOALL:     Live-out ID = " << envID << "\n";
+      }
     }
     return false;
   }
@@ -113,9 +118,17 @@ bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
         errs()
             << "DOALL:   We found an SCC of the loop that is non clonable and non commutative\n";
         if (this->verbose >= Verbosity::Maximal) {
-          // scc->printMinimal(errs(), "DOALL:     ") ;
+
+          /*
+           * Print the SCC.
+           */
+          scc->printMinimal(errs(), "DOALL:     ");
           // DGPrinter::writeGraph<SCC, Value>("not-doall-loop-scc-" +
           // std::to_string(LDI->getID()) + ".dot", scc);
+
+          /*
+           * Print the loop-carried dependences between instructions of the SCC.
+           */
           errs() << "DOALL:     Loop-carried data dependences\n";
           sccManager->iterateOverLoopCarriedDataDependences(
               scc,

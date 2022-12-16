@@ -63,7 +63,8 @@ public:
   std::set<SCC *> getSCCsWithLoopCarriedControlDependencies(void) const;
   std::unordered_set<SCCAttrs *> getSCCsOfType(SCCAttrs::SCCType sccType);
   bool isLoopGovernedBySCC(SCC *scc) const;
-  bool areAllLiveOutValuesReducable(LoopEnvironment *env) const;
+  std::set<uint32_t> getLiveOutVariablesThatAreNotReducable(
+      LoopEnvironment *env) const;
 
   /*
    * Methods on single SCC.
