@@ -120,6 +120,21 @@ bool HELIX::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   if (this->verbose != Verbosity::Disabled) {
     auto prefixStringWithIndentation = std::string{ this->prefixString };
     prefixStringWithIndentation.append("  ");
+
+    /*
+     * Print the loop.
+     */
+    auto ls = LDI->getLoopStructure();
+    auto bbs = ls->getBasicBlocks();
+    errs() << prefixStringWithIndentation << "Loop has " << bbs.size()
+           << " basic blocks:\n";
+    for (auto bb : bbs) {
+      errs() << *bb << "\n";
+    }
+
+    /*
+     * Print the sequential code.
+     */
     this->printSequentialCode(
         errs(),
         prefixStringWithIndentation,

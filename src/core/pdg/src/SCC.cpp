@@ -120,7 +120,8 @@ raw_ostream &SCC::print(raw_ostream &stream,
   /*
    * Print instructions that compose the SCC.
    */
-  stream << prefixToUse << "Internal nodes: " << internalNodeMap.size() << "\n";
+  stream << prefixToUse << "Nodes within the SCC: " << internalNodeMap.size()
+         << "\n";
   for (auto nodePair : internalNodePairs()) {
     nodePair.second->print(stream << prefixToUse << "\t") << "\n";
   }
@@ -128,7 +129,10 @@ raw_ostream &SCC::print(raw_ostream &stream,
   /*
    * Print live-in and live-out values.
    */
-  stream << prefixToUse << "External nodes: " << externalNodeMap.size() << "\n";
+  stream
+      << prefixToUse
+      << "Nodes outside the SCC and connected with at least one node within the SCC: "
+      << externalNodeMap.size() << "\n";
   std::vector<DGNode<Value> *> externalNodesOfCurrentSCC{};
   for (auto nodePair : externalNodePairs()) {
     externalNodesOfCurrentSCC.push_back(nodePair.second);
@@ -153,13 +157,13 @@ raw_ostream &SCC::print(raw_ostream &stream,
    */
   auto sortedDeps = DG::sortDependences(allEdges);
   stream << prefixToUse << "Edges: " << sortedDeps.size() << "\n";
-  int edgesPrinted = 0;
+  auto edgesPrinted = 0;
   for (auto edge : sortedDeps) {
     if (edgesPrinted++ >= maxEdges) {
-      stream << prefixToUse << "\t....\n";
+      stream << prefixToUse << "  ....\n";
       break;
     }
-    edge->print(stream, prefixToUse + "\t") << "\n";
+    edge->print(stream, prefixToUse + "  ") << "\n";
   }
 
   return stream;
