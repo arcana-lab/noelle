@@ -23,10 +23,9 @@
 
 namespace llvm::noelle {
 
-SCCAttrs::SCCAttrs(SCC *s, LoopStructure *loop)
+SCCAttrs::SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop)
   : loop{ loop },
     scc{ s },
-    sccType{ SCCType::SEQUENTIAL },
     PHINodes{},
     headerPHINodes{},
     controlFlowInsts{},
@@ -34,7 +33,8 @@ SCCAttrs::SCCAttrs(SCC *s, LoopStructure *loop)
     isClonable{ false },
     isSCCClonableIntoLocalMemory{ false },
     hasIV{ false },
-    commutative{ false } {
+    commutative{ false },
+    kind{ K } {
 
   /*
    * Collect the basic blocks of the instructions contained within SCC.
@@ -55,16 +55,6 @@ SCCAttrs::SCCAttrs(SCC *s, LoopStructure *loop)
    * Collect PHIs included in the SCC.
    */
   this->collectPHIs(*loop);
-
-  return;
-}
-
-SCCAttrs::SCCType SCCAttrs::getType(void) const {
-  return this->sccType;
-}
-
-void SCCAttrs::setType(SCCAttrs::SCCType t) {
-  this->sccType = t;
 
   return;
 }
@@ -232,16 +222,8 @@ std::unordered_set<AllocaInst *> SCCAttrs::getMemoryLocationsToClone(
   return allocations;
 }
 
-bool SCCAttrs::mustExecuteSequentially(void) const {
-  return this->getType() == SCCAttrs::SCCType::SEQUENTIAL;
-}
-
 bool SCCAttrs::canExecuteReducibly(void) const {
   return false;
-}
-
-bool SCCAttrs::canExecuteIndependently(void) const {
-  return this->getType() == SCCAttrs::SCCType::INDEPENDENT;
 }
 
 bool SCCAttrs::canBeCloned(void) const {
@@ -250,6 +232,10 @@ bool SCCAttrs::canBeCloned(void) const {
 
 bool SCCAttrs::isInductionVariableSCC(void) const {
   return this->hasIV;
+}
+
+SCCAttrs::SCCKind SCCAttrs::getKind(void) const {
+  return this->kind;
 }
 
 SCCAttrs::~SCCAttrs() {}

@@ -23,8 +23,12 @@
 
 namespace llvm::noelle {
 
-Reduction::Reduction(SCC *s, LoopStructure *loop, DominatorSummary &dom)
-  : SCCAttrs{ s, loop },
+Reduction::Reduction(SCCKind K,
+                     SCC *s,
+                     LoopStructure *loop,
+                     const std::set<DGEdge<Value> *> &loopCarriedDependences,
+                     DominatorSummary &dom)
+  : LoopCarriedSCC{ K, s, loop, loopCarriedDependences },
     initialValue{ nullptr },
     accumulator{ nullptr },
     identity{ nullptr } {
@@ -59,12 +63,14 @@ Reduction::Reduction(SCC *s, LoopStructure *loop, DominatorSummary &dom)
   return;
 }
 
-Reduction::Reduction(SCC *s,
+Reduction::Reduction(SCCKind K,
+                     SCC *s,
                      LoopStructure *loop,
+                     const std::set<DGEdge<Value> *> &loopCarriedDependences,
                      Value *initialValue,
                      PHINode *accumulator,
                      Value *identity)
-  : SCCAttrs(s, loop),
+  : LoopCarriedSCC(K, s, loop, loopCarriedDependences),
     initialValue{ initialValue },
     accumulator{ accumulator },
     identity{ identity } {
@@ -129,6 +135,11 @@ PHINode *Reduction::getPhiThatAccumulatesValuesBetweenLoopIterations(
 
 Value *Reduction::getIdentityValue(void) const {
   return this->identity;
+}
+
+bool Reduction::classof(const SCCAttrs *s) {
+  return (s->getKind() >= SCCAttrs::SCCKind::REDUCTION)
+         && (s->getKind() <= SCCAttrs::SCCKind::LAST_REDUCTION);
 }
 
 } // namespace llvm::noelle

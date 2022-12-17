@@ -22,44 +22,23 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Reduction.hpp"
-#include "noelle/core/Dominators.hpp"
-#include "noelle/core/Variable.hpp"
+#include "noelle/core/SCCAttrs.hpp"
 
 namespace llvm::noelle {
 
-class BinaryReduction : public Reduction {
+class LoopIterationSCC : public SCCAttrs {
 public:
-  BinaryReduction(SCC *s,
-                  LoopStructure *loop,
-                  const std::set<DGEdge<Value> *> &loopCarriedDependences,
-                  LoopCarriedVariable *variable,
-                  DominatorSummary &dom);
+  /*
+   * Constructors.
+   */
+  LoopIterationSCC(SCC *s, LoopStructure *loop);
 
-  BinaryReduction(SCC *s,
-                  LoopStructure *loop,
-                  const std::set<DGEdge<Value> *> &loopCarriedDependences,
-                  Value *initialValue,
-                  Instruction::BinaryOps reductionOperation,
-                  PHINode *accumulator,
-                  Value *identity);
-
-  BinaryReduction() = delete;
-
-  Instruction::BinaryOps getReductionOperation(void) const;
+  LoopIterationSCC() = delete;
 
   static bool classof(const SCCAttrs *s);
 
 protected:
-  Instruction::BinaryOps reductionOperation;
-
-  void setBinaryReductionInformation(Value *initialValue,
-                                     DominatorSummary &dom,
-                                     LoopStructure &loop);
-
-  std::set<Instruction *> collectAccumulators(LoopStructure &LS);
-
-  iterator_range<instruction_iterator> getAccumulators(void);
+  LoopIterationSCC(SCCKind K, SCC *s, LoopStructure *loop);
 };
 
 } // namespace llvm::noelle

@@ -26,11 +26,13 @@ namespace llvm::noelle {
 
 static AccumulatorOpInfo accumOpInfo;
 
-BinaryReduction::BinaryReduction(SCC *s,
-                                 LoopStructure *loop,
-                                 LoopCarriedVariable *variable,
-                                 DominatorSummary &dom)
-  : Reduction(s, loop, dom) {
+BinaryReduction::BinaryReduction(
+    SCC *s,
+    LoopStructure *loop,
+    const std::set<DGEdge<Value> *> &loopCarriedDependences,
+    LoopCarriedVariable *variable,
+    DominatorSummary &dom)
+  : Reduction(SCCKind::BINARY_REDUCTION, s, loop, loopCarriedDependences, dom) {
   assert(variable != nullptr);
 
   /*
@@ -48,13 +50,21 @@ BinaryReduction::BinaryReduction(SCC *s,
   return;
 }
 
-BinaryReduction::BinaryReduction(SCC *s,
-                                 LoopStructure *loop,
-                                 Value *initialValue,
-                                 Instruction::BinaryOps reductionOperation,
-                                 PHINode *accumulator,
-                                 Value *identity)
-  : Reduction(s, loop, initialValue, accumulator, identity),
+BinaryReduction::BinaryReduction(
+    SCC *s,
+    LoopStructure *loop,
+    const std::set<DGEdge<Value> *> &loopCarriedDependences,
+    Value *initialValue,
+    Instruction::BinaryOps reductionOperation,
+    PHINode *accumulator,
+    Value *identity)
+  : Reduction(SCCKind::BINARY_REDUCTION,
+              s,
+              loop,
+              loopCarriedDependences,
+              initialValue,
+              accumulator,
+              identity),
     reductionOperation{ reductionOperation } {
 
   return;
@@ -133,6 +143,10 @@ std::set<Instruction *> BinaryReduction::collectAccumulators(
   }
 
   return accumulators;
+}
+
+bool BinaryReduction::classof(const SCCAttrs *s) {
+  return (s->getKind() == SCCAttrs::SCCKind::BINARY_REDUCTION);
 }
 
 } // namespace llvm::noelle

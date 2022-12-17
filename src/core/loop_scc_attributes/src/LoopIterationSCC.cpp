@@ -19,49 +19,23 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
-
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Dominators.hpp"
-#include "noelle/core/LoopCarriedSCC.hpp"
+#include "noelle/core/LoopIterationSCC.hpp"
 
 namespace llvm::noelle {
 
-class Reduction : public LoopCarriedSCC {
-public:
-  Reduction() = delete;
+LoopIterationSCC::LoopIterationSCC(SCC *s, LoopStructure *loop)
+  : LoopIterationSCC(SCCAttrs::SCCKind::LOOP_ITERATION, s, loop) {
+  return;
+}
 
-  Value *getInitialValue(void) const;
+LoopIterationSCC::LoopIterationSCC(SCCKind K, SCC *s, LoopStructure *loop)
+  : SCCAttrs(K, s, loop) {
+  return;
+}
 
-  Value *getIdentityValue(void) const;
-
-  PHINode *getPhiThatAccumulatesValuesBetweenLoopIterations(void) const;
-
-  bool canExecuteReducibly(void) const override;
-
-  static bool classof(const SCCAttrs *s);
-
-protected:
-  Value *initialValue;
-  PHINode *accumulator;
-  Value *identity;
-  PHINode *headerAccumulator;
-
-  Reduction(SCCKind K,
-            SCC *s,
-            LoopStructure *loop,
-            const std::set<DGEdge<Value> *> &loopCarriedDependences,
-            DominatorSummary &dom);
-
-  Reduction(SCCKind K,
-            SCC *s,
-            LoopStructure *loop,
-            const std::set<DGEdge<Value> *> &loopCarriedDependences,
-            Value *initialValue,
-            PHINode *accumulator,
-            Value *identity);
-
-  void initializeObject(LoopStructure &loop);
-};
+bool LoopIterationSCC::classof(const SCCAttrs *s) {
+  return (s->getKind() >= SCCAttrs::SCCKind::LOOP_ITERATION)
+         && (s->getKind() <= SCCAttrs::SCCKind::LAST_LOOP_ITERATION);
+}
 
 } // namespace llvm::noelle

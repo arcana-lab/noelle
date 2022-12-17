@@ -4,6 +4,8 @@ set(Srcs
   ClonableMemoryObject.cpp
   MemoryCloningAnalysis.cpp
   SCCAttrs.cpp
+  LoopCarriedSCC.cpp
+  LoopIterationSCC.cpp
   Reduction.cpp
   BinaryReduction.cpp
 )

@@ -31,9 +31,17 @@ namespace llvm::noelle {
 class SCCAttrs {
 public:
   /*
-   * Types.
+   * Concrete sub-classes.
    */
-  enum SCCType { SEQUENTIAL, INDEPENDENT };
+  enum SCCKind {
+    LOOP_CARRIED,
+    REDUCTION,
+    BINARY_REDUCTION,
+    LAST_REDUCTION,
+    LAST_LOOP_CARRIED,
+    LOOP_ITERATION,
+    LAST_LOOP_ITERATION
+  };
 
   /*
    * Iterators.
@@ -50,10 +58,9 @@ public:
   std::set<std::pair<Value *, Instruction *>> controlPairs;
 
   /*
-   * Constructor
+   * No public constructors.
+   * Only objects of sub-classes can be allocated.
    */
-  SCCAttrs(SCC *s, LoopStructure *loop);
-
   SCCAttrs() = delete;
 
   /*
@@ -62,27 +69,10 @@ public:
   SCC *getSCC(void);
 
   /*
-   * Return the type of SCC.
-   */
-  SCCType getType(void) const;
-
-  /*
-   * Return true if the iterations of the SCC must execute sequentially.
-   * Return false otherwise.
-   */
-  bool mustExecuteSequentially(void) const;
-
-  /*
    * Return true if a reduction transformation can be applied to the SCC.
    * Return false otherwise.
    */
   virtual bool canExecuteReducibly(void) const;
-
-  /*
-   * Return true if the iterations of the SCC are independent between each
-   * other. Return false otherwise.
-   */
-  bool canExecuteIndependently(void) const;
 
   /*
    * Return true if it is safe to clone the SCC.
@@ -146,11 +136,6 @@ public:
   std::unordered_set<AllocaInst *> getMemoryLocationsToClone(void) const;
 
   /*
-   * Set the type of SCC.
-   */
-  void setType(SCCType t);
-
-  /*
    * Set the SCC as created by updated of an induction variable.
    */
   void setSCCToBeInductionVariable(bool hasIV = true);
@@ -165,17 +150,19 @@ public:
   void addClonableMemoryLocationsContainedInSCC(
       std::unordered_set<const ClonableMemoryLocation *> locations);
 
+  SCCKind getKind(void) const;
+
   ~SCCAttrs();
 
 protected:
   LoopStructure *loop;
   SCC *scc;
-  SCCType sccType;
   std::set<BasicBlock *> bbs;
   std::set<Instruction *> controlFlowInsts;
   std::set<PHINode *> PHINodes;
   std::set<PHINode *> headerPHINodes;
 
+  SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop);
   std::unordered_set<const ClonableMemoryLocation *> clonableMemoryLocations;
   bool isSCCClonableIntoLocalMemory;
 
@@ -185,6 +172,9 @@ protected:
 
   void collectPHIs(LoopStructure &LS);
   void collectControlFlowInstructions(void);
+
+private:
+  SCCKind kind;
 };
 
 } // namespace llvm::noelle

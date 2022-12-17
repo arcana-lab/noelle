@@ -19,49 +19,39 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
-
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Dominators.hpp"
 #include "noelle/core/LoopCarriedSCC.hpp"
 
 namespace llvm::noelle {
 
-class Reduction : public LoopCarriedSCC {
-public:
-  Reduction() = delete;
+LoopCarriedSCC::LoopCarriedSCC(
+    SCC *s,
+    LoopStructure *loop,
+    const std::set<DGEdge<Value> *> &loopCarriedDependences)
+  : LoopCarriedSCC(SCCAttrs::SCCKind::LOOP_CARRIED,
+                   s,
+                   loop,
+                   loopCarriedDependences) {
+  return;
+}
 
-  Value *getInitialValue(void) const;
+LoopCarriedSCC::LoopCarriedSCC(
+    SCCKind K,
+    SCC *s,
+    LoopStructure *loop,
+    const std::set<DGEdge<Value> *> &loopCarriedDependences)
+  : SCCAttrs(K, s, loop),
+    lcDeps{ loopCarriedDependences } {
+  return;
+}
 
-  Value *getIdentityValue(void) const;
+std::set<DGEdge<Value> *> LoopCarriedSCC::getLoopCarriedDependences(
+    void) const {
+  return this->lcDeps;
+}
 
-  PHINode *getPhiThatAccumulatesValuesBetweenLoopIterations(void) const;
-
-  bool canExecuteReducibly(void) const override;
-
-  static bool classof(const SCCAttrs *s);
-
-protected:
-  Value *initialValue;
-  PHINode *accumulator;
-  Value *identity;
-  PHINode *headerAccumulator;
-
-  Reduction(SCCKind K,
-            SCC *s,
-            LoopStructure *loop,
-            const std::set<DGEdge<Value> *> &loopCarriedDependences,
-            DominatorSummary &dom);
-
-  Reduction(SCCKind K,
-            SCC *s,
-            LoopStructure *loop,
-            const std::set<DGEdge<Value> *> &loopCarriedDependences,
-            Value *initialValue,
-            PHINode *accumulator,
-            Value *identity);
-
-  void initializeObject(LoopStructure &loop);
-};
+bool LoopCarriedSCC::classof(const SCCAttrs *s) {
+  return (s->getKind() >= SCCAttrs::SCCKind::LOOP_CARRIED)
+         && (s->getKind() <= SCCAttrs::SCCKind::LAST_LOOP_CARRIED);
+}
 
 } // namespace llvm::noelle
