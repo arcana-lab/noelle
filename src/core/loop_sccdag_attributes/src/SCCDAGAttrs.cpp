@@ -22,6 +22,7 @@
 #include "noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/BinaryReduction.hpp"
+#include "noelle/core/LoopIterationSCC.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 
 namespace llvm::noelle {
@@ -76,66 +77,67 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
   /*
    * Tag SCCs depending on their characteristics.
    */
-  loopSCCDAG->iterateOverSCCs(
-      [this, loopNode, rootLoop, &ivs, &loopGoverningIVs, &DS](
-          SCC *scc) -> bool {
-        /*
-         * Allocate the metadata about this SCC.
-         */
-        auto lcVar = this->checkIfReducible(scc, loopNode);
-        auto isReducable = lcVar != nullptr;
-        SCCAttrs *sccInfo = nullptr;
-        if (isReducable) {
-          sccInfo = new BinaryReduction(scc, rootLoop, lcVar, DS);
-        } else {
-          sccInfo = new SCCAttrs(scc, rootLoop);
-        }
-        assert(sccInfo != nullptr);
-        this->sccToInfo[scc] = sccInfo;
+  loopSCCDAG->iterateOverSCCs([this,
+                               loopNode,
+                               rootLoop,
+                               &ivs,
+                               &loopGoverningIVs,
+                               &DS](SCC *scc) -> bool {
+    /*
+     * Allocate the metadata about this SCC.
+     */
+    auto lcVar = this->checkIfReducible(scc, loopNode);
+    auto isReducable = lcVar != nullptr;
+    SCCAttrs *sccInfo = nullptr;
+    if (isReducable) {
+      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+      sccInfo =
+          new BinaryReduction(scc, rootLoop, loopCarriedDependences, lcVar, DS);
 
-        /*
-         * Collect information about the current SCC.
-         */
-        auto doesSCCOnlyContainIV =
-            this->checkIfSCCOnlyContainsInductionVariables(scc,
-                                                           loopNode,
-                                                           ivs,
-                                                           loopGoverningIVs);
-        sccInfo->setSCCToBeInductionVariable(doesSCCOnlyContainIV);
+    } else if (this->checkIfIndependent(scc)) {
+      sccInfo = new LoopIterationSCC(scc, rootLoop);
 
-        this->checkIfClonable(scc, loopNode);
+    } else {
+      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+      sccInfo = new LoopCarriedSCC(scc, rootLoop, loopCarriedDependences);
+    }
+    assert(sccInfo != nullptr);
+    this->sccToInfo[scc] = sccInfo;
 
-        /*
-         * Categorize the current SCC.
-         */
-        if (!isReducable) {
-          if (this->checkIfIndependent(scc)) {
-            sccInfo->setType(SCCAttrs::SCCType::INDEPENDENT);
+    /*
+     * Collect information about the current SCC.
+     */
+    auto doesSCCOnlyContainIV =
+        this->checkIfSCCOnlyContainsInductionVariables(scc,
+                                                       loopNode,
+                                                       ivs,
+                                                       loopGoverningIVs);
+    sccInfo->setSCCToBeInductionVariable(doesSCCOnlyContainIV);
 
-          } else {
-            sccInfo->setType(SCCAttrs::SCCType::SEQUENTIAL);
-          }
-        }
+    this->checkIfClonable(scc, loopNode);
 
-        return false;
-      });
+    return false;
+  });
 
   collectSCCGraphAssumingDistributedClones();
 
   return;
 }
 
-std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDependencies(void) const {
-  std::set<SCC *> sccs;
+std::set<LoopCarriedSCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDependencies(
+    void) const {
+  std::set<LoopCarriedSCC *> sccs;
   for (auto &sccDependencies : this->sccToLoopCarriedDependencies) {
-    sccs.insert(sccDependencies.first);
+    auto scc = sccDependencies.first;
+    auto sccAttrs = static_cast<LoopCarriedSCC *>(this->getSCCAttrs(scc));
+    sccs.insert(sccAttrs);
   }
   return sccs;
 }
 
-std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedControlDependencies(
-    void) const {
-  std::set<SCC *> sccs;
+std::set<LoopCarriedSCC *> SCCDAGAttrs::
+    getSCCsWithLoopCarriedControlDependencies(void) const {
+  std::set<LoopCarriedSCC *> sccs;
 
   /*
    * Iterate over SCCs with loop-carried data dependences.
@@ -158,16 +160,18 @@ std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedControlDependencies(
       }
     }
     if (isControl) {
-      sccs.insert(sccDependencies.first);
+      auto scc = sccDependencies.first;
+      auto sccAttrs = static_cast<LoopCarriedSCC *>(this->getSCCAttrs(scc));
+      sccs.insert(sccAttrs);
     }
   }
 
   return sccs;
 }
 
-std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies(
+std::set<LoopCarriedSCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies(
     void) const {
-  std::set<SCC *> sccs;
+  std::set<LoopCarriedSCC *> sccs;
 
   /*
    * Iterate over SCCs with loop-carried data dependences.
@@ -195,7 +199,8 @@ std::set<SCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies(
       }
     }
     if (isData) {
-      sccs.insert(SCC);
+      auto sccAttrs = static_cast<LoopCarriedSCC *>(this->getSCCAttrs(SCC));
+      sccs.insert(sccAttrs);
     }
   }
 
@@ -224,7 +229,7 @@ bool SCCDAGAttrs::isLoopGovernedBySCC(SCC *governingSCC) const {
     toTraverse.pop();
     auto sccInfo = this->getSCCAttrs(scc);
 
-    if (sccInfo->canExecuteIndependently()) {
+    if (isa<LoopIterationSCC>(sccInfo)) {
       auto nextDepth = this->sccdag->getNextDepthNodes(node);
       for (auto next : nextDepth)
         toTraverse.push(next);
@@ -264,7 +269,7 @@ std::set<uint32_t> SCCDAGAttrs::getLiveOutVariablesThatAreNotReducable(
     if (sccInfo->canExecuteReducibly()) {
       continue;
     }
-    if (sccInfo->canExecuteIndependently()) {
+    if (isa<LoopIterationSCC>(sccInfo)) {
       continue;
     }
 
@@ -939,7 +944,7 @@ void SCCDAGAttrs::dumpToFile(int id) {
 
     auto sccInfo = getSCCAttrs(sccNode->getT());
     ros << "Type: ";
-    if (sccInfo->canExecuteIndependently())
+    if (isa<LoopIterationSCC>(sccInfo))
       ros << "Independent ";
     if (sccInfo->canBeCloned())
       ros << "Clonable ";
@@ -975,13 +980,12 @@ void SCCDAGAttrs::dumpToFile(int id) {
   return;
 }
 
-std::unordered_set<SCCAttrs *> SCCDAGAttrs::getSCCsOfType(
-    SCCAttrs::SCCType sccType) {
+std::unordered_set<SCCAttrs *> SCCDAGAttrs::getSCCsOfKind(SCCAttrs::SCCKind K) {
   std::unordered_set<SCCAttrs *> SCCs{};
-
   for (auto pair : this->sccToInfo) {
     auto sccAttrs = pair.second;
-    if (sccAttrs->mustExecuteSequentially()) {
+    auto sccKind = sccAttrs->getKind();
+    if (sccKind == K) {
       SCCs.insert(sccAttrs);
     }
   }

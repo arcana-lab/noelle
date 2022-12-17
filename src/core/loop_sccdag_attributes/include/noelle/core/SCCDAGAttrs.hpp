@@ -25,6 +25,7 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCAttrs.hpp"
+#include "noelle/core/LoopCarriedSCC.hpp"
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/LoopGoverningIVAttribution.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
@@ -58,10 +59,11 @@ public:
   /*
    * Methods on SCCDAG.
    */
-  std::set<SCC *> getSCCsWithLoopCarriedDependencies(void) const;
-  std::set<SCC *> getSCCsWithLoopCarriedDataDependencies(void) const;
-  std::set<SCC *> getSCCsWithLoopCarriedControlDependencies(void) const;
-  std::unordered_set<SCCAttrs *> getSCCsOfType(SCCAttrs::SCCType sccType);
+  std::set<LoopCarriedSCC *> getSCCsWithLoopCarriedDependencies(void) const;
+  std::set<LoopCarriedSCC *> getSCCsWithLoopCarriedDataDependencies(void) const;
+  std::set<LoopCarriedSCC *> getSCCsWithLoopCarriedControlDependencies(
+      void) const;
+  std::unordered_set<SCCAttrs *> getSCCsOfKind(SCCAttrs::SCCKind K);
   bool isLoopGovernedBySCC(SCC *scc) const;
   std::set<uint32_t> getLiveOutVariablesThatAreNotReducable(
       LoopEnvironment *env) const;
