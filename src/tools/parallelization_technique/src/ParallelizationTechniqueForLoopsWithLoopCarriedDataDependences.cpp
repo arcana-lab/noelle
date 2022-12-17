@@ -185,6 +185,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
      * The current SCC is sequential.
      */
     stream << prefixString << "    Loop-carried dependences\n";
+
     sccManager->iterateOverLoopCarriedDependences(
         scc,
         [this, scc, &stream, &prefixString](DGEdge<Value> *dep) -> bool {

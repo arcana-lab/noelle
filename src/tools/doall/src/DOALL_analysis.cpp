@@ -37,12 +37,7 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
    * Iterate over SCCs with loop-carried data dependences
    */
   auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDataDependencies();
-  for (auto scc : nonDOALLSCCs) {
-
-    /*
-     * Fetch the SCC metadata.
-     */
-    auto sccInfo = sccManager->getSCCAttrs(scc);
+  for (auto sccInfo : nonDOALLSCCs) {
 
     /*
      * If the SCC is reducable, then it does not block the loop to be a DOALL.
@@ -71,28 +66,27 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
      */
     auto areAllDataLCDsFromDisjointMemoryAccesses = true;
     auto domainSpaceAnalysis = LDI->getLoopIterationDomainSpaceAnalysis();
-    sccManager->iterateOverLoopCarriedDataDependences(
-        scc,
-        [&areAllDataLCDsFromDisjointMemoryAccesses,
-         domainSpaceAnalysis](DGEdge<Value> *dep) -> bool {
-          if (dep->isControlDependence())
-            return false;
+    for (auto dep : sccInfo->getLoopCarriedDependences()) {
+      if (dep->isControlDependence()) {
+        continue;
+      }
+      if (!dep->isMemoryDependence()) {
+        areAllDataLCDsFromDisjointMemoryAccesses = false;
+        break;
+      }
 
-          if (!dep->isMemoryDependence()) {
-            areAllDataLCDsFromDisjointMemoryAccesses = false;
-            return true;
-          }
-
-          auto fromInst = dyn_cast<Instruction>(dep->getOutgoingT());
-          auto toInst = dyn_cast<Instruction>(dep->getIncomingT());
-          areAllDataLCDsFromDisjointMemoryAccesses &=
-              fromInst && toInst
-              && domainSpaceAnalysis
-                     ->areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(
-                         fromInst,
-                         toInst);
-          return !areAllDataLCDsFromDisjointMemoryAccesses;
-        });
+      auto fromInst = dyn_cast<Instruction>(dep->getOutgoingT());
+      auto toInst = dyn_cast<Instruction>(dep->getIncomingT());
+      areAllDataLCDsFromDisjointMemoryAccesses &=
+          fromInst && toInst
+          && domainSpaceAnalysis
+                 ->areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(
+                     fromInst,
+                     toInst);
+      if (!areAllDataLCDsFromDisjointMemoryAccesses) {
+        break;
+      }
+    }
     if (areAllDataLCDsFromDisjointMemoryAccesses) {
       continue;
     }
@@ -100,6 +94,7 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
     /*
      * We found an SCC that blocks DOALL to be applicable.
      */
+    auto scc = sccInfo->getSCC();
     sccs.insert(scc);
   }
 

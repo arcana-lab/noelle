@@ -194,16 +194,24 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments(
        * If the SCC is due to a control dependence, but the number of iterations
        * can be computed just before executing the loop, then we can skip it.
        */
-      if (true && wasOriginalLoopIVGoverned
-          && (depsSCCs.find(scc) == depsSCCs.end())) {
-        continue;
+      if (wasOriginalLoopIVGoverned) {
+        auto weCanSkipIt = true;
+        for (auto sccInfo : depsSCCs) {
+          if (scc == sccInfo->getSCC()) {
+            weCanSkipIt = false;
+            break;
+          }
+        }
+        if (weCanSkipIt) {
+          continue;
+        }
       }
 
       /*
        * Only sequential SCC can generate a sequential segment.
        * FIXME: A reducible SCC should not be sequential in nature
        */
-      if (sccInfo->mustExecuteSequentially()) {
+      if (isa<LoopCarriedSCC>(sccInfo)) {
         requireSS = true;
         break;
       }

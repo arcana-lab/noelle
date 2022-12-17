@@ -141,7 +141,7 @@ void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
       /*
        * Skip SCC that will not be executed sequentially
        */
-      if (!sccAttrs->mustExecuteSequentially()) {
+      if (!isa<LoopCarriedSCC>(sccAttrs)) {
         continue;
       }
       if (sccAttrs->isInductionVariableSCC()) {
@@ -154,9 +154,6 @@ void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
         continue;
       }
       if (sccAttrs->canBeClonedUsingLocalMemoryLocations()) {
-        continue;
-      }
-      if (sccAttrs->getType() != SCCAttrs::SCCType::SEQUENTIAL) {
         continue;
       }
     }

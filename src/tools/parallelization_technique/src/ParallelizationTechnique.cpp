@@ -1751,12 +1751,11 @@ float ParallelizationTechnique::computeSequentialFractionOfExecution(
   for (auto sccNode : sccdag->getNodes()) {
     auto scc = sccNode->getT();
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    auto sccType = sccInfo->getType();
 
     auto numInstructionsInSCC = scc->numInternalNodes();
     totalInstructionCount += numInstructionsInSCC;
-    bool mustBeSynchronized =
-        sccType == SCCAttrs::SCCType::SEQUENTIAL && !sccInfo->canBeCloned();
+    auto mustBeSynchronized =
+        isa<LoopCarriedSCC>(sccInfo) && (!sccInfo->canBeCloned());
     if (mustBeSynchronized) {
       sequentialInstructionCount += numInstructionsInSCC;
     }

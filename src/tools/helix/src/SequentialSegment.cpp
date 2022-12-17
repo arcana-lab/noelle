@@ -502,7 +502,7 @@ void SequentialSegment::printSCCInfo(
 
     auto sccInfo = sccManager->getSCCAttrs(scc);
 
-    errs() << prefixString << "    Type = " << sccInfo->getType() << "\n";
+    errs() << prefixString << "    Type = " << sccInfo->getKind() << "\n";
     errs() << prefixString << "    Loop-carried data dependences\n";
     auto lcIterFunc = [scc, &prefixString](DGEdge<Value> *dep) -> bool {
       auto fromInst = dep->getOutgoingT();

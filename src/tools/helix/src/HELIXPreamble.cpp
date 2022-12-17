@@ -81,8 +81,7 @@ SCC *HELIX::getTheSequentialSCCThatCreatesTheSequentialPrologue(
    * Check the SCC to see if it has to run sequentially
    */
   auto sccInfo = sccManager->getSCCAttrs(preambleSCC);
-  if ((!sccInfo->isInductionVariableSCC())
-      && sccInfo->mustExecuteSequentially()) {
+  if ((!sccInfo->isInductionVariableSCC()) && isa<LoopCarriedSCC>(sccInfo)) {
 
     /*
      * The SCC must execute sequentially.

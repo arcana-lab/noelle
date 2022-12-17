@@ -256,7 +256,6 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
      */
     auto scc = sccdag->sccOfValue(&I);
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    auto sccType = sccInfo->getType();
 
     /*
      * Ensure the original instruction was not independent, not a PHI, not

@@ -163,8 +163,7 @@ bool EnablersManager::applyLoopDistribution(LoopDependenceInfo *LDI,
      * induction variables). If it is, then we do not need to remove it from the
      * loop to be parallelized.
      */
-    if (false || (!sccInfo->mustExecuteSequentially())
-        || (sccInfo->canBeCloned())
+    if ((!isa<LoopCarriedSCC>(sccInfo)) || (sccInfo->canBeCloned())
         || (sccInfo->canBeClonedUsingLocalMemoryLocations())) {
       return false;
     }

@@ -129,20 +129,23 @@ bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
           /*
            * Print the loop-carried dependences between instructions of the SCC.
            */
-          errs() << "DOALL:     Loop-carried data dependences\n";
-          sccManager->iterateOverLoopCarriedDataDependences(
-              scc,
-              [](DGEdge<Value> *dep) -> bool {
-                auto fromInst = dep->getOutgoingT();
-                auto toInst = dep->getIncomingT();
-                errs() << "DOALL:       " << *fromInst << " ---> " << *toInst;
-                if (dep->isMemoryDependence()) {
-                  errs() << " via memory\n";
-                } else {
-                  errs() << " via variable\n";
-                }
-                return false;
-              });
+          auto sccInfo = sccManager->getSCCAttrs(scc);
+          if (auto loopCarriedSCC = dyn_cast<LoopCarriedSCC>(sccInfo)) {
+            errs() << "DOALL:     Loop-carried data dependences\n";
+            for (auto dep : loopCarriedSCC->getLoopCarriedDependences()) {
+              if (dep->isControlDependence()) {
+                continue;
+              }
+              auto fromInst = dep->getOutgoingT();
+              auto toInst = dep->getIncomingT();
+              errs() << "DOALL:       " << *fromInst << " ---> " << *toInst;
+              if (dep->isMemoryDependence()) {
+                errs() << " via memory\n";
+              } else {
+                errs() << " via variable\n";
+              }
+            }
+          }
         }
       }
     }
