@@ -20,9 +20,9 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "LoopStats.hpp"
+#include "noelle/core/LoopIterationSCC.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void LoopStats::collectStatsOnLLVMSCCs(Hot *profiles,
                                        PDG *loopDG,
@@ -141,7 +141,7 @@ void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
       /*
        * Skip SCC that will not be executed sequentially
        */
-      if (!isa<LoopCarriedSCC>(sccAttrs)) {
+      if (isa<LoopIterationSCC>(sccAttrs)) {
         continue;
       }
       if (sccAttrs->isInductionVariableSCC()) {
@@ -164,3 +164,5 @@ void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
 
   return;
 }
+
+} // namespace llvm::noelle
