@@ -9,6 +9,7 @@
  * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/Noelle.hpp"
+#include "noelle/core/Reduction.hpp"
 #include "SCCDAGAttrTestSuite.hpp"
 
 namespace llvm::noelle {
@@ -143,7 +144,7 @@ Values SCCDAGAttrTestSuite::reducibleSCCsAreFound (ModulePass &pass, TestSuite &
   std::set<SCC *> sccs;
   for (auto node : attrPass.sccdag->getNodes()) {
     SCCAttrs *sccAttrs = attrPass.attrs->getSCCAttrs(node->getT());
-    if (sccAttrs->canExecuteReducibly()) sccs.insert(node->getT());
+    if (isa<Reduction>(sccAttrs)) sccs.insert(node->getT());
   }
 
   return SCCDAGAttrTestSuite::printSCCs(pass, suite, sccs);
