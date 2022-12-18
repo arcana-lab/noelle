@@ -120,10 +120,6 @@ void Reduction::initializeObject(LoopStructure &loop) {
   return;
 }
 
-bool Reduction::canExecuteReducibly(void) const {
-  return true;
-}
-
 Value *Reduction::getInitialValue(void) const {
   return this->initialValue;
 }

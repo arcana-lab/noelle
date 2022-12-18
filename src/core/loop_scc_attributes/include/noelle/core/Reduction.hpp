@@ -37,8 +37,6 @@ public:
 
   PHINode *getPhiThatAccumulatesValuesBetweenLoopIterations(void) const;
 
-  bool canExecuteReducibly(void) const override;
-
   static bool classof(const SCCAttrs *s);
 
 protected:

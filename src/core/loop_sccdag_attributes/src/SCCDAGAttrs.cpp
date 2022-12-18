@@ -266,7 +266,7 @@ std::set<uint32_t> SCCDAGAttrs::getLiveOutVariablesThatAreNotReducable(
      * Check the SCC type.
      */
     auto sccInfo = this->getSCCAttrs(scc);
-    if (sccInfo->canExecuteReducibly()) {
+    if (isa<Reduction>(sccInfo)) {
       continue;
     }
     if (isa<LoopIterationSCC>(sccInfo)) {
@@ -948,7 +948,7 @@ void SCCDAGAttrs::dumpToFile(int id) {
       ros << "Independent ";
     if (sccInfo->canBeCloned())
       ros << "Clonable ";
-    if (sccInfo->canExecuteReducibly())
+    if (isa<Reduction>(sccInfo))
       ros << "Reducible ";
     if (sccInfo->isInductionVariableSCC())
       ros << "IV ";

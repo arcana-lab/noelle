@@ -222,10 +222,6 @@ std::unordered_set<AllocaInst *> SCCAttrs::getMemoryLocationsToClone(
   return allocations;
 }
 
-bool SCCAttrs::canExecuteReducibly(void) const {
-  return false;
-}
-
 bool SCCAttrs::canBeCloned(void) const {
   return this->isClonable;
 }

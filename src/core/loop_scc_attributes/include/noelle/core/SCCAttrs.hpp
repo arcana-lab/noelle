@@ -69,12 +69,6 @@ public:
   SCC *getSCC(void);
 
   /*
-   * Return true if a reduction transformation can be applied to the SCC.
-   * Return false otherwise.
-   */
-  virtual bool canExecuteReducibly(void) const;
-
-  /*
    * Return true if it is safe to clone the SCC.
    * Return false otherwise.
    *

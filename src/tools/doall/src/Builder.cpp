@@ -22,6 +22,7 @@
 #include "DOALL.hpp"
 #include "DOALLTask.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
+#include "noelle/core/Reduction.hpp"
 
 namespace llvm::noelle {
 
@@ -220,7 +221,7 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
    */
   auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDataDependencies();
   for (auto sccInfo : nonDOALLSCCs) {
-    if (!sccInfo->canExecuteReducibly())
+    if (!isa<Reduction>(sccInfo))
       continue;
 
     auto headerPHI = sccInfo->getSingleHeaderPHI();

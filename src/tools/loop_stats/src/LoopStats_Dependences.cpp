@@ -21,6 +21,7 @@
  */
 #include "LoopStats.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
+#include "noelle/core/Reduction.hpp"
 
 namespace llvm::noelle {
 
@@ -150,7 +151,7 @@ void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
       if (sccAttrs->canBeCloned()) {
         continue;
       }
-      if (sccAttrs->canExecuteReducibly()) {
+      if (isa<Reduction>(sccAttrs)) {
         continue;
       }
       if (sccAttrs->canBeClonedUsingLocalMemoryLocations()) {

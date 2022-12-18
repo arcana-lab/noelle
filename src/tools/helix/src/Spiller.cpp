@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/tools/HELIX.hpp"
+#include "noelle/core/Reduction.hpp"
 
 namespace llvm::noelle {
 
@@ -62,7 +63,7 @@ void HELIX::spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
     assert(phiSCC != nullptr);
     auto sccInfo = sccManager->getSCCAttrs(phiSCC);
     assert(sccInfo != nullptr);
-    if (sccInfo->canExecuteReducibly()) {
+    if (isa<Reduction>(sccInfo)) {
       continue;
     }
     if (sccInfo->isInductionVariableSCC()) {

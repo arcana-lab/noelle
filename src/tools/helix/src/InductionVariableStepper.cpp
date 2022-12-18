@@ -82,7 +82,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
      */
     auto scc = sccdag->sccOfValue(loopEntryPHI);
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (sccInfo->canExecuteReducibly()) {
+    if (isa<Reduction>(sccInfo)) {
       continue;
     }
 
