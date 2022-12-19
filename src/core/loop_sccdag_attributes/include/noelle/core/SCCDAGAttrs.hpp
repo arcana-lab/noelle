@@ -75,21 +75,6 @@ public:
   SCCAttrs *getSCCAttrs(SCC *scc) const;
 
   /*
-   * Methods about multiple dependences.
-   */
-  void iterateOverLoopCarriedDataDependences(
-      SCC *scc,
-      std::function<bool(DGEdge<Value> *dependence)> func);
-
-  void iterateOverLoopCarriedControlDependences(
-      SCC *scc,
-      std::function<bool(DGEdge<Value> *dependence)> func);
-
-  void iterateOverLoopCarriedDependences(
-      SCC *scc,
-      std::function<bool(DGEdge<Value> *dependence)> func);
-
-  /*
    * Return the SCCDAG of the loop.
    */
   SCCDAG *getSCCDAG(void) const;

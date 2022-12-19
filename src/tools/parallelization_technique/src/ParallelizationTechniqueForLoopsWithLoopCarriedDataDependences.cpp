@@ -178,56 +178,51 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
     /*
      * Fetch the SCC metadata.
      */
-    auto sccInfo = sccManager->getSCCAttrs(scc);
-    assert(sccInfo != nullptr);
+    auto sccInfo = cast<LoopCarriedSCC>(sccManager->getSCCAttrs(scc));
 
     /*
      * The current SCC is sequential.
      */
     stream << prefixString << "    Loop-carried dependences\n";
+    for (auto dep : sccInfo->getLoopCarriedDependences()) {
 
-    sccManager->iterateOverLoopCarriedDependences(
-        scc,
-        [this, scc, &stream, &prefixString](DGEdge<Value> *dep) -> bool {
-          /*
-           * Fetch the instructions involved in the dependence
-           */
-          auto fromInst = dep->getOutgoingT();
-          auto toInst = dep->getIncomingT();
+      /*
+       * Fetch the instructions involved in the dependence
+       */
+      auto fromInst = dep->getOutgoingT();
+      auto toInst = dep->getIncomingT();
 
-          /*
-           * Check that both instructions belong to the SCC.
-           */
-          std::string fromInstClarification{};
-          if (scc->fetchNode(fromInst) == nullptr) {
-            fromInstClarification.append(" (outside the SCC) ");
-          }
-          std::string toInstClarification{};
-          if (scc->fetchNode(toInst) == nullptr) {
-            toInstClarification.append(" (outside the SCC) ");
-          }
-          stream << prefixString << "      " << *fromInst
-                 << fromInstClarification << " ---> " << *toInst
-                 << toInstClarification;
+      /*
+       * Check that both instructions belong to the SCC.
+       */
+      std::string fromInstClarification{};
+      if (scc->fetchNode(fromInst) == nullptr) {
+        fromInstClarification.append(" (outside the SCC) ");
+      }
+      std::string toInstClarification{};
+      if (scc->fetchNode(toInst) == nullptr) {
+        toInstClarification.append(" (outside the SCC) ");
+      }
+      stream << prefixString << "      " << *fromInst << fromInstClarification
+             << " ---> " << *toInst << toInstClarification;
 
-          /*
-           * Control dependences.
-           */
-          if (dep->isControlDependence()) {
-            stream << " control\n";
-            return false;
-          }
+      /*
+       * Control dependences.
+       */
+      if (dep->isControlDependence()) {
+        stream << " control\n";
+        continue;
+      }
 
-          /*
-           * Data dependences.
-           */
-          if (dep->isMemoryDependence()) {
-            stream << " via memory\n";
-          } else {
-            stream << " via variable\n";
-          }
-          return false;
-        });
+      /*
+       * Data dependences.
+       */
+      if (dep->isMemoryDependence()) {
+        stream << " via memory\n";
+      } else {
+        stream << " via variable\n";
+      }
+    }
 
     /*
      * Print the content of the SCC.
