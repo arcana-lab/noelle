@@ -75,11 +75,6 @@ public:
   SCCAttrs *getSCCAttrs(SCC *scc) const;
 
   /*
-   * Methods about single dependence.
-   */
-  bool isALoopCarriedDependence(SCC *scc, DGEdge<Value> *dependence);
-
-  /*
    * Methods about multiple dependences.
    */
   void iterateOverLoopCarriedDataDependences(

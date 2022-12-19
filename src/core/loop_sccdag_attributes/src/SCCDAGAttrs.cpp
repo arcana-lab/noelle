@@ -765,24 +765,6 @@ bool SCCDAGAttrs::isClonableByCmpBrInstrs(SCC *scc) const {
   return true;
 }
 
-bool SCCDAGAttrs::isALoopCarriedDependence(SCC *scc,
-                                           DGEdge<Value> *dependence) {
-
-  /*
-   * Fetch the set of loop-carried data dependences of a SCC.
-   */
-  if (this->sccToLoopCarriedDependencies.find(scc)
-      == this->sccToLoopCarriedDependencies.end()) {
-    return false;
-  }
-  auto lcDeps = this->sccToLoopCarriedDependencies[scc];
-
-  /*
-   * Check whether the dependence is inside lcDeps.
-   */
-  return lcDeps.find(dependence) != lcDeps.end();
-}
-
 void SCCDAGAttrs::iterateOverLoopCarriedDataDependences(
     SCC *scc,
     std::function<bool(DGEdge<Value> *dependence)> func) {
@@ -797,7 +779,7 @@ void SCCDAGAttrs::iterateOverLoopCarriedDataDependences(
       /*
        * Check if the current edge is a loop-carried data dependence.
        */
-      if (!this->isALoopCarriedDependence(scc, edge)) {
+      if (!edge->isLoopCarriedDependence()) {
         continue;
       }
 
@@ -839,7 +821,7 @@ void SCCDAGAttrs::iterateOverLoopCarriedControlDependences(
       /*
        * Check if the current edge is a loop-carried data dependence.
        */
-      if (!this->isALoopCarriedDependence(scc, edge)) {
+      if (!edge->isLoopCarriedDependence()) {
         continue;
       }
 
@@ -882,7 +864,7 @@ void SCCDAGAttrs::iterateOverLoopCarriedDependences(
       /*
        * Check if the current edge is a loop-carried data dependence.
        */
-      if (!this->isALoopCarriedDependence(scc, edge)) {
+      if (!edge->isLoopCarriedDependence()) {
         continue;
       }
 
