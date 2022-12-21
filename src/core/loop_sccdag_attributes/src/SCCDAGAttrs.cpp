@@ -84,31 +84,6 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
                                &loopGoverningIVs,
                                &DS](SCC *scc) -> bool {
     /*
-     * Allocate the metadata about this SCC.
-     */
-    auto lcVar = this->checkIfReducible(scc, loopNode);
-    auto isReducable = lcVar != nullptr;
-    SCCAttrs *sccInfo = nullptr;
-    if (isReducable) {
-      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
-      sccInfo =
-          new BinaryReduction(scc, rootLoop, loopCarriedDependences, lcVar, DS);
-
-    } else if (this->checkIfIndependent(scc)) {
-      sccInfo = new LoopIterationSCC(scc, rootLoop);
-
-    } else {
-
-      /*
-       * Fetch the loop-carried dependences.
-       */
-      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
-      sccInfo = new LoopCarriedSCC(scc, rootLoop, loopCarriedDependences);
-    }
-    assert(sccInfo != nullptr);
-    this->sccToInfo[scc] = sccInfo;
-
-    /*
      * Collect information about the current SCC.
      */
     auto doesSCCOnlyContainIV =
@@ -116,7 +91,49 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
                                                        loopNode,
                                                        ivs,
                                                        loopGoverningIVs);
-    sccInfo->setSCCToBeInductionVariable(doesSCCOnlyContainIV);
+    auto lcVar = this->checkIfReducible(scc, loopNode);
+    auto isReducable = lcVar != nullptr;
+
+    /*
+     * Allocate the metadata about this SCC.
+     */
+    SCCAttrs *sccInfo = nullptr;
+    if (this->checkIfIndependent(scc)) {
+
+      /*
+       * The SCC does not cross multiple loop iterations.
+       */
+      sccInfo = new LoopIterationSCC(scc, rootLoop);
+
+    } else if (doesSCCOnlyContainIV) {
+
+      /*
+       * The SCC is an IV.
+       */
+      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+      sccInfo = new LoopCarriedSCC(scc, rootLoop, loopCarriedDependences);
+      sccInfo->setSCCToBeInductionVariable(doesSCCOnlyContainIV);
+
+    } else if (isReducable) {
+
+      /*
+       * The SCC is a reduction variable.
+       */
+      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+      sccInfo =
+          new BinaryReduction(scc, rootLoop, loopCarriedDependences, lcVar, DS);
+
+    } else {
+
+      /*
+       * The SCC crosses multiple loop iterations and we don't know how to
+       * parallelize it.
+       */
+      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+      sccInfo = new LoopCarriedSCC(scc, rootLoop, loopCarriedDependences);
+    }
+    assert(sccInfo != nullptr);
+    this->sccToInfo[scc] = sccInfo;
 
     this->checkIfClonable(scc, loopNode);
 

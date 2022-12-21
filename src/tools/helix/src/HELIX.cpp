@@ -300,7 +300,7 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
       if (auto consumer = dyn_cast<PHINode>(*producer->user_begin())) {
         auto scc = sccManager->getSCCDAG()->sccOfValue(consumer);
         auto sccInfo = sccManager->getSCCAttrs(scc);
-        if (!sccInfo->isInductionVariableSCC() && isa<Reduction>(sccInfo)) {
+        if (isa<Reduction>(sccInfo)) {
           helixTask->addSkippedEnvironmentVariable(producer);
           return true;
         }

@@ -327,19 +327,19 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
     /*
      * We have a live-in variable.
      *
-     * The initial value of the reduction variable can be skipped,
-     * which means the following conditions should all meet
-     * 1. This live-in variable only has one user, and
-     * 2. The user is a phi node, and
-     * 3. The scc contains this phi is not part of the induction variable but
-     * reducible operation
+     * We can avoid to propagate this live-in variable if its only purpose is to
+     * propagate the initial value to a reduction variable. This is the case if
+     * the following conditions are all met:
+     * 1. This live-in variable only has one user within the loop, and
+     * 2. This user is a PHI node, and
+     * 3. The SCC that contains this PHI is a reduction variable.
      */
     auto producer = loopEnvironment->getProducer(id);
     if (producer->getNumUses() == 1) {
       if (auto consumer = dyn_cast<PHINode>(*producer->user_begin())) {
         auto scc = sccManager->getSCCDAG()->sccOfValue(consumer);
         auto sccInfo = sccManager->getSCCAttrs(scc);
-        if (!sccInfo->isInductionVariableSCC() && isa<Reduction>(sccInfo)) {
+        if (isa<Reduction>(sccInfo)) {
           chunkerTask->addSkippedEnvironmentVariable(producer);
           return true;
         }
