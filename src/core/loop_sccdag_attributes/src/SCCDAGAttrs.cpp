@@ -98,6 +98,10 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
       sccInfo = new LoopIterationSCC(scc, rootLoop);
 
     } else {
+
+      /*
+       * Fetch the loop-carried dependences.
+       */
       auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
       sccInfo = new LoopCarriedSCC(scc, rootLoop, loopCarriedDependences);
     }
@@ -391,7 +395,7 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables(
     SCC *scc,
     LoopForestNode *loopNode,
     std::set<InductionVariable *> &IVs,
-    std::set<InductionVariable *> &loopGoverningIVs) {
+    std::set<InductionVariable *> &loopGoverningIVs) const {
 
   /*
    * Identify contained induction variables

@@ -29,7 +29,6 @@ SCCAttrs::SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop)
     PHINodes{},
     headerPHINodes{},
     controlFlowInsts{},
-    controlPairs{},
     isClonable{ false },
     isSCCClonableIntoLocalMemory{ false },
     hasIV{ false },
@@ -63,25 +62,8 @@ iterator_range<SCCAttrs::phi_iterator> SCCAttrs::getPHIs(void) const {
   return make_range(this->PHINodes.begin(), this->PHINodes.end());
 }
 
-bool SCCAttrs::doesItContainThisPHI(PHINode *phi) {
-  return this->PHINodes.find(phi) != this->PHINodes.end();
-}
-
 bool SCCAttrs::isCommutative(void) const {
   return this->commutative;
-}
-
-uint32_t SCCAttrs::numberOfPHIs(void) {
-  return this->PHINodes.size();
-}
-
-PHINode *SCCAttrs::getSinglePHI(void) {
-  if (this->PHINodes.size() != 1) {
-    return nullptr;
-  }
-
-  auto singlePHI = *this->PHINodes.begin();
-  return singlePHI;
 }
 
 PHINode *SCCAttrs::getSingleHeaderPHI(void) {
@@ -155,39 +137,11 @@ void SCCAttrs::collectControlFlowInstructions(void) {
     this->controlFlowInsts.insert(currentInst);
   }
 
-  /*
-   * Collect the (condition, jump) pairs.
-   */
-  for (auto term : this->controlFlowInsts) {
-    assert(term->isTerminator());
-    if (auto br = dyn_cast<BranchInst>(term)) {
-      assert(
-          br->isConditional()
-          && "BranchInst with outgoing edges in an SCC must be conditional!");
-      this->controlPairs.insert(std::make_pair(br->getCondition(), br));
-    }
-    if (auto switchI = dyn_cast<SwitchInst>(term)) {
-      this->controlPairs.insert(
-          std::make_pair(switchI->getCondition(), switchI));
-    }
-  }
-
   return;
 }
 
 SCC *SCCAttrs::getSCC(void) {
   return this->scc;
-}
-
-const std::pair<Value *, Instruction *>
-    *SCCAttrs::getSingleInstructionThatControlLoopExit(void) {
-  if (this->controlPairs.size() != 1) {
-    return nullptr;
-  }
-
-  auto controlPair = &*this->controlPairs.begin();
-
-  return controlPair;
 }
 
 void SCCAttrs::setSCCToBeInductionVariable(bool hasIV) {

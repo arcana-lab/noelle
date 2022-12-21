@@ -46,11 +46,6 @@ public:
   SCCDAGAttrs() = delete;
 
   /*
-   * Dependencies in graph
-   */
-  std::map<SCC *, Criticisms> sccToLoopCarriedDependencies;
-
-  /*
    * Isolated clonable SCCs and resulting inherited parents
    */
   std::unordered_map<SCC *, std::unordered_set<SCC *>> parentsViaClones;
@@ -87,6 +82,7 @@ public:
   ~SCCDAGAttrs();
 
 private:
+  std::map<SCC *, Criticisms> sccToLoopCarriedDependencies;
   bool enableFloatAsReal;
   std::unordered_map<SCC *, SCCAttrs *> sccToInfo;
   PDG *loopDG;
@@ -108,7 +104,7 @@ private:
       SCC *scc,
       LoopForestNode *loop,
       std::set<InductionVariable *> &loopGoverningIVs,
-      std::set<InductionVariable *> &IVs);
+      std::set<InductionVariable *> &IVs) const;
   void checkIfClonable(SCC *scc, LoopForestNode *loop);
   void checkIfClonableByUsingLocalMemory(SCC *scc, LoopForestNode *loop);
   bool isClonableByInductionVars(SCC *scc) const;

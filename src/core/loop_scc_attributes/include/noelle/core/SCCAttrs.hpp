@@ -55,8 +55,6 @@ public:
   std::set<Value *> stronglyConnectedDataValues;
   std::set<Value *> weaklyConnectedDataValues;
 
-  std::set<std::pair<Value *, Instruction *>> controlPairs;
-
   /*
    * No public constructors.
    * Only objects of sub-classes can be allocated.
@@ -101,27 +99,9 @@ public:
   iterator_range<phi_iterator> getPHIs(void) const;
 
   /*
-   * Check if the SCC contains a PHI instruction.
-   */
-  bool doesItContainThisPHI(PHINode *phi);
-
-  /*
-   * Return the single PHI if it exists. nullptr otherwise.
-   */
-  PHINode *getSinglePHI(void);
-
-  /*
    * Return the single header PHI if it exists. nullptr otherwise.
    */
   PHINode *getSingleHeaderPHI(void);
-
-  /*
-   * Return the number of PHIs included in the SCC.
-   */
-  uint32_t numberOfPHIs(void);
-
-  const std::pair<Value *, Instruction *>
-      *getSingleInstructionThatControlLoopExit(void);
 
   /*
    * Return the memory locations that can be safely clone to void reusing the
