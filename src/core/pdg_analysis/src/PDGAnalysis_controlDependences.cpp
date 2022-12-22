@@ -24,8 +24,7 @@
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void PDGAnalysis::constructEdgesFromControl(PDG *pdg, Module &M) {
   assert(pdg != nullptr);
@@ -194,3 +193,5 @@ void PDGAnalysis::constructEdgesFromControlForFunction(PDG *pdg, Function &F) {
 
   return;
 }
+
+} // namespace llvm::noelle
