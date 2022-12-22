@@ -21,6 +21,7 @@
  */
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/Reduction.hpp"
+#include "noelle/core/InductionVariableSCC.hpp"
 #include "SCCDAGAttrTestSuite.hpp"
 
 namespace llvm::noelle {
@@ -161,8 +162,8 @@ Values SCCDAGAttrTestSuite::sccsWithIVAreFound(ModulePass &pass,
   SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
   std::set<SCC *> sccs;
   for (auto node : attrPass.sccdag->getNodes()) {
-    SCCAttrs *sccAttrs = attrPass.attrs->getSCCAttrs(node->getT());
-    if (sccAttrs->isInductionVariableSCC())
+    auto sccAttrs = attrPass.attrs->getSCCAttrs(node->getT());
+    if (isa<InductionVariableSCC>(sccAttrs))
       sccs.insert(node->getT());
   }
 
