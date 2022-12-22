@@ -31,7 +31,6 @@ SCCAttrs::SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop)
     controlFlowInsts{},
     isClonable{ false },
     isSCCClonableIntoLocalMemory{ false },
-    hasIV{ false },
     commutative{ false },
     kind{ K } {
 
@@ -144,11 +143,6 @@ SCC *SCCAttrs::getSCC(void) {
   return this->scc;
 }
 
-void SCCAttrs::setSCCToBeInductionVariable(bool hasIV) {
-  this->hasIV = hasIV;
-  return;
-}
-
 void SCCAttrs::setSCCToBeClonable(bool isClonable) {
   this->isClonable = isClonable;
   return;
@@ -178,10 +172,6 @@ std::unordered_set<AllocaInst *> SCCAttrs::getMemoryLocationsToClone(
 
 bool SCCAttrs::canBeCloned(void) const {
   return this->isClonable;
-}
-
-bool SCCAttrs::isInductionVariableSCC(void) const {
-  return this->hasIV;
 }
 
 SCCAttrs::SCCKind SCCAttrs::getKind(void) const {

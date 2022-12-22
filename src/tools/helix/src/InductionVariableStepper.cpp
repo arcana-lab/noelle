@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/Reduction.hpp"
+#include "noelle/core/InductionVariableSCC.hpp"
 #include "noelle/tools/HELIX.hpp"
 
 namespace llvm::noelle {
@@ -274,7 +275,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
       cloneInstsThatCanStayInTheNewHeader.insert(cloneI);
       continue;
     }
-    if (sccInfo->isInductionVariableSCC()) {
+    if (isa<InductionVariableSCC>(sccInfo)) {
       originalInstsThatCanStayInTheNewHeader.push_back(&I);
       cloneInstsThatCanStayInTheNewHeader.insert(cloneI);
       continue;

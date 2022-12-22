@@ -8,6 +8,9 @@ set(Srcs
   LoopIterationSCC.cpp
   Reduction.cpp
   BinaryReduction.cpp
+  RecomputableSCC.cpp
+  InductionVariableSCC.cpp
+  LinearInductionVariableSCC.cpp
 )
 
 # Compilation flags

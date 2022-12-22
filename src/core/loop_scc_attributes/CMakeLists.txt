@@ -18,6 +18,9 @@ install(
   include/noelle/core/LoopIterationSCC.hpp
   include/noelle/core/Reduction.hpp
   include/noelle/core/BinaryReduction.hpp
+  include/noelle/core/RecomputableSCC.hpp
+  include/noelle/core/InductionVariableSCC.hpp
+  include/noelle/core/LinearInductionVariableSCC.hpp
   DESTINATION 
   include/noelle/core
   )

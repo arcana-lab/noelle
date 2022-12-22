@@ -22,6 +22,7 @@
 #include "DOALL.hpp"
 #include "DOALLTask.hpp"
 #include "noelle/core/Reduction.hpp"
+#include "noelle/core/InductionVariableSCC.hpp"
 
 namespace llvm::noelle {
 
@@ -298,7 +299,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
     auto producer = loopEnvironment->getProducer(id);
     auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (sccInfo->isInductionVariableSCC()) {
+    if (isa<InductionVariableSCC>(sccInfo)) {
 
       /*
        * The current live-out variable is an induction variable.

@@ -24,6 +24,7 @@
 #include "noelle/core/BinaryReduction.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
+#include "noelle/core/LinearInductionVariableSCC.hpp"
 
 namespace llvm::noelle {
 
@@ -111,8 +112,10 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
        * The SCC is an IV.
        */
       auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
-      sccInfo = new LoopCarriedSCC(scc, rootLoop, loopCarriedDependences);
-      sccInfo->setSCCToBeInductionVariable(doesSCCOnlyContainIV);
+      sccInfo = new LinearInductionVariableSCC(scc,
+                                               rootLoop,
+                                               loopCarriedDependences,
+                                               DS);
 
     } else if (isReducable) {
 
@@ -752,7 +755,7 @@ bool SCCDAGAttrs::isClonableByInductionVars(SCC *scc) const {
    */
   auto sccInfo = this->getSCCAttrs(scc);
 
-  return sccInfo->isInductionVariableSCC();
+  return isa<InductionVariableSCC>(sccInfo);
 }
 
 bool SCCDAGAttrs::isClonableBySyntacticSugarInstrs(SCC *scc) const {
@@ -821,7 +824,7 @@ void SCCDAGAttrs::dumpToFile(int id) {
       ros << "Clonable ";
     if (isa<Reduction>(sccInfo))
       ros << "Reducible ";
-    if (sccInfo->isInductionVariableSCC())
+    if (isa<InductionVariableSCC>(sccInfo))
       ros << "IV ";
     ros << "\n";
 

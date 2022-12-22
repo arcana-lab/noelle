@@ -35,11 +35,21 @@ public:
    */
   enum SCCKind {
     LOOP_CARRIED,
+
     REDUCTION,
     BINARY_REDUCTION,
     LAST_REDUCTION,
+
+    RECOMPUTABLE,
+    INDUCTION_VARIABLE,
+    LINEAR_INDUCTION_VARIABLE,
+    LAST_INDUCTION_VARIABLE,
+    LAST_RECOMPUTABLE,
+
     LAST_LOOP_CARRIED,
+
     LOOP_ITERATION,
+
     LAST_LOOP_ITERATION
   };
 
@@ -82,12 +92,6 @@ public:
   bool canBeClonedUsingLocalMemoryLocations(void) const;
 
   /*
-   * Return true if the SCC exists because of updates of an induction variable.
-   * Return false otherwise.
-   */
-  bool isInductionVariableSCC(void) const;
-
-  /*
    * Return true if the SCC is commutative
    * Return false otherwise.
    */
@@ -108,11 +112,6 @@ public:
    * same memory locations between invocations of this SCC.
    */
   std::unordered_set<AllocaInst *> getMemoryLocationsToClone(void) const;
-
-  /*
-   * Set the SCC as created by updated of an induction variable.
-   */
-  void setSCCToBeInductionVariable(bool hasIV = true);
 
   /*
    * Set the SCC to be clonable.
@@ -141,7 +140,6 @@ protected:
   bool isSCCClonableIntoLocalMemory;
 
   bool isClonable;
-  bool hasIV;
   bool commutative;
 
   void collectPHIs(LoopStructure &LS);

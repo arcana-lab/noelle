@@ -22,6 +22,7 @@
 #include "LoopStats.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
 #include "noelle/core/Reduction.hpp"
+#include "noelle/core/InductionVariableSCC.hpp"
 
 namespace llvm::noelle {
 
@@ -145,13 +146,13 @@ void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
       if (isa<LoopIterationSCC>(sccAttrs)) {
         continue;
       }
-      if (sccAttrs->isInductionVariableSCC()) {
-        continue;
-      }
-      if (sccAttrs->canBeCloned()) {
+      if (isa<InductionVariableSCC>(sccAttrs)) {
         continue;
       }
       if (isa<Reduction>(sccAttrs)) {
+        continue;
+      }
+      if (sccAttrs->canBeCloned()) {
         continue;
       }
       if (sccAttrs->canBeClonedUsingLocalMemoryLocations()) {
