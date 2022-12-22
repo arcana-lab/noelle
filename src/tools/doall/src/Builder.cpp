@@ -221,12 +221,13 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
    */
   auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDataDependencies();
   for (auto sccInfo : nonDOALLSCCs) {
-    if (!isa<Reduction>(sccInfo))
+    auto reductionSCC = dyn_cast<Reduction>(sccInfo);
+    if (reductionSCC == nullptr)
       continue;
 
-    auto headerPHI = sccInfo->getSingleHeaderPHI();
-    if (!headerPHI)
-      continue;
+    auto headerPHI =
+        reductionSCC->getPhiThatAccumulatesValuesBetweenLoopIterations();
+    assert(headerPHI != nullptr);
 
     auto hasInstsInHeader = false;
     auto scc = sccInfo->getSCC();
@@ -346,7 +347,9 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
       assert(scc != nullptr);
       auto sccInfo = sccManager->getSCCAttrs(scc);
       assert(sccInfo != nullptr);
-      auto headerPHI = sccInfo->getSingleHeaderPHI();
+      auto reductionSCC = cast<Reduction>(sccInfo);
+      auto headerPHI =
+          reductionSCC->getPhiThatAccumulatesValuesBetweenLoopIterations();
       assert(headerPHI != nullptr);
       auto clonePHI = task->getCloneOfOriginalInstruction(headerPHI);
 

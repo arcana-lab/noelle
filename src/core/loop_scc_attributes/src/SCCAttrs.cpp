@@ -65,11 +65,6 @@ bool SCCAttrs::isCommutative(void) const {
   return this->commutative;
 }
 
-PHINode *SCCAttrs::getSingleHeaderPHI(void) {
-  return this->headerPHINodes.size() != 1 ? nullptr
-                                          : *this->headerPHINodes.begin();
-}
-
 void SCCAttrs::collectPHIs(LoopStructure &LS) {
 
   /*

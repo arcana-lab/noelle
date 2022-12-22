@@ -103,11 +103,6 @@ public:
   iterator_range<phi_iterator> getPHIs(void) const;
 
   /*
-   * Return the single header PHI if it exists. nullptr otherwise.
-   */
-  PHINode *getSingleHeaderPHI(void);
-
-  /*
    * Return the memory locations that can be safely clone to void reusing the
    * same memory locations between invocations of this SCC.
    */
