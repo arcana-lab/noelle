@@ -18,7 +18,7 @@ for i in `ls regression_*/errors.txt` ; do
 
     # Check if the test timeout
     grep Terminated compiler_output.txt &> /dev/null ;
-    if test $? -eq 0 ; then
+    if test $? -ne 0 ; then
       popd &> /dev/null ;
       continue ;
     fi
