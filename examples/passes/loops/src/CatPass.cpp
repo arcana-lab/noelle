@@ -7,6 +7,9 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
 #include "noelle/core/Noelle.hpp"
+#include "noelle/core/InductionVariableSCC.hpp"
+#include "noelle/core/Reduction.hpp"
+#include "noelle/core/LoopIterationSCC.hpp"
 
 using namespace llvm::noelle;
 
@@ -135,17 +138,17 @@ struct CAT : public ModulePass {
          * Fetch the SCC information.
          */
         auto sccInfo = sccManager->getSCCAttrs(scc);
-        if (sccInfo->isInductionVariableSCC()) {
+        if (isa<InductionVariableSCC>(sccInfo)) {
           errs()
               << "     It is due to the computation of an induction variable\n";
 
-        } else if (sccInfo->canExecuteReducibly()) {
+        } else if (isa<Reduction>(sccInfo)) {
           errs() << "     It can be reduced\n";
 
-        } else if (sccInfo->canExecuteIndependently()) {
+        } else if (isa<LoopIterationSCC>(sccInfo)) {
           errs() << "     It doesn't have loop-carried data dependences\n";
 
-        } else if (sccInfo->mustExecuteSequentially()) {
+        } else if (isa<LoopCarriedSCC>(sccInfo)) {
           errs() << "     It must be executed sequentially\n";
 
         } else {
