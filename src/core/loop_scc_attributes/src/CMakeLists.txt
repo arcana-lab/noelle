@@ -11,6 +11,7 @@ set(Srcs
   RecomputableSCC.cpp
   InductionVariableSCC.cpp
   LinearInductionVariableSCC.cpp
+  LoopCarriedSCCUnknown.cpp
 )
 
 # Compilation flags

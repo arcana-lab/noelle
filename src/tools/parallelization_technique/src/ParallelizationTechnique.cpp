@@ -22,6 +22,7 @@
 #include "noelle/tools/ParallelizationTechnique.hpp"
 #include "noelle/core/Reduction.hpp"
 #include "noelle/core/BinaryReduction.hpp"
+#include "noelle/core/LoopCarriedSCCUnknown.hpp"
 
 namespace llvm::noelle {
 
@@ -1755,7 +1756,7 @@ float ParallelizationTechnique::computeSequentialFractionOfExecution(
     auto numInstructionsInSCC = scc->numInternalNodes();
     totalInstructionCount += numInstructionsInSCC;
     auto mustBeSynchronized =
-        isa<LoopCarriedSCC>(sccInfo) && (!sccInfo->canBeCloned());
+        isa<LoopCarriedSCCUnknown>(sccInfo) && (!sccInfo->canBeCloned());
     if (mustBeSynchronized) {
       sequentialInstructionCount += numInstructionsInSCC;
     }

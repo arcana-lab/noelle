@@ -19,32 +19,20 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
-
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/SCCAttrs.hpp"
+#include "noelle/core/LoopCarriedSCCUnknown.hpp"
 
 namespace llvm::noelle {
 
-class LoopCarriedSCC : public SCCAttrs {
-public:
-  LoopCarriedSCC() = delete;
+LoopCarriedSCCUnknown::LoopCarriedSCCUnknown(
+    SCC *s,
+    LoopStructure *loop,
+    const std::set<DGEdge<Value> *> &loopCarriedDependences)
+  : LoopCarriedSCC{ LOOP_CARRIED_UNKNOWN, s, loop, loopCarriedDependences } {
+  return;
+}
 
-  std::set<DGEdge<Value> *> getLoopCarriedDependences(void) const;
-
-  static bool classof(const SCCAttrs *s);
-
-protected:
-  std::set<DGEdge<Value> *> lcDeps;
-
-  LoopCarriedSCC(SCC *s,
-                 LoopStructure *loop,
-                 const std::set<DGEdge<Value> *> &loopCarriedDependences);
-
-  LoopCarriedSCC(SCCKind K,
-                 SCC *s,
-                 LoopStructure *loop,
-                 const std::set<DGEdge<Value> *> &loopCarriedDependences);
-};
+bool LoopCarriedSCCUnknown::classof(const SCCAttrs *s) {
+  return (s->getKind() == SCCAttrs::SCCKind::LOOP_CARRIED_UNKNOWN);
+}
 
 } // namespace llvm::noelle

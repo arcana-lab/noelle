@@ -23,8 +23,9 @@
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/BinaryReduction.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
-#include "noelle/core/LoopCarriedDependencies.hpp"
 #include "noelle/core/LinearInductionVariableSCC.hpp"
+#include "noelle/core/LoopCarriedSCCUnknown.hpp"
+#include "noelle/core/LoopCarriedDependencies.hpp"
 
 namespace llvm::noelle {
 
@@ -133,7 +134,8 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
        * parallelize it.
        */
       auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
-      sccInfo = new LoopCarriedSCC(scc, rootLoop, loopCarriedDependences);
+      sccInfo =
+          new LoopCarriedSCCUnknown(scc, rootLoop, loopCarriedDependences);
     }
     assert(sccInfo != nullptr);
     this->sccToInfo[scc] = sccInfo;

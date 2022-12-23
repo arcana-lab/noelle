@@ -22,29 +22,23 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/SCCAttrs.hpp"
+#include "noelle/core/Dominators.hpp"
+#include "noelle/core/LoopCarriedSCC.hpp"
 
 namespace llvm::noelle {
 
-class LoopCarriedSCC : public SCCAttrs {
+class LoopCarriedSCCUnknown : public LoopCarriedSCC {
 public:
-  LoopCarriedSCC() = delete;
+  LoopCarriedSCCUnknown(
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdge<Value> *> &loopCarriedDependences);
 
-  std::set<DGEdge<Value> *> getLoopCarriedDependences(void) const;
+  LoopCarriedSCCUnknown() = delete;
 
   static bool classof(const SCCAttrs *s);
 
 protected:
-  std::set<DGEdge<Value> *> lcDeps;
-
-  LoopCarriedSCC(SCC *s,
-                 LoopStructure *loop,
-                 const std::set<DGEdge<Value> *> &loopCarriedDependences);
-
-  LoopCarriedSCC(SCCKind K,
-                 SCC *s,
-                 LoopStructure *loop,
-                 const std::set<DGEdge<Value> *> &loopCarriedDependences);
 };
 
 } // namespace llvm::noelle
