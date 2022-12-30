@@ -32,11 +32,6 @@ SCCAttrs::SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop)
     kind{ K } {
 
   /*
-   * Collect the control flows of the SCC.
-   */
-  this->collectControlFlowInstructions();
-
-  /*
    * Collect PHIs included in the SCC.
    */
   this->collectPHIs(*loop);
@@ -69,42 +64,6 @@ void SCCAttrs::collectPHIs(LoopStructure &LS) {
      */
     if (auto phi = dyn_cast<PHINode>(V)) {
       this->PHINodes.insert(phi);
-    }
-  }
-
-  return;
-}
-
-void SCCAttrs::collectControlFlowInstructions(void) {
-
-  /*
-   * Collect the terminators of the SCC that are involved in dependences.
-   */
-  for (auto iNodePair : this->scc->internalNodePairs()) {
-
-    /*
-     * Check if there are dependences from this SCC to another.
-     */
-    auto sccValue = iNodePair.first;
-    auto sccNode = iNodePair.second;
-    if (sccNode->numOutgoingEdges() == 0) {
-      continue;
-    }
-
-    /*
-     * Check if the current SCC node is an instruction.
-     */
-    auto currentValue = sccValue;
-    if (!isa<Instruction>(currentValue)) {
-      continue;
-    }
-    auto currentInst = cast<Instruction>(currentValue);
-
-    /*
-     * Check if the instruction is a terminator.
-     */
-    if (!currentInst->isTerminator()) {
-      continue;
     }
   }
 

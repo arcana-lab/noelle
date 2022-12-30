@@ -131,7 +131,6 @@ protected:
 
   SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop);
   void collectPHIs(LoopStructure &LS);
-  void collectControlFlowInstructions(void);
 
 private:
   SCCKind kind;
