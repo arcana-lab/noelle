@@ -133,17 +133,28 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
                                            lcVar,
                                            DS);
 
+<<<<<<< Updated upstream
         } else if (stackObjectsThatAreClonable.size() > 0) {
+=======
+        } else if (stackObjectsThatAreClonable.size() > 0) {
+>>>>>>> Stashed changes
 
           /*
            * The SCC can be removed by cloning stack objects.
            */
           auto loopCarriedDependences =
               this->sccToLoopCarriedDependencies.at(scc);
+<<<<<<< Updated upstream
           sccInfo =
               new StackObjectClonableSCC(scc, rootLoop, loopCarriedDependences);
           sccInfo->addClonableMemoryLocationsContainedInSCC(
               stackObjectsThatAreClonable);
+=======
+          sccInfo =
+              new StackObjectClonableSCC(scc, rootLoop, loopCarriedDependences);
+          sccInfo->addClonableMemoryLocationsContainedInSCC(
+              stackObjectsThatAreClonable);
+>>>>>>> Stashed changes
 
         } else {
 
@@ -652,9 +663,15 @@ void SCCDAGAttrs::checkIfClonable(SCC *scc, LoopForestNode *loopNode) {
   return;
 }
 
+<<<<<<< Updated upstream
 std::set<ClonableMemoryLocation *> SCCDAGAttrs::
     checkIfClonableByUsingLocalMemory(SCC *scc,
                                       LoopForestNode *loopNode) const {
+=======
+std::set<ClonableMemoryLocation *> SCCDAGAttrs::
+    checkIfClonableByUsingLocalMemory(SCC *scc,
+                                      LoopForestNode *loopNode) const {
+>>>>>>> Stashed changes
 
   /*
    * Ignore SCC without loop carried dependencies
