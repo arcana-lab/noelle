@@ -127,18 +127,13 @@ public:
 protected:
   LoopStructure *loop;
   SCC *scc;
-  std::set<BasicBlock *> bbs;
-  std::set<Instruction *> controlFlowInsts;
   std::set<PHINode *> PHINodes;
-  std::set<PHINode *> headerPHINodes;
-
-  SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop);
   std::unordered_set<const ClonableMemoryLocation *> clonableMemoryLocations;
   bool isSCCClonableIntoLocalMemory;
-
   bool isClonable;
   bool commutative;
 
+  SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop);
   void collectPHIs(LoopStructure &LS);
   void collectControlFlowInstructions(void);
 

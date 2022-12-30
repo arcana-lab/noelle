@@ -27,22 +27,10 @@ SCCAttrs::SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop)
   : loop{ loop },
     scc{ s },
     PHINodes{},
-    headerPHINodes{},
-    controlFlowInsts{},
     isClonable{ false },
     isSCCClonableIntoLocalMemory{ false },
     commutative{ false },
     kind{ K } {
-
-  /*
-   * Collect the basic blocks of the instructions contained within SCC.
-   */
-  for (auto nodePair : this->scc->internalNodePairs()) {
-    auto valueIncludedInSCC = nodePair.first;
-    if (auto instIncludedInSCC = dyn_cast<Instruction>(valueIncludedInSCC)) {
-      this->bbs.insert(instIncludedInSCC->getParent());
-    }
-  }
 
   /*
    * Collect the control flows of the SCC.
@@ -82,10 +70,6 @@ void SCCAttrs::collectPHIs(LoopStructure &LS) {
      */
     if (auto phi = dyn_cast<PHINode>(V)) {
       this->PHINodes.insert(phi);
-      if (LS.getHeader() == phi->getParent()) {
-        this->headerPHINodes.insert(phi);
-      }
-      continue;
     }
   }
 
@@ -123,12 +107,6 @@ void SCCAttrs::collectControlFlowInstructions(void) {
     if (!currentInst->isTerminator()) {
       continue;
     }
-
-    /*
-     * The instruction is a terminator that have a dependence that leaves its
-     * SCC.
-     */
-    this->controlFlowInsts.insert(currentInst);
   }
 
   return;
