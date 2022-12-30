@@ -20,9 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "LoopStats.hpp"
-#include "noelle/core/LoopIterationSCC.hpp"
-#include "noelle/core/ReductionSCC.hpp"
-#include "noelle/core/InductionVariableSCC.hpp"
+#include "noelle/core/LoopCarriedUnknownSCC.hpp"
 
 namespace llvm::noelle {
 
@@ -143,13 +141,7 @@ void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
       /*
        * Skip SCC that will not be executed sequentially
        */
-      if (isa<LoopIterationSCC>(sccAttrs)) {
-        continue;
-      }
-      if (isa<InductionVariableSCC>(sccAttrs)) {
-        continue;
-      }
-      if (isa<ReductionSCC>(sccAttrs)) {
+      if (!isa<LoopCarriedUnknownSCC>(sccAttrs)) {
         continue;
       }
       if (sccAttrs->canBeCloned()) {

@@ -1,4 +1,4 @@
-UTILS=transformations basic_utilities dominators task loop_induction_variables loop_carried_dependences loop_scc_attributes loop_sccdag_attributes loop_content loop_nesting_graph architecture clean_metadata callgraph scheduler metadata_manager loop_transformer
+UTILS=transformations basic_utilities types_manager dominators task loop_induction_variables loop_carried_dependences loop_scc_attributes loop_sccdag_attributes loop_content loop_nesting_graph architecture clean_metadata callgraph scheduler metadata_manager loop_transformer
 ANALYSIS=dg pdg pdg_analysis talkdown alloc_aa dataflow loop_structure loop_environment loop_forest loop_invariants
 ENABLERS=loop_distribution loop_unroll loop_whilifier outliner cfg_analysis cfg_transformer
 ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) hotprofiler unique_ir_marker noelle scripts
@@ -39,6 +39,9 @@ dataflow:
 	cd $@ ; ../../scripts/run_me.sh
 
 hotprofiler:
+	cd $@ ; ../../scripts/run_me.sh
+
+types_manager:
 	cd $@ ; ../../scripts/run_me.sh
 
 basic_utilities:

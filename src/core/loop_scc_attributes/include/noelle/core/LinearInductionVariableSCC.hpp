@@ -22,6 +22,7 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/InductionVariableSCC.hpp"
 
 namespace llvm::noelle {
@@ -32,11 +33,15 @@ public:
       SCC *s,
       LoopStructure *loop,
       const std::set<DGEdge<Value> *> &loopCarriedDependences,
-      DominatorSummary &dom);
+      DominatorSummary &dom,
+      const std::set<InductionVariable *> &IVs);
+
+  std::set<InductionVariable *> getIVs(void) const;
 
   static bool classof(const SCCAttrs *s);
 
 protected:
+  std::set<InductionVariable *> _IVs;
 };
 
 } // namespace llvm::noelle
