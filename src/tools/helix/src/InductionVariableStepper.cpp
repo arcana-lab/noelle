@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/Reduction.hpp"
+#include "noelle/core/ReductionSCC.hpp"
 #include "noelle/core/InductionVariableSCC.hpp"
 #include "noelle/tools/HELIX.hpp"
 
@@ -83,7 +83,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
      */
     auto scc = sccdag->sccOfValue(loopEntryPHI);
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (isa<Reduction>(sccInfo)) {
+    if (isa<ReductionSCC>(sccInfo)) {
       continue;
     }
 
@@ -465,7 +465,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
      */
     auto producerSCC = sccdag->sccOfValue(originalProducer);
     auto reducableVariable =
-        static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
+        static_cast<ReductionSCC *>(sccManager->getSCCAttrs(producerSCC));
     assert(reducableVariable != nullptr);
 
     /*

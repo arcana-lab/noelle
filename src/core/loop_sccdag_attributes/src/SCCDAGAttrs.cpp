@@ -21,10 +21,10 @@
  */
 #include "noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/BinaryReduction.hpp"
+#include "noelle/core/BinaryReductionSCC.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
 #include "noelle/core/LinearInductionVariableSCC.hpp"
-#include "noelle/core/LoopCarriedSCCUnknown.hpp"
+#include "noelle/core/LoopCarriedUnknownSCC.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 
 namespace llvm::noelle {
@@ -79,71 +79,74 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
   /*
    * Tag SCCs depending on their characteristics.
    */
-  loopSCCDAG->iterateOverSCCs([this,
-                               loopNode,
-                               rootLoop,
-                               &ivs,
-                               &loopGoverningIVs,
-                               &DS](SCC *scc) -> bool {
-    /*
-     * Collect information about the current SCC.
-     */
-    auto doesSCCOnlyContainIV =
-        this->checkIfSCCOnlyContainsInductionVariables(scc,
-                                                       loopNode,
-                                                       ivs,
-                                                       loopGoverningIVs);
-    auto lcVar = this->checkIfReducible(scc, loopNode);
-    auto isReducable = lcVar != nullptr;
+  loopSCCDAG->iterateOverSCCs(
+      [this, loopNode, rootLoop, &ivs, &loopGoverningIVs, &DS](
+          SCC *scc) -> bool {
+        /*
+         * Collect information about the current SCC.
+         */
+        auto doesSCCOnlyContainIV =
+            this->checkIfSCCOnlyContainsInductionVariables(scc,
+                                                           loopNode,
+                                                           ivs,
+                                                           loopGoverningIVs);
+        auto lcVar = this->checkIfReducible(scc, loopNode);
+        auto isReducable = lcVar != nullptr;
 
-    /*
-     * Allocate the metadata about this SCC.
-     */
-    SCCAttrs *sccInfo = nullptr;
-    if (this->checkIfIndependent(scc)) {
+        /*
+         * Allocate the metadata about this SCC.
+         */
+        SCCAttrs *sccInfo = nullptr;
+        if (this->checkIfIndependent(scc)) {
 
-      /*
-       * The SCC does not cross multiple loop iterations.
-       */
-      sccInfo = new LoopIterationSCC(scc, rootLoop);
+          /*
+           * The SCC does not cross multiple loop iterations.
+           */
+          sccInfo = new LoopIterationSCC(scc, rootLoop);
 
-    } else if (doesSCCOnlyContainIV) {
+        } else if (doesSCCOnlyContainIV) {
 
-      /*
-       * The SCC is an IV.
-       */
-      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
-      sccInfo = new LinearInductionVariableSCC(scc,
-                                               rootLoop,
-                                               loopCarriedDependences,
-                                               DS);
+          /*
+           * The SCC is an IV.
+           */
+          auto loopCarriedDependences =
+              this->sccToLoopCarriedDependencies.at(scc);
+          sccInfo = new LinearInductionVariableSCC(scc,
+                                                   rootLoop,
+                                                   loopCarriedDependences,
+                                                   DS);
 
-    } else if (isReducable) {
+        } else if (isReducable) {
 
-      /*
-       * The SCC is a reduction variable.
-       */
-      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
-      sccInfo =
-          new BinaryReduction(scc, rootLoop, loopCarriedDependences, lcVar, DS);
+          /*
+           * The SCC is a reduction variable.
+           */
+          auto loopCarriedDependences =
+              this->sccToLoopCarriedDependencies.at(scc);
+          sccInfo = new BinaryReductionSCC(scc,
+                                           rootLoop,
+                                           loopCarriedDependences,
+                                           lcVar,
+                                           DS);
 
-    } else {
+        } else {
 
-      /*
-       * The SCC crosses multiple loop iterations and we don't know how to
-       * parallelize it.
-       */
-      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
-      sccInfo =
-          new LoopCarriedSCCUnknown(scc, rootLoop, loopCarriedDependences);
-    }
-    assert(sccInfo != nullptr);
-    this->sccToInfo[scc] = sccInfo;
+          /*
+           * The SCC crosses multiple loop iterations and we don't know how to
+           * parallelize it.
+           */
+          auto loopCarriedDependences =
+              this->sccToLoopCarriedDependencies.at(scc);
+          sccInfo =
+              new LoopCarriedUnknownSCC(scc, rootLoop, loopCarriedDependences);
+        }
+        assert(sccInfo != nullptr);
+        this->sccToInfo[scc] = sccInfo;
 
-    this->checkIfClonable(scc, loopNode);
+        this->checkIfClonable(scc, loopNode);
 
-    return false;
-  });
+        return false;
+      });
 
   collectSCCGraphAssumingDistributedClones();
 
@@ -292,7 +295,7 @@ std::set<uint32_t> SCCDAGAttrs::getLiveOutVariablesThatAreNotReducable(
      * Check the SCC type.
      */
     auto sccInfo = this->getSCCAttrs(scc);
-    if (isa<Reduction>(sccInfo)) {
+    if (isa<ReductionSCC>(sccInfo)) {
       continue;
     }
     if (isa<LoopIterationSCC>(sccInfo)) {
@@ -824,7 +827,7 @@ void SCCDAGAttrs::dumpToFile(int id) {
       ros << "Independent ";
     if (sccInfo->canBeCloned())
       ros << "Clonable ";
-    if (isa<Reduction>(sccInfo))
+    if (isa<ReductionSCC>(sccInfo))
       ros << "Reducible ";
     if (isa<InductionVariableSCC>(sccInfo))
       ros << "IV ";

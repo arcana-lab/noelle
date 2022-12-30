@@ -16,12 +16,12 @@ install(
   include/noelle/core/SCCAttrs.hpp
   include/noelle/core/LoopCarriedSCC.hpp
   include/noelle/core/LoopIterationSCC.hpp
-  include/noelle/core/Reduction.hpp
-  include/noelle/core/BinaryReduction.hpp
+  include/noelle/core/ReductionSCC.hpp
+  include/noelle/core/BinaryReductionSCC.hpp
   include/noelle/core/RecomputableSCC.hpp
   include/noelle/core/InductionVariableSCC.hpp
   include/noelle/core/LinearInductionVariableSCC.hpp
-  include/noelle/core/LoopCarriedSCCUnknown.hpp
+  include/noelle/core/LoopCarriedUnknownSCC.hpp
   DESTINATION 
   include/noelle/core
   )

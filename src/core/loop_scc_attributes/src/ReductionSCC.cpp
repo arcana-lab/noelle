@@ -19,15 +19,16 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/Reduction.hpp"
+#include "noelle/core/ReductionSCC.hpp"
 
 namespace llvm::noelle {
 
-Reduction::Reduction(SCCKind K,
-                     SCC *s,
-                     LoopStructure *loop,
-                     const std::set<DGEdge<Value> *> &loopCarriedDependences,
-                     DominatorSummary &dom)
+ReductionSCC::ReductionSCC(
+    SCCKind K,
+    SCC *s,
+    LoopStructure *loop,
+    const std::set<DGEdge<Value> *> &loopCarriedDependences,
+    DominatorSummary &dom)
   : LoopCarriedSCC{ K, s, loop, loopCarriedDependences },
     initialValue{ nullptr },
     accumulator{ nullptr },
@@ -63,13 +64,14 @@ Reduction::Reduction(SCCKind K,
   return;
 }
 
-Reduction::Reduction(SCCKind K,
-                     SCC *s,
-                     LoopStructure *loop,
-                     const std::set<DGEdge<Value> *> &loopCarriedDependences,
-                     Value *initialValue,
-                     PHINode *accumulator,
-                     Value *identity)
+ReductionSCC::ReductionSCC(
+    SCCKind K,
+    SCC *s,
+    LoopStructure *loop,
+    const std::set<DGEdge<Value> *> &loopCarriedDependences,
+    Value *initialValue,
+    PHINode *accumulator,
+    Value *identity)
   : LoopCarriedSCC(K, s, loop, loopCarriedDependences),
     initialValue{ initialValue },
     accumulator{ accumulator },
@@ -83,7 +85,7 @@ Reduction::Reduction(SCCKind K,
   return;
 }
 
-void Reduction::initializeObject(LoopStructure &loop) {
+void ReductionSCC::initializeObject(LoopStructure &loop) {
 
   /*
    * Find the PHI of the SCC.
@@ -105,11 +107,11 @@ void Reduction::initializeObject(LoopStructure &loop) {
   }
   if (phiInst == nullptr) {
     errs()
-        << "Reduction: ERROR = the PHI node could not be found in the header of the loop.\n";
-    errs() << "Reduction: SCC = ";
+        << "ReductionSCC: ERROR = the PHI node could not be found in the header of the loop.\n";
+    errs() << "ReductionSCC: SCC = ";
     this->scc->print(errs());
     errs() << "\n";
-    errs() << "Reduction: Loop = ";
+    errs() << "ReductionSCC: Loop = ";
     loop.print(errs());
     errs() << "\n";
     abort();
@@ -120,20 +122,20 @@ void Reduction::initializeObject(LoopStructure &loop) {
   return;
 }
 
-Value *Reduction::getInitialValue(void) const {
+Value *ReductionSCC::getInitialValue(void) const {
   return this->initialValue;
 }
 
-PHINode *Reduction::getPhiThatAccumulatesValuesBetweenLoopIterations(
+PHINode *ReductionSCC::getPhiThatAccumulatesValuesBetweenLoopIterations(
     void) const {
   return this->accumulator;
 }
 
-Value *Reduction::getIdentityValue(void) const {
+Value *ReductionSCC::getIdentityValue(void) const {
   return this->identity;
 }
 
-bool Reduction::classof(const SCCAttrs *s) {
+bool ReductionSCC::classof(const SCCAttrs *s) {
   return (s->getKind() >= SCCAttrs::SCCKind::REDUCTION)
          && (s->getKind() <= SCCAttrs::SCCKind::LAST_REDUCTION);
 }

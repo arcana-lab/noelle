@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/Architecture.hpp"
-#include "noelle/core/Reduction.hpp"
+#include "noelle/core/ReductionSCC.hpp"
 #include "noelle/tools/HELIX.hpp"
 #include "DOALL.hpp"
 
@@ -266,7 +266,7 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
     auto producer = environment->getProducer(id);
     auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (isa<Reduction>(sccInfo)) {
+    if (isa<ReductionSCC>(sccInfo)) {
       errs()
           << this->prefixString
           << "    The following variable is reducable: " << *producer << "\n";
@@ -300,7 +300,7 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
       if (auto consumer = dyn_cast<PHINode>(*producer->user_begin())) {
         auto scc = sccManager->getSCCDAG()->sccOfValue(consumer);
         auto sccInfo = sccManager->getSCCAttrs(scc);
-        if (isa<Reduction>(sccInfo)) {
+        if (isa<ReductionSCC>(sccInfo)) {
           helixTask->addSkippedEnvironmentVariable(producer);
           return true;
         }

@@ -6,12 +6,12 @@ set(Srcs
   SCCAttrs.cpp
   LoopCarriedSCC.cpp
   LoopIterationSCC.cpp
-  Reduction.cpp
-  BinaryReduction.cpp
+  ReductionSCC.cpp
+  BinaryReductionSCC.cpp
   RecomputableSCC.cpp
   InductionVariableSCC.cpp
   LinearInductionVariableSCC.cpp
-  LoopCarriedSCCUnknown.cpp
+  LoopCarriedUnknownSCC.cpp
 )
 
 # Compilation flags

@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/Reduction.hpp"
+#include "noelle/core/ReductionSCC.hpp"
 #include "noelle/core/InductionVariableSCC.hpp"
 #include "noelle/tools/HELIX.hpp"
 
@@ -64,7 +64,7 @@ void HELIX::spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
     assert(phiSCC != nullptr);
     auto sccInfo = sccManager->getSCCAttrs(phiSCC);
     assert(sccInfo != nullptr);
-    if (isa<Reduction>(sccInfo)) {
+    if (isa<ReductionSCC>(sccInfo)) {
       continue;
     }
     if (isa<InductionVariableSCC>(sccInfo)) {

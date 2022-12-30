@@ -21,7 +21,7 @@
  */
 #include "DOALL.hpp"
 #include "DOALLTask.hpp"
-#include "noelle/core/Reduction.hpp"
+#include "noelle/core/ReductionSCC.hpp"
 #include "noelle/core/InductionVariableSCC.hpp"
 
 namespace llvm::noelle {
@@ -340,7 +340,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
       if (auto consumer = dyn_cast<PHINode>(*producer->user_begin())) {
         auto scc = sccManager->getSCCDAG()->sccOfValue(consumer);
         auto sccInfo = sccManager->getSCCAttrs(scc);
-        if (isa<Reduction>(sccInfo)) {
+        if (isa<ReductionSCC>(sccInfo)) {
           chunkerTask->addSkippedEnvironmentVariable(producer);
           return true;
         }

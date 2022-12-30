@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/InductionVariableSCC.hpp"
-#include "noelle/core/LoopCarriedSCCUnknown.hpp"
+#include "noelle/core/LoopCarriedUnknownSCC.hpp"
 #include "noelle/tools/HELIX.hpp"
 
 namespace llvm::noelle {
@@ -84,7 +84,7 @@ SCC *HELIX::getTheSequentialSCCThatCreatesTheSequentialPrologue(
    */
   auto sccInfo = sccManager->getSCCAttrs(preambleSCC);
   if ((!isa<InductionVariableSCC>(sccInfo))
-      && isa<LoopCarriedSCCUnknown>(sccInfo)) {
+      && isa<LoopCarriedUnknownSCC>(sccInfo)) {
 
     /*
      * The SCC must execute sequentially.

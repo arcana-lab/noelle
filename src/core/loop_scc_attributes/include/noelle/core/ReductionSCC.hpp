@@ -27,9 +27,9 @@
 
 namespace llvm::noelle {
 
-class Reduction : public LoopCarriedSCC {
+class ReductionSCC : public LoopCarriedSCC {
 public:
-  Reduction() = delete;
+  ReductionSCC() = delete;
 
   Value *getInitialValue(void) const;
 
@@ -45,19 +45,19 @@ protected:
   Value *identity;
   PHINode *headerAccumulator;
 
-  Reduction(SCCKind K,
-            SCC *s,
-            LoopStructure *loop,
-            const std::set<DGEdge<Value> *> &loopCarriedDependences,
-            DominatorSummary &dom);
+  ReductionSCC(SCCKind K,
+               SCC *s,
+               LoopStructure *loop,
+               const std::set<DGEdge<Value> *> &loopCarriedDependences,
+               DominatorSummary &dom);
 
-  Reduction(SCCKind K,
-            SCC *s,
-            LoopStructure *loop,
-            const std::set<DGEdge<Value> *> &loopCarriedDependences,
-            Value *initialValue,
-            PHINode *accumulator,
-            Value *identity);
+  ReductionSCC(SCCKind K,
+               SCC *s,
+               LoopStructure *loop,
+               const std::set<DGEdge<Value> *> &loopCarriedDependences,
+               Value *initialValue,
+               PHINode *accumulator,
+               Value *identity);
 
   void initializeObject(LoopStructure &loop);
 };

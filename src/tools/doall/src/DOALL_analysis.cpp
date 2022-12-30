@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "DOALL.hpp"
-#include "noelle/core/Reduction.hpp"
+#include "noelle/core/ReductionSCC.hpp"
 
 namespace llvm::noelle {
 
@@ -43,7 +43,7 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
     /*
      * If the SCC is reducable, then it does not block the loop to be a DOALL.
      */
-    if (isa<Reduction>(sccInfo)) {
+    if (isa<ReductionSCC>(sccInfo)) {
       continue;
     }
 

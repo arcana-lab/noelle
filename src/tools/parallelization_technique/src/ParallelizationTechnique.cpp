@@ -20,9 +20,9 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/tools/ParallelizationTechnique.hpp"
-#include "noelle/core/Reduction.hpp"
-#include "noelle/core/BinaryReduction.hpp"
-#include "noelle/core/LoopCarriedSCCUnknown.hpp"
+#include "noelle/core/ReductionSCC.hpp"
+#include "noelle/core/BinaryReductionSCC.hpp"
+#include "noelle/core/LoopCarriedUnknownSCC.hpp"
 
 namespace llvm::noelle {
 
@@ -277,7 +277,7 @@ BasicBlock *ParallelizationTechnique::
     auto producer = environment->getProducer(envID);
     auto producerSCC = loopSCCDAG->sccOfValue(producer);
     auto producerSCCAttributes =
-        static_cast<BinaryReduction *>(sccManager->getSCCAttrs(producerSCC));
+        static_cast<BinaryReductionSCC *>(sccManager->getSCCAttrs(producerSCC));
     assert(producerSCCAttributes != nullptr);
 
     /*
@@ -965,7 +965,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
        */
       auto producerSCC = loopSCCDAG->sccOfValue(producer);
       auto reductionVariable =
-          static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
+          static_cast<ReductionSCC *>(sccManager->getSCCAttrs(producerSCC));
       assert(reductionVariable != nullptr);
 
       /*
@@ -1469,7 +1469,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
     assert(producer != nullptr);
     auto producerSCC = sccdag->sccOfValue(producer);
     auto reductionVar =
-        static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
+        static_cast<ReductionSCC *>(sccManager->getSCCAttrs(producerSCC));
     auto loopEntryProducerPHI =
         reductionVar->getPhiThatAccumulatesValuesBetweenLoopIterations();
     assert(loopEntryProducerPHI != nullptr);
@@ -1756,7 +1756,7 @@ float ParallelizationTechnique::computeSequentialFractionOfExecution(
     auto numInstructionsInSCC = scc->numInternalNodes();
     totalInstructionCount += numInstructionsInSCC;
     auto mustBeSynchronized =
-        isa<LoopCarriedSCCUnknown>(sccInfo) && (!sccInfo->canBeCloned());
+        isa<LoopCarriedUnknownSCC>(sccInfo) && (!sccInfo->canBeCloned());
     if (mustBeSynchronized) {
       sequentialInstructionCount += numInstructionsInSCC;
     }

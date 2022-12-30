@@ -19,20 +19,24 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/BinaryReduction.hpp"
+#include "noelle/core/BinaryReductionSCC.hpp"
 #include "AccumulatorOpInfo.hpp"
 
 namespace llvm::noelle {
 
 static AccumulatorOpInfo accumOpInfo;
 
-BinaryReduction::BinaryReduction(
+BinaryReductionSCC::BinaryReductionSCC(
     SCC *s,
     LoopStructure *loop,
     const std::set<DGEdge<Value> *> &loopCarriedDependences,
     LoopCarriedVariable *variable,
     DominatorSummary &dom)
-  : Reduction(SCCKind::BINARY_REDUCTION, s, loop, loopCarriedDependences, dom) {
+  : ReductionSCC(SCCKind::BINARY_REDUCTION,
+                 s,
+                 loop,
+                 loopCarriedDependences,
+                 dom) {
   assert(variable != nullptr);
 
   /*
@@ -50,7 +54,7 @@ BinaryReduction::BinaryReduction(
   return;
 }
 
-BinaryReduction::BinaryReduction(
+BinaryReductionSCC::BinaryReductionSCC(
     SCC *s,
     LoopStructure *loop,
     const std::set<DGEdge<Value> *> &loopCarriedDependences,
@@ -58,21 +62,21 @@ BinaryReduction::BinaryReduction(
     Instruction::BinaryOps reductionOperation,
     PHINode *accumulator,
     Value *identity)
-  : Reduction(SCCKind::BINARY_REDUCTION,
-              s,
-              loop,
-              loopCarriedDependences,
-              initialValue,
-              accumulator,
-              identity),
+  : ReductionSCC(SCCKind::BINARY_REDUCTION,
+                 s,
+                 loop,
+                 loopCarriedDependences,
+                 initialValue,
+                 accumulator,
+                 identity),
     reductionOperation{ reductionOperation } {
 
   return;
 }
 
-void BinaryReduction::setBinaryReductionInformation(Value *initialValue,
-                                                    DominatorSummary &dom,
-                                                    LoopStructure &loop) {
+void BinaryReductionSCC::setBinaryReductionInformation(Value *initialValue,
+                                                       DominatorSummary &dom,
+                                                       LoopStructure &loop) {
 
   /*
    * Fetch the accumulators.
@@ -97,11 +101,11 @@ void BinaryReduction::setBinaryReductionInformation(Value *initialValue,
   return;
 }
 
-Instruction::BinaryOps BinaryReduction::getReductionOperation(void) const {
+Instruction::BinaryOps BinaryReductionSCC::getReductionOperation(void) const {
   return this->reductionOperation;
 }
 
-std::set<Instruction *> BinaryReduction::collectAccumulators(
+std::set<Instruction *> BinaryReductionSCC::collectAccumulators(
     LoopStructure &LS) {
   std::set<Instruction *> accumulators;
 
@@ -145,7 +149,7 @@ std::set<Instruction *> BinaryReduction::collectAccumulators(
   return accumulators;
 }
 
-bool BinaryReduction::classof(const SCCAttrs *s) {
+bool BinaryReductionSCC::classof(const SCCAttrs *s) {
   return (s->getKind() == SCCAttrs::SCCKind::BINARY_REDUCTION);
 }
 
