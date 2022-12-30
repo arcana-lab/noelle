@@ -21,6 +21,7 @@
  */
 #include "EnablersManager.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
+#include "noelle/core/MemoryClonableSCC.hpp"
 
 namespace llvm::noelle {
 
@@ -165,7 +166,7 @@ bool EnablersManager::applyLoopDistribution(LoopDependenceInfo *LDI,
      * loop to be parallelized.
      */
     if ((isa<LoopIterationSCC>(sccInfo)) || (sccInfo->canBeCloned())
-        || (sccInfo->canBeClonedUsingLocalMemoryLocations())) {
+        || (isa<MemoryClonableSCC>(sccInfo))) {
       return false;
     }
 

@@ -147,9 +147,6 @@ void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
       if (sccAttrs->canBeCloned()) {
         continue;
       }
-      if (sccAttrs->canBeClonedUsingLocalMemoryLocations()) {
-        continue;
-      }
     }
     statsForLoop->numberOfSequentialSCCs++;
     statsForLoop->dynamicInstructionsOfSequentialSCCs +=

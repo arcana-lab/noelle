@@ -21,6 +21,8 @@ install(
   include/noelle/core/RecomputableSCC.hpp
   include/noelle/core/InductionVariableSCC.hpp
   include/noelle/core/LinearInductionVariableSCC.hpp
+  include/noelle/core/MemoryClonableSCC.hpp
+  include/noelle/core/StackObjectClonableSCC.hpp
   include/noelle/core/LoopCarriedUnknownSCC.hpp
   DESTINATION 
   include/noelle/core

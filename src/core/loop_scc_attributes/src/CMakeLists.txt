@@ -11,6 +11,8 @@ set(Srcs
   RecomputableSCC.cpp
   InductionVariableSCC.cpp
   LinearInductionVariableSCC.cpp
+  MemoryClonableSCC.cpp
+  StackObjectClonableSCC.cpp
   LoopCarriedUnknownSCC.cpp
 )
 

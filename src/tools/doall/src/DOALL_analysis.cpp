@@ -21,6 +21,7 @@
  */
 #include "DOALL.hpp"
 #include "noelle/core/ReductionSCC.hpp"
+#include "noelle/core/MemoryClonableSCC.hpp"
 
 namespace llvm::noelle {
 
@@ -48,16 +49,16 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
     }
 
     /*
-     * If the SCC can be cloned, then it does not block the loop to be a DOALL.
+     * If the SCC can be removed by cloning objects, then we can ignore it.
      */
-    if (sccInfo->canBeCloned()) {
+    if (isa<MemoryClonableSCC>(sccInfo)) {
       continue;
     }
 
     /*
-     * If the SCC can be removed by cloning objects, then we can ignore it.
+     * If the SCC can be cloned, then it does not block the loop to be a DOALL.
      */
-    if (sccInfo->canBeClonedUsingLocalMemoryLocations()) {
+    if (sccInfo->canBeCloned()) {
       continue;
     }
 

@@ -24,6 +24,7 @@
 #include "noelle/core/BinaryReductionSCC.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
 #include "noelle/core/LinearInductionVariableSCC.hpp"
+#include "noelle/core/StackObjectClonableSCC.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 
@@ -92,6 +93,8 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
                                                            loopGoverningIVs);
         auto lcVar = this->checkIfReducible(scc, loopNode);
         auto isReducable = lcVar != nullptr;
+        auto stackObjectsThatAreClonable =
+            this->checkIfClonableByUsingLocalMemory(scc, loopNode);
 
         /*
          * Allocate the metadata about this SCC.
@@ -129,6 +132,18 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
                                            loopCarriedDependences,
                                            lcVar,
                                            DS);
+
+        } else if (stackObjectsThatAreClonable.size() > 0) {
+
+          /*
+           * The SCC can be removed by cloning stack objects.
+           */
+          auto loopCarriedDependences =
+              this->sccToLoopCarriedDependencies.at(scc);
+          sccInfo =
+              new StackObjectClonableSCC(scc, rootLoop, loopCarriedDependences);
+          sccInfo->addClonableMemoryLocationsContainedInSCC(
+              stackObjectsThatAreClonable);
 
         } else {
 
@@ -634,23 +649,19 @@ void SCCDAGAttrs::checkIfClonable(SCC *scc, LoopForestNode *loopNode) {
     return;
   }
 
-  /*
-   * Check for memory cloning case
-   */
-  checkIfClonableByUsingLocalMemory(scc, loopNode);
-
   return;
 }
 
-void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc,
-                                                    LoopForestNode *loopNode) {
+std::set<ClonableMemoryLocation *> SCCDAGAttrs::
+    checkIfClonableByUsingLocalMemory(SCC *scc,
+                                      LoopForestNode *loopNode) const {
 
   /*
    * Ignore SCC without loop carried dependencies
    */
   if (this->sccToLoopCarriedDependencies.find(scc)
       == this->sccToLoopCarriedDependencies.end()) {
-    return;
+    return {};
   }
 
   /*
@@ -658,7 +669,7 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc,
    *
    * NOTE: Ignore PHIs and unconditional branch instructions
    */
-  std::unordered_set<const llvm::noelle::ClonableMemoryLocation *> locations;
+  std::set<ClonableMemoryLocation *> locations;
   for (auto dependency : this->sccToLoopCarriedDependencies.at(scc)) {
 
     /*
@@ -667,7 +678,7 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc,
     auto depValue = dependency->getOutgoingT();
     auto inst = dyn_cast<Instruction>(depValue);
     if (!inst) {
-      return;
+      return {};
     }
 
     /*
@@ -686,7 +697,7 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc,
       /*
        * The current loop-carried dependence cannot be removed by cloning.
        */
-      return;
+      return {};
     }
 
     /*
@@ -701,14 +712,10 @@ void SCCDAGAttrs::checkIfClonableByUsingLocalMemory(SCC *scc,
    * Check if all loop-carried dependences can be removed by cloning.
    */
   if (locations.size() == 0) {
-    return;
+    return {};
   }
 
-  auto sccInfo = this->sccToInfo.at(scc);
-  sccInfo->setSCCToBeClonableUsingLocalMemory();
-  sccInfo->addClonableMemoryLocationsContainedInSCC(locations);
-
-  return;
+  return locations;
 }
 
 bool SCCDAGAttrs::isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(

@@ -46,6 +46,10 @@ public:
     LAST_INDUCTION_VARIABLE,
     LAST_RECOMPUTABLE,
 
+    MEMORY_CLONABLE,
+    STACK_OBJECT_CLONABLE,
+    LAST_MEMORY_CLONABLE,
+
     LOOP_CARRIED_UNKNOWN,
 
     LAST_LOOP_CARRIED,
@@ -89,11 +93,6 @@ public:
   bool canBeCloned(void) const;
 
   /*
-   * Return true if cloning is possible through memory AllocaInst cloning
-   */
-  bool canBeClonedUsingLocalMemoryLocations(void) const;
-
-  /*
    * Return true if the SCC is commutative
    * Return false otherwise.
    */
@@ -115,10 +114,8 @@ public:
    */
   void setSCCToBeClonable(bool isClonable = true);
 
-  void setSCCToBeClonableUsingLocalMemory(void);
-
   void addClonableMemoryLocationsContainedInSCC(
-      std::unordered_set<const ClonableMemoryLocation *> locations);
+      std::set<ClonableMemoryLocation *> locations);
 
   SCCKind getKind(void) const;
 
@@ -128,8 +125,7 @@ protected:
   LoopStructure *loop;
   SCC *scc;
   std::set<PHINode *> PHINodes;
-  std::unordered_set<const ClonableMemoryLocation *> clonableMemoryLocations;
-  bool isSCCClonableIntoLocalMemory;
+  std::set<ClonableMemoryLocation *> clonableMemoryLocations;
   bool isClonable;
   bool commutative;
 

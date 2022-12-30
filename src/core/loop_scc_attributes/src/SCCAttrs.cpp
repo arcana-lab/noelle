@@ -28,7 +28,6 @@ SCCAttrs::SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop)
     scc{ s },
     PHINodes{},
     isClonable{ false },
-    isSCCClonableIntoLocalMemory{ false },
     commutative{ false },
     kind{ K } {
 
@@ -121,16 +120,8 @@ void SCCAttrs::setSCCToBeClonable(bool isClonable) {
   return;
 }
 
-void SCCAttrs::setSCCToBeClonableUsingLocalMemory(void) {
-  this->isSCCClonableIntoLocalMemory = true;
-}
-
-bool SCCAttrs::canBeClonedUsingLocalMemoryLocations(void) const {
-  return this->isSCCClonableIntoLocalMemory;
-}
-
 void SCCAttrs::addClonableMemoryLocationsContainedInSCC(
-    std::unordered_set<const ClonableMemoryLocation *> locations) {
+    std::set<ClonableMemoryLocation *> locations) {
   this->clonableMemoryLocations = locations;
 }
 
