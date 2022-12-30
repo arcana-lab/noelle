@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/Noelle.hpp"
-#include "noelle/core/Reduction.hpp"
+#include "noelle/core/ReductionSCC.hpp"
 #include "noelle/core/InductionVariableSCC.hpp"
 #include "SCCDAGAttrTestSuite.hpp"
 
@@ -176,7 +176,7 @@ Values SCCDAGAttrTestSuite::reducibleSCCsAreFound(ModulePass &pass,
   std::set<SCC *> sccs;
   for (auto node : attrPass.sccdag->getNodes()) {
     SCCAttrs *sccAttrs = attrPass.attrs->getSCCAttrs(node->getT());
-    if (isa<Reduction>(sccAttrs))
+    if (isa<ReductionSCC>(sccAttrs))
       sccs.insert(node->getT());
   }
 
