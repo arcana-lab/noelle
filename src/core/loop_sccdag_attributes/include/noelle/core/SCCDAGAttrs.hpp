@@ -100,7 +100,7 @@ private:
    */
   LoopCarriedVariable *checkIfReducible(SCC *scc, LoopForestNode *loop);
   bool checkIfIndependent(SCC *scc);
-  bool checkIfSCCOnlyContainsInductionVariables(
+  std::set<InductionVariable *> checkIfSCCOnlyContainsInductionVariables(
       SCC *scc,
       LoopForestNode *loop,
       std::set<InductionVariable *> &loopGoverningIVs,

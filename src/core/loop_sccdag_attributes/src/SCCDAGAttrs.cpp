@@ -104,7 +104,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
            */
           sccInfo = new LoopIterationSCC(scc, rootLoop);
 
-        } else if (doesSCCOnlyContainIV) {
+        } else if (doesSCCOnlyContainIV.size() > 0) {
 
           /*
            * The SCC is an IV.
@@ -114,7 +114,8 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
           sccInfo = new LinearInductionVariableSCC(scc,
                                                    rootLoop,
                                                    loopCarriedDependences,
-                                                   DS);
+                                                   DS,
+                                                   doesSCCOnlyContainIV);
 
         } else if (isReducable) {
 
@@ -416,11 +417,12 @@ void SCCDAGAttrs::collectLoopCarriedDependencies(LoopForestNode *loopNode) {
   return;
 }
 
-bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables(
-    SCC *scc,
-    LoopForestNode *loopNode,
-    std::set<InductionVariable *> &IVs,
-    std::set<InductionVariable *> &loopGoverningIVs) const {
+std::set<InductionVariable *> SCCDAGAttrs::
+    checkIfSCCOnlyContainsInductionVariables(
+        SCC *scc,
+        LoopForestNode *loopNode,
+        std::set<InductionVariable *> &IVs,
+        std::set<InductionVariable *> &loopGoverningIVs) const {
 
   /*
    * Identify contained induction variables
@@ -435,7 +437,7 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables(
     }
   }
   if (containedIVs.size() == 0)
-    return false;
+    return {};
 
   /*
    * If a contained IV is loop governing, ensure loop governance is well formed
@@ -455,7 +457,7 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables(
     if (!attribution.isSCCContainingIVWellFormed()) {
       // containedIV->getLoopEntryPHI()->print(errs() << "Not well formed SCC
       // for loop governing IV!\n"); errs() << "\n";
-      return false;
+      return {};
     }
     containedInsts.insert(
         attribution.getHeaderCompareInstructionToComputeExitCondition());
@@ -483,10 +485,10 @@ bool SCCDAGAttrs::checkIfSCCOnlyContainsInductionVariables(
     // for (auto containedI : containedInsts) {
     //   containedI->print(errs() << "Contained: "); errs() << "\n";
     // }
-    return false;
+    return {};
   }
 
-  return true;
+  return containedIVs;
 }
 
 LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(SCC *scc,

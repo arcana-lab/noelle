@@ -27,14 +27,21 @@ LinearInductionVariableSCC::LinearInductionVariableSCC(
     SCC *s,
     LoopStructure *loop,
     const std::set<DGEdge<Value> *> &loopCarriedDependences,
-    DominatorSummary &dom)
+    DominatorSummary &dom,
+    const std::set<InductionVariable *> &IVs)
+
   : InductionVariableSCC{ SCCKind::LINEAR_INDUCTION_VARIABLE,
                           s,
                           loop,
                           loopCarriedDependences,
-                          dom } {
+                          dom },
+    _IVs{ IVs } {
 
   return;
+}
+
+std::set<InductionVariable *> LinearInductionVariableSCC::getIVs(void) const {
+  return this->_IVs;
 }
 
 bool LinearInductionVariableSCC::classof(const SCCAttrs *s) {
