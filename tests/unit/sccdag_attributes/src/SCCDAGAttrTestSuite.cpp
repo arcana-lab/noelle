@@ -22,6 +22,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/ReductionSCC.hpp"
 #include "noelle/core/InductionVariableSCC.hpp"
+#include "noelle/core/MemoryClonableSCC.hpp"
 #include "SCCDAGAttrTestSuite.hpp"
 
 namespace llvm::noelle {
@@ -205,7 +206,7 @@ Values SCCDAGAttrTestSuite::clonableSCCsIntoLocalMemoryAreFound(
   for (auto node : attrPass.sccdag->getNodes()) {
     auto scc = node->getT();
     auto sccAttrs = attrPass.attrs->getSCCAttrs(scc);
-    if (sccAttrs->canBeClonedUsingLocalMemoryLocations()) {
+    if (isa<MemoryClonableSCC>(sccAttrs)){
       sccs.insert(node->getT());
     }
   }
