@@ -29,7 +29,7 @@ RecomputableSCC::RecomputableSCC(
     LoopStructure *loop,
     const std::set<DGEdge<Value> *> &loopCarriedDependences,
     DominatorSummary &dom)
-  : LoopCarriedSCC{ K, s, loop, loopCarriedDependences },
+  : LoopCarriedSCC{ K, s, loop, loopCarriedDependences, true },
     accumulator{ nullptr } {
 
   /*

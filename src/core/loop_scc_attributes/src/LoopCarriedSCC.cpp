@@ -24,29 +24,24 @@
 namespace llvm::noelle {
 
 LoopCarriedSCC::LoopCarriedSCC(
-    SCC *s,
-    LoopStructure *loop,
-    const std::set<DGEdge<Value> *> &loopCarriedDependences)
-  : LoopCarriedSCC(SCCAttrs::SCCKind::LOOP_CARRIED,
-                   s,
-                   loop,
-                   loopCarriedDependences) {
-  return;
-}
-
-LoopCarriedSCC::LoopCarriedSCC(
     SCCKind K,
     SCC *s,
     LoopStructure *loop,
-    const std::set<DGEdge<Value> *> &loopCarriedDependences)
+    const std::set<DGEdge<Value> *> &loopCarriedDependences,
+    bool commutative)
   : SCCAttrs(K, s, loop),
-    lcDeps{ loopCarriedDependences } {
+    lcDeps{ loopCarriedDependences },
+    _commutative{ commutative } {
   return;
 }
 
 std::set<DGEdge<Value> *> LoopCarriedSCC::getLoopCarriedDependences(
     void) const {
   return this->lcDeps;
+}
+
+bool LoopCarriedSCC::isCommutative(void) const {
+  return this->_commutative;
 }
 
 bool LoopCarriedSCC::classof(const SCCAttrs *s) {

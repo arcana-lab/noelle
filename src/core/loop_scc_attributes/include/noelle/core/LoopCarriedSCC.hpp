@@ -32,19 +32,23 @@ public:
 
   std::set<DGEdge<Value> *> getLoopCarriedDependences(void) const;
 
+  /*
+   * @return true if different instances of the SCC executed in different loop
+   * iterations can commute. Return false otherwise.
+   */
+  bool isCommutative(void) const;
+
   static bool classof(const SCCAttrs *s);
 
 protected:
   std::set<DGEdge<Value> *> lcDeps;
-
-  LoopCarriedSCC(SCC *s,
-                 LoopStructure *loop,
-                 const std::set<DGEdge<Value> *> &loopCarriedDependences);
+  bool _commutative;
 
   LoopCarriedSCC(SCCKind K,
                  SCC *s,
                  LoopStructure *loop,
-                 const std::set<DGEdge<Value> *> &loopCarriedDependences);
+                 const std::set<DGEdge<Value> *> &loopCarriedDependences,
+                 bool commutative);
 };
 
 } // namespace llvm::noelle

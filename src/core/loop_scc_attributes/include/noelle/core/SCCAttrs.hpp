@@ -93,12 +93,6 @@ public:
   bool canBeCloned(void) const;
 
   /*
-   * Return true if the SCC is commutative
-   * Return false otherwise.
-   */
-  bool isCommutative(void) const;
-
-  /*
    * Get the PHIs.
    */
   iterator_range<phi_iterator> getPHIs(void) const;
@@ -127,7 +121,6 @@ protected:
   std::set<PHINode *> PHINodes;
   std::set<ClonableMemoryLocation *> clonableMemoryLocations;
   bool isClonable;
-  bool commutative;
 
   SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop);
   void collectPHIs(LoopStructure &LS);

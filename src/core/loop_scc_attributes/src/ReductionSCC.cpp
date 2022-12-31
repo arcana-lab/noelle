@@ -29,7 +29,7 @@ ReductionSCC::ReductionSCC(
     LoopStructure *loop,
     const std::set<DGEdge<Value> *> &loopCarriedDependences,
     DominatorSummary &dom)
-  : LoopCarriedSCC{ K, s, loop, loopCarriedDependences },
+  : LoopCarriedSCC{ K, s, loop, loopCarriedDependences, true },
     initialValue{ nullptr },
     accumulator{ nullptr },
     identity{ nullptr } {
@@ -72,7 +72,7 @@ ReductionSCC::ReductionSCC(
     Value *initialValue,
     PHINode *accumulator,
     Value *identity)
-  : LoopCarriedSCC(K, s, loop, loopCarriedDependences),
+  : LoopCarriedSCC(K, s, loop, loopCarriedDependences, true),
     initialValue{ initialValue },
     accumulator{ accumulator },
     identity{ identity } {

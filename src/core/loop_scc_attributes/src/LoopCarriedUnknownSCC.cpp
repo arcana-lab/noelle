@@ -27,7 +27,11 @@ LoopCarriedUnknownSCC::LoopCarriedUnknownSCC(
     SCC *s,
     LoopStructure *loop,
     const std::set<DGEdge<Value> *> &loopCarriedDependences)
-  : LoopCarriedSCC{ LOOP_CARRIED_UNKNOWN, s, loop, loopCarriedDependences } {
+  : LoopCarriedSCC{ LOOP_CARRIED_UNKNOWN,
+                    s,
+                    loop,
+                    loopCarriedDependences,
+                    false } {
   return;
 }
 

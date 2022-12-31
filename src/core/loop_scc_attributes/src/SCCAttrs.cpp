@@ -28,7 +28,6 @@ SCCAttrs::SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop)
     scc{ s },
     PHINodes{},
     isClonable{ false },
-    commutative{ false },
     kind{ K } {
 
   /*
@@ -41,10 +40,6 @@ SCCAttrs::SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop)
 
 iterator_range<SCCAttrs::phi_iterator> SCCAttrs::getPHIs(void) const {
   return make_range(this->PHINodes.begin(), this->PHINodes.end());
-}
-
-bool SCCAttrs::isCommutative(void) const {
-  return this->commutative;
 }
 
 void SCCAttrs::collectPHIs(LoopStructure &LS) {
