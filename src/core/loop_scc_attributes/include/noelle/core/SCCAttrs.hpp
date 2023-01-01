@@ -98,18 +98,9 @@ public:
   iterator_range<phi_iterator> getPHIs(void) const;
 
   /*
-   * Return the memory locations that can be safely clone to void reusing the
-   * same memory locations between invocations of this SCC.
-   */
-  std::unordered_set<AllocaInst *> getMemoryLocationsToClone(void) const;
-
-  /*
    * Set the SCC to be clonable.
    */
   void setSCCToBeClonable(bool isClonable = true);
-
-  void addClonableMemoryLocationsContainedInSCC(
-      std::set<ClonableMemoryLocation *> locations);
 
   SCCKind getKind(void) const;
 
@@ -119,7 +110,6 @@ protected:
   LoopStructure *loop;
   SCC *scc;
   std::set<PHINode *> PHINodes;
-  std::set<ClonableMemoryLocation *> clonableMemoryLocations;
   bool isClonable;
 
   SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop);

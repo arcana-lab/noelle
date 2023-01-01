@@ -20,8 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "EnablersManager.hpp"
-#include "noelle/core/LoopIterationSCC.hpp"
-#include "noelle/core/MemoryClonableSCC.hpp"
+#include "noelle/core/LoopCarriedUnknownSCC.hpp"
 
 namespace llvm::noelle {
 
@@ -165,8 +164,10 @@ bool EnablersManager::applyLoopDistribution(LoopDependenceInfo *LDI,
      * induction variables). If it is, then we do not need to remove it from the
      * loop to be parallelized.
      */
-    if ((isa<LoopIterationSCC>(sccInfo)) || (sccInfo->canBeCloned())
-        || (isa<MemoryClonableSCC>(sccInfo))) {
+    if (!isa<LoopCarriedUnknownSCC>(sccInfo)) {
+      return false;
+    }
+    if (sccInfo->canBeCloned()) {
       return false;
     }
 

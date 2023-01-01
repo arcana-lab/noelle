@@ -140,10 +140,10 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
            */
           auto loopCarriedDependences =
               this->sccToLoopCarriedDependencies.at(scc);
-          sccInfo =
-              new StackObjectClonableSCC(scc, rootLoop, loopCarriedDependences);
-          sccInfo->addClonableMemoryLocationsContainedInSCC(
-              stackObjectsThatAreClonable);
+          sccInfo = new StackObjectClonableSCC(scc,
+                                               rootLoop,
+                                               loopCarriedDependences,
+                                               stackObjectsThatAreClonable);
 
         } else {
 

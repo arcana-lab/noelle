@@ -31,13 +31,21 @@ public:
   StackObjectClonableSCC(
       SCC *s,
       LoopStructure *loop,
-      const std::set<DGEdge<Value> *> &loopCarriedDependences);
+      const std::set<DGEdge<Value> *> &loopCarriedDependences,
+      const std::set<ClonableMemoryLocation *> &locations);
 
   StackObjectClonableSCC() = delete;
+
+  /*
+   * Return the memory locations that can be safely clone to void reusing the
+   * same memory locations between invocations of this SCC.
+   */
+  std::set<AllocaInst *> getMemoryLocationsToClone(void) const;
 
   static bool classof(const SCCAttrs *s);
 
 protected:
+  std::set<ClonableMemoryLocation *> _clonableMemoryLocations;
 };
 
 } // namespace llvm::noelle

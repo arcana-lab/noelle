@@ -74,20 +74,6 @@ void SCCAttrs::setSCCToBeClonable(bool isClonable) {
   return;
 }
 
-void SCCAttrs::addClonableMemoryLocationsContainedInSCC(
-    std::set<ClonableMemoryLocation *> locations) {
-  this->clonableMemoryLocations = locations;
-}
-
-std::unordered_set<AllocaInst *> SCCAttrs::getMemoryLocationsToClone(
-    void) const {
-  std::unordered_set<AllocaInst *> allocations;
-  for (auto location : clonableMemoryLocations) {
-    allocations.insert(location->getAllocation());
-  }
-  return allocations;
-}
-
 bool SCCAttrs::canBeCloned(void) const {
   return this->isClonable;
 }

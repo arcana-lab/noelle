@@ -26,18 +26,30 @@ namespace llvm::noelle {
 StackObjectClonableSCC::StackObjectClonableSCC(
     SCC *s,
     LoopStructure *loop,
-    const std::set<DGEdge<Value> *> &loopCarriedDependences)
+    const std::set<DGEdge<Value> *> &loopCarriedDependences,
+    const std::set<ClonableMemoryLocation *> &locations)
   : LoopCarriedSCC{ STACK_OBJECT_CLONABLE,
                     s,
                     loop,
                     loopCarriedDependences,
-                    false } {
+                    false },
+    _clonableMemoryLocations{ locations } {
 
   return;
 }
 
 bool StackObjectClonableSCC::classof(const SCCAttrs *s) {
   return (s->getKind() == SCCAttrs::SCCKind::STACK_OBJECT_CLONABLE);
+}
+
+std::set<AllocaInst *> StackObjectClonableSCC::getMemoryLocationsToClone(
+    void) const {
+  std::set<AllocaInst *> allocations;
+  for (auto location : this->_clonableMemoryLocations) {
+    allocations.insert(location->getAllocation());
+  }
+
+  return allocations;
 }
 
 } // namespace llvm::noelle
