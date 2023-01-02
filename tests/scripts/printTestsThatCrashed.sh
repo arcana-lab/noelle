@@ -22,6 +22,11 @@ for i in `ls regression_*/errors.txt` ; do
       popd &> /dev/null ;
       continue ;
     fi
+    grep Killed compiler_output.txt &> /dev/null ;
+    if test $? -eq 0 ; then
+      popd &> /dev/null ;
+      continue ;
+    fi
 
     # The test failed
     echo "Test $failedTest" ;
