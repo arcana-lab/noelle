@@ -21,6 +21,7 @@
  */
 #include "EnablersManager.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
+#include "noelle/tools/DOALL.hpp"
 
 namespace llvm::noelle {
 
@@ -112,11 +113,19 @@ bool EnablersManager::applyLoopWhilifier(LoopDependenceInfo *LDI,
    */
   auto loopStructure = LDI->getLoopStructure();
   auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
-  if (true && (loopGoverningIVAttr != nullptr)
+  if ((loopGoverningIVAttr != nullptr)
       && (loopStructure->numberOfExitBasicBlocks() == 1)) {
 
     /*
      * The prologue is empty and the loop is in while form already.
+     */
+    return false;
+  }
+  DOALL doall{ par };
+  if (doall.canBeAppliedToLoop(LDI, nullptr)) {
+
+    /*
+     * This is a DOALL loop, so the prologue is empty.
      */
     return false;
   }

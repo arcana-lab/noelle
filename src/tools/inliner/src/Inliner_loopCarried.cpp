@@ -99,7 +99,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences(
        * moment.
        */
       DOALL doall{ noelle };
-      if (true && (summaryNode->getNumberOfSubLoops() >= 1)
+      if ((summaryNode->getNumberOfSubLoops() >= 1)
           && doall.canBeAppliedToLoop(LDI, nullptr)) {
 
         /*

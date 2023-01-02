@@ -834,8 +834,6 @@ void SCCDAGAttrs::dumpToFile(int id) {
     ros << "Type: ";
     if (isa<LoopIterationSCC>(sccInfo))
       ros << "Independent ";
-    if (sccInfo->canBeCloned())
-      ros << "Clonable ";
     if (isa<ReductionSCC>(sccInfo))
       ros << "Reducible ";
     if (isa<InductionVariableSCC>(sccInfo))

@@ -20,8 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "DOALL.hpp"
-#include "noelle/core/ReductionSCC.hpp"
-#include "noelle/core/MemoryClonableSCC.hpp"
+#include "noelle/core/LoopCarriedUnknownSCC.hpp"
 
 namespace llvm::noelle {
 
@@ -42,16 +41,10 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
   for (auto sccInfo : nonDOALLSCCs) {
 
     /*
-     * If the SCC is reducable, then it does not block the loop to be a DOALL.
+     * The only SCC with loop-carried dependences that we don't know how to
+     * handle are the LoopCarriedUnknownSCC
      */
-    if (isa<ReductionSCC>(sccInfo)) {
-      continue;
-    }
-
-    /*
-     * If the SCC can be removed by cloning objects, then we can ignore it.
-     */
-    if (isa<MemoryClonableSCC>(sccInfo)) {
+    if (!isa<LoopCarriedUnknownSCC>(sccInfo)) {
       continue;
     }
 
