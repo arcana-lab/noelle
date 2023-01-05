@@ -47,7 +47,7 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/MetadataManager.hpp"
-#include "DOALL.hpp"
+#include "noelle/tools/DOALL.hpp"
 
 namespace llvm::noelle {
 

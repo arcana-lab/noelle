@@ -19,10 +19,10 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DOALL.hpp"
-#include "DOALLTask.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
 #include "noelle/core/ReductionSCC.hpp"
+#include "noelle/tools/DOALL.hpp"
+#include "noelle/tools/DOALLTask.hpp"
 
 namespace llvm::noelle {
 

@@ -19,8 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DOALL.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
+#include "noelle/tools/DOALL.hpp"
 
 namespace llvm::noelle {
 

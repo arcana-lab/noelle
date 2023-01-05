@@ -11,8 +11,8 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/DOALL.hpp 
-  include/DOALLTask.hpp
+  include/noelle/tools/DOALL.hpp 
+  include/noelle/tools/DOALLTask.hpp
   DESTINATION 
   include/noelle/tools
   )

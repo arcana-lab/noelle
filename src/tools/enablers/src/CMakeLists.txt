@@ -27,6 +27,8 @@ message(STATUS "Installation directory is ${CMAKE_INSTALL_PREFIX}.")
 include_directories(${LLVM_INCLUDE_DIRS} 
   ./
   ../include
+  ../../parallelization_technique/include
+  ../../heuristics/include
   ../../doall/include
   ../../loop_invariant_code_motion/include
   ../../scev_simplification/include
