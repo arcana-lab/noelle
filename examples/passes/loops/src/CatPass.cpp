@@ -8,8 +8,10 @@
 
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/InductionVariableSCC.hpp"
-#include "noelle/core/Reduction.hpp"
+#include "noelle/core/ReductionSCC.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
+#include "noelle/core/LoopCarriedUnknownSCC.hpp"
+#include "noelle/core/MemoryClonableSCC.hpp"
 
 using namespace llvm::noelle;
 
@@ -142,17 +144,21 @@ struct CAT : public ModulePass {
           errs()
               << "     It is due to the computation of an induction variable\n";
 
-        } else if (isa<Reduction>(sccInfo)) {
+        } else if (isa<ReductionSCC>(sccInfo)) {
           errs() << "     It can be reduced\n";
 
         } else if (isa<LoopIterationSCC>(sccInfo)) {
-          errs() << "     It doesn't have loop-carried data dependences\n";
+          errs() << "     It doesn't have loop-carried dependences\n";
 
-        } else if (isa<LoopCarriedSCC>(sccInfo)) {
+        } else if (isa<LoopCarriedUnknownSCC>(sccInfo)) {
           errs() << "     It must be executed sequentially\n";
 
+        } else if (isa<MemoryClonableSCC>(sccInfo)) {
+          errs()
+              << "     It can run in parallel after cloning memory objects\n";
+
         } else {
-          errs() << "     It can run in parallel\n";
+          errs() << "     Unknown\n";
         }
 
         return false;
