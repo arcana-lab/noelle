@@ -160,6 +160,15 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
         this->sccToInfo[scc] = sccInfo;
 
         this->checkIfClonable(scc, loopNode);
+        if (isa<LoopCarriedUnknownSCC>(sccInfo)) {
+          // assert(!sccInfo->canBeCloned());
+        } else if (isa<LoopCarriedSCC>(sccInfo)) {
+          /*assert(!isClonableBySyntacticSugarInstrs(scc));
+          assert(!isClonableByCmpBrInstrs(scc));
+          assert(!isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc,
+          loopNode));
+          */
+        }
 
         return false;
       });
@@ -641,8 +650,7 @@ void SCCDAGAttrs::checkIfClonable(SCC *scc, LoopForestNode *loopNode) {
    * Check the simple cases.
    * TODO: Separate out cases and catalog SCCs by those cases
    */
-  if (isClonableByInductionVars(scc) || isClonableBySyntacticSugarInstrs(scc)
-      || isClonableByCmpBrInstrs(scc)
+  if (isClonableBySyntacticSugarInstrs(scc) || isClonableByCmpBrInstrs(scc)
       || isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc,
                                                                  loopNode)) {
     this->getSCCAttrs(scc)->setSCCToBeClonable();
@@ -752,24 +760,6 @@ bool SCCDAGAttrs::isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(
   }
 
   return true;
-}
-
-bool SCCDAGAttrs::isClonableByInductionVars(SCC *scc) const {
-
-  /*
-   * FIXME: This check should not exist; instead, SCC where cloning
-   * is trivial should be separated out by the parallelization scheme
-   */
-  if (this->sccdag->fetchNode(scc)->numOutgoingEdges() == 0) {
-    return false;
-  }
-
-  /*
-   * Fetch the SCC metadata.
-   */
-  auto sccInfo = this->getSCCAttrs(scc);
-
-  return isa<InductionVariableSCC>(sccInfo);
 }
 
 bool SCCDAGAttrs::isClonableBySyntacticSugarInstrs(SCC *scc) const {
