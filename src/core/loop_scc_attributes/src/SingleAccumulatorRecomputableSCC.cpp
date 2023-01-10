@@ -19,47 +19,55 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/RecomputableSCC.hpp"
+#include "noelle/core/SingleAccumulatorRecomputableSCC.hpp"
 
 namespace llvm::noelle {
 
-RecomputableSCC::RecomputableSCC(
+SingleAccumulatorRecomputableSCC::SingleAccumulatorRecomputableSCC(
     SCCKind K,
     SCC *s,
     LoopStructure *loop,
     const std::set<DGEdge<Value> *> &loopCarriedDependences,
-    const std::set<Instruction *> &vs,
-    bool commutative)
-  : LoopCarriedSCC{ K, s, loop, loopCarriedDependences, commutative },
-    values{ vs } {
+    DominatorSummary &dom)
+  : RecomputableSCC{ K, s, loop, loopCarriedDependences, true },
+    accumulator{ nullptr } {
+
+  /*
+   * Fetch the accumulator
+   */
+  PHINode *phi = nullptr;
+  for (auto phiCandidate : this->getPHIs()) {
+    auto found = true;
+    for (auto currentPhi : this->getPHIs()) {
+      if (!dom.DT.dominates(phiCandidate, currentPhi)) {
+        found = false;
+        break;
+      }
+    }
+    if (found) {
+      phi = phiCandidate;
+      break;
+    }
+  }
+  if (phi == nullptr) {
+    abort();
+  }
+  this->addValue(phi);
+  this->accumulator = phi;
+
   return;
 }
 
-RecomputableSCC::RecomputableSCC(
-    SCCKind K,
-    SCC *s,
-    LoopStructure *loop,
-    const std::set<DGEdge<Value> *> &loopCarriedDependences,
-    bool commutative)
-  : RecomputableSCC{ K, s, loop, loopCarriedDependences, {}, commutative } {
-  return;
+PHINode *SingleAccumulatorRecomputableSCC::
+    getPhiThatAccumulatesValuesBetweenLoopIterations(void) const {
+  assert(this->accumulator != nullptr);
+  return this->accumulator;
 }
 
-void RecomputableSCC::addValue(Instruction *v) {
-  this->values.insert(v);
-
-  return;
-}
-
-std::set<Instruction *> RecomputableSCC::
-    getValuesToPropagateAcrossLoopIterations(void) const {
-  assert(this->values.size() > 0);
-  return this->values;
-}
-
-bool RecomputableSCC::classof(const SCCAttrs *s) {
-  return (s->getKind() >= SCCAttrs::SCCKind::RECOMPUTABLE)
-         && (s->getKind() <= SCCAttrs::SCCKind::LAST_RECOMPUTABLE);
+bool SingleAccumulatorRecomputableSCC::classof(const SCCAttrs *s) {
+  return (s->getKind() >= SCCAttrs::SCCKind::SINGLE_ACCUMULATOR_RECOMPUTABLE)
+         && (s->getKind()
+             <= SCCAttrs::SCCKind::LAST_SINGLE_ACCUMULATOR_RECOMPUTABLE);
 }
 
 } // namespace llvm::noelle

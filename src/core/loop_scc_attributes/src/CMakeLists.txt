@@ -9,7 +9,9 @@ set(Srcs
   ReductionSCC.cpp
   BinaryReductionSCC.cpp
   RecomputableSCC.cpp
+  SingleAccumulatorRecomputableSCC.cpp
   InductionVariableSCC.cpp
+  UnknownClosedFormSCC.cpp
   LinearInductionVariableSCC.cpp
   MemoryClonableSCC.cpp
   StackObjectClonableSCC.cpp

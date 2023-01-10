@@ -22,35 +22,21 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopCarriedSCC.hpp"
+#include "noelle/core/RecomputableSCC.hpp"
 
 namespace llvm::noelle {
 
-class RecomputableSCC : public LoopCarriedSCC {
+class UnknownClosedFormSCC : public RecomputableSCC {
 public:
-  RecomputableSCC() = delete;
-
-  std::set<Instruction *> getValuesToPropagateAcrossLoopIterations(void) const;
+  UnknownClosedFormSCC(
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdge<Value> *> &loopCarriedDependences,
+      const std::set<Instruction *> &valuesToPropagateAcrossLoopIterations);
 
   static bool classof(const SCCAttrs *s);
 
 protected:
-  std::set<Instruction *> values;
-
-  RecomputableSCC(SCCKind K,
-                  SCC *s,
-                  LoopStructure *loop,
-                  const std::set<DGEdge<Value> *> &loopCarriedDependences,
-                  const std::set<Instruction *> &values,
-                  bool commutative);
-
-  RecomputableSCC(SCCKind K,
-                  SCC *s,
-                  LoopStructure *loop,
-                  const std::set<DGEdge<Value> *> &loopCarriedDependences,
-                  bool commutative);
-
-  void addValue(Instruction *v);
 };
 
 } // namespace llvm::noelle

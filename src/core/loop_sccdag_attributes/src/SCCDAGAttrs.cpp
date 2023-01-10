@@ -27,6 +27,7 @@
 #include "noelle/core/StackObjectClonableSCC.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
+#include "noelle/core/UnknownClosedFormSCC.hpp"
 
 namespace llvm::noelle {
 
@@ -80,98 +81,112 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
   /*
    * Tag SCCs depending on their characteristics.
    */
-  loopSCCDAG->iterateOverSCCs(
-      [this, loopNode, rootLoop, &ivs, &loopGoverningIVs, &DS](
-          SCC *scc) -> bool {
-        /*
-         * Collect information about the current SCC.
-         */
-        auto doesSCCOnlyContainIV =
-            this->checkIfSCCOnlyContainsInductionVariables(scc,
-                                                           loopNode,
-                                                           ivs,
-                                                           loopGoverningIVs);
-        auto lcVar = this->checkIfReducible(scc, loopNode);
-        auto isReducable = lcVar != nullptr;
-        auto stackObjectsThatAreClonable =
-            this->checkIfClonableByUsingLocalMemory(scc, loopNode);
+  loopSCCDAG->iterateOverSCCs([this,
+                               loopNode,
+                               rootLoop,
+                               &ivs,
+                               &loopGoverningIVs,
+                               &DS](SCC *scc) -> bool {
+    /*
+     * Collect information about the current SCC.
+     */
+    auto doesSCCOnlyContainIV =
+        this->checkIfSCCOnlyContainsInductionVariables(scc,
+                                                       loopNode,
+                                                       ivs,
+                                                       loopGoverningIVs);
+    auto lcVar = this->checkIfReducible(scc, loopNode);
+    auto isReducable = lcVar != nullptr;
+    auto stackObjectsThatAreClonable =
+        this->checkIfClonableByUsingLocalMemory(scc, loopNode);
+    auto valuesToPropagateAcrossIterations =
+        this->checkIfRecomputable(scc, loopNode);
 
-        /*
-         * Allocate the metadata about this SCC.
-         */
-        SCCAttrs *sccInfo = nullptr;
-        if (this->checkIfIndependent(scc)) {
+    /*
+     * Allocate the metadata about this SCC.
+     */
+    SCCAttrs *sccInfo = nullptr;
+    if (this->checkIfIndependent(scc)) {
 
-          /*
-           * The SCC does not cross multiple loop iterations.
-           */
-          sccInfo = new LoopIterationSCC(scc, rootLoop);
+      /*
+       * The SCC does not cross multiple loop iterations.
+       */
+      sccInfo = new LoopIterationSCC(scc, rootLoop);
 
-        } else if (doesSCCOnlyContainIV.size() > 0) {
+    } else if (doesSCCOnlyContainIV.size() > 0) {
 
-          /*
-           * The SCC is an IV.
-           */
-          auto loopCarriedDependences =
-              this->sccToLoopCarriedDependencies.at(scc);
-          sccInfo = new LinearInductionVariableSCC(scc,
-                                                   rootLoop,
-                                                   loopCarriedDependences,
-                                                   DS,
-                                                   doesSCCOnlyContainIV);
-
-        } else if (isReducable) {
-
-          /*
-           * The SCC is a reduction variable.
-           */
-          auto loopCarriedDependences =
-              this->sccToLoopCarriedDependencies.at(scc);
-          sccInfo = new BinaryReductionSCC(scc,
-                                           rootLoop,
-                                           loopCarriedDependences,
-                                           lcVar,
-                                           DS);
-
-        } else if (stackObjectsThatAreClonable.size() > 0) {
-
-          /*
-           * The SCC can be removed by cloning stack objects.
-           */
-          auto loopCarriedDependences =
-              this->sccToLoopCarriedDependencies.at(scc);
-          sccInfo = new StackObjectClonableSCC(scc,
+      /*
+       * The SCC is an IV.
+       */
+      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+      sccInfo = new LinearInductionVariableSCC(scc,
                                                rootLoop,
                                                loopCarriedDependences,
-                                               stackObjectsThatAreClonable);
+                                               DS,
+                                               doesSCCOnlyContainIV);
 
-        } else {
+    } else if (isReducable) {
 
-          /*
-           * The SCC crosses multiple loop iterations and we don't know how to
-           * parallelize it.
-           */
-          auto loopCarriedDependences =
-              this->sccToLoopCarriedDependencies.at(scc);
-          sccInfo =
-              new LoopCarriedUnknownSCC(scc, rootLoop, loopCarriedDependences);
-        }
-        assert(sccInfo != nullptr);
-        this->sccToInfo[scc] = sccInfo;
+      /*
+       * The SCC is a reduction variable.
+       */
+      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+      sccInfo = new BinaryReductionSCC(scc,
+                                       rootLoop,
+                                       loopCarriedDependences,
+                                       lcVar,
+                                       DS);
 
-        this->checkIfClonable(scc, loopNode);
-        if (isa<LoopCarriedUnknownSCC>(sccInfo)) {
-          // assert(!sccInfo->canBeCloned());
-        } else if (isa<LoopCarriedSCC>(sccInfo)) {
-          /*assert(!isClonableBySyntacticSugarInstrs(scc));
-          assert(!isClonableByCmpBrInstrs(scc));
-          assert(!isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc,
-          loopNode));
-          */
-        }
+    } else if (valuesToPropagateAcrossIterations.size() > 0) {
 
-        return false;
-      });
+      /*
+       * The SCC can be recomputed locally.
+       */
+      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+      sccInfo = new UnknownClosedFormSCC(scc,
+                                         rootLoop,
+                                         loopCarriedDependences,
+                                         valuesToPropagateAcrossIterations);
+
+    } else if (stackObjectsThatAreClonable.size() > 0) {
+
+      /*
+       * The SCC can be removed by cloning stack objects.
+       */
+      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+      sccInfo = new StackObjectClonableSCC(scc,
+                                           rootLoop,
+                                           loopCarriedDependences,
+                                           stackObjectsThatAreClonable);
+
+    } else {
+
+      /*
+       * The SCC crosses multiple loop iterations and we don't know how to
+       * parallelize it.
+       */
+      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+      sccInfo =
+          new LoopCarriedUnknownSCC(scc, rootLoop, loopCarriedDependences);
+    }
+    assert(sccInfo != nullptr);
+    this->sccToInfo[scc] = sccInfo;
+
+    this->checkIfClonable(scc, loopNode);
+    if (isa<LoopCarriedUnknownSCC>(sccInfo)) {
+      // assert(!sccInfo->canBeCloned());
+      // assert(!isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc,
+      // loopNode));
+    } else if (isa<LoopCarriedSCC>(sccInfo)) {
+      /*assert(!isClonableBySyntacticSugarInstrs(scc));
+      assert(!isClonableByCmpBrInstrs(scc));
+      assert(!isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc,
+      loopNode));
+      */
+    }
+
+    return false;
+  });
 
   collectSCCGraphAssumingDistributedClones();
 
@@ -660,6 +675,58 @@ void SCCDAGAttrs::checkIfClonable(SCC *scc, LoopForestNode *loopNode) {
   return;
 }
 
+std::set<Instruction *> SCCDAGAttrs::checkIfRecomputable(
+    SCC *scc,
+    LoopForestNode *loopNode) const {
+
+  /*
+   * Make sure there is no memory dependences within the SCC.
+   */
+  for (auto edge : scc->getEdges()) {
+    if (edge->isMemoryDependence()) {
+      return {};
+    }
+  }
+
+  /*
+   * Make sure there is at least one loop-carried dependence.
+   */
+  if (sccToLoopCarriedDependencies.find(scc)
+      == sccToLoopCarriedDependencies.end()) {
+    return {};
+  }
+
+  /*
+   * Make sure all instructions involved in all loop-carried data dependences
+   * are within sub-loops.
+   */
+  std::set<Instruction *> valuesToPropagateAcrossIterations;
+  auto topLoop = loopNode->getLoop();
+  for (auto loopCarriedDependency : sccToLoopCarriedDependencies.at(scc)) {
+
+    /*
+     * Fetch the instructions involved in the current loop-carried dependence.
+     */
+    auto valueFrom = loopCarriedDependency->getOutgoingT();
+    auto valueTo = loopCarriedDependency->getIncomingT();
+    assert(isa<Instruction>(valueFrom) && isa<Instruction>(valueTo));
+    auto instFrom = cast<Instruction>(valueFrom);
+
+    /*
+     * Check the instructions belong to sub-loops
+     */
+    if (loopNode->getInnermostLoopThatContains(instFrom) == topLoop
+        || loopNode->getInnermostLoopThatContains(cast<Instruction>(valueTo))
+               == topLoop) {
+      return {};
+    }
+
+    valuesToPropagateAcrossIterations.insert(instFrom);
+  }
+
+  return valuesToPropagateAcrossIterations;
+}
+
 std::set<ClonableMemoryLocation *> SCCDAGAttrs::
     checkIfClonableByUsingLocalMemory(SCC *scc,
                                       LoopForestNode *loopNode) const {
@@ -734,17 +801,20 @@ bool SCCDAGAttrs::isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(
    * FIXME: This check should not exist; instead, SCC where cloning
    * is trivial should be separated out by the parallelization scheme
    */
-  if (this->sccdag->fetchNode(scc)->numOutgoingEdges() == 0)
+  if (this->sccdag->fetchNode(scc)->numOutgoingEdges() == 0) {
     return false;
+  }
 
   for (auto edge : scc->getEdges()) {
-    if (edge->isMemoryDependence())
+    if (edge->isMemoryDependence()) {
       return false;
+    }
   }
 
   if (sccToLoopCarriedDependencies.find(scc)
-      == sccToLoopCarriedDependencies.end())
+      == sccToLoopCarriedDependencies.end()) {
     return true;
+  }
 
   auto topLoop = loopNode->getLoop();
   for (auto loopCarriedDependency : sccToLoopCarriedDependencies.at(scc)) {

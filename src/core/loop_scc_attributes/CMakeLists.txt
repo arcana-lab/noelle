@@ -19,6 +19,8 @@ install(
   include/noelle/core/ReductionSCC.hpp
   include/noelle/core/BinaryReductionSCC.hpp
   include/noelle/core/RecomputableSCC.hpp
+  include/noelle/core/SingleAccumulatorRecomputableSCC.hpp
+  include/noelle/core/UnknownClosedFormSCC.hpp
   include/noelle/core/InductionVariableSCC.hpp
   include/noelle/core/LinearInductionVariableSCC.hpp
   include/noelle/core/MemoryClonableSCC.hpp

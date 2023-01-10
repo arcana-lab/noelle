@@ -22,11 +22,11 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/RecomputableSCC.hpp"
+#include "noelle/core/SingleAccumulatorRecomputableSCC.hpp"
 
 namespace llvm::noelle {
 
-class InductionVariableSCC : public RecomputableSCC {
+class InductionVariableSCC : public SingleAccumulatorRecomputableSCC {
 public:
   InductionVariableSCC() = delete;
 

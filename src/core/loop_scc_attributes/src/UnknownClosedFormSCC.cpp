@@ -19,38 +19,27 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
-
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopCarriedSCC.hpp"
+#include "noelle/core/UnknownClosedFormSCC.hpp"
 
 namespace llvm::noelle {
 
-class RecomputableSCC : public LoopCarriedSCC {
-public:
-  RecomputableSCC() = delete;
+UnknownClosedFormSCC::UnknownClosedFormSCC(
+    SCC *s,
+    LoopStructure *loop,
+    const std::set<DGEdge<Value> *> &loopCarriedDependences,
+    const std::set<Instruction *> &valuesToPropagateAcrossLoopIterations)
+  : RecomputableSCC{ UNKNOWN_CLOSED_FORM,
+                     s,
+                     loop,
+                     loopCarriedDependences,
+                     valuesToPropagateAcrossLoopIterations,
+                     false } {
 
-  std::set<Instruction *> getValuesToPropagateAcrossLoopIterations(void) const;
+  return;
+}
 
-  static bool classof(const SCCAttrs *s);
-
-protected:
-  std::set<Instruction *> values;
-
-  RecomputableSCC(SCCKind K,
-                  SCC *s,
-                  LoopStructure *loop,
-                  const std::set<DGEdge<Value> *> &loopCarriedDependences,
-                  const std::set<Instruction *> &values,
-                  bool commutative);
-
-  RecomputableSCC(SCCKind K,
-                  SCC *s,
-                  LoopStructure *loop,
-                  const std::set<DGEdge<Value> *> &loopCarriedDependences,
-                  bool commutative);
-
-  void addValue(Instruction *v);
-};
+bool UnknownClosedFormSCC::classof(const SCCAttrs *s) {
+  return (s->getKind() == SCCAttrs::SCCKind::UNKNOWN_CLOSED_FORM);
+}
 
 } // namespace llvm::noelle

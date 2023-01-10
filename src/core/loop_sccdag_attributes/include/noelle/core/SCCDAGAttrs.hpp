@@ -99,16 +99,24 @@ private:
    * Helper methods on single SCC
    */
   LoopCarriedVariable *checkIfReducible(SCC *scc, LoopForestNode *loop);
+
   bool checkIfIndependent(SCC *scc);
+
   std::set<InductionVariable *> checkIfSCCOnlyContainsInductionVariables(
       SCC *scc,
       LoopForestNode *loop,
       std::set<InductionVariable *> &loopGoverningIVs,
       std::set<InductionVariable *> &IVs) const;
+
   void checkIfClonable(SCC *scc, LoopForestNode *loop);
+
   std::set<ClonableMemoryLocation *> checkIfClonableByUsingLocalMemory(
       SCC *scc,
       LoopForestNode *loop) const;
+
+  std::set<Instruction *> checkIfRecomputable(SCC *scc,
+                                              LoopForestNode *loopNode) const;
+
   bool isClonableByInductionVars(SCC *scc) const;
   bool isClonableBySyntacticSugarInstrs(SCC *scc) const;
   bool isClonableByCmpBrInstrs(SCC *scc) const;
