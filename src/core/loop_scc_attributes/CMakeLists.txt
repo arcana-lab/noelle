@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/noelle/core/SCCAttrs.hpp
+  include/noelle/core/GenericSCC.hpp
   include/noelle/core/LoopCarriedSCC.hpp
   include/noelle/core/LoopIterationSCC.hpp
   include/noelle/core/ReductionSCC.hpp

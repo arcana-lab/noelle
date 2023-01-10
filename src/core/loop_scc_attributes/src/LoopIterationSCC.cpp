@@ -24,18 +24,18 @@
 namespace llvm::noelle {
 
 LoopIterationSCC::LoopIterationSCC(SCC *s, LoopStructure *loop)
-  : LoopIterationSCC(SCCAttrs::SCCKind::LOOP_ITERATION, s, loop) {
+  : LoopIterationSCC(GenericSCC::SCCKind::LOOP_ITERATION, s, loop) {
   return;
 }
 
 LoopIterationSCC::LoopIterationSCC(SCCKind K, SCC *s, LoopStructure *loop)
-  : SCCAttrs(K, s, loop) {
+  : GenericSCC(K, s, loop) {
   return;
 }
 
-bool LoopIterationSCC::classof(const SCCAttrs *s) {
-  return (s->getKind() >= SCCAttrs::SCCKind::LOOP_ITERATION)
-         && (s->getKind() <= SCCAttrs::SCCKind::LAST_LOOP_ITERATION);
+bool LoopIterationSCC::classof(const GenericSCC *s) {
+  return (s->getKind() >= GenericSCC::SCCKind::LOOP_ITERATION)
+         && (s->getKind() <= GenericSCC::SCCKind::LAST_LOOP_ITERATION);
 }
 
 } // namespace llvm::noelle

@@ -35,8 +35,8 @@ LoopCarriedUnknownSCC::LoopCarriedUnknownSCC(
   return;
 }
 
-bool LoopCarriedUnknownSCC::classof(const SCCAttrs *s) {
-  return (s->getKind() == SCCAttrs::SCCKind::LOOP_CARRIED_UNKNOWN);
+bool LoopCarriedUnknownSCC::classof(const GenericSCC *s) {
+  return (s->getKind() == GenericSCC::SCCKind::LOOP_CARRIED_UNKNOWN);
 }
 
 } // namespace llvm::noelle

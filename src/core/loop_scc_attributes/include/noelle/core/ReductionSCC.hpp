@@ -37,7 +37,7 @@ public:
 
   PHINode *getPhiThatAccumulatesValuesBetweenLoopIterations(void) const;
 
-  static bool classof(const SCCAttrs *s);
+  static bool classof(const GenericSCC *s);
 
 protected:
   Value *initialValue;

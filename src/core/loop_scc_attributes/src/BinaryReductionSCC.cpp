@@ -149,8 +149,8 @@ std::set<Instruction *> BinaryReductionSCC::collectAccumulators(
   return accumulators;
 }
 
-bool BinaryReductionSCC::classof(const SCCAttrs *s) {
-  return (s->getKind() == SCCAttrs::SCCKind::BINARY_REDUCTION);
+bool BinaryReductionSCC::classof(const GenericSCC *s) {
+  return (s->getKind() == GenericSCC::SCCKind::BINARY_REDUCTION);
 }
 
 } // namespace llvm::noelle

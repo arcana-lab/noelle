@@ -44,8 +44,8 @@ std::set<InductionVariable *> LinearInductionVariableSCC::getIVs(void) const {
   return this->_IVs;
 }
 
-bool LinearInductionVariableSCC::classof(const SCCAttrs *s) {
-  return (s->getKind() == SCCAttrs::SCCKind::LINEAR_INDUCTION_VARIABLE);
+bool LinearInductionVariableSCC::classof(const GenericSCC *s) {
+  return (s->getKind() == GenericSCC::SCCKind::LINEAR_INDUCTION_VARIABLE);
 }
 
 } // namespace llvm::noelle

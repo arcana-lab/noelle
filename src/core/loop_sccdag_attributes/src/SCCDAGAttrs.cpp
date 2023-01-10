@@ -99,7 +99,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
         /*
          * Allocate the metadata about this SCC.
          */
-        SCCAttrs *sccInfo = nullptr;
+        GenericSCC *sccInfo = nullptr;
         if (this->checkIfIndependent(scc)) {
 
           /*
@@ -351,7 +351,7 @@ bool SCCDAGAttrs::isSCCContainedInSubloop(LoopForestNode *loop,
   return instInSubloops;
 }
 
-SCCAttrs *SCCDAGAttrs::getSCCAttrs(SCC *scc) const {
+GenericSCC *SCCDAGAttrs::getSCCAttrs(SCC *scc) const {
   auto sccInfo = this->sccToInfo.find(scc);
   if (sccInfo == this->sccToInfo.end()) {
     return nullptr;
@@ -819,7 +819,7 @@ void SCCDAGAttrs::dumpToFile(int id) {
     std::string sccDescription;
     raw_string_ostream ros(sccDescription);
 
-    auto sccInfo = getSCCAttrs(sccNode->getT());
+    auto sccInfo = this->getSCCAttrs(sccNode->getT());
     ros << "Type: ";
     if (isa<LoopIterationSCC>(sccInfo))
       ros << "Independent ";
@@ -855,8 +855,9 @@ void SCCDAGAttrs::dumpToFile(int id) {
   return;
 }
 
-std::unordered_set<SCCAttrs *> SCCDAGAttrs::getSCCsOfKind(SCCAttrs::SCCKind K) {
-  std::unordered_set<SCCAttrs *> SCCs{};
+std::unordered_set<GenericSCC *> SCCDAGAttrs::getSCCsOfKind(
+    GenericSCC::SCCKind K) {
+  std::unordered_set<GenericSCC *> SCCs{};
   for (auto pair : this->sccToInfo) {
     auto sccAttrs = pair.second;
     auto sccKind = sccAttrs->getKind();

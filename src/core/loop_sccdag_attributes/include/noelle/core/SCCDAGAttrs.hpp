@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
-#include "noelle/core/SCCAttrs.hpp"
+#include "noelle/core/GenericSCC.hpp"
 #include "noelle/core/LoopCarriedSCC.hpp"
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/LoopGoverningIVAttribution.hpp"
@@ -58,7 +58,7 @@ public:
   std::set<LoopCarriedSCC *> getSCCsWithLoopCarriedDataDependencies(void) const;
   std::set<LoopCarriedSCC *> getSCCsWithLoopCarriedControlDependencies(
       void) const;
-  std::unordered_set<SCCAttrs *> getSCCsOfKind(SCCAttrs::SCCKind K);
+  std::unordered_set<GenericSCC *> getSCCsOfKind(GenericSCC::SCCKind K);
   bool isLoopGovernedBySCC(SCC *scc) const;
   std::set<uint32_t> getLiveOutVariablesThatAreNotReducable(
       LoopEnvironment *env) const;
@@ -67,7 +67,7 @@ public:
    * Methods on single SCC.
    */
   bool isSCCContainedInSubloop(LoopForestNode *loop, SCC *scc) const;
-  SCCAttrs *getSCCAttrs(SCC *scc) const;
+  GenericSCC *getSCCAttrs(SCC *scc) const;
 
   /*
    * Return the SCCDAG of the loop.
@@ -84,7 +84,7 @@ public:
 private:
   std::map<SCC *, Criticisms> sccToLoopCarriedDependencies;
   bool enableFloatAsReal;
-  std::unordered_map<SCC *, SCCAttrs *> sccToInfo;
+  std::unordered_map<SCC *, GenericSCC *> sccToInfo;
   PDG *loopDG;
   SCCDAG *sccdag; /* SCCDAG of the related loop.  */
   MemoryCloningAnalysis *memoryCloningAnalysis;

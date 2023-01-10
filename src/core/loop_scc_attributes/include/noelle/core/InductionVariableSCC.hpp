@@ -30,7 +30,7 @@ class InductionVariableSCC : public RecomputableSCC {
 public:
   InductionVariableSCC() = delete;
 
-  static bool classof(const SCCAttrs *s);
+  static bool classof(const GenericSCC *s);
 
 protected:
   InductionVariableSCC(SCCKind K,

@@ -38,7 +38,7 @@ public:
 
   std::set<InductionVariable *> getIVs(void) const;
 
-  static bool classof(const SCCAttrs *s);
+  static bool classof(const GenericSCC *s);
 
 protected:
   std::set<InductionVariable *> _IVs;

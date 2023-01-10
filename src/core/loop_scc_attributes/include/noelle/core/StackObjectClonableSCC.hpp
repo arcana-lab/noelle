@@ -43,7 +43,7 @@ public:
    */
   std::set<AllocaInst *> getMemoryLocationsToClone(void) const;
 
-  static bool classof(const SCCAttrs *s);
+  static bool classof(const GenericSCC *s);
 
 protected:
   std::set<ClonableMemoryObject *> _clonableMemoryLocations;

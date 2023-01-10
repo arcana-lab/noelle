@@ -33,9 +33,9 @@ MemoryClonableSCC::MemoryClonableSCC(
   return;
 }
 
-bool MemoryClonableSCC::classof(const SCCAttrs *s) {
-  return (s->getKind() >= SCCAttrs::SCCKind::MEMORY_CLONABLE)
-         && (s->getKind() <= SCCAttrs::SCCKind::LAST_MEMORY_CLONABLE);
+bool MemoryClonableSCC::classof(const GenericSCC *s) {
+  return (s->getKind() >= GenericSCC::SCCKind::MEMORY_CLONABLE)
+         && (s->getKind() <= GenericSCC::SCCKind::LAST_MEMORY_CLONABLE);
 }
 
 } // namespace llvm::noelle

@@ -1,7 +1,7 @@
 # Sources
 set(Srcs 
   AccumulatorOpInfo.cpp
-  SCCAttrs.cpp
+  GenericSCC.cpp
   LoopCarriedSCC.cpp
   LoopIterationSCC.cpp
   ReductionSCC.cpp
