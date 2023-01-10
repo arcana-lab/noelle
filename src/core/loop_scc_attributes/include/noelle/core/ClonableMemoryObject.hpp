@@ -29,13 +29,13 @@
 
 namespace llvm::noelle {
 
-class ClonableMemoryLocation {
+class ClonableMemoryObject {
 public:
-  ClonableMemoryLocation(AllocaInst *allocation,
-                         uint64_t sizeInBits,
-                         LoopStructure *loop,
-                         DominatorSummary &DS,
-                         PDG *ldg);
+  ClonableMemoryObject(AllocaInst *allocation,
+                       uint64_t sizeInBits,
+                       LoopStructure *loop,
+                       DominatorSummary &DS,
+                       PDG *ldg);
 
   AllocaInst *getAllocation(void) const;
 

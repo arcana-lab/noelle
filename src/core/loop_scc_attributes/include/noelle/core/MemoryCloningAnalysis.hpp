@@ -35,14 +35,14 @@ class MemoryCloningAnalysis {
 public:
   MemoryCloningAnalysis(LoopStructure *loop, DominatorSummary &DS, PDG *ldg);
 
-  const std::unordered_set<ClonableMemoryLocation *>
-  getClonableMemoryLocationsFor(Instruction *I) const;
+  const std::unordered_set<ClonableMemoryObject *> getClonableMemoryObjectsFor(
+      Instruction *I) const;
 
-  std::unordered_set<ClonableMemoryLocation *> getClonableMemoryLocations(
+  std::unordered_set<ClonableMemoryObject *> getClonableMemoryObjects(
       void) const;
 
 private:
-  std::unordered_set<std::unique_ptr<ClonableMemoryLocation>>
+  std::unordered_set<std::unique_ptr<ClonableMemoryObject>>
       clonableMemoryLocations;
 };
 

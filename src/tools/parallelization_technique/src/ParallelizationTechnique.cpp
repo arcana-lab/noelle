@@ -508,7 +508,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
   /*
    * Check every stack object that can be safely cloned.
    */
-  for (auto location : memoryCloningAnalysis->getClonableMemoryLocations()) {
+  for (auto location : memoryCloningAnalysis->getClonableMemoryObjects()) {
 
     /*
      * Fetch the stack object.

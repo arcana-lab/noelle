@@ -660,9 +660,9 @@ void SCCDAGAttrs::checkIfClonable(SCC *scc, LoopForestNode *loopNode) {
   return;
 }
 
-std::set<ClonableMemoryLocation *> SCCDAGAttrs::
-    checkIfClonableByUsingLocalMemory(SCC *scc,
-                                      LoopForestNode *loopNode) const {
+std::set<ClonableMemoryObject *> SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
+    SCC *scc,
+    LoopForestNode *loopNode) const {
 
   /*
    * Ignore SCC without loop carried dependencies
@@ -677,7 +677,7 @@ std::set<ClonableMemoryLocation *> SCCDAGAttrs::
    *
    * NOTE: Ignore PHIs and unconditional branch instructions
    */
-  std::set<ClonableMemoryLocation *> locations;
+  std::set<ClonableMemoryObject *> locations;
   for (auto dependency : this->sccToLoopCarriedDependencies.at(scc)) {
 
     /*
@@ -693,8 +693,7 @@ std::set<ClonableMemoryLocation *> SCCDAGAttrs::
      * Attempt to locate the instruction's clonable memory location they
      * store/load from
      */
-    auto locs =
-        this->memoryCloningAnalysis->getClonableMemoryLocationsFor(inst);
+    auto locs = this->memoryCloningAnalysis->getClonableMemoryObjectsFor(inst);
     // inst->print(errs() << "Instruction: "); errs() << "\n";
     // if (!location) {
     //   errs() << "No location\n";

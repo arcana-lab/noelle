@@ -106,7 +106,7 @@ private:
       std::set<InductionVariable *> &loopGoverningIVs,
       std::set<InductionVariable *> &IVs) const;
   void checkIfClonable(SCC *scc, LoopForestNode *loop);
-  std::set<ClonableMemoryLocation *> checkIfClonableByUsingLocalMemory(
+  std::set<ClonableMemoryObject *> checkIfClonableByUsingLocalMemory(
       SCC *scc,
       LoopForestNode *loop) const;
   bool isClonableByInductionVars(SCC *scc) const;

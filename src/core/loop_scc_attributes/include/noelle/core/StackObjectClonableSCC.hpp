@@ -32,7 +32,7 @@ public:
       SCC *s,
       LoopStructure *loop,
       const std::set<DGEdge<Value> *> &loopCarriedDependences,
-      const std::set<ClonableMemoryLocation *> &locations);
+      const std::set<ClonableMemoryObject *> &locations);
 
   StackObjectClonableSCC() = delete;
 
@@ -45,7 +45,7 @@ public:
   static bool classof(const SCCAttrs *s);
 
 protected:
-  std::set<ClonableMemoryLocation *> _clonableMemoryLocations;
+  std::set<ClonableMemoryObject *> _clonableMemoryLocations;
 };
 
 } // namespace llvm::noelle

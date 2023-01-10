@@ -23,7 +23,7 @@
 
 namespace llvm::noelle {
 
-std::unordered_set<Instruction *> ClonableMemoryLocation::
+std::unordered_set<Instruction *> ClonableMemoryObject::
     getInstructionsUsingLocationOutsideLoop(void) const {
   std::unordered_set<Instruction *> instructions;
   for (auto I : this->castsAndGEPs) {
@@ -50,7 +50,7 @@ std::unordered_set<Instruction *> ClonableMemoryLocation::
   return instructions;
 }
 
-bool ClonableMemoryLocation::mustAliasAMemoryLocationWithinObject(
+bool ClonableMemoryObject::mustAliasAMemoryLocationWithinObject(
     Value *ptr) const {
 
   /*
@@ -72,7 +72,7 @@ bool ClonableMemoryLocation::mustAliasAMemoryLocationWithinObject(
   return false;
 }
 
-std::unordered_set<Instruction *> ClonableMemoryLocation::
+std::unordered_set<Instruction *> ClonableMemoryObject::
     getLoopInstructionsUsingLocation(void) const {
   std::unordered_set<Instruction *> instructions;
   for (auto I : this->castsAndGEPs) {
@@ -98,19 +98,19 @@ std::unordered_set<Instruction *> ClonableMemoryLocation::
   return instructions;
 }
 
-ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
-                                               uint64_t sizeInBits,
-                                               LoopStructure *loop,
-                                               DominatorSummary &DS,
-                                               PDG *ldg)
+ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
+                                           uint64_t sizeInBits,
+                                           LoopStructure *loop,
+                                           DominatorSummary &DS,
+                                           PDG *ldg)
   : allocation{ allocation },
     sizeInBits{ sizeInBits },
     loop{ loop },
     isClonable{ false },
     isScopeWithinLoop{ false },
     needInitialization{ false } {
-  errs() << "ClonableMemoryLocation: Start\n";
-  errs() << "ClonableMemoryLocation:   Object = " << *allocation << "\n";
+  errs() << "ClonableMemoryObject: Start\n";
+  errs() << "ClonableMemoryObject:   Object = " << *allocation << "\n";
 
   /*
    * Check if the current stack object's scope is the loop.
@@ -123,8 +123,8 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
   this->allocatedType = allocation->getAllocatedType();
   if (!this->identifyStoresAndOtherUsers(loop, DS)) {
     errs()
-        << "ClonableMemoryLocation:   We cannot identify memory accesses to it\n";
-    errs() << "ClonableMemoryLocation: Exit\n";
+        << "ClonableMemoryObject:   We cannot identify memory accesses to it\n";
+    errs() << "ClonableMemoryObject: Exit\n";
     return;
   }
 
@@ -146,8 +146,8 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
     /*
      * There is no need to clone the stack object.
      */
-    errs() << "ClonableMemoryLocation:   There is no need to clone it\n";
-    errs() << "ClonableMemoryLocation: Exit\n";
+    errs() << "ClonableMemoryObject:   There is no need to clone it\n";
+    errs() << "ClonableMemoryObject: Exit\n";
     return;
   }
 
@@ -164,8 +164,8 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
      * dependence. It cannot be safely cloned.
      */
     errs()
-        << "ClonableMemoryLocation:   There are RAW memory data dependences between loop iterations\n";
-    errs() << "ClonableMemoryLocation: Exit\n";
+        << "ClonableMemoryObject:   There are RAW memory data dependences between loop iterations\n";
+    errs() << "ClonableMemoryObject: Exit\n";
     return;
   }
 
@@ -184,12 +184,12 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
      * Therefore, the object is clonable.
      */
     this->isClonable = true;
-    errs() << "ClonableMemoryLocation:   It is clonable\n";
-    errs() << "ClonableMemoryLocation: Exit\n";
+    errs() << "ClonableMemoryObject:   It is clonable\n";
+    errs() << "ClonableMemoryObject: Exit\n";
     return;
   }
   if (!this->isThereRAWThroughMemoryFromLoopToOutside(loop, allocation, ldg)) {
-    errs() << "ClonableMemoryLocation:   It is clonable\n";
+    errs() << "ClonableMemoryObject:   It is clonable\n";
 
     /*
      * The stack object is not involved in any memory RAW data dependence from
@@ -210,7 +210,7 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
        * Therefore, the object is clonable.
        */
       this->isClonable = true;
-      errs() << "ClonableMemoryLocation: Exit\n";
+      errs() << "ClonableMemoryObject: Exit\n";
       return;
     }
 
@@ -221,8 +221,8 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
      */
     this->needInitialization = true;
     this->isClonable = true;
-    errs() << "ClonableMemoryLocation:   It requires initialization\n";
-    errs() << "ClonableMemoryLocation: Exit\n";
+    errs() << "ClonableMemoryObject:   It requires initialization\n";
+    errs() << "ClonableMemoryObject: Exit\n";
     return;
   }
 
@@ -233,7 +233,7 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
    */
   if ((!this->isScopeWithinLoop) && (!allocatedType->isStructTy())
       && (!allocatedType->isIntegerTy())) {
-    errs() << "ClonableMemoryLocation: Exit\n";
+    errs() << "ClonableMemoryObject: Exit\n";
     return;
   }
 
@@ -250,7 +250,7 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
         || (this->isThereRAWThroughMemoryFromLoopToOutside(loop,
                                                            allocation,
                                                            ldg))) {
-      errs() << "ClonableMemoryLocation: Exit\n";
+      errs() << "ClonableMemoryObject: Exit\n";
       return;
     }
   }
@@ -258,16 +258,16 @@ ClonableMemoryLocation::ClonableMemoryLocation(AllocaInst *allocation,
   /*
    * The location is clonable.
    */
-  errs() << "ClonableMemoryLocation:   It is clonable\n";
+  errs() << "ClonableMemoryObject:   It is clonable\n";
   this->isClonable = true;
 
-  errs() << "ClonableMemoryLocation: Exit\n";
+  errs() << "ClonableMemoryObject: Exit\n";
   return;
 }
 
-void ClonableMemoryLocation::setObjectScope(AllocaInst *allocation,
-                                            LoopStructure *loop,
-                                            DominatorSummary &ds) {
+void ClonableMemoryObject::setObjectScope(AllocaInst *allocation,
+                                          LoopStructure *loop,
+                                          DominatorSummary &ds) {
 
   /*
    * Look for lifetime calls in the loop.
@@ -307,30 +307,28 @@ void ClonableMemoryLocation::setObjectScope(AllocaInst *allocation,
   return;
 }
 
-AllocaInst *ClonableMemoryLocation::getAllocation(void) const {
+AllocaInst *ClonableMemoryObject::getAllocation(void) const {
   return this->allocation;
 }
 
-bool ClonableMemoryLocation::isClonableLocation(void) const {
+bool ClonableMemoryObject::isClonableLocation(void) const {
   return this->isClonable;
 }
 
-bool ClonableMemoryLocation::isInstructionCastOrGEPOfLocation(
+bool ClonableMemoryObject::isInstructionCastOrGEPOfLocation(
     Instruction *I) const {
   if (castsAndGEPs.find(I) != castsAndGEPs.end())
     return true;
   return false;
 }
 
-bool ClonableMemoryLocation::isInstructionStoringLocation(
-    Instruction *I) const {
+bool ClonableMemoryObject::isInstructionStoringLocation(Instruction *I) const {
   if (storingInstructions.find(I) != storingInstructions.end())
     return true;
   return false;
 }
 
-bool ClonableMemoryLocation::isInstructionLoadingLocation(
-    Instruction *I) const {
+bool ClonableMemoryObject::isInstructionLoadingLocation(Instruction *I) const {
   if (nonStoringInstructions.find(I) != nonStoringInstructions.end())
     return true;
   if (loadInstructions.find(I) != loadInstructions.end())
@@ -338,7 +336,7 @@ bool ClonableMemoryLocation::isInstructionLoadingLocation(
   return false;
 }
 
-bool ClonableMemoryLocation::isMemCpyInstrinsicCall(CallInst *call) {
+bool ClonableMemoryObject::isMemCpyInstrinsicCall(CallInst *call) {
   auto calledFn = call->getCalledFunction();
   if (!calledFn || !calledFn->hasName())
     return false;
@@ -347,8 +345,8 @@ bool ClonableMemoryLocation::isMemCpyInstrinsicCall(CallInst *call) {
   return nameString.find("llvm.memcpy") != std::string::npos;
 }
 
-bool ClonableMemoryLocation::identifyStoresAndOtherUsers(LoopStructure *loop,
-                                                         DominatorSummary &DS) {
+bool ClonableMemoryObject::identifyStoresAndOtherUsers(LoopStructure *loop,
+                                                       DominatorSummary &DS) {
 
   /*
    * Determine all uses of the stack location.
@@ -420,7 +418,7 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers(LoopStructure *loop,
          * We consider llvm.memcpy as a storing instruction if the use is the
          * dest (first operand)
          */
-        auto isMemCpy = ClonableMemoryLocation::isMemCpyInstrinsicCall(call);
+        auto isMemCpy = ClonableMemoryObject::isMemCpyInstrinsicCall(call);
         auto isUseTheDestinationOp =
             (call->getNumArgOperands() == 4) && (call->getArgOperand(0) == I);
         auto isUseTheSourceOp =
@@ -473,7 +471,7 @@ bool ClonableMemoryLocation::identifyStoresAndOtherUsers(LoopStructure *loop,
   return true;
 }
 
-bool ClonableMemoryLocation::isThereRAWThroughMemoryBetweenLoopIterations(
+bool ClonableMemoryObject::isThereRAWThroughMemoryBetweenLoopIterations(
     LoopStructure *loop,
     AllocaInst *al,
     PDG *ldg) const {
@@ -488,7 +486,7 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryBetweenLoopIterations(
   return false;
 }
 
-bool ClonableMemoryLocation::isThereAMemoryDependenceBetweenLoopIterations(
+bool ClonableMemoryObject::isThereAMemoryDependenceBetweenLoopIterations(
     LoopStructure *loop,
     AllocaInst *al,
     PDG *ldg,
@@ -570,7 +568,7 @@ bool ClonableMemoryLocation::isThereAMemoryDependenceBetweenLoopIterations(
   return false;
 }
 
-bool ClonableMemoryLocation::isThereRAWThroughMemoryBetweenLoopIterations(
+bool ClonableMemoryObject::isThereRAWThroughMemoryBetweenLoopIterations(
     LoopStructure *loop,
     AllocaInst *al,
     PDG *ldg,
@@ -659,7 +657,7 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryBetweenLoopIterations(
   return false;
 }
 
-bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideToLoop(
+bool ClonableMemoryObject::isThereRAWThroughMemoryFromOutsideToLoop(
     LoopStructure *loop,
     AllocaInst *al,
     PDG *ldg,
@@ -740,7 +738,7 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideToLoop(
   return false;
 }
 
-bool ClonableMemoryLocation::isThereRAWThroughMemoryFromLoopToOutside(
+bool ClonableMemoryObject::isThereRAWThroughMemoryFromLoopToOutside(
     LoopStructure *loop,
     AllocaInst *al,
     PDG *ldg,
@@ -821,7 +819,7 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryFromLoopToOutside(
   return false;
 }
 
-bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideToLoop(
+bool ClonableMemoryObject::isThereRAWThroughMemoryFromOutsideToLoop(
     LoopStructure *loop,
     AllocaInst *al,
     PDG *ldg) const {
@@ -849,7 +847,7 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryFromOutsideToLoop(
   return false;
 }
 
-bool ClonableMemoryLocation::isThereRAWThroughMemoryFromLoopToOutside(
+bool ClonableMemoryObject::isThereRAWThroughMemoryFromLoopToOutside(
     LoopStructure *loop,
     AllocaInst *al,
     PDG *ldg) const {
@@ -878,7 +876,7 @@ bool ClonableMemoryLocation::isThereRAWThroughMemoryFromLoopToOutside(
   return false;
 }
 
-bool ClonableMemoryLocation::identifyInitialStoringInstructions(
+bool ClonableMemoryObject::identifyInitialStoringInstructions(
     LoopStructure *loop,
     DominatorSummary &DS) {
 
@@ -930,7 +928,7 @@ bool ClonableMemoryLocation::identifyInitialStoringInstructions(
     // nonStoringBlock->printAsOperand(errs() << "\tCreating set: "); errs() <<
     // "\n";
 
-    auto overrideSet = std::make_unique<ClonableMemoryLocation::OverrideSet>();
+    auto overrideSet = std::make_unique<ClonableMemoryObject::OverrideSet>();
     overrideSet->dominatingBlockOfNonStoringInsts = instBlock;
     overrideSet->subsequentNonStoringInstructions.insert(instToCover);
     overrideSets.insert(std::move(overrideSet));
@@ -983,7 +981,7 @@ bool ClonableMemoryLocation::identifyInitialStoringInstructions(
   return true;
 }
 
-bool ClonableMemoryLocation::areOverrideSetsFullyCoveringTheAllocationSpace(
+bool ClonableMemoryObject::areOverrideSetsFullyCoveringTheAllocationSpace(
     void) const {
   if (overrideSets.size() == 0) {
     return false;
@@ -999,8 +997,8 @@ bool ClonableMemoryLocation::areOverrideSetsFullyCoveringTheAllocationSpace(
   return true;
 }
 
-bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace(
-    ClonableMemoryLocation::OverrideSet *overrideSet) const {
+bool ClonableMemoryObject::isOverrideSetFullyCoveringTheAllocationSpace(
+    ClonableMemoryObject::OverrideSet *overrideSet) const {
   std::unordered_set<int64_t> structElementsStoredTo;
   for (auto storingInstruction : overrideSet->initialStoringInstructions) {
     if (auto store = dyn_cast<StoreInst>(storingInstruction)) {
@@ -1056,7 +1054,7 @@ bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace(
       }
 
     } else if (auto call = dyn_cast<CallInst>(storingInstruction)) {
-      assert(ClonableMemoryLocation::isMemCpyInstrinsicCall(call));
+      assert(ClonableMemoryObject::isMemCpyInstrinsicCall(call));
 
       // call->print(errs() << "Examining llvm.memcpy call: "); errs() << "\n";
 
@@ -1089,16 +1087,16 @@ bool ClonableMemoryLocation::isOverrideSetFullyCoveringTheAllocationSpace(
   return false;
 }
 
-std::unordered_set<Instruction *> ClonableMemoryLocation::
+std::unordered_set<Instruction *> ClonableMemoryObject::
     getPointersUsedToAccessObject(void) const {
   return this->castsAndGEPs;
 }
 
-bool ClonableMemoryLocation::doPrivateCopiesNeedToBeInitialized(void) const {
+bool ClonableMemoryObject::doPrivateCopiesNeedToBeInitialized(void) const {
   return this->needInitialization;
 }
 
-uint64_t ClonableMemoryLocation::getSizeInBits(void) const {
+uint64_t ClonableMemoryObject::getSizeInBits(void) const {
   return this->sizeInBits;
 }
 
