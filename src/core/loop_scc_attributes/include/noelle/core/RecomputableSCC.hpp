@@ -23,6 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopCarriedSCC.hpp"
+#include "noelle/core/Dominators.hpp"
 
 namespace llvm::noelle {
 

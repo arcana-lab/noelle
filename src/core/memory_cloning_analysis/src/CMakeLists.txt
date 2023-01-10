@@ -1,24 +1,14 @@
 # Sources
 set(Srcs 
-  AccumulatorOpInfo.cpp
-  SCCAttrs.cpp
-  LoopCarriedSCC.cpp
-  LoopIterationSCC.cpp
-  ReductionSCC.cpp
-  BinaryReductionSCC.cpp
-  RecomputableSCC.cpp
-  InductionVariableSCC.cpp
-  LinearInductionVariableSCC.cpp
-  MemoryClonableSCC.cpp
-  StackObjectClonableSCC.cpp
-  LoopCarriedUnknownSCC.cpp
+  ClonableMemoryObject.cpp
+  MemoryCloningAnalysis.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "LoopSCCAttributes")
+set(PassName "MemoryCloningAnalysis")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -36,21 +26,17 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../basic_utilities/include 
   ../../dominators/include 
   ../../transformations/include
-  ../../callgraph/include
   ../../dataflow/include
   ../../architecture/include 
   ../../alloc_aa/include 
   ../../dg/include 
   ../../pdg/include 
-  ../../hotprofiler/include 
   ../../loop_structure/include 
   ../../loop_environment/include 
   ../../loop_forest/include
-  ../../talkdown/include
   ../../loop_invariants/include
   ../../loop_induction_variables/include
   ../../loop_carried_dependences/include
-  ../../memory_cloning_analysis/include
   ../include
   ./
   ${CMAKE_INSTALL_PREFIX}/include

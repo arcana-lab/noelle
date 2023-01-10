@@ -24,7 +24,6 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/LoopStructure.hpp"
-#include "noelle/core/MemoryCloningAnalysis.hpp"
 
 namespace llvm::noelle {
 

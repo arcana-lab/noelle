@@ -11,8 +11,6 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/noelle/core/ClonableMemoryObject.hpp
-  include/noelle/core/MemoryCloningAnalysis.hpp
   include/noelle/core/SCCAttrs.hpp
   include/noelle/core/LoopCarriedSCC.hpp
   include/noelle/core/LoopIterationSCC.hpp
