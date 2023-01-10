@@ -57,9 +57,9 @@ std::set<Instruction *> RecomputableSCC::
   return this->values;
 }
 
-bool RecomputableSCC::classof(const SCCAttrs *s) {
-  return (s->getKind() >= SCCAttrs::SCCKind::RECOMPUTABLE)
-         && (s->getKind() <= SCCAttrs::SCCKind::LAST_RECOMPUTABLE);
+bool RecomputableSCC::classof(const GenericSCC *s) {
+  return (s->getKind() >= GenericSCC::SCCKind::RECOMPUTABLE)
+         && (s->getKind() <= GenericSCC::SCCKind::LAST_RECOMPUTABLE);
 }
 
 } // namespace llvm::noelle

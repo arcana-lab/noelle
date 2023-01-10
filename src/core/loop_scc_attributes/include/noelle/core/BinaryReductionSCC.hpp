@@ -48,7 +48,7 @@ public:
 
   Instruction::BinaryOps getReductionOperation(void) const;
 
-  static bool classof(const SCCAttrs *s);
+  static bool classof(const GenericSCC *s);
 
 protected:
   Instruction::BinaryOps reductionOperation;

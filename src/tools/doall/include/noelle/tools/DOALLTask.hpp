@@ -43,7 +43,7 @@ public:
   /*
    * Clone of original IV loop, new outer loop
    */
-  SCCAttrs *originalIVAttrs;
+  GenericSCC *originalIVAttrs;
   PHINode *cloneOfOriginalIV;
   CmpInst *cloneOfOriginalCmp;
   BranchInst *cloneOfOriginalBr;

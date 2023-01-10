@@ -23,6 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopCarriedSCC.hpp"
+#include "noelle/core/Dominators.hpp"
 
 namespace llvm::noelle {
 
@@ -32,7 +33,7 @@ public:
 
   std::set<Instruction *> getValuesToPropagateAcrossLoopIterations(void) const;
 
-  static bool classof(const SCCAttrs *s);
+  static bool classof(const GenericSCC *s);
 
 protected:
   std::set<Instruction *> values;

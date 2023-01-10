@@ -45,7 +45,7 @@ public:
   /*
    * Clone of original IV loop, new outer loop
    */
-  SCCAttrs *originalIVAttrs;
+  GenericSCC *originalIVAttrs;
   PHINode *originalIVClone;
   PHINode *outermostLoopIV;
 

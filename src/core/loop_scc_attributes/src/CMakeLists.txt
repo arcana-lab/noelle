@@ -1,9 +1,7 @@
 # Sources
 set(Srcs 
   AccumulatorOpInfo.cpp
-  ClonableMemoryObject.cpp
-  MemoryCloningAnalysis.cpp
-  SCCAttrs.cpp
+  GenericSCC.cpp
   LoopCarriedSCC.cpp
   LoopIterationSCC.cpp
   ReductionSCC.cpp
@@ -54,6 +52,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_invariants/include
   ../../loop_induction_variables/include
   ../../loop_carried_dependences/include
+  ../../memory_cloning_analysis/include
   ../include
   ./
   ${CMAKE_INSTALL_PREFIX}/include

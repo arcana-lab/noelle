@@ -30,7 +30,7 @@ class MemoryClonableSCC : public LoopCarriedSCC {
 public:
   MemoryClonableSCC() = delete;
 
-  static bool classof(const SCCAttrs *s);
+  static bool classof(const GenericSCC *s);
 
 protected:
   MemoryClonableSCC(SCCKind K,

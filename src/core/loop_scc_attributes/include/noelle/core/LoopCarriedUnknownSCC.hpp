@@ -36,7 +36,7 @@ public:
 
   LoopCarriedUnknownSCC() = delete;
 
-  static bool classof(const SCCAttrs *s);
+  static bool classof(const GenericSCC *s);
 
 protected:
 };

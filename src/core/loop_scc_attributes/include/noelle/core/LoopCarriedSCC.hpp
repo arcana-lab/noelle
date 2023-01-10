@@ -22,11 +22,11 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/SCCAttrs.hpp"
+#include "noelle/core/GenericSCC.hpp"
 
 namespace llvm::noelle {
 
-class LoopCarriedSCC : public SCCAttrs {
+class LoopCarriedSCC : public GenericSCC {
 public:
   LoopCarriedSCC() = delete;
 
@@ -38,7 +38,7 @@ public:
    */
   bool isCommutative(void) const;
 
-  static bool classof(const SCCAttrs *s);
+  static bool classof(const GenericSCC *s);
 
 protected:
   std::set<DGEdge<Value> *> lcDeps;

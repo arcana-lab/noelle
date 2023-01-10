@@ -105,13 +105,37 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
     /*
      * Allocate the metadata about this SCC.
      */
-    SCCAttrs *sccInfo = nullptr;
+    GenericSCC *sccInfo = nullptr;
     if (this->checkIfIndependent(scc)) {
 
       /*
        * The SCC does not cross multiple loop iterations.
        */
       sccInfo = new LoopIterationSCC(scc, rootLoop);
+
+    } else if (doesSCCOnlyContainIV.size() > 0) {
+
+      /*
+       * The SCC is an IV.
+       */
+      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+      sccInfo = new LinearInductionVariableSCC(scc,
+                                               rootLoop,
+                                               loopCarriedDependences,
+                                               DS,
+                                               doesSCCOnlyContainIV);
+
+    } else if (isReducable) {
+
+      /*
+       * The SCC is a reduction variable.
+       */
+      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+      sccInfo = new BinaryReductionSCC(scc,
+                                       rootLoop,
+                                       loopCarriedDependences,
+                                       lcVar,
+                                       DS);
 
     } else if (doesSCCOnlyContainIV.size() > 0) {
 
@@ -366,7 +390,7 @@ bool SCCDAGAttrs::isSCCContainedInSubloop(LoopForestNode *loop,
   return instInSubloops;
 }
 
-SCCAttrs *SCCDAGAttrs::getSCCAttrs(SCC *scc) const {
+GenericSCC *SCCDAGAttrs::getSCCAttrs(SCC *scc) const {
   auto sccInfo = this->sccToInfo.find(scc);
   if (sccInfo == this->sccToInfo.end()) {
     return nullptr;
@@ -727,9 +751,9 @@ std::set<Instruction *> SCCDAGAttrs::checkIfRecomputable(
   return valuesToPropagateAcrossIterations;
 }
 
-std::set<ClonableMemoryLocation *> SCCDAGAttrs::
-    checkIfClonableByUsingLocalMemory(SCC *scc,
-                                      LoopForestNode *loopNode) const {
+std::set<ClonableMemoryObject *> SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
+    SCC *scc,
+    LoopForestNode *loopNode) const {
 
   /*
    * Ignore SCC without loop carried dependencies
@@ -744,7 +768,7 @@ std::set<ClonableMemoryLocation *> SCCDAGAttrs::
    *
    * NOTE: Ignore PHIs and unconditional branch instructions
    */
-  std::set<ClonableMemoryLocation *> locations;
+  std::set<ClonableMemoryObject *> locations;
   for (auto dependency : this->sccToLoopCarriedDependencies.at(scc)) {
 
     /*
@@ -760,8 +784,7 @@ std::set<ClonableMemoryLocation *> SCCDAGAttrs::
      * Attempt to locate the instruction's clonable memory location they
      * store/load from
      */
-    auto locs =
-        this->memoryCloningAnalysis->getClonableMemoryLocationsFor(inst);
+    auto locs = this->memoryCloningAnalysis->getClonableMemoryObjectsFor(inst);
     // inst->print(errs() << "Instruction: "); errs() << "\n";
     // if (!location) {
     //   errs() << "No location\n";
@@ -890,7 +913,7 @@ void SCCDAGAttrs::dumpToFile(int id) {
     std::string sccDescription;
     raw_string_ostream ros(sccDescription);
 
-    auto sccInfo = getSCCAttrs(sccNode->getT());
+    auto sccInfo = this->getSCCAttrs(sccNode->getT());
     ros << "Type: ";
     if (isa<LoopIterationSCC>(sccInfo))
       ros << "Independent ";
@@ -926,8 +949,9 @@ void SCCDAGAttrs::dumpToFile(int id) {
   return;
 }
 
-std::unordered_set<SCCAttrs *> SCCDAGAttrs::getSCCsOfKind(SCCAttrs::SCCKind K) {
-  std::unordered_set<SCCAttrs *> SCCs{};
+std::unordered_set<GenericSCC *> SCCDAGAttrs::getSCCsOfKind(
+    GenericSCC::SCCKind K) {
+  std::unordered_set<GenericSCC *> SCCs{};
   for (auto pair : this->sccToInfo) {
     auto sccAttrs = pair.second;
     auto sccKind = sccAttrs->getKind();

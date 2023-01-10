@@ -38,9 +38,9 @@ InductionVariableSCC::InductionVariableSCC(
   return;
 }
 
-bool InductionVariableSCC::classof(const SCCAttrs *s) {
-  return (s->getKind() >= SCCAttrs::SCCKind::INDUCTION_VARIABLE)
-         && (s->getKind() <= SCCAttrs::SCCKind::LAST_INDUCTION_VARIABLE);
+bool InductionVariableSCC::classof(const GenericSCC *s) {
+  return (s->getKind() >= GenericSCC::SCCKind::INDUCTION_VARIABLE)
+         && (s->getKind() <= GenericSCC::SCCKind::LAST_INDUCTION_VARIABLE);
 }
 
 } // namespace llvm::noelle

@@ -169,7 +169,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   std::set<Value *> stackObjectsThatWillBeCloned;
   if (this->memoryCloningAnalysis != nullptr) {
     for (auto memObject :
-         this->memoryCloningAnalysis->getClonableMemoryLocations()) {
+         this->memoryCloningAnalysis->getClonableMemoryObjects()) {
 
       /*
        * Check if the stack object needs to be initialized.
@@ -535,9 +535,9 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
       continue;
     }
     auto locationsProducer =
-        this->memoryCloningAnalysis->getClonableMemoryLocationsFor(producer);
+        this->memoryCloningAnalysis->getClonableMemoryObjectsFor(producer);
     auto locationsConsumer =
-        this->memoryCloningAnalysis->getClonableMemoryLocationsFor(consumer);
+        this->memoryCloningAnalysis->getClonableMemoryObjectsFor(consumer);
     if (locationsProducer.empty() || locationsConsumer.empty()) {
       continue;
     }

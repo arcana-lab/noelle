@@ -24,11 +24,10 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/LoopStructure.hpp"
-#include "noelle/core/MemoryCloningAnalysis.hpp"
 
 namespace llvm::noelle {
 
-class SCCAttrs {
+class GenericSCC {
 public:
   /*
    * Concrete sub-classes.
@@ -82,7 +81,7 @@ public:
    * No public constructors.
    * Only objects of sub-classes can be allocated.
    */
-  SCCAttrs() = delete;
+  GenericSCC() = delete;
 
   /*
    * Get the SCC.
@@ -111,7 +110,7 @@ public:
 
   SCCKind getKind(void) const;
 
-  ~SCCAttrs();
+  ~GenericSCC();
 
 protected:
   LoopStructure *loop;
@@ -119,7 +118,7 @@ protected:
   std::set<PHINode *> PHINodes;
   bool isClonable;
 
-  SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop);
+  GenericSCC(SCCKind K, SCC *s, LoopStructure *loop);
   void collectPHIs(LoopStructure &LS);
 
 private:

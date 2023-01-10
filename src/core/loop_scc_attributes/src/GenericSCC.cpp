@@ -19,11 +19,11 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/SCCAttrs.hpp"
+#include "noelle/core/GenericSCC.hpp"
 
 namespace llvm::noelle {
 
-SCCAttrs::SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop)
+GenericSCC::GenericSCC(SCCKind K, SCC *s, LoopStructure *loop)
   : loop{ loop },
     scc{ s },
     PHINodes{},
@@ -38,11 +38,11 @@ SCCAttrs::SCCAttrs(SCCKind K, SCC *s, LoopStructure *loop)
   return;
 }
 
-iterator_range<SCCAttrs::phi_iterator> SCCAttrs::getPHIs(void) const {
+iterator_range<GenericSCC::phi_iterator> GenericSCC::getPHIs(void) const {
   return make_range(this->PHINodes.begin(), this->PHINodes.end());
 }
 
-void SCCAttrs::collectPHIs(LoopStructure &LS) {
+void GenericSCC::collectPHIs(LoopStructure &LS) {
 
   /*
    * Iterate over elements of the SCC to collect PHIs.
@@ -65,23 +65,23 @@ void SCCAttrs::collectPHIs(LoopStructure &LS) {
   return;
 }
 
-SCC *SCCAttrs::getSCC(void) {
+SCC *GenericSCC::getSCC(void) {
   return this->scc;
 }
 
-void SCCAttrs::setSCCToBeClonable(bool isClonable) {
+void GenericSCC::setSCCToBeClonable(bool isClonable) {
   this->isClonable = isClonable;
   return;
 }
 
-bool SCCAttrs::canBeCloned(void) const {
+bool GenericSCC::canBeCloned(void) const {
   return this->isClonable;
 }
 
-SCCAttrs::SCCKind SCCAttrs::getKind(void) const {
+GenericSCC::SCCKind GenericSCC::getKind(void) const {
   return this->kind;
 }
 
-SCCAttrs::~SCCAttrs() {}
+GenericSCC::~GenericSCC() {}
 
 } // namespace llvm::noelle

@@ -23,6 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/MemoryClonableSCC.hpp"
+#include "noelle/core/ClonableMemoryObject.hpp"
 
 namespace llvm::noelle {
 
@@ -32,7 +33,7 @@ public:
       SCC *s,
       LoopStructure *loop,
       const std::set<DGEdge<Value> *> &loopCarriedDependences,
-      const std::set<ClonableMemoryLocation *> &locations);
+      const std::set<ClonableMemoryObject *> &locations);
 
   StackObjectClonableSCC() = delete;
 
@@ -42,10 +43,10 @@ public:
    */
   std::set<AllocaInst *> getMemoryLocationsToClone(void) const;
 
-  static bool classof(const SCCAttrs *s);
+  static bool classof(const GenericSCC *s);
 
 protected:
-  std::set<ClonableMemoryLocation *> _clonableMemoryLocations;
+  std::set<ClonableMemoryObject *> _clonableMemoryLocations;
 };
 
 } // namespace llvm::noelle

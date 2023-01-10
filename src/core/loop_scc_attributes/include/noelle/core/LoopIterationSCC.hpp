@@ -22,11 +22,11 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/SCCAttrs.hpp"
+#include "noelle/core/GenericSCC.hpp"
 
 namespace llvm::noelle {
 
-class LoopIterationSCC : public SCCAttrs {
+class LoopIterationSCC : public GenericSCC {
 public:
   /*
    * Constructors.
@@ -35,7 +35,7 @@ public:
 
   LoopIterationSCC() = delete;
 
-  static bool classof(const SCCAttrs *s);
+  static bool classof(const GenericSCC *s);
 
 protected:
   LoopIterationSCC(SCCKind K, SCC *s, LoopStructure *loop);

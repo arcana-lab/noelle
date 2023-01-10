@@ -74,11 +74,11 @@ MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
     /*
      * Check if the stack object is clonable.
      */
-    auto location = std::make_unique<ClonableMemoryLocation>(allocation,
-                                                             sizeInBits,
-                                                             loop,
-                                                             DS,
-                                                             ldg);
+    auto location = std::make_unique<ClonableMemoryObject>(allocation,
+                                                           sizeInBits,
+                                                           loop,
+                                                           DS,
+                                                           ldg);
     if (!location->isClonableLocation()) {
       continue;
     }
@@ -99,18 +99,18 @@ MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
   return;
 }
 
-std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::
-    getClonableMemoryLocations(void) const {
-  std::unordered_set<ClonableMemoryLocation *> locations{};
+std::unordered_set<ClonableMemoryObject *> MemoryCloningAnalysis::
+    getClonableMemoryObjects(void) const {
+  std::unordered_set<ClonableMemoryObject *> locations{};
   for (auto &location : this->clonableMemoryLocations) {
     locations.insert(location.get());
   }
   return locations;
 }
 
-const std::unordered_set<ClonableMemoryLocation *> MemoryCloningAnalysis::
-    getClonableMemoryLocationsFor(Instruction *I) const {
-  std::unordered_set<ClonableMemoryLocation *> locs = {};
+const std::unordered_set<ClonableMemoryObject *> MemoryCloningAnalysis::
+    getClonableMemoryObjectsFor(Instruction *I) const {
+  std::unordered_set<ClonableMemoryObject *> locs = {};
 
   /*
    * TODO: Determine if it is worth mapping from instructions to locations

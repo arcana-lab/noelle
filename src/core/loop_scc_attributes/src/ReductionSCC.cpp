@@ -135,9 +135,9 @@ Value *ReductionSCC::getIdentityValue(void) const {
   return this->identity;
 }
 
-bool ReductionSCC::classof(const SCCAttrs *s) {
-  return (s->getKind() >= SCCAttrs::SCCKind::REDUCTION)
-         && (s->getKind() <= SCCAttrs::SCCKind::LAST_REDUCTION);
+bool ReductionSCC::classof(const GenericSCC *s) {
+  return (s->getKind() >= GenericSCC::SCCKind::REDUCTION)
+         && (s->getKind() <= GenericSCC::SCCKind::LAST_REDUCTION);
 }
 
 } // namespace llvm::noelle

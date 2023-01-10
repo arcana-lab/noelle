@@ -29,7 +29,7 @@ LoopCarriedSCC::LoopCarriedSCC(
     LoopStructure *loop,
     const std::set<DGEdge<Value> *> &loopCarriedDependences,
     bool commutative)
-  : SCCAttrs(K, s, loop),
+  : GenericSCC(K, s, loop),
     lcDeps{ loopCarriedDependences },
     _commutative{ commutative } {
   return;
@@ -44,9 +44,9 @@ bool LoopCarriedSCC::isCommutative(void) const {
   return this->_commutative;
 }
 
-bool LoopCarriedSCC::classof(const SCCAttrs *s) {
-  return (s->getKind() >= SCCAttrs::SCCKind::LOOP_CARRIED)
-         && (s->getKind() <= SCCAttrs::SCCKind::LAST_LOOP_CARRIED);
+bool LoopCarriedSCC::classof(const GenericSCC *s) {
+  return (s->getKind() >= GenericSCC::SCCKind::LOOP_CARRIED)
+         && (s->getKind() <= GenericSCC::SCCKind::LAST_LOOP_CARRIED);
 }
 
 } // namespace llvm::noelle
