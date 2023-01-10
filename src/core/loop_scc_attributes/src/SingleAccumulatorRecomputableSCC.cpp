@@ -64,10 +64,10 @@ PHINode *SingleAccumulatorRecomputableSCC::
   return this->accumulator;
 }
 
-bool SingleAccumulatorRecomputableSCC::classof(const SCCAttrs *s) {
-  return (s->getKind() >= SCCAttrs::SCCKind::SINGLE_ACCUMULATOR_RECOMPUTABLE)
+bool SingleAccumulatorRecomputableSCC::classof(const GenericSCC *s) {
+  return (s->getKind() >= GenericSCC::SCCKind::SINGLE_ACCUMULATOR_RECOMPUTABLE)
          && (s->getKind()
-             <= SCCAttrs::SCCKind::LAST_SINGLE_ACCUMULATOR_RECOMPUTABLE);
+             <= GenericSCC::SCCKind::LAST_SINGLE_ACCUMULATOR_RECOMPUTABLE);
 }
 
 } // namespace llvm::noelle

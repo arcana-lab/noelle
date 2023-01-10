@@ -38,8 +38,8 @@ UnknownClosedFormSCC::UnknownClosedFormSCC(
   return;
 }
 
-bool UnknownClosedFormSCC::classof(const SCCAttrs *s) {
-  return (s->getKind() == SCCAttrs::SCCKind::UNKNOWN_CLOSED_FORM);
+bool UnknownClosedFormSCC::classof(const GenericSCC *s) {
+  return (s->getKind() == GenericSCC::SCCKind::UNKNOWN_CLOSED_FORM);
 }
 
 } // namespace llvm::noelle

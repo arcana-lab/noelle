@@ -34,7 +34,7 @@ public:
       const std::set<DGEdge<Value> *> &loopCarriedDependences,
       const std::set<Instruction *> &valuesToPropagateAcrossLoopIterations);
 
-  static bool classof(const SCCAttrs *s);
+  static bool classof(const GenericSCC *s);
 
 protected:
 };
