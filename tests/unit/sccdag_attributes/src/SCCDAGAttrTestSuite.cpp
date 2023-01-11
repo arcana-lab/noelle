@@ -176,7 +176,7 @@ Values SCCDAGAttrTestSuite::reducibleSCCsAreFound(ModulePass &pass,
   SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
   std::set<SCC *> sccs;
   for (auto node : attrPass.sccdag->getNodes()) {
-    SCCAttrs *sccAttrs = attrPass.attrs->getSCCAttrs(node->getT());
+    auto sccAttrs = attrPass.attrs->getSCCAttrs(node->getT());
     if (isa<ReductionSCC>(sccAttrs))
       sccs.insert(node->getT());
   }
@@ -189,7 +189,7 @@ Values SCCDAGAttrTestSuite::clonableSCCsAreFound(ModulePass &pass,
   SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
   std::set<SCC *> sccs;
   for (auto node : attrPass.sccdag->getNodes()) {
-    SCCAttrs *sccAttrs = attrPass.attrs->getSCCAttrs(node->getT());
+    auto sccAttrs = attrPass.attrs->getSCCAttrs(node->getT());
     if (sccAttrs->canBeCloned())
       sccs.insert(node->getT());
   }
