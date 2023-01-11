@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
+#include "noelle/core/UnknownClosedFormSCC.hpp"
 #include "noelle/tools/DOALL.hpp"
 
 namespace llvm::noelle {
@@ -42,9 +43,11 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
 
     /*
      * The only SCC with loop-carried dependences that we don't know how to
-     * handle are the LoopCarriedUnknownSCC
+     * handle are the LoopCarriedUnknownSCC and the recomputable SCC with
+     * unknown closed form.
      */
-    if (!isa<LoopCarriedUnknownSCC>(sccInfo)) {
+    if ((!isa<LoopCarriedUnknownSCC>(sccInfo))
+        && (!isa<UnknownClosedFormSCC>(sccInfo))) {
       continue;
     }
 

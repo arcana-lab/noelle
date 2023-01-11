@@ -21,6 +21,7 @@
  */
 #include "noelle/core/InductionVariableSCC.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
+#include "noelle/core/UnknownClosedFormSCC.hpp"
 #include "noelle/tools/HELIX.hpp"
 #include "noelle/tools/DOALL.hpp"
 
@@ -211,9 +212,9 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments(
 
       /*
        * Only sequential SCC can generate a sequential segment.
-       * FIXME: A reducible SCC should not be sequential in nature
        */
-      if (isa<LoopCarriedUnknownSCC>(sccInfo)) {
+      if (isa<LoopCarriedUnknownSCC>(sccInfo)
+          || isa<UnknownClosedFormSCC>(sccInfo)) {
         requireSS = true;
         break;
       }
