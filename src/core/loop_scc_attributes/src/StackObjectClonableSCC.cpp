@@ -28,11 +28,10 @@ StackObjectClonableSCC::StackObjectClonableSCC(
     LoopStructure *loop,
     const std::set<DGEdge<Value> *> &loopCarriedDependences,
     const std::set<ClonableMemoryObject *> &locations)
-  : LoopCarriedSCC{ STACK_OBJECT_CLONABLE,
+  : MemoryClonableSCC{ STACK_OBJECT_CLONABLE,
                     s,
                     loop,
-                    loopCarriedDependences,
-                    false },
+                    loopCarriedDependences},
     _clonableMemoryLocations{ locations } {
 
   return;

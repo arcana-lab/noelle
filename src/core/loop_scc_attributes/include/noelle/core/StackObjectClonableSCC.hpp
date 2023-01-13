@@ -27,7 +27,7 @@
 
 namespace llvm::noelle {
 
-class StackObjectClonableSCC : public LoopCarriedSCC {
+class StackObjectClonableSCC : public MemoryClonableSCC {
 public:
   StackObjectClonableSCC(
       SCC *s,
