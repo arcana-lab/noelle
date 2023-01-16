@@ -68,6 +68,13 @@ ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
 
 void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
     partitionSCCDAG(LoopDependenceInfo *LDI) {
+  auto f = [](GenericSCC *scc) -> bool { return scc->canBeCloned(); };
+  this->partitionSCCDAG(LDI, f);
+}
+
+void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
+    partitionSCCDAG(LoopDependenceInfo *LDI,
+                    std::function<bool(GenericSCC *scc)> skipSCC) {
 
   /*
    * Fetch the SCC manager.
@@ -91,8 +98,9 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
   auto initialSets = std::unordered_set<SCCSet *>();
 
   /*
-   * Assign SCCs that have no partition to their own partitions.
+   * Fetch the SCCs that must be considered in the partitioning algorithm.
    */
+  std::set<SCC *> notClonableSCCs{};
   for (auto nodePair : sccdag->internalNodePairs()) {
 
     /*
@@ -100,19 +108,40 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
      */
     auto currentSCC = nodePair.first;
     auto currentSCCInfo = sccManager->getSCCAttrs(currentSCC);
+    assert(currentSCCInfo != nullptr);
 
     /*
      * Check if the current SCC can be removed (e.g., because it is due to
      * induction variables). If it is, then this SCC has already been assigned
      * to every dependent partition.
      */
-    if (currentSCCInfo->canBeCloned()) {
+    if (skipSCC(currentSCCInfo)) {
       continue;
     }
 
     /*
-     * The current SCC cannot be removed.
+     * The current SCC must be considered.
      */
+    notClonableSCCs.insert(currentSCC);
+  }
+
+  /*
+   * Print the SCCs.
+   */
+  if (this->verbose >= Verbosity::Maximal) {
+    /*
+    auto sortedSCCs = this->noelle.sortByHotness(notClonableSCCs);
+    errs() << "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences:
+    SCCs to consider when partitioning the SCCDAG:\n"; for (auto currentSCC :
+    sortedSCCs){ currentSCC->print(errs());
+    }
+    */
+  }
+
+  /*
+   * Assign SCCs that have no partition to their own partitions.
+   */
+  for (auto currentSCC : notClonableSCCs) {
     auto singleSet = new SCCSet();
     singleSet->sccs.insert(currentSCC);
     initialSets.insert(singleSet);

@@ -88,6 +88,8 @@ private:
    */
   Function *taskDispatcher;
 
+  std::set<GenericSCC *> clonableSCCs;
+
   /*
    * Pipeline
    */
@@ -107,6 +109,10 @@ private:
   Value *createQueueSizesArrayFromStages(LoopDependenceInfo *LDI,
                                          IRBuilder<> funcBuilder,
                                          Noelle &par);
+
+  std::set<GenericSCC *> getClonableSCCs(SCCDAGAttrs *sccManager) const;
+
+  bool canBeCloned(GenericSCC *scc) const;
 
   /*
    * Recursively inline queue push/pop functions in DSWP Utils and ThreadPool

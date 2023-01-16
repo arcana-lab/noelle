@@ -190,6 +190,11 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   }
 
   /*
+   * Compute the set of SCCs that can be cloned.
+   */
+  this->clonableSCCs = this->getClonableSCCs(LDI->getSCCManager());
+
+  /*
    * Fetch the header.
    */
   auto loopSummary = LDI->getLoopStructure();
