@@ -36,19 +36,24 @@ namespace llvm::noelle {
 
 class PartitionCostAnalysis {
 public:
-  PartitionCostAnalysis(InvocationLatency &IL,
-                        SCCDAGPartitioner &p,
-                        SCCDAGAttrs &,
-                        int numCores,
-                        Verbosity verbose);
+  PartitionCostAnalysis(
+      InvocationLatency &IL,
+      SCCDAGPartitioner &p,
+      SCCDAGAttrs &,
+      int numCores,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized,
+      Verbosity verbose);
 
   void traverseAllPartitionSubsets();
 
-  virtual void checkIfShouldMerge(SCCSet *sA, SCCSet *sB) = 0;
+  virtual void checkIfShouldMerge(
+      SCCSet *sA,
+      SCCSet *sB,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized) = 0;
 
   void resetCandidateSubsetInfo();
 
-  bool mergeCandidateSubsets();
+  bool mergeCandidateSubsets(void);
 
   void printCandidate(raw_ostream &stream);
 
@@ -59,6 +64,7 @@ protected:
   SCCDAGPartitioner &partitioner;
   SCCDAGAttrs &dagAttrs;
   int numCores;
+  std::function<bool(GenericSCC *scc)> canBeRematerialized;
 
   std::unordered_map<SCC *, uint64_t> sccToInstructionCountMap;
   uint64_t costIfAllSetsRunOnSeparateCores;

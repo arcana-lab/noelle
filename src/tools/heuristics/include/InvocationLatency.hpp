@@ -35,16 +35,24 @@ public:
 
   uint64_t latencyPerInvocation(SCC *scc);
 
-  uint64_t latencyPerInvocation(SCCDAGAttrs *,
-                                std::unordered_set<SCCSet *> &subsets);
+  uint64_t latencyPerInvocation(
+      SCCDAGAttrs *,
+      std::unordered_set<SCCSet *> &subsets,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized);
 
   uint64_t latencyPerInvocation(Instruction *inst);
 
   uint64_t queueLatency(Value *queueVal);
 
-  std::set<Value *> &memoizeExternals(SCCDAGAttrs *, SCC *);
+  std::set<Value *> &memoizeExternals(
+      SCCDAGAttrs *,
+      SCC *,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized);
 
-  std::set<SCC *> &memoizeParents(SCCDAGAttrs *, SCC *);
+  std::set<SCC *> &memoizeParents(
+      SCCDAGAttrs *,
+      SCC *,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized);
 
 private:
   Hot *profiles;

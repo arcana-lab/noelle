@@ -70,9 +70,13 @@ void DSWP::partitionSCCDAG(LoopDependenceInfo *LDI, Heuristics *h) {
      * Decide the partition of the SCCDAG by merging the trivial partitions
      * defined above.
      */
+    auto canBeRematerialized = [this](GenericSCC *scc) -> bool {
+      return this->canBeCloned(scc);
+    };
     h->adjustParallelizationPartitionForDSWP(partitioner,
                                              *sccManager,
                                              ltm->getMaximumNumberOfCores(),
+                                             canBeRematerialized,
                                              this->verbose);
   }
 

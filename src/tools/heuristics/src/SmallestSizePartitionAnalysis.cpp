@@ -28,7 +28,10 @@ using namespace llvm::noelle;
  * Prioritize merge that best lowers overall cost without yielding a too costly
  * partitioner
  */
-void SmallestSizePartitionAnalysis::checkIfShouldMerge(SCCSet *sA, SCCSet *sB) {
+void SmallestSizePartitionAnalysis::checkIfShouldMerge(
+    SCCSet *sA,
+    SCCSet *sB,
+    std::function<bool(GenericSCC *scc)> canBeRematerialized) {
 
   // TODO:
   return;

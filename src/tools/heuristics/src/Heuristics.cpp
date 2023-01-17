@@ -34,20 +34,28 @@ void Heuristics::adjustParallelizationPartitionForDSWP(
     SCCDAGPartitioner *partitioner,
     SCCDAGAttrs &attrs,
     uint64_t numThreads,
+    std::function<bool(GenericSCC *scc)> canBeRematerialized,
     Verbosity verbose) {
   // smallestSizeMergePartition(*partitioner, attrs, idealThreads, verbose);
-  minMaxMergePartition(*partitioner, attrs, numThreads, verbose);
+  minMaxMergePartition(*partitioner,
+                       attrs,
+                       numThreads,
+                       canBeRematerialized,
+                       verbose);
 }
 
-void Heuristics::minMaxMergePartition(SCCDAGPartitioner &partitioner,
-                                      SCCDAGAttrs &attrs,
-                                      uint64_t numThreads,
-                                      Verbosity verbose) {
+void Heuristics::minMaxMergePartition(
+    SCCDAGPartitioner &partitioner,
+    SCCDAGAttrs &attrs,
+    uint64_t numThreads,
+    std::function<bool(GenericSCC *scc)> canBeRematerialized,
+    Verbosity verbose) {
   auto modified = false;
   MinMaxSizePartitionAnalysis PCA(invocationLatency,
                                   partitioner,
                                   attrs,
                                   numThreads,
+                                  canBeRematerialized,
                                   verbose);
   do {
     modified = false;
@@ -60,15 +68,18 @@ void Heuristics::minMaxMergePartition(SCCDAGPartitioner &partitioner,
   } while (modified);
 }
 
-void Heuristics::smallestSizeMergePartition(SCCDAGPartitioner &partitioner,
-                                            SCCDAGAttrs &attrs,
-                                            uint64_t numThreads,
-                                            Verbosity verbose) {
+void Heuristics::smallestSizeMergePartition(
+    SCCDAGPartitioner &partitioner,
+    SCCDAGAttrs &attrs,
+    uint64_t numThreads,
+    std::function<bool(GenericSCC *scc)> canBeRematerialized,
+    Verbosity verbose) {
   auto modified = false;
   SmallestSizePartitionAnalysis PCA(invocationLatency,
                                     partitioner,
                                     attrs,
                                     numThreads,
+                                    canBeRematerialized,
                                     verbose);
   do {
     modified = false;

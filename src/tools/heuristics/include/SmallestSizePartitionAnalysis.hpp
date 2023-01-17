@@ -37,13 +37,19 @@ namespace llvm::noelle {
 
 class SmallestSizePartitionAnalysis : public PartitionCostAnalysis {
 public:
-  SmallestSizePartitionAnalysis(InvocationLatency &IL,
-                                SCCDAGPartitioner &p,
-                                SCCDAGAttrs &attrs,
-                                int cores,
-                                Verbosity v)
-    : PartitionCostAnalysis{ IL, p, attrs, cores, v } {};
+  SmallestSizePartitionAnalysis(
+      InvocationLatency &IL,
+      SCCDAGPartitioner &p,
+      SCCDAGAttrs &attrs,
+      int cores,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized,
+      Verbosity v)
+    : PartitionCostAnalysis{ IL, p, attrs, cores, canBeRematerialized, v } {};
 
-  void checkIfShouldMerge(SCCSet *sA, SCCSet *sB);
+  void checkIfShouldMerge(
+      SCCSet *sA,
+      SCCSet *sB,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized) override;
 };
+
 } // namespace llvm::noelle
