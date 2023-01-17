@@ -21,6 +21,7 @@
  */
 #include "DSWP.hpp"
 #include "noelle/core/Architecture.hpp"
+#include "noelle/core/LoopIterationSCC.hpp"
 
 namespace llvm::noelle {
 
@@ -88,11 +89,31 @@ bool DSWP::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
     assert(biggestSCC >= currentSCCTotalInsts);
 
     /*
+     * Check if there is no loop-carried dependence.
+     */
+    if (isa<LoopIterationSCC>(currentSCCInfo)) {
+      continue;
+    }
+
+    /*
      * Check if the current SCC can be removed (e.g., because it is due to
      * induction variables). If it is, then this SCC has already been assigned
      * to every dependent partition.
      */
     if (currentSCCInfo->canBeCloned()) {
+      continue;
+    }
+    auto onlyTerminators = true;
+    for (auto iNodePair : currentSCC->internalNodePairs()) {
+      auto V = iNodePair.first;
+      if (auto inst = dyn_cast<Instruction>(V)) {
+        if (!isa<CmpInst>(inst) && !inst->isTerminator()) {
+          onlyTerminators = false;
+          break;
+        }
+      }
+    }
+    if (onlyTerminators) {
       continue;
     }
 
