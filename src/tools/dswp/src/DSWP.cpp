@@ -153,8 +153,12 @@ bool DSWP::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   auto averageInstructionThreshold = 20;
   bool hasLittleExecution = averageInstructions < averageInstructionThreshold;
   auto minimumSequentialFraction = .5;
+  auto skipSCC = [this, sccManager](GenericSCC *scc) -> bool {
+    auto skip = this->canBeCloned(scc);
+    return skip;
+  };
   auto sequentialFraction =
-      this->computeSequentialFractionOfExecution(LDI, this->noelle);
+      this->computeSequentialFractionOfExecution(LDI, skipSCC);
   bool hasProportionallyInsignificantSequentialExecution =
       sequentialFraction < minimumSequentialFraction;
   if (hasLittleExecution && hasProportionallyInsignificantSequentialExecution) {

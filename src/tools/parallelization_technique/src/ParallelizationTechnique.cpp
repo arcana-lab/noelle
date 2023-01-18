@@ -1743,11 +1743,31 @@ void ParallelizationTechnique::
 }
 
 float ParallelizationTechnique::computeSequentialFractionOfExecution(
-    LoopDependenceInfo *LDI,
-    Noelle &par) const {
+    LoopDependenceInfo *LDI) const {
+  auto f = [](GenericSCC *sccInfo) -> bool {
+    auto mustBeSynchronized =
+        isa<LoopCarriedUnknownSCC>(sccInfo) && (!sccInfo->canBeCloned());
+    return mustBeSynchronized;
+  };
 
+  auto fraction = this->computeSequentialFractionOfExecution(LDI, f);
+
+  return fraction;
+}
+
+float ParallelizationTechnique::computeSequentialFractionOfExecution(
+    LoopDependenceInfo *LDI,
+    std::function<bool(GenericSCC *scc)> doesItRunSequentially) const {
+
+  /*
+   * Fetch the SCCDAG.
+   */
   auto sccManager = LDI->getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
+
+  /*
+   * Compute the fraction of sequential code.
+   */
   float totalInstructionCount = 0, sequentialInstructionCount = 0;
   for (auto sccNode : sccdag->getNodes()) {
     auto scc = sccNode->getT();
@@ -1755,9 +1775,7 @@ float ParallelizationTechnique::computeSequentialFractionOfExecution(
 
     auto numInstructionsInSCC = scc->numInternalNodes();
     totalInstructionCount += numInstructionsInSCC;
-    auto mustBeSynchronized =
-        isa<LoopCarriedUnknownSCC>(sccInfo) && (!sccInfo->canBeCloned());
-    if (mustBeSynchronized) {
+    if (doesItRunSequentially(sccInfo)) {
       sequentialInstructionCount += numInstructionsInSCC;
     }
   }

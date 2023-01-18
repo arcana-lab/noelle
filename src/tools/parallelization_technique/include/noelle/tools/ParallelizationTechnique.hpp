@@ -188,9 +188,11 @@ protected:
    */
   void doNestedInlineOfCalls(Function *F, std::set<CallInst *> &calls);
 
-  float computeSequentialFractionOfExecution(LoopDependenceInfo *LDI,
-                                             Noelle &par) const;
+  float computeSequentialFractionOfExecution(LoopDependenceInfo *LDI) const;
 
+  float computeSequentialFractionOfExecution(
+      LoopDependenceInfo *LDI,
+      std::function<bool(GenericSCC *scc)> doesItRunSequentially) const;
   /*
    * Fields
    */

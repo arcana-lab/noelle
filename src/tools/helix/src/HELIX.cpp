@@ -89,8 +89,7 @@ bool HELIX::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   auto averageInstructionThreshold = 20;
   auto hasLittleExecution = averageInstructions < averageInstructionThreshold;
   auto maximumSequentialFraction = .2;
-  auto sequentialFraction =
-      this->computeSequentialFractionOfExecution(LDI, this->noelle);
+  auto sequentialFraction = this->computeSequentialFractionOfExecution(LDI);
   auto hasProportionallySignificantSequentialExecution =
       sequentialFraction >= maximumSequentialFraction;
   if (hasLittleExecution && hasProportionallySignificantSequentialExecution) {
