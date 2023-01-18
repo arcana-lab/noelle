@@ -27,6 +27,11 @@
 
 namespace llvm::noelle {
 
+/*
+ * This is the top of the class hierarchy that organizes SCCs of a loop.
+ *
+ * https://llvm.org/docs/HowToSetUpLLVMStyleRTTI.html
+ */
 class GenericSCC {
 public:
   /*
