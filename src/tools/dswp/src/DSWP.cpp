@@ -71,6 +71,7 @@ bool DSWP::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   auto doesSequentialSCCExist = false;
   uint64_t biggestSCC = 0;
   auto sccManager = LDI->getSCCManager();
+  auto clonableSCCs = this->getClonableSCCs(sccManager);
   for (auto nodePair : sccManager->getSCCDAG()->internalNodePairs()) {
 
     /*
@@ -89,31 +90,9 @@ bool DSWP::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
     assert(biggestSCC >= currentSCCTotalInsts);
 
     /*
-     * Check if there is no loop-carried dependence.
+     * Check if this will run sequentially.
      */
-    if (isa<LoopIterationSCC>(currentSCCInfo)) {
-      continue;
-    }
-
-    /*
-     * Check if the current SCC can be removed (e.g., because it is due to
-     * induction variables). If it is, then this SCC has already been assigned
-     * to every dependent partition.
-     */
-    if (currentSCCInfo->canBeCloned()) {
-      continue;
-    }
-    auto onlyTerminators = true;
-    for (auto iNodePair : currentSCC->internalNodePairs()) {
-      auto V = iNodePair.first;
-      if (auto inst = dyn_cast<Instruction>(V)) {
-        if (!isa<CmpInst>(inst) && !inst->isTerminator()) {
-          onlyTerminators = false;
-          break;
-        }
-      }
-    }
-    if (onlyTerminators) {
+    if (clonableSCCs.find(currentSCCInfo) != clonableSCCs.end()) {
       continue;
     }
 

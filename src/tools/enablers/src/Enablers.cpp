@@ -176,9 +176,6 @@ bool EnablersManager::applyLoopDistribution(LoopDependenceInfo *LDI,
     if (!isa<LoopCarriedUnknownSCC>(sccInfo)) {
       return false;
     }
-    if (sccInfo->canBeCloned()) {
-      return false;
-    }
 
     /*
      * The current SCC must run sequentially.

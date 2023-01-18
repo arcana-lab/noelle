@@ -52,13 +52,6 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
     }
 
     /*
-     * If the SCC can be cloned, then it does not block the loop to be a DOALL.
-     */
-    if (sccInfo->canBeCloned()) {
-      continue;
-    }
-
-    /*
      * If all loop carried data dependencies within the SCC do not overlap
      * between iterations, then DOALL can ignore them
      */
