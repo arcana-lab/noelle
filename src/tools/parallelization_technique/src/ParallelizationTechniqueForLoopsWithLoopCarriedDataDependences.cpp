@@ -68,7 +68,7 @@ ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
 
 void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
     partitionSCCDAG(LoopDependenceInfo *LDI) {
-  auto f = [](GenericSCC *scc) -> bool { return scc->canBeCloned(); };
+  auto f = [](GenericSCC *scc) -> bool { return false; };
   this->partitionSCCDAG(LDI, f);
 }
 

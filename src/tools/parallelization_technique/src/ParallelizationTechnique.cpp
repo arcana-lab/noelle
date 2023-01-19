@@ -1745,8 +1745,7 @@ void ParallelizationTechnique::
 float ParallelizationTechnique::computeSequentialFractionOfExecution(
     LoopDependenceInfo *LDI) const {
   auto f = [](GenericSCC *sccInfo) -> bool {
-    auto mustBeSynchronized =
-        isa<LoopCarriedUnknownSCC>(sccInfo) && (!sccInfo->canBeCloned());
+    auto mustBeSynchronized = isa<LoopCarriedUnknownSCC>(sccInfo);
     return mustBeSynchronized;
   };
 
