@@ -147,9 +147,11 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
     initialSets.insert(singleSet);
   }
 
+  auto newSCCDAGWithoutIgnoredSCCs =
+      sccManager->computeSCCDAGWhenSCCsAreIgnored(skipSCC);
   this->partitioner = new SCCDAGPartitioner(sccdag,
                                             initialSets,
-                                            sccManager->parentsViaClones,
+                                            newSCCDAGWithoutIgnoredSCCs.first,
                                             LDI->getLoopHierarchyStructures());
 
   /*

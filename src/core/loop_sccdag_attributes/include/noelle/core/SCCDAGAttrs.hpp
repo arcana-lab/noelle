@@ -46,12 +46,6 @@ public:
   SCCDAGAttrs() = delete;
 
   /*
-   * Isolated clonable SCCs and resulting inherited parents
-   */
-  std::unordered_map<SCC *, std::unordered_set<SCC *>> parentsViaClones;
-  std::unordered_map<SCC *, std::unordered_set<DGEdge<SCC> *>> edgesViaClones;
-
-  /*
    * Methods on SCCDAG.
    */
   std::set<LoopCarriedSCC *> getSCCsWithLoopCarriedDependencies(void) const;
@@ -73,6 +67,10 @@ public:
    * Return the SCCDAG of the loop.
    */
   SCCDAG *getSCCDAG(void) const;
+  std::pair<std::unordered_map<SCC *, std::unordered_set<SCC *>>,
+            std::unordered_map<SCC *, std::unordered_set<DGEdge<SCC> *>>>
+  computeSCCDAGWhenSCCsAreIgnored(
+      std::function<bool(GenericSCC *)> ignoreSCC) const;
 
   /*
    * Debug methods
@@ -92,7 +90,6 @@ private:
   /*
    * Helper methods on SCCDAG
    */
-  void collectSCCGraphAssumingDistributedClones();
   void collectLoopCarriedDependencies(LoopForestNode *loopNode);
 
   /*

@@ -187,8 +187,6 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
     return false;
   });
 
-  collectSCCGraphAssumingDistributedClones();
-
   return;
 }
 
@@ -373,14 +371,20 @@ GenericSCC *SCCDAGAttrs::getSCCAttrs(SCC *scc) const {
   return sccInfo->second;
 }
 
-void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones() {
+std::pair<std::unordered_map<SCC *, std::unordered_set<SCC *>>,
+          std::unordered_map<SCC *, std::unordered_set<DGEdge<SCC> *>>>
+SCCDAGAttrs::computeSCCDAGWhenSCCsAreIgnored(
+    std::function<bool(GenericSCC *)> ignoreSCC) const {
+  std::unordered_map<SCC *, std::unordered_set<SCC *>> parentsViaClones;
+  std::unordered_map<SCC *, std::unordered_set<DGEdge<SCC> *>> edgesViaClones;
+
   auto addIncomingNodes = [&](std::queue<DGNode<SCC> *> &queue,
                               DGNode<SCC> *node) -> void {
     std::set<DGNode<SCC> *> nodes;
     auto scc = node->getT();
     for (auto edge : node->getIncomingEdges()) {
       nodes.insert(edge->getOutgoingNode());
-      this->edgesViaClones[scc].insert(edge);
+      edgesViaClones[scc].insert(edge);
     }
     for (auto node : nodes) {
       queue.push(node);
@@ -400,7 +404,7 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones() {
       nodesToCheck.pop();
       auto scc = node->getT();
       auto sccInfo = this->getSCCAttrs(scc);
-      this->parentsViaClones[childSCC].insert(scc);
+      parentsViaClones[childSCC].insert(scc);
       if (!sccInfo->canBeCloned()) {
         continue;
       }
@@ -412,7 +416,7 @@ void SCCDAGAttrs::collectSCCGraphAssumingDistributedClones() {
     }
   }
 
-  return;
+  return make_pair(parentsViaClones, edgesViaClones);
 }
 
 void SCCDAGAttrs::collectLoopCarriedDependencies(LoopForestNode *loopNode) {

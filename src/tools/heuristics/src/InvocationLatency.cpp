@@ -121,7 +121,10 @@ std::set<Value *> &InvocationLatency::memoizeExternals(
     return externalsIter->second;
   }
 
-  for (auto edge : attrs->edgesViaClones[scc]) {
+  auto newSCCDAGWithoutIgnoredSCCs =
+      attrs->computeSCCDAGWhenSCCsAreIgnored(canBeRematerialized);
+  auto &edgesViaClones = newSCCDAGWithoutIgnoredSCCs.second;
+  for (auto edge : edgesViaClones[scc]) {
     auto parent = edge->getIncomingT();
     auto parentInfo = attrs->getSCCAttrs(parent);
     if (canBeRematerialized(parentInfo)) {
@@ -143,9 +146,14 @@ std::set<SCC *> &InvocationLatency::memoizeParents(
     SCC *scc,
     std::function<bool(GenericSCC *scc)> canBeRematerialized) {
   auto parentsIter = clonableParents.find(scc);
-  if (parentsIter != clonableParents.end())
+  if (parentsIter != clonableParents.end()) {
     return parentsIter->second;
-  for (auto parent : attrs->parentsViaClones[scc]) {
+  }
+
+  auto newSCCDAGWithoutIgnoredSCCs =
+      attrs->computeSCCDAGWhenSCCsAreIgnored(canBeRematerialized);
+  auto &parentsViaClones = newSCCDAGWithoutIgnoredSCCs.first;
+  for (auto parent : parentsViaClones[scc]) {
     auto parentInfo = attrs->getSCCAttrs(parent);
     if (canBeRematerialized(parentInfo)) {
       clonableParents[scc].insert(parent);
