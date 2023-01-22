@@ -667,9 +667,7 @@ void SCCDAGAttrs::checkIfClonable(SCC *scc, LoopForestNode *loopNode) {
    * Check the simple cases.
    * TODO: Separate out cases and catalog SCCs by those cases
    */
-  if (isClonableByCmpBrInstrs(scc)
-      || isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc,
-                                                                 loopNode)) {
+  if (isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc, loopNode)) {
     this->getSCCAttrs(scc)->setSCCToBeClonable();
     return;
   }
@@ -830,19 +828,6 @@ bool SCCDAGAttrs::isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(
     }
   }
 
-  return true;
-}
-
-bool SCCDAGAttrs::isClonableByCmpBrInstrs(SCC *scc) const {
-  for (auto iNodePair : scc->internalNodePairs()) {
-    auto V = iNodePair.first;
-    if (auto inst = dyn_cast<Instruction>(V)) {
-      if (isa<CmpInst>(inst) || inst->isTerminator()) {
-        continue;
-      }
-    }
-    return false;
-  }
   return true;
 }
 
