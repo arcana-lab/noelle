@@ -405,7 +405,7 @@ SCCDAGAttrs::computeSCCDAGWhenSCCsAreIgnored(
       auto scc = node->getT();
       auto sccInfo = this->getSCCAttrs(scc);
       parentsViaClones[childSCC].insert(scc);
-      if (!sccInfo->canBeCloned()) {
+      if (!ignoreSCC(sccInfo)) {
         continue;
       }
       if (analyzed[node]) {
