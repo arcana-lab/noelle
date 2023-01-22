@@ -177,8 +177,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
       // assert(!isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc,
       // loopNode));
     } else if (isa<LoopCarriedSCC>(sccInfo)) {
-      /*assert(!isClonableBySyntacticSugarInstrs(scc));
-      assert(!isClonableByCmpBrInstrs(scc));
+      /*
       assert(!isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc,
       loopNode));
       */
@@ -668,7 +667,7 @@ void SCCDAGAttrs::checkIfClonable(SCC *scc, LoopForestNode *loopNode) {
    * Check the simple cases.
    * TODO: Separate out cases and catalog SCCs by those cases
    */
-  if (isClonableBySyntacticSugarInstrs(scc) || isClonableByCmpBrInstrs(scc)
+  if (isClonableByCmpBrInstrs(scc)
       || isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc,
                                                                  loopNode)) {
     this->getSCCAttrs(scc)->setSCCToBeClonable();
@@ -832,24 +831,6 @@ bool SCCDAGAttrs::isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(
   }
 
   return true;
-}
-
-bool SCCDAGAttrs::isClonableBySyntacticSugarInstrs(SCC *scc) const {
-
-  /*
-   * FIXME: This check should not exist; instead, SCC where cloning
-   * is trivial should be separated out by the parallelization scheme
-   */
-  if (this->sccdag->fetchNode(scc)->numOutgoingEdges() == 0)
-    return false;
-
-  if (scc->numInternalNodes() > 1)
-    return false;
-  auto I = scc->begin_internal_node_map()->first;
-  if (isa<PHINode>(I) || isa<GetElementPtrInst>(I) || isa<CastInst>(I)) {
-    return true;
-  }
-  return false;
 }
 
 bool SCCDAGAttrs::isClonableByCmpBrInstrs(SCC *scc) const {

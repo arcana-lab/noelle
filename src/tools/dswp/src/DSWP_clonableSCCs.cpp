@@ -68,6 +68,18 @@ std::set<GenericSCC *> DSWP::getClonableSCCs(SCCDAGAttrs *sccManager) const {
       set.insert(currentSCCInfo);
       continue;
     }
+
+    /*
+     * Check if the SCC can be trivially cloned on all DSWP stages.
+     */
+    if ((SCCDAG->fetchNode(currentSCC)->numOutgoingEdges() > 0)
+        && (currentSCC->numInternalNodes() == 1)) {
+      auto I = currentSCC->begin_internal_node_map()->first;
+      if (isa<PHINode>(I) || isa<GetElementPtrInst>(I) || isa<CastInst>(I)) {
+        set.insert(currentSCCInfo);
+        continue;
+      }
+    }
   }
 
   return set;

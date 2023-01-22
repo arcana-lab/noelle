@@ -114,7 +114,6 @@ private:
                                               LoopForestNode *loopNode) const;
 
   bool isClonableByInductionVars(SCC *scc) const;
-  bool isClonableBySyntacticSugarInstrs(SCC *scc) const;
   bool isClonableByCmpBrInstrs(SCC *scc) const;
   bool isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(
       SCC *scc,
