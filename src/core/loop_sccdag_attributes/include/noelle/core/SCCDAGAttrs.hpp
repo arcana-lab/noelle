@@ -105,7 +105,6 @@ private:
       std::set<InductionVariable *> &loopGoverningIVs,
       std::set<InductionVariable *> &IVs) const;
 
-  void checkIfClonable(SCC *scc, LoopForestNode *loop);
   std::set<ClonableMemoryObject *> checkIfClonableByUsingLocalMemory(
       SCC *scc,
       LoopForestNode *loop) const;
@@ -114,9 +113,6 @@ private:
                                               LoopForestNode *loopNode) const;
 
   bool isClonableByInductionVars(SCC *scc) const;
-  bool isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(
-      SCC *scc,
-      LoopForestNode *loop) const;
 };
 
 } // namespace llvm::noelle

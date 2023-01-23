@@ -27,7 +27,6 @@ GenericSCC::GenericSCC(SCCKind K, SCC *s, LoopStructure *loop)
   : loop{ loop },
     scc{ s },
     PHINodes{},
-    isClonable{ false },
     kind{ K } {
 
   /*
@@ -67,15 +66,6 @@ void GenericSCC::collectPHIs(LoopStructure &LS) {
 
 SCC *GenericSCC::getSCC(void) {
   return this->scc;
-}
-
-void GenericSCC::setSCCToBeClonable(bool isClonable) {
-  this->isClonable = isClonable;
-  return;
-}
-
-bool GenericSCC::canBeCloned(void) const {
-  return this->isClonable;
 }
 
 GenericSCC::SCCKind GenericSCC::getKind(void) const {

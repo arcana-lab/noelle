@@ -110,7 +110,8 @@ private:
                                          IRBuilder<> funcBuilder,
                                          Noelle &par);
 
-  std::set<GenericSCC *> getClonableSCCs(SCCDAGAttrs *sccManager) const;
+  std::set<GenericSCC *> getClonableSCCs(SCCDAGAttrs *sccManager,
+                                         LoopForestNode *loopNode) const;
 
   bool canBeCloned(GenericSCC *scc) const;
 
