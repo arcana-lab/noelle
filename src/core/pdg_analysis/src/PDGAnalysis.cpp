@@ -146,16 +146,6 @@ PDG *PDGAnalysis::getFunctionPDG(Function &F) {
     }
   }
 
-  /*
-   * Print the PDG
-   */
-  if (this->dumpPDG) {
-    this->printer.printGraphsForFunction(
-        F,
-        pdg,
-        getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo());
-  }
-
   return pdg;
 }
 
@@ -217,6 +207,21 @@ PDG *PDGAnalysis::getPDG(void) {
         delete PDGFromMetadata;
       }
     }
+  }
+
+  /*
+   * Print the PDG
+   */
+
+  if (this->dumpPDG) {
+    llvm::CallGraph llvmCG = llvm::CallGraph(*(this->M));
+    this->printer.printPDG(
+        *(this->M),
+        llvmCG,
+        this->programDependenceGraph,
+        [this](llvm::Function *F) -> llvm::LoopInfo & {
+          return llvm::Pass::getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
+        });
   }
 
   return this->programDependenceGraph;
