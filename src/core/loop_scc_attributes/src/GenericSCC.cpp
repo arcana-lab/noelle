@@ -27,6 +27,7 @@ GenericSCC::GenericSCC(SCCKind K, SCC *s, LoopStructure *loop)
   : loop{ loop },
     scc{ s },
     PHINodes{},
+    hasMemoryDependences{ false },
     kind{ K } {
 
   /*
@@ -34,7 +35,21 @@ GenericSCC::GenericSCC(SCCKind K, SCC *s, LoopStructure *loop)
    */
   this->collectPHIs(*loop);
 
+  /*
+   * Check if the SCC has memory dependences.
+   */
+  for (auto edge : this->scc->getEdges()) {
+    if (edge->isMemoryDependence()) {
+      this->hasMemoryDependences = true;
+      break;
+    }
+  }
+
   return;
+}
+
+bool GenericSCC::doesHaveMemoryDependencesWithin(void) const {
+  return this->hasMemoryDependences;
 }
 
 iterator_range<GenericSCC::phi_iterator> GenericSCC::getPHIs(void) const {

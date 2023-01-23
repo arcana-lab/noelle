@@ -98,6 +98,8 @@ public:
    */
   iterator_range<phi_iterator> getPHIs(void) const;
 
+  bool doesHaveMemoryDependencesWithin(void) const;
+
   SCCKind getKind(void) const;
 
   ~GenericSCC();
@@ -112,6 +114,7 @@ protected:
 
 private:
   SCCKind kind;
+  bool hasMemoryDependences;
 };
 
 } // namespace llvm::noelle

@@ -49,6 +49,9 @@ public:
 
   uint32_t getMinimumNumberOfIdleCores(void) const override;
 
+  std::set<GenericSCC *> getClonableSCCs(SCCDAGAttrs *sccManager,
+                                         LoopForestNode *loopNode) const;
+
   std::string getName(void) const override;
 
 protected:
@@ -109,9 +112,6 @@ private:
   Value *createQueueSizesArrayFromStages(LoopDependenceInfo *LDI,
                                          IRBuilder<> funcBuilder,
                                          Noelle &par);
-
-  std::set<GenericSCC *> getClonableSCCs(SCCDAGAttrs *sccManager,
-                                         LoopForestNode *loopNode) const;
 
   bool canBeCloned(GenericSCC *scc) const;
 

@@ -88,21 +88,14 @@ std::set<GenericSCC *> DSWP::getClonableSCCs(SCCDAGAttrs *sccManager,
       /*
        * Second case: the SCC does not have memory dependences.
        */
-      auto hasMemoryDependences = false;
-      for (auto edge : currentSCC->getEdges()) {
-        if (edge->isMemoryDependence()) {
-          hasMemoryDependences = true;
-          break;
-        }
-      }
-      auto hasNoLoopCarriedDependence = isa<LoopIterationSCC>(currentSCCInfo);
-      if (!hasMemoryDependences) {
+      if (!currentSCCInfo->doesHaveMemoryDependencesWithin()) {
 
         /*
          * The SCC has no memory dependences.
          *
          * Check if there is no loop-carried dependence.
          */
+        auto hasNoLoopCarriedDependence = isa<LoopIterationSCC>(currentSCCInfo);
         if (hasNoLoopCarriedDependence) {
           set.insert(currentSCCInfo);
           continue;
