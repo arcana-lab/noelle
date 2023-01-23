@@ -19,8 +19,10 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DOALL.hpp"
-#include "DOALLTask.hpp"
+#include "noelle/core/ReductionSCC.hpp"
+#include "noelle/core/InductionVariableSCC.hpp"
+#include "noelle/tools/DOALL.hpp"
+#include "noelle/tools/DOALLTask.hpp"
 
 namespace llvm::noelle {
 
@@ -95,9 +97,14 @@ bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
    * The loop must have all live-out variables to be reducable.
    */
   auto sccManager = LDI->getSCCManager();
-  if (!sccManager->areAllLiveOutValuesReducable(LDI->getEnvironment())) {
+  auto nonReducibleLiveOuts =
+      sccManager->getLiveOutVariablesThatAreNotReducable(LDI->getEnvironment());
+  if (nonReducibleLiveOuts.size() > 0) {
     if (this->verbose != Verbosity::Disabled) {
-      errs() << "DOALL:   Some live-out values are not reducable\n";
+      errs() << "DOALL:   The next live-out variables are not reducable\n";
+      for (auto envID : nonReducibleLiveOuts) {
+        errs() << "DOALL:     Live-out ID = " << envID << "\n";
+      }
     }
     return false;
   }
@@ -113,23 +120,34 @@ bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
         errs()
             << "DOALL:   We found an SCC of the loop that is non clonable and non commutative\n";
         if (this->verbose >= Verbosity::Maximal) {
-          // scc->printMinimal(errs(), "DOALL:     ") ;
+
+          /*
+           * Print the SCC.
+           */
+          scc->printMinimal(errs(), "DOALL:     ");
           // DGPrinter::writeGraph<SCC, Value>("not-doall-loop-scc-" +
           // std::to_string(LDI->getID()) + ".dot", scc);
-          errs() << "DOALL:     Loop-carried data dependences\n";
-          sccManager->iterateOverLoopCarriedDataDependences(
-              scc,
-              [](DGEdge<Value> *dep) -> bool {
-                auto fromInst = dep->getOutgoingT();
-                auto toInst = dep->getIncomingT();
-                errs() << "DOALL:       " << *fromInst << " ---> " << *toInst;
-                if (dep->isMemoryDependence()) {
-                  errs() << " via memory\n";
-                } else {
-                  errs() << " via variable\n";
-                }
-                return false;
-              });
+
+          /*
+           * Print the loop-carried dependences between instructions of the SCC.
+           */
+          auto sccInfo = sccManager->getSCCAttrs(scc);
+          if (auto loopCarriedSCC = dyn_cast<LoopCarriedSCC>(sccInfo)) {
+            errs() << "DOALL:     Loop-carried data dependences\n";
+            for (auto dep : loopCarriedSCC->getLoopCarriedDependences()) {
+              if (dep->isControlDependence()) {
+                continue;
+              }
+              auto fromInst = dep->getOutgoingT();
+              auto toInst = dep->getIncomingT();
+              errs() << "DOALL:       " << *fromInst << " ---> " << *toInst;
+              if (dep->isMemoryDependence()) {
+                errs() << " via memory\n";
+              } else {
+                errs() << " via variable\n";
+              }
+            }
+          }
         }
       }
     }
@@ -281,7 +299,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
     auto producer = loopEnvironment->getProducer(id);
     auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (sccInfo->isInductionVariableSCC()) {
+    if (isa<InductionVariableSCC>(sccInfo)) {
 
       /*
        * The current live-out variable is an induction variable.
@@ -310,20 +328,19 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
     /*
      * We have a live-in variable.
      *
-     * The initial value of the reduction variable can be skipped,
-     * which means the following conditions should all meet
-     * 1. This live-in variable only has one user, and
-     * 2. The user is a phi node, and
-     * 3. The scc contains this phi is not part of the induction variable but
-     * reducible operation
+     * We can avoid to propagate this live-in variable if its only purpose is to
+     * propagate the initial value to a reduction variable. This is the case if
+     * the following conditions are all met:
+     * 1. This live-in variable only has one user within the loop, and
+     * 2. This user is a PHI node, and
+     * 3. The SCC that contains this PHI is a reduction variable.
      */
     auto producer = loopEnvironment->getProducer(id);
     if (producer->getNumUses() == 1) {
       if (auto consumer = dyn_cast<PHINode>(*producer->user_begin())) {
         auto scc = sccManager->getSCCDAG()->sccOfValue(consumer);
         auto sccInfo = sccManager->getSCCAttrs(scc);
-        if (!sccInfo->isInductionVariableSCC()
-            && sccInfo->canExecuteReducibly()) {
+        if (isa<ReductionSCC>(sccInfo)) {
           chunkerTask->addSkippedEnvironmentVariable(producer);
           return true;
         }
@@ -521,6 +538,14 @@ void DOALL::addJumpToLoop(LoopDependenceInfo *LDI, Task *t) {
   entryBuilder.CreateBr(headerClone);
 
   return;
+}
+
+uint32_t DOALL::getMinimumNumberOfIdleCores(void) const {
+  return 2;
+}
+
+std::string DOALL::getName(void) const {
+  return "DOALL";
 }
 
 } // namespace llvm::noelle

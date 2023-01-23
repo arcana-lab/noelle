@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "noelle/core/ReductionSCC.hpp"
+#include "noelle/core/InductionVariableSCC.hpp"
 #include "noelle/tools/HELIX.hpp"
 
 namespace llvm::noelle {
@@ -62,10 +64,10 @@ void HELIX::spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
     assert(phiSCC != nullptr);
     auto sccInfo = sccManager->getSCCAttrs(phiSCC);
     assert(sccInfo != nullptr);
-    if (sccInfo->canExecuteReducibly()) {
+    if (isa<ReductionSCC>(sccInfo)) {
       continue;
     }
-    if (sccInfo->isInductionVariableSCC()) {
+    if (isa<InductionVariableSCC>(sccInfo)) {
       continue;
     }
     if (loopIVManager->doesContributeToComputeAnInductionVariable(&phi)) {

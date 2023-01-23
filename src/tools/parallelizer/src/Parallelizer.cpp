@@ -215,19 +215,22 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
           : -1);
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
   auto linker = par.getLinker();
-  linker->linkTransformedLoopToOriginalFunction(loopPreHeader,
-                                                entryPoint,
-                                                exitPoint,
-                                                envArray,
-                                                exitIndex,
-                                                loopExitBlocks);
+  linker->linkTransformedLoopToOriginalFunction(
+      loopPreHeader,
+      entryPoint,
+      exitPoint,
+      envArray,
+      exitIndex,
+      loopExitBlocks,
+      usedTechnique->getMinimumNumberOfIdleCores());
   assert(par.verifyCode());
 
   // if (verbose >= Verbosity::Maximal) {
   //   loopFunction->print(errs() << "Final printout:\n"); errs() << "\n";
   // }
   if (verbose != Verbosity::Disabled) {
-    errs() << prefix << "  The loop has been parallelized\n";
+    errs() << prefix << "  The loop has been parallelized with "
+           << usedTechnique->getName() << "\n";
     errs() << prefix << "Exit\n";
   }
 

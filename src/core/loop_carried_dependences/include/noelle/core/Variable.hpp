@@ -26,7 +26,7 @@
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
-#include "noelle/core/StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/LoopForest.hpp"
 
 namespace llvm::noelle {
 
@@ -70,7 +70,7 @@ public:
 class LoopCarriedVariable : public LoopCarriedCycle {
 public:
   LoopCarriedVariable(const LoopStructure &loop,
-                      StayConnectedNestedLoopForestNode *loopNode,
+                      LoopForestNode *loopNode,
                       PDG &loopDG,
                       SCCDAG &sccdag,
                       SCC &variableSCC,

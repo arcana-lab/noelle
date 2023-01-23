@@ -19,8 +19,11 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "noelle/core/InductionVariableSCC.hpp"
+#include "noelle/core/LoopCarriedUnknownSCC.hpp"
+#include "noelle/core/UnknownClosedFormSCC.hpp"
 #include "noelle/tools/HELIX.hpp"
-#include "DOALL.hpp"
+#include "noelle/tools/DOALL.hpp"
 
 namespace llvm::noelle {
 
@@ -186,7 +189,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments(
       /*
        * Do not synchronize induction variables
        */
-      if (sccInfo->isInductionVariableSCC()) {
+      if (isa<InductionVariableSCC>(sccInfo)) {
         continue;
       }
 
@@ -194,16 +197,24 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments(
        * If the SCC is due to a control dependence, but the number of iterations
        * can be computed just before executing the loop, then we can skip it.
        */
-      if (true && wasOriginalLoopIVGoverned
-          && (depsSCCs.find(scc) == depsSCCs.end())) {
-        continue;
+      if (wasOriginalLoopIVGoverned) {
+        auto weCanSkipIt = true;
+        for (auto sccInfo : depsSCCs) {
+          if (scc == sccInfo->getSCC()) {
+            weCanSkipIt = false;
+            break;
+          }
+        }
+        if (weCanSkipIt) {
+          continue;
+        }
       }
 
       /*
        * Only sequential SCC can generate a sequential segment.
-       * FIXME: A reducible SCC should not be sequential in nature
        */
-      if (sccInfo->mustExecuteSequentially()) {
+      if (isa<LoopCarriedUnknownSCC>(sccInfo)
+          || isa<UnknownClosedFormSCC>(sccInfo)) {
         requireSS = true;
         break;
       }

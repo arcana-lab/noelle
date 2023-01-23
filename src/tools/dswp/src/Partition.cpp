@@ -29,8 +29,13 @@ void DSWP::partitionSCCDAG(LoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Prepare the initial partition.
    */
+  auto sccManager = LDI->getSCCManager();
+  auto skipSCC = [this, sccManager](GenericSCC *scc) -> bool {
+    auto skip = this->canBeCloned(scc);
+    return skip;
+  };
   ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
-      partitionSCCDAG(LDI);
+      partitionSCCDAG(LDI, skipSCC);
 
   /*
    * Print the initial partitions.
@@ -65,9 +70,13 @@ void DSWP::partitionSCCDAG(LoopDependenceInfo *LDI, Heuristics *h) {
      * Decide the partition of the SCCDAG by merging the trivial partitions
      * defined above.
      */
+    auto canBeRematerialized = [this](GenericSCC *scc) -> bool {
+      return this->canBeCloned(scc);
+    };
     h->adjustParallelizationPartitionForDSWP(partitioner,
-                                             *LDI->getSCCManager(),
+                                             *sccManager,
                                              ltm->getMaximumNumberOfCores(),
+                                             canBeRematerialized,
                                              this->verbose);
   }
 

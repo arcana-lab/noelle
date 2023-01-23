@@ -25,7 +25,7 @@
 #include "noelle/core/LoopNestingGraph.hpp"
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Queue.hpp"
-#include "noelle/core/StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/LoopForest.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
@@ -79,7 +79,7 @@ public:
 
   LoopNestingGraph *getLoopNestingGraphForProgram(void);
 
-  StayConnectedNestedLoopForest *getLoopNestingForest(void);
+  LoopForest *getLoopNestingForest(void);
 
   std::vector<LoopStructure *> *getLoopStructures(void);
 
@@ -153,23 +153,23 @@ public:
 
   void sortByHotness(std::vector<LoopStructure *> &loops);
 
-  std::vector<StayConnectedNestedLoopForestNode *> sortByHotness(
-      const std::unordered_set<StayConnectedNestedLoopForestNode *> &loops);
+  std::vector<LoopForestNode *> sortByHotness(
+      const std::unordered_set<LoopForestNode *> &loops);
 
   std::vector<SCC *> sortByHotness(const std::set<SCC *> &SCCs);
 
   void sortByStaticNumberOfInstructions(
       std::vector<LoopDependenceInfo *> &loops);
 
-  StayConnectedNestedLoopForest *getProgramLoopsNestingForest(void);
+  LoopForest *getProgramLoopsNestingForest(void);
 
-  StayConnectedNestedLoopForest *organizeLoopsInTheirNestingForest(
+  LoopForest *organizeLoopsInTheirNestingForest(
       std::vector<LoopStructure *> const &loops);
 
   void filterOutLoops(std::vector<LoopStructure *> &loops,
                       std::function<bool(LoopStructure *)> filter);
 
-  void filterOutLoops(StayConnectedNestedLoopForest *f,
+  void filterOutLoops(LoopForest *f,
                       std::function<bool(LoopStructure *)> filter);
 
   Module *getProgram(void) const;
@@ -258,7 +258,7 @@ private:
       std::unordered_set<LoopDependenceInfoOptimization> optimizations);
 
   LoopDependenceInfo *getLoopDependenceInfoForLoop(
-      StayConnectedNestedLoopForestNode *loopNode,
+      LoopForestNode *loopNode,
       Loop *loop,
       PDG *functionPDG,
       DominatorSummary *DS,

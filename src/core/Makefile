@@ -1,5 +1,5 @@
-UTILS=transformations basic_utilities dominators task induction_variables loop_carried_dependences loop_scc_attributes loop_content loop_nesting_graph architecture clean_metadata callgraph scheduler metadata_manager loop_transformer loop_metadata
-ANALYSIS=pdg talkdown alloc_aa dataflow loop_structure loop_environment forest invariants
+UTILS=transformations basic_utilities types_manager constants_manager dominators task loop_induction_variables loop_carried_dependences memory_cloning_analysis loop_scc_attributes loop_sccdag_attributes loop_content loop_nesting_graph architecture clean_metadata callgraph scheduler metadata_manager loop_transformer loop_metadata
+ANALYSIS=dg pdg pdg_analysis talkdown alloc_aa dataflow loop_structure loop_environment loop_forest loop_invariants
 ENABLERS=loop_distribution loop_unroll loop_whilifier outliner cfg_analysis cfg_transformer
 ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) hotprofiler unique_ir_marker noelle scripts
 
@@ -26,7 +26,7 @@ cfg_analysis:
 cfg_transformer:
 	cd $@ ; ../../scripts/run_me.sh
 
-invariants:
+loop_invariants:
 	cd $@ ; ../../scripts/run_me.sh
 
 unique_ir_marker:
@@ -41,6 +41,12 @@ dataflow:
 hotprofiler:
 	cd $@ ; ../../scripts/run_me.sh
 
+types_manager:
+	cd $@ ; ../../scripts/run_me.sh
+
+constants_manager:
+	cd $@ ; ../../scripts/run_me.sh
+
 basic_utilities:
 	cd $@ ; ../../scripts/run_me.sh
 
@@ -53,7 +59,7 @@ loop_structure:
 loop_environment:
 	cd $@ ; ../../scripts/run_me.sh
 
-forest:
+loop_forest:
 	cd $@ ; ../../scripts/run_me.sh
 
 task:
@@ -62,13 +68,19 @@ task:
 scheduler:
 	cd $@ ; ../../scripts/run_me.sh
 
-induction_variables:
+loop_induction_variables:
 	cd $@ ; ../../scripts/run_me.sh
 
 loop_carried_dependences:
 	cd $@ ; ../../scripts/run_me.sh
 
+memory_cloning_analysis:
+	cd $@ ; ../../scripts/run_me.sh
+
 loop_scc_attributes:
+	cd $@ ; ../../scripts/run_me.sh
+
+loop_sccdag_attributes:
 	cd $@ ; ../../scripts/run_me.sh
 
 loop_content:
@@ -77,7 +89,13 @@ loop_content:
 architecture:
 	cd $@ ; ../../scripts/run_me.sh
 
+dg:
+	cd $@ ; ../../scripts/run_me.sh
+
 pdg:
+	cd $@ ; ../../scripts/run_me.sh
+
+pdg_analysis:
 	cd $@ ; ../../scripts/run_me.sh
 
 callgraph:

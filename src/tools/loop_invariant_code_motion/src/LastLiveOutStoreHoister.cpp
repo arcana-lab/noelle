@@ -20,9 +20,9 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/tools/LoopInvariantCodeMotion.hpp"
+#include "noelle/core/LoopIterationSCC.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut(
     LoopDependenceInfo const &LDI) {
@@ -51,7 +51,7 @@ bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut(
   for (auto sccNode : sccdag->getNodes()) {
     auto scc = sccNode->getT();
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (!sccInfo->canExecuteIndependently())
+    if (!isa<LoopIterationSCC>(sccInfo))
       continue;
 
     /*
@@ -163,3 +163,5 @@ bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut(
 
   return modified;
 }
+
+} // namespace llvm::noelle

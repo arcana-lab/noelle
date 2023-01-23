@@ -25,7 +25,7 @@ namespace llvm::noelle {
 
 std::pair<uint64_t, uint64_t> TimeSaved::evaluateSavings(
     Noelle &noelle,
-    noelle::StayConnectedNestedLoopForestNode *tree,
+    noelle::LoopForestNode *tree,
     const std::map<LoopStructure *, uint64_t> &timeSaved,
     const std::map<LoopStructure *, bool> &doallLoops) {
 
@@ -55,7 +55,7 @@ std::pair<uint64_t, uint64_t> TimeSaved::evaluateSavings(
 
 uint64_t TimeSaved::evaluateSavings(
     Noelle &noelle,
-    noelle::StayConnectedNestedLoopForestNode *tree,
+    noelle::LoopForestNode *tree,
     const std::map<LoopStructure *, uint64_t> &timeSaved,
     std::function<bool(LoopStructure *)> considerLoop) {
 
@@ -63,9 +63,9 @@ uint64_t TimeSaved::evaluateSavings(
    * Find the maximum savings per internal node up to the root of the tree.
    */
   std::map<LoopStructure *, uint64_t> maxTimeSaved;
-  auto f = [&maxTimeSaved, &timeSaved, &considerLoop](
-               StayConnectedNestedLoopForestNode *n,
-               uint32_t treeLevel) -> bool {
+  auto f = [&maxTimeSaved,
+            &timeSaved,
+            &considerLoop](LoopForestNode *n, uint32_t treeLevel) -> bool {
     /*
      * Check if we should consider this loop.
      */

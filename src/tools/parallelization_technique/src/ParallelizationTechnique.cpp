@@ -20,8 +20,9 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/tools/ParallelizationTechnique.hpp"
-#include "noelle/core/Reduction.hpp"
-#include "noelle/core/BinaryReduction.hpp"
+#include "noelle/core/ReductionSCC.hpp"
+#include "noelle/core/BinaryReductionSCC.hpp"
+#include "noelle/core/LoopCarriedUnknownSCC.hpp"
 
 namespace llvm::noelle {
 
@@ -276,7 +277,7 @@ BasicBlock *ParallelizationTechnique::
     auto producer = environment->getProducer(envID);
     auto producerSCC = loopSCCDAG->sccOfValue(producer);
     auto producerSCCAttributes =
-        static_cast<BinaryReduction *>(sccManager->getSCCAttrs(producerSCC));
+        static_cast<BinaryReductionSCC *>(sccManager->getSCCAttrs(producerSCC));
     assert(producerSCCAttributes != nullptr);
 
     /*
@@ -507,7 +508,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
   /*
    * Check every stack object that can be safely cloned.
    */
-  for (auto location : memoryCloningAnalysis->getClonableMemoryLocations()) {
+  for (auto location : memoryCloningAnalysis->getClonableMemoryObjects()) {
 
     /*
      * Fetch the stack object.
@@ -964,7 +965,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
        */
       auto producerSCC = loopSCCDAG->sccOfValue(producer);
       auto reductionVariable =
-          static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
+          static_cast<ReductionSCC *>(sccManager->getSCCAttrs(producerSCC));
       assert(reductionVariable != nullptr);
 
       /*
@@ -1468,7 +1469,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
     assert(producer != nullptr);
     auto producerSCC = sccdag->sccOfValue(producer);
     auto reductionVar =
-        static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
+        static_cast<ReductionSCC *>(sccManager->getSCCAttrs(producerSCC));
     auto loopEntryProducerPHI =
         reductionVar->getPhiThatAccumulatesValuesBetweenLoopIterations();
     assert(loopEntryProducerPHI != nullptr);
@@ -1742,22 +1743,38 @@ void ParallelizationTechnique::
 }
 
 float ParallelizationTechnique::computeSequentialFractionOfExecution(
-    LoopDependenceInfo *LDI,
-    Noelle &par) const {
+    LoopDependenceInfo *LDI) const {
+  auto f = [](GenericSCC *sccInfo) -> bool {
+    auto mustBeSynchronized = isa<LoopCarriedUnknownSCC>(sccInfo);
+    return mustBeSynchronized;
+  };
 
+  auto fraction = this->computeSequentialFractionOfExecution(LDI, f);
+
+  return fraction;
+}
+
+float ParallelizationTechnique::computeSequentialFractionOfExecution(
+    LoopDependenceInfo *LDI,
+    std::function<bool(GenericSCC *scc)> doesItRunSequentially) const {
+
+  /*
+   * Fetch the SCCDAG.
+   */
   auto sccManager = LDI->getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
+
+  /*
+   * Compute the fraction of sequential code.
+   */
   float totalInstructionCount = 0, sequentialInstructionCount = 0;
   for (auto sccNode : sccdag->getNodes()) {
     auto scc = sccNode->getT();
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    auto sccType = sccInfo->getType();
 
     auto numInstructionsInSCC = scc->numInternalNodes();
     totalInstructionCount += numInstructionsInSCC;
-    bool mustBeSynchronized =
-        sccType == SCCAttrs::SCCType::SEQUENTIAL && !sccInfo->canBeCloned();
-    if (mustBeSynchronized) {
+    if (doesItRunSequentially(sccInfo)) {
       sequentialInstructionCount += numInstructionsInSCC;
     }
   }

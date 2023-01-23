@@ -24,7 +24,7 @@
 namespace llvm::noelle {
 
 LoopIterationDomainSpaceAnalysis::LoopIterationDomainSpaceAnalysis(
-    StayConnectedNestedLoopForestNode *loops,
+    LoopForestNode *loops,
     InductionVariableManager &ivManager,
     ScalarEvolution &SE)
   : loops{ loops },

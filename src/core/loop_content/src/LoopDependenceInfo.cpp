@@ -29,26 +29,24 @@
 
 namespace llvm::noelle {
 
-LoopDependenceInfo::LoopDependenceInfo(
-    PDG *fG,
-    StayConnectedNestedLoopForestNode *loopNode,
-    Loop *l,
-    DominatorSummary &DS,
-    ScalarEvolution &SE)
+LoopDependenceInfo::LoopDependenceInfo(PDG *fG,
+                                       LoopForestNode *loopNode,
+                                       Loop *l,
+                                       DominatorSummary &DS,
+                                       ScalarEvolution &SE)
   : LoopDependenceInfo{ fG,   loopNode, l,
                         DS,   SE,       Architecture::getNumberOfLogicalCores(),
                         true, {},       true } {
   return;
 }
 
-LoopDependenceInfo::LoopDependenceInfo(
-    PDG *fG,
-    StayConnectedNestedLoopForestNode *loopNode,
-    Loop *l,
-    DominatorSummary &DS,
-    ScalarEvolution &SE,
-    uint32_t maxCores,
-    bool enableFloatAsReal)
+LoopDependenceInfo::LoopDependenceInfo(PDG *fG,
+                                       LoopForestNode *loopNode,
+                                       Loop *l,
+                                       DominatorSummary &DS,
+                                       ScalarEvolution &SE,
+                                       uint32_t maxCores,
+                                       bool enableFloatAsReal)
   : LoopDependenceInfo{ fG,       loopNode,          l,  DS,  SE,
                         maxCores, enableFloatAsReal, {}, true } {
 
@@ -57,7 +55,7 @@ LoopDependenceInfo::LoopDependenceInfo(
 
 LoopDependenceInfo::LoopDependenceInfo(
     PDG *fG,
-    StayConnectedNestedLoopForestNode *loopNode,
+    LoopForestNode *loopNode,
     Loop *l,
     DominatorSummary &DS,
     ScalarEvolution &SE,
@@ -71,15 +69,14 @@ LoopDependenceInfo::LoopDependenceInfo(
   return;
 }
 
-LoopDependenceInfo::LoopDependenceInfo(
-    PDG *fG,
-    StayConnectedNestedLoopForestNode *loopNode,
-    Loop *l,
-    DominatorSummary &DS,
-    ScalarEvolution &SE,
-    uint32_t maxCores,
-    bool enableFloatAsReal,
-    bool enableLoopAwareDependenceAnalyses)
+LoopDependenceInfo::LoopDependenceInfo(PDG *fG,
+                                       LoopForestNode *loopNode,
+                                       Loop *l,
+                                       DominatorSummary &DS,
+                                       ScalarEvolution &SE,
+                                       uint32_t maxCores,
+                                       bool enableFloatAsReal,
+                                       bool enableLoopAwareDependenceAnalyses)
   : LoopDependenceInfo{ fG,
                         loopNode,
                         l,
@@ -95,7 +92,7 @@ LoopDependenceInfo::LoopDependenceInfo(
 
 LoopDependenceInfo::LoopDependenceInfo(
     PDG *fG,
-    StayConnectedNestedLoopForestNode *loopNode,
+    LoopForestNode *loopNode,
     Loop *l,
     DominatorSummary &DS,
     ScalarEvolution &SE,
@@ -118,7 +115,7 @@ LoopDependenceInfo::LoopDependenceInfo(
 
 LoopDependenceInfo::LoopDependenceInfo(
     PDG *fG,
-    StayConnectedNestedLoopForestNode *loopNode,
+    LoopForestNode *loopNode,
     Loop *l,
     DominatorSummary &DS,
     ScalarEvolution &SE,
@@ -172,7 +169,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   std::set<Value *> stackObjectsThatWillBeCloned;
   if (this->memoryCloningAnalysis != nullptr) {
     for (auto memObject :
-         this->memoryCloningAnalysis->getClonableMemoryLocations()) {
+         this->memoryCloningAnalysis->getClonableMemoryObjects()) {
 
       /*
        * Check if the stack object needs to be initialized.
@@ -300,7 +297,7 @@ uint64_t LoopDependenceInfo::computeTripCounts(Loop *l, ScalarEvolution &SE) {
 
 std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
     Loop *l,
-    StayConnectedNestedLoopForestNode *loopNode,
+    LoopForestNode *loopNode,
     PDG *functionDG,
     DominatorSummary &DS,
     ScalarEvolution &SE) {
@@ -430,7 +427,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
 
 void LoopDependenceInfo::
     removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions(
-        StayConnectedNestedLoopForestNode *loopNode,
+        LoopForestNode *loopNode,
         PDG *loopDG,
         DominatorSummary &DS) {
 
@@ -497,7 +494,7 @@ void LoopDependenceInfo::
 }
 
 void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
-    StayConnectedNestedLoopForestNode *loopNode,
+    LoopForestNode *loopNode,
     PDG *loopInternalDG,
     DominatorSummary &DS) {
 
@@ -538,9 +535,9 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
       continue;
     }
     auto locationsProducer =
-        this->memoryCloningAnalysis->getClonableMemoryLocationsFor(producer);
+        this->memoryCloningAnalysis->getClonableMemoryObjectsFor(producer);
     auto locationsConsumer =
-        this->memoryCloningAnalysis->getClonableMemoryLocationsFor(consumer);
+        this->memoryCloningAnalysis->getClonableMemoryObjectsFor(consumer);
     if (locationsProducer.empty() || locationsConsumer.empty()) {
       continue;
     }
@@ -664,8 +661,7 @@ LoopIterationDomainSpaceAnalysis *LoopDependenceInfo::
   return this->domainSpaceAnalysis;
 }
 
-StayConnectedNestedLoopForestNode *LoopDependenceInfo::
-    getLoopHierarchyStructures(void) const {
+LoopForestNode *LoopDependenceInfo::getLoopHierarchyStructures(void) const {
   return this->loop;
 }
 

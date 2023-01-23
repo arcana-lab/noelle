@@ -25,20 +25,20 @@
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCCDAGPartition.hpp"
-#include "noelle/core/StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/LoopForest.hpp"
 
 namespace llvm::noelle {
 
 class SCCDAGNormalizer {
 public:
-  SCCDAGNormalizer(SCCDAG &dag, StayConnectedNestedLoopForestNode *loop);
+  SCCDAGNormalizer(SCCDAG &dag, LoopForestNode *loop);
 
   SCCDAGNormalizer() = delete;
 
   void normalizeInPlace(void);
 
 private:
-  StayConnectedNestedLoopForestNode *loop;
+  LoopForestNode *loop;
   SCCDAG &sccdag;
 
   void mergeLCSSAPhis(void);

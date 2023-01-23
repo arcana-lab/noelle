@@ -23,7 +23,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Architecture.hpp"
-#include "noelle/core/StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/LoopForest.hpp"
 #include "noelle/core/HotProfiler.hpp"
 #include <algorithm>
 
@@ -313,7 +313,7 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
   return allLoops;
 }
 
-StayConnectedNestedLoopForest *Noelle::getLoopNestingForest(void) {
+LoopForest *Noelle::getLoopNestingForest(void) {
 
   /*
    * Fetch all loops
@@ -1042,9 +1042,9 @@ void Noelle::sortByHotness(std::vector<LoopStructure *> &loops) {
   return;
 }
 
-std::vector<StayConnectedNestedLoopForestNode *> Noelle::sortByHotness(
-    const std::unordered_set<StayConnectedNestedLoopForestNode *> &loops) {
-  std::vector<StayConnectedNestedLoopForestNode *> s;
+std::vector<LoopForestNode *> Noelle::sortByHotness(
+    const std::unordered_set<LoopForestNode *> &loops) {
+  std::vector<LoopForestNode *> s;
 
   /*
    * Convert the loops into the vector
@@ -1068,8 +1068,7 @@ std::vector<StayConnectedNestedLoopForestNode *> Noelle::sortByHotness(
   /*
    * Define the order between loops.
    */
-  auto compareLoops = [hot](StayConnectedNestedLoopForestNode *n0,
-                            StayConnectedNestedLoopForestNode *n1) -> bool {
+  auto compareLoops = [hot](LoopForestNode *n0, LoopForestNode *n1) -> bool {
     assert(n0 != nullptr);
     assert(n1 != nullptr);
 
@@ -1208,8 +1207,7 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
    */
   auto forest = this->organizeLoopsInTheirNestingForest(allLoops);
   // Add existing loop nesting relation as must edges
-  auto f = [&loopNestingGraph](StayConnectedNestedLoopForestNode *n,
-                               uint32_t treeLevel) -> bool {
+  auto f = [&loopNestingGraph](LoopForestNode *n, uint32_t treeLevel) -> bool {
     if (n->getParent() == nullptr) {
       return false;
     }
@@ -1263,7 +1261,7 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
 }
 
 LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
-    StayConnectedNestedLoopForestNode *loopNode,
+    LoopForestNode *loopNode,
     Loop *loop,
     PDG *functionPDG,
     DominatorSummary *DS,
@@ -1395,17 +1393,16 @@ void Noelle::filterOutLoops(std::vector<LoopStructure *> &loops,
   return;
 }
 
-void Noelle::filterOutLoops(noelle::StayConnectedNestedLoopForest *f,
+void Noelle::filterOutLoops(noelle::LoopForest *f,
                             std::function<bool(LoopStructure *)> filter) {
 
   /*
    * Iterate over the trees and find the nodes to delete.
    */
-  std::vector<noelle::StayConnectedNestedLoopForestNode *> toDelete{};
+  std::vector<noelle::LoopForestNode *> toDelete{};
   for (auto tree : f->getTrees()) {
-    auto myF = [&filter, &toDelete](
-                   noelle::StayConnectedNestedLoopForestNode *n,
-                   uint32_t l) -> bool {
+    auto myF = [&filter, &toDelete](noelle::LoopForestNode *n,
+                                    uint32_t l) -> bool {
       auto ls = n->getLoop();
       if (filter(ls)) {
         toDelete.push_back(n);
@@ -1425,7 +1422,7 @@ void Noelle::filterOutLoops(noelle::StayConnectedNestedLoopForest *f,
   return;
 }
 
-StayConnectedNestedLoopForest *Noelle::getProgramLoopsNestingForest(void) {
+LoopForest *Noelle::getProgramLoopsNestingForest(void) {
 
   /*
    * Fetch all the loops
@@ -1440,7 +1437,7 @@ StayConnectedNestedLoopForest *Noelle::getProgramLoopsNestingForest(void) {
   return forest;
 }
 
-StayConnectedNestedLoopForest *Noelle::organizeLoopsInTheirNestingForest(
+LoopForest *Noelle::organizeLoopsInTheirNestingForest(
     std::vector<LoopStructure *> const &loops) {
 
   /*
@@ -1458,7 +1455,7 @@ StayConnectedNestedLoopForest *Noelle::organizeLoopsInTheirNestingForest(
   /*
    * Compute the forest.
    */
-  auto n = new noelle::StayConnectedNestedLoopForest(loops, doms);
+  auto n = new noelle::LoopForest(loops, doms);
 
   /*
    * Free the memory.

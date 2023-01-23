@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "noelle/core/SCC.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 SCC::SCC(std::set<DGNode<Value> *> internalNodes) {
 
@@ -121,7 +120,8 @@ raw_ostream &SCC::print(raw_ostream &stream,
   /*
    * Print instructions that compose the SCC.
    */
-  stream << prefixToUse << "Internal nodes: " << internalNodeMap.size() << "\n";
+  stream << prefixToUse << "Nodes within the SCC: " << internalNodeMap.size()
+         << "\n";
   for (auto nodePair : internalNodePairs()) {
     nodePair.second->print(stream << prefixToUse << "\t") << "\n";
   }
@@ -129,7 +129,10 @@ raw_ostream &SCC::print(raw_ostream &stream,
   /*
    * Print live-in and live-out values.
    */
-  stream << prefixToUse << "External nodes: " << externalNodeMap.size() << "\n";
+  stream
+      << prefixToUse
+      << "Nodes outside the SCC and connected with at least one node within the SCC: "
+      << externalNodeMap.size() << "\n";
   std::vector<DGNode<Value> *> externalNodesOfCurrentSCC{};
   for (auto nodePair : externalNodePairs()) {
     externalNodesOfCurrentSCC.push_back(nodePair.second);
@@ -154,13 +157,13 @@ raw_ostream &SCC::print(raw_ostream &stream,
    */
   auto sortedDeps = DG::sortDependences(allEdges);
   stream << prefixToUse << "Edges: " << sortedDeps.size() << "\n";
-  int edgesPrinted = 0;
+  auto edgesPrinted = 0;
   for (auto edge : sortedDeps) {
     if (edgesPrinted++ >= maxEdges) {
-      stream << prefixToUse << "\t....\n";
+      stream << prefixToUse << "  ....\n";
       break;
     }
-    edge->print(stream, prefixToUse + "\t") << "\n";
+    edge->print(stream, prefixToUse + "  ") << "\n";
   }
 
   return stream;
@@ -282,3 +285,5 @@ bool SCC::iterateOverAllValues(std::function<bool(Value *)> funcToInvoke) {
 SCC::~SCC() {
   return;
 }
+
+} // namespace llvm::noelle

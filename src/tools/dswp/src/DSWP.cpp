@@ -20,12 +20,15 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "DSWP.hpp"
+#include "noelle/core/Architecture.hpp"
+#include "noelle/core/LoopIterationSCC.hpp"
 
 namespace llvm::noelle {
 
 DSWP::DSWP(Noelle &n, bool forceParallelization, bool enableSCCMerging)
   : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{ n,
                                                                     forceParallelization },
+    minCores{ 0 },
     enableMergingSCC{ enableSCCMerging },
     queues{},
     queueArrayType{ nullptr },
@@ -68,6 +71,7 @@ bool DSWP::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   auto doesSequentialSCCExist = false;
   uint64_t biggestSCC = 0;
   auto sccManager = LDI->getSCCManager();
+  auto clonableSCCs = this->getClonableSCCs(sccManager);
   for (auto nodePair : sccManager->getSCCDAG()->internalNodePairs()) {
 
     /*
@@ -86,11 +90,9 @@ bool DSWP::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
     assert(biggestSCC >= currentSCCTotalInsts);
 
     /*
-     * Check if the current SCC can be removed (e.g., because it is due to
-     * induction variables). If it is, then this SCC has already been assigned
-     * to every dependent partition.
+     * Check if this will run sequentially.
      */
-    if (currentSCCInfo->canBeCloned()) {
+    if (clonableSCCs.find(currentSCCInfo) != clonableSCCs.end()) {
       continue;
     }
 
@@ -151,8 +153,12 @@ bool DSWP::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   auto averageInstructionThreshold = 20;
   bool hasLittleExecution = averageInstructions < averageInstructionThreshold;
   auto minimumSequentialFraction = .5;
+  auto skipSCC = [this, sccManager](GenericSCC *scc) -> bool {
+    auto skip = this->canBeCloned(scc);
+    return skip;
+  };
   auto sequentialFraction =
-      this->computeSequentialFractionOfExecution(LDI, this->noelle);
+      this->computeSequentialFractionOfExecution(LDI, skipSCC);
   bool hasProportionallyInsignificantSequentialExecution =
       sequentialFraction < minimumSequentialFraction;
   if (hasLittleExecution && hasProportionallyInsignificantSequentialExecution) {
@@ -186,6 +192,11 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DSWP: Start\n";
   }
+
+  /*
+   * Compute the set of SCCs that can be cloned.
+   */
+  this->clonableSCCs = this->getClonableSCCs(LDI->getSCCManager());
 
   /*
    * Fetch the header.
@@ -386,12 +397,26 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   delete this->originalFunctionDS;
 
   /*
+   * Set the minimum number of cores.
+   */
+  this->minCores = this->tasks.size();
+
+  /*
    * Exit
    */
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DSWP: Exit\n";
   }
   return true;
+}
+
+uint32_t DSWP::getMinimumNumberOfIdleCores(void) const {
+  return Architecture::getNumberOfPhysicalCores();
+  return this->minCores;
+}
+
+std::string DSWP::getName(void) const {
+  return "DSWP";
 }
 
 } // namespace llvm::noelle

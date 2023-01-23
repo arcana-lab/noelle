@@ -19,8 +19,10 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DOALL.hpp"
-#include "DOALLTask.hpp"
+#include "noelle/core/LoopIterationSCC.hpp"
+#include "noelle/core/ReductionSCC.hpp"
+#include "noelle/tools/DOALL.hpp"
+#include "noelle/tools/DOALLTask.hpp"
 
 namespace llvm::noelle {
 
@@ -218,16 +220,17 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
    * Collect (3) by identifying all reducible SCCs
    */
   auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDataDependencies();
-  for (auto scc : nonDOALLSCCs) {
-    auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (!sccInfo->canExecuteReducibly())
+  for (auto sccInfo : nonDOALLSCCs) {
+    auto reductionSCC = dyn_cast<ReductionSCC>(sccInfo);
+    if (reductionSCC == nullptr)
       continue;
 
-    auto headerPHI = sccInfo->getSingleHeaderPHI();
-    if (!headerPHI)
-      continue;
+    auto headerPHI =
+        reductionSCC->getPhiThatAccumulatesValuesBetweenLoopIterations();
+    assert(headerPHI != nullptr);
 
     auto hasInstsInHeader = false;
+    auto scc = sccInfo->getSCC();
     for (auto nodePair : scc->internalNodePairs()) {
       auto value = nodePair.first;
       auto inst = cast<Instruction>(value);
@@ -252,7 +255,7 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
   for (auto &I : *loopHeader) {
     auto scc = sccdag->sccOfValue(&I);
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (!sccInfo->canExecuteIndependently())
+    if (!isa<LoopIterationSCC>(sccInfo))
       continue;
 
     auto isInvariant = invariantManager->isLoopInvariant(&I);
@@ -344,7 +347,9 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
       assert(scc != nullptr);
       auto sccInfo = sccManager->getSCCAttrs(scc);
       assert(sccInfo != nullptr);
-      auto headerPHI = sccInfo->getSingleHeaderPHI();
+      auto reductionSCC = cast<ReductionSCC>(sccInfo);
+      auto headerPHI =
+          reductionSCC->getPhiThatAccumulatesValuesBetweenLoopIterations();
       assert(headerPHI != nullptr);
       auto clonePHI = task->getCloneOfOriginalInstruction(headerPHI);
 

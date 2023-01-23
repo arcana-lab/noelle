@@ -13,8 +13,6 @@ install(
   FILES
   include/noelle/core/Noelle.hpp
   include/noelle/core/FunctionsManager.hpp
-  include/noelle/core/TypesManager.hpp
-  include/noelle/core/ConstantsManager.hpp
   include/noelle/core/CompilationOptionsManager.hpp
   include/noelle/core/Linker.hpp
   DESTINATION 

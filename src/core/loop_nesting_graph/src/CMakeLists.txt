@@ -30,14 +30,15 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../dataflow/include
   ../../architecture/include 
   ../../alloc_aa/include 
+  ../../dg/include 
   ../../pdg/include 
   ../../hotprofiler/include 
   ../../loop_structure/include 
   ../../loop_environment/include 
-  ../../forest/include
+  ../../loop_forest/include
   ../../talkdown/include
-  ../../invariants/include
-  ../../induction_variables/include
+  ../../loop_invariants/include
+  ../../loop_induction_variables/include
   ../../loop_content/include
   ../include 
   ${CMAKE_INSTALL_PREFIX}/include

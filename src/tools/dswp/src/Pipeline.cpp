@@ -99,7 +99,7 @@ void DSWP::addClonableSCCsToStages(LoopDependenceInfo *LDI) {
         if (visitedNodes.find(fromSCCNode) != visitedNodes.end())
           continue;
         auto fromSCCInfo = sccManager->getSCCAttrs(fromSCC);
-        if (fromSCCInfo->canBeCloned()) {
+        if (this->canBeCloned(fromSCCInfo)) {
           task->clonableSCCs.insert(fromSCC);
         }
 
@@ -130,7 +130,8 @@ bool DSWP::isCompleteAndValidStageStructure(LoopDependenceInfo *LDI) const {
 
   auto sccManager = LDI->getSCCManager();
   for (auto node : sccManager->getSCCDAG()->getNodes()) {
-    if (sccManager->getSCCAttrs(node->getT())->canBeCloned()) {
+    auto sccAttrs = sccManager->getSCCAttrs(node->getT());
+    if (this->canBeCloned(sccAttrs)) {
       continue;
     }
 

@@ -35,19 +35,21 @@ void Linker::linkTransformedLoopToOriginalFunction(
     BasicBlock *endOfParLoopInOriginalFunc,
     Value *envArray,
     Value *envIndexForExitVariable,
-    std::vector<BasicBlock *> &loopExitBlocks) {
+    std::vector<BasicBlock *> &loopExitBlocks,
+    uint32_t minIdleCores) {
 
   /*
-   * Create the global variable for the parallelized loop.
+   * Fetch the runtime API to invoke.
+   */
+  auto coreChecker = this->program.getFunction("NOELLE_getAvailableCores");
+  assert(coreChecker != nullptr);
+
+  /*
+   * Create the constants.
    */
   auto integerType = this->tm->getIntegerType(32);
-  auto globalBool = new GlobalVariable(this->program,
-                                       integerType,
-                                       /*isConstant=*/false,
-                                       GlobalValue::ExternalLinkage,
-                                       Constant::getNullValue(integerType));
   auto const0 = ConstantInt::get(integerType, 0);
-  auto const1 = ConstantInt::get(integerType, 1);
+  auto minIdleCoresValue = ConstantInt::get(integerType, minIdleCores);
 
   /*
    * Fetch the terminator of the preheader.
@@ -60,25 +62,23 @@ void Linker::linkTransformedLoopToOriginalFunction(
   auto originalHeader = originalTerminator->getSuccessor(0);
 
   /*
-   * Check if another invocation of the loop is running in parallel.
+   * Check if there are enough idle cores.
    */
   IRBuilder<> loopSwitchBuilder(originalTerminator);
-  auto coreChecker = this->program.getFunction("NOELLE_getAvailableCores");
   auto callToCoreChecker =
       loopSwitchBuilder.CreateCall(coreChecker->getFunctionType(), coreChecker);
   auto compareInstruction =
-      loopSwitchBuilder.CreateICmpEQ(callToCoreChecker, const1);
+      loopSwitchBuilder.CreateICmpUGE(callToCoreChecker, minIdleCoresValue);
   loopSwitchBuilder.CreateCondBr(compareInstruction,
-                                 originalHeader,
-                                 startOfParLoopInOriginalFunc);
+                                 startOfParLoopInOriginalFunc,
+                                 originalHeader);
   originalTerminator->eraseFromParent();
-
-  IRBuilder<> endBuilder(endOfParLoopInOriginalFunc);
 
   /*
    * Load exit block environment variable and branch to the correct loop exit
    * block
    */
+  IRBuilder<> endBuilder(endOfParLoopInOriginalFunc);
   if (loopExitBlocks.size() == 1) {
     endBuilder.CreateBr(loopExitBlocks[0]);
 
@@ -138,7 +138,8 @@ void Linker::substituteOriginalLoopWithTransformedLoop(
     BasicBlock *endOfParLoopInOriginalFunc,
     Value *envArray,
     Value *envIndexForExitVariable,
-    std::vector<BasicBlock *> &loopExitBlocks) {
+    std::vector<BasicBlock *> &loopExitBlocks,
+    uint32_t minIdleCores) {
 
   /*
    * Fetch the terminator of the preheader.

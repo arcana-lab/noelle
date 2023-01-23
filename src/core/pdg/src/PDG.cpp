@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -31,8 +31,7 @@
 
 #include "noelle/core/PDG.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 PDG::PDG(Module &M) {
 
@@ -422,3 +421,5 @@ PDG::~PDG() {
     if (node)
       delete node;
 }
+
+} // namespace llvm::noelle

@@ -37,7 +37,8 @@ public:
       BasicBlock *endOfParLoopInOriginalFunc,
       Value *envArray,
       Value *envIndexForExitVariable,
-      std::vector<BasicBlock *> &loopExitBlocks);
+      std::vector<BasicBlock *> &loopExitBlocks,
+      uint32_t minIdleCores);
 
   void substituteOriginalLoopWithTransformedLoop(
       LoopStructure *originalLoop,
@@ -45,7 +46,8 @@ public:
       BasicBlock *endOfParLoopInOriginalFunc,
       Value *envArray,
       Value *envIndexForExitVariable,
-      std::vector<BasicBlock *> &loopExitBlocks);
+      std::vector<BasicBlock *> &loopExitBlocks,
+      uint32_t minIdleCores);
 
 private:
   Module &program;

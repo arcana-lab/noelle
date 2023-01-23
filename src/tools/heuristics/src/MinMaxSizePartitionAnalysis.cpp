@@ -24,7 +24,10 @@
 using namespace llvm;
 using namespace llvm::noelle;
 
-void MinMaxSizePartitionAnalysis::checkIfShouldMerge(SCCSet *sA, SCCSet *sB) {
+void MinMaxSizePartitionAnalysis::checkIfShouldMerge(
+    SCCSet *sA,
+    SCCSet *sB,
+    std::function<bool(GenericSCC *scc)> canBeRematerialized) {
 
   /*
    * Hard stop merging once we have fewer partitions than cores
@@ -50,7 +53,8 @@ void MinMaxSizePartitionAnalysis::checkIfShouldMerge(SCCSet *sA, SCCSet *sB) {
     }
   }
   std::unordered_set<SCCSet *> singleSet = { &potentialMerge };
-  uint64_t costOnceMerged = IL.latencyPerInvocation(&dagAttrs, singleSet);
+  uint64_t costOnceMerged =
+      IL.latencyPerInvocation(&dagAttrs, singleSet, canBeRematerialized);
 
   /*
    * Only merge if it is the cheapest of the merges

@@ -1,11 +1,19 @@
 # Sources
 set(Srcs 
   AccumulatorOpInfo.cpp
-  ClonableMemoryObject.cpp
-  MemoryCloningAnalysis.cpp
-  SCCAttrs.cpp
-  Reduction.cpp
-  BinaryReduction.cpp
+  GenericSCC.cpp
+  LoopCarriedSCC.cpp
+  LoopIterationSCC.cpp
+  ReductionSCC.cpp
+  BinaryReductionSCC.cpp
+  RecomputableSCC.cpp
+  SingleAccumulatorRecomputableSCC.cpp
+  InductionVariableSCC.cpp
+  UnknownClosedFormSCC.cpp
+  LinearInductionVariableSCC.cpp
+  MemoryClonableSCC.cpp
+  StackObjectClonableSCC.cpp
+  LoopCarriedUnknownSCC.cpp
 )
 
 # Compilation flags
@@ -34,15 +42,17 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../dataflow/include
   ../../architecture/include 
   ../../alloc_aa/include 
+  ../../dg/include 
   ../../pdg/include 
   ../../hotprofiler/include 
   ../../loop_structure/include 
   ../../loop_environment/include 
-  ../../forest/include
+  ../../loop_forest/include
   ../../talkdown/include
-  ../../invariants/include
-  ../../induction_variables/include
+  ../../loop_invariants/include
+  ../../loop_induction_variables/include
   ../../loop_carried_dependences/include
+  ../../memory_cloning_analysis/include
   ../include
   ./
   ${CMAKE_INSTALL_PREFIX}/include

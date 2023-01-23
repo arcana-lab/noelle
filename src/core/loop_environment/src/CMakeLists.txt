@@ -29,6 +29,7 @@ include_directories(
   ../../basic_utilities/include 
   ../../architecture/include 
   ../../alloc_aa/include 
+  ../../dg/include 
   ../../pdg/include 
   ../../hotprofiler/include 
   ../../loop_structure/include
