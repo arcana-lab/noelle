@@ -94,24 +94,11 @@ public:
   SCC *getSCC(void);
 
   /*
-   * Return true if it is safe to clone the SCC.
-   * Return false otherwise.
-   *
-   * TODO: Break apart into two separate APIs:
-   * canBeDirectlyClonedAndRepeatableEachIteration
-   * canBeDirectlyClonedButExecutedOnlyOnceEachIteration
-   */
-  bool canBeCloned(void) const;
-
-  /*
    * Get the PHIs.
    */
   iterator_range<phi_iterator> getPHIs(void) const;
 
-  /*
-   * Set the SCC to be clonable.
-   */
-  void setSCCToBeClonable(bool isClonable = true);
+  bool doesHaveMemoryDependencesWithin(void) const;
 
   SCCKind getKind(void) const;
 
@@ -121,13 +108,13 @@ protected:
   LoopStructure *loop;
   SCC *scc;
   std::set<PHINode *> PHINodes;
-  bool isClonable;
 
   GenericSCC(SCCKind K, SCC *s, LoopStructure *loop);
   void collectPHIs(LoopStructure &LS);
 
 private:
   SCCKind kind;
+  bool hasMemoryDependences;
 };
 
 } // namespace llvm::noelle

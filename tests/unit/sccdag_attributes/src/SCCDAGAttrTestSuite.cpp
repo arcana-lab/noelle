@@ -23,6 +23,7 @@
 #include "noelle/core/ReductionSCC.hpp"
 #include "noelle/core/InductionVariableSCC.hpp"
 #include "noelle/core/MemoryClonableSCC.hpp"
+#include "noelle/tools/DSWP.hpp"
 #include "SCCDAGAttrTestSuite.hpp"
 
 namespace llvm::noelle {
@@ -90,7 +91,7 @@ void SCCDAGAttrTestSuite::getAnalysisUsage(AnalysisUsage &AU) const {
 
 bool SCCDAGAttrTestSuite::runOnModule(Module &M) {
   errs() << "SCCDAGAttrTestSuite: Start\n";
-  auto &noelle = getAnalysis<Noelle>();
+  this->noelle = &getAnalysis<Noelle>();
 
   auto mainFunction = M.getFunction("main");
 
@@ -103,25 +104,26 @@ bool SCCDAGAttrTestSuite::runOnModule(Module &M) {
   /*
    * Fetch the dominators
    */
-  auto DS = noelle.getDominators(mainFunction);
+  auto DS = this->noelle->getDominators(mainFunction);
 
   /*
    * Fetch the forest node of the loop
    */
-  auto allLoopsOfFunction = noelle.getLoopStructures(mainFunction, 0);
-  auto forest = noelle.organizeLoopsInTheirNestingForest(*allLoopsOfFunction);
+  auto allLoopsOfFunction = this->noelle->getLoopStructures(mainFunction, 0);
+  auto forest =
+      this->noelle->organizeLoopsInTheirNestingForest(*allLoopsOfFunction);
   auto loopNode =
       forest->getInnermostLoopThatContains(&*topLoop->getHeader()->begin());
 
   this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
-  auto loopDI =
+  this->ldi =
       new LoopDependenceInfo(fdg, loopNode, topLoop, *DS, *SE, 2, true, true);
-  auto sccManager = loopDI->getSCCManager();
+  auto sccManager = this->ldi->getSCCManager();
 
   this->sccdag = sccManager->getSCCDAG();
 
   errs() << "SCCDAGAttrTestSuite: Constructing IVAttributes\n";
-  auto IV = loopDI->getInvariantManager();
+  auto IV = this->ldi->getInvariantManager();
 
   errs() << "SCCDAGAttrTestSuite: Constructing SCCDAGAttrs\n";
 
@@ -186,12 +188,17 @@ Values SCCDAGAttrTestSuite::reducibleSCCsAreFound(ModulePass &pass,
 
 Values SCCDAGAttrTestSuite::clonableSCCsAreFound(ModulePass &pass,
                                                  TestSuite &suite) {
-  SCCDAGAttrTestSuite &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
+  auto &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
+  DSWP dswp{ *(attrPass.noelle), false, true };
   std::set<SCC *> sccs;
   for (auto node : attrPass.sccdag->getNodes()) {
     auto sccAttrs = attrPass.attrs->getSCCAttrs(node->getT());
-    if (sccAttrs->canBeCloned())
+    auto clonableSCCs =
+        dswp.getClonableSCCs(attrPass.attrs,
+                             attrPass.ldi->getLoopHierarchyStructures());
+    if (clonableSCCs.find(sccAttrs) != clonableSCCs.end()) {
       sccs.insert(node->getT());
+    }
   }
 
   return SCCDAGAttrTestSuite::printSCCs(pass, suite, sccs);

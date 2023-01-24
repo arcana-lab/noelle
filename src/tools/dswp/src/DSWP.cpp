@@ -71,7 +71,8 @@ bool DSWP::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   auto doesSequentialSCCExist = false;
   uint64_t biggestSCC = 0;
   auto sccManager = LDI->getSCCManager();
-  auto clonableSCCs = this->getClonableSCCs(sccManager);
+  auto clonableSCCs =
+      this->getClonableSCCs(sccManager, LDI->getLoopHierarchyStructures());
   for (auto nodePair : sccManager->getSCCDAG()->internalNodePairs()) {
 
     /*
@@ -196,7 +197,8 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Compute the set of SCCs that can be cloned.
    */
-  this->clonableSCCs = this->getClonableSCCs(LDI->getSCCManager());
+  this->clonableSCCs = this->getClonableSCCs(LDI->getSCCManager(),
+                                             LDI->getLoopHierarchyStructures());
 
   /*
    * Fetch the header.

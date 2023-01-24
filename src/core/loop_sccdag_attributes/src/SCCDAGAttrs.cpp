@@ -172,17 +172,6 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
     assert(sccInfo != nullptr);
     this->sccToInfo[scc] = sccInfo;
 
-    this->checkIfClonable(scc, loopNode);
-    if (isa<LoopCarriedUnknownSCC>(sccInfo)) {
-      // assert(!isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc,
-      // loopNode));
-    } else if (isa<LoopCarriedSCC>(sccInfo)) {
-      /*
-      assert(!isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc,
-      loopNode));
-      */
-    }
-
     return false;
   });
 
@@ -661,20 +650,6 @@ bool SCCDAGAttrs::checkIfIndependent(SCC *scc) {
          == this->sccToLoopCarriedDependencies.end();
 }
 
-void SCCDAGAttrs::checkIfClonable(SCC *scc, LoopForestNode *loopNode) {
-
-  /*
-   * Check the simple cases.
-   * TODO: Separate out cases and catalog SCCs by those cases
-   */
-  if (isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(scc, loopNode)) {
-    this->getSCCAttrs(scc)->setSCCToBeClonable();
-    return;
-  }
-
-  return;
-}
-
 std::set<Instruction *> SCCDAGAttrs::checkIfRecomputable(
     SCC *scc,
     LoopForestNode *loopNode) const {
@@ -790,45 +765,6 @@ std::set<ClonableMemoryObject *> SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
   }
 
   return locations;
-}
-
-bool SCCDAGAttrs::isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(
-    SCC *scc,
-    LoopForestNode *loopNode) const {
-
-  /*
-   * FIXME: This check should not exist; instead, SCC where cloning
-   * is trivial should be separated out by the parallelization scheme
-   */
-  if (this->sccdag->fetchNode(scc)->numOutgoingEdges() == 0) {
-    return false;
-  }
-
-  for (auto edge : scc->getEdges()) {
-    if (edge->isMemoryDependence()) {
-      return false;
-    }
-  }
-
-  if (sccToLoopCarriedDependencies.find(scc)
-      == sccToLoopCarriedDependencies.end()) {
-    return true;
-  }
-
-  auto topLoop = loopNode->getLoop();
-  for (auto loopCarriedDependency : sccToLoopCarriedDependencies.at(scc)) {
-    auto valueFrom = loopCarriedDependency->getOutgoingT();
-    auto valueTo = loopCarriedDependency->getIncomingT();
-    assert(isa<Instruction>(valueFrom) && isa<Instruction>(valueTo));
-    if (loopNode->getInnermostLoopThatContains(cast<Instruction>(valueFrom))
-            == topLoop
-        || loopNode->getInnermostLoopThatContains(cast<Instruction>(valueTo))
-               == topLoop) {
-      return false;
-    }
-  }
-
-  return true;
 }
 
 SCCDAG *SCCDAGAttrs::getSCCDAG(void) const {
