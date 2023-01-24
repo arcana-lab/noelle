@@ -93,8 +93,7 @@ bool PDGAnalysis::runOnModule(Module &M) {
   /*
    * Check if the pass has already run.
    */
-  if (false || (this->M != nullptr)
-      || (this->programDependenceGraph != nullptr)) {
+  if ((this->M != nullptr) || (this->programDependenceGraph != nullptr)) {
     return false;
   }
 
@@ -116,7 +115,7 @@ bool PDGAnalysis::runOnModule(Module &M) {
   /*
    * Check if we should compute the PDG.
    */
-  if (false || (this->dumpPDG) || (this->embedPDG)) {
+  if ((this->dumpPDG) || (this->embedPDG)) {
 
     /*
      * Construct PDG because this will trigger code that is needed by the
