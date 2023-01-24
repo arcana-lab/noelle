@@ -301,6 +301,14 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(
       }
 
       /*
+       * Avoid inlining a call to a function that has loops.
+       */
+      auto calleeLoops = noelle.getLoopStructures(callF);
+      if (calleeLoops->size() > 0) {
+        continue;
+      }
+
+      /*
        * Count how many memory edges this call is involved in.
        */
       auto memEdgeCount = 0;
@@ -316,7 +324,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(
        * current loop size.
        */
       numberOfFunctionCallsToInline++;
-      if (true && (memEdgeCount > maxMemEdges)
+      if ((memEdgeCount > maxMemEdges)
           && (hot->getStaticInstructions(callF)
               < hot->getStaticInstructions(loopStructure))) {
         maxMemEdges = memEdgeCount;
