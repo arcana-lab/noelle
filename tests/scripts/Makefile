@@ -34,6 +34,10 @@ PRINT_OUTPUT_FILE=test.txt
 TIME=100
 # Max number of configurations the autotuner explores
 NUM_CONF=500
+# Disable generation of search space (implies the user will provide autotuner_space.info)
+NOSEARCHSPACE=
+# Disable filtering of search space
+NOFILTERING=
 
 # Fetch the list of files to compile
 CPP_FILES := $(wildcard *.cpp)
@@ -64,8 +68,8 @@ $(OPTIMIZED_AUTOTUNED): test_parallelized_autotuned.bc
 test_parallelized.bc: baseline_with_metadata.bc Parallelizer_utils.bc
 	noelle-parallelizer $< -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
 
-test_parallelized_autotuned.bc: baseline_with_metadata.bc input.txt
-	noelle-parallelizer-autotuner --parallelizer-args="$< -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)" --libs="$(LIBS)" --input="input.txt" --autotuner-time="$(TIME)" --autotuner-numconf="$(NUM_CONF)"
+test_parallelized_autotuned.bc: baseline_with_metadata.bc input.txt Parallelizer_utils.bc
+	noelle-parallelizer-autotuner --parallelizer-args="$< -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)" --libs="$(LIBS)" --input="input.txt" --autotuner-time="$(TIME)" --autotuner-numconf="$(NUM_CONF)" $(NOSEARCHSPACE) $(NOFILTERING)
 
 baseline.bc: test.bc
 	$(CPP) $(OPT_LEVEL) -c -emit-llvm $^ -o $@

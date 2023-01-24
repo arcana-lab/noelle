@@ -22,7 +22,7 @@
 #pragma once
 
 #include "noelle/core/Noelle.hpp"
-#include "DOALL.hpp"
+#include "noelle/tools/DOALL.hpp"
 
 namespace llvm::noelle {
 

@@ -65,7 +65,7 @@ class autotuneProgram(MeasurementInterface):
         loopIDs.append(loopID)
         ranges[loopID] = []
         for elem in line.split()[1:]:
-          ranges[loopID].append(int(elem))
+          ranges[loopID].append(elem)
       f.close()
   
     return ranges, loopIDs
@@ -100,8 +100,13 @@ class autotuneProgram(MeasurementInterface):
     manipulator = ConfigurationManipulator()
     for loopID in self.loopIDs:
       for elem in self.ranges[loopID]:
+        dimensionIsDigit = elem.isdigit()
+        dimension = 0
+        if (dimensionIsDigit):
+          dimension = int(elem)
+
         # Check if the current dimension has a cardinality higher than 1
-        if (elem > 1):
+        if ((dimension > 1) or (not dimensionIsDigit)):
 
           # Check the type of the parameter
           paramType = param % 9
@@ -109,48 +114,57 @@ class autotuneProgram(MeasurementInterface):
           # Create the parameter
           if paramType == 0:
             # Should the loop be parallelized?
-            openTuner_param = SwitchParameter(param, elem)
+            openTuner_param = SwitchParameter(param, dimension)
             #openTuner_param = BooleanParameter(param)
 
           elif paramType == 1:
 
             # Unroll factor
-            openTuner_param = IntegerParameter(param, 0, elem - 1)
+            openTuner_param = IntegerParameter(param, 0, dimension - 1)
 
           elif paramType == 2:
 
             # Peel factor
-            openTuner_param = IntegerParameter(param, 0, elem - 1)
+            openTuner_param = IntegerParameter(param, 0, dimension - 1)
 
           elif paramType == 3:
+            start = 0
+            stop = dimension - 1
+            
+            # Check if we want to force a specific parallelization technique
+            forceTechnique = len(elem.split("_")) == 2
+            if (forceTechnique):
+              _, technique = elem.split("_")
+              start = int(technique)
+              stop = int(technique)
 
             # Parallelization technique
-            openTuner_param = IntegerParameter(param, 0, elem - 1) # ED: should this be a SwitchParameter?
+            openTuner_param = IntegerParameter(param, start, stop) # ED: should this be a SwitchParameter?
 
           elif paramType == 4:
 
             # Number of cores to dedicate to the current loop
-            openTuner_param = IntegerParameter(param, 0, elem - 1)
+            openTuner_param = IntegerParameter(param, 0, dimension - 1)
 
           elif paramType == 5:
 
             # DOALL parameter: chunk factor
-            openTuner_param = IntegerParameter(param, 0, elem - 1)
+            openTuner_param = IntegerParameter(param, 0, dimension - 1)
 
           elif paramType == 6:
 
             # HELIX parameter: should we fix the maximum number of sequential segments?
-            openTuner_param = SwitchParameter(param, elem)
+            openTuner_param = SwitchParameter(param, dimension)
 
           elif paramType == 7:
 
             # HELIX parameter: maximum number of sequential segments
-            openTuner_param = IntegerParameter(param, 0, elem - 1)
+            openTuner_param = IntegerParameter(param, 0, dimension - 1)
 
           elif paramType == 8:
 
             # DSWP parameter: should we use queue packing?
-            openTuner_param = SwitchParameter(param, elem)
+            openTuner_param = SwitchParameter(param, dimension)
 
           # Share the parameter to OpenTuner
           manipulator.add_parameter(openTuner_param)
