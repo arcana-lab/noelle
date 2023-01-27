@@ -49,6 +49,7 @@ InductionVariable::InductionVariable(
   if (ID.getKind() == InductionDescriptor::InductionKind::IK_FpInduction) {
     this->singleStepValue = cast<SCEVUnknown>(stepSCEV)->getValue();
     this->isComputedStepValueLoopInvariant = true;
+
   } else {
     deriveStepValue(LS, SE, referentialExpander);
   }
