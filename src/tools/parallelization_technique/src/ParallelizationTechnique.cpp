@@ -277,7 +277,7 @@ BasicBlock *ParallelizationTechnique::
     auto producer = environment->getProducer(envID);
     auto producerSCC = loopSCCDAG->sccOfValue(producer);
     auto producerSCCAttributes =
-        static_cast<BinaryReductionSCC *>(sccManager->getSCCAttrs(producerSCC));
+        cast<BinaryReductionSCC>(sccManager->getSCCAttrs(producerSCC));
     assert(producerSCCAttributes != nullptr);
 
     /*
@@ -965,7 +965,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
        */
       auto producerSCC = loopSCCDAG->sccOfValue(producer);
       auto reductionVariable =
-          static_cast<ReductionSCC *>(sccManager->getSCCAttrs(producerSCC));
+          cast<ReductionSCC>(sccManager->getSCCAttrs(producerSCC));
       assert(reductionVariable != nullptr);
 
       /*
@@ -1469,7 +1469,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
     assert(producer != nullptr);
     auto producerSCC = sccdag->sccOfValue(producer);
     auto reductionVar =
-        static_cast<ReductionSCC *>(sccManager->getSCCAttrs(producerSCC));
+        cast<ReductionSCC>(sccManager->getSCCAttrs(producerSCC));
     auto loopEntryProducerPHI =
         reductionVar->getPhiThatAccumulatesValuesBetweenLoopIterations();
     assert(loopEntryProducerPHI != nullptr);
