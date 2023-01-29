@@ -128,8 +128,8 @@ class Filter:
 
       # Get execution time
       time = self.readExecutionTimeFile(self.executionTimeFile)
-
-      if (time < timeBaseline):
+      tolerance = 1.2 # 20%
+      if (time < (tolerance*timeBaseline)):
         loopIDsToKeep.append(loopID)
 
     return loopIDsToKeep
