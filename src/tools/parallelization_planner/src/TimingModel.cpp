@@ -33,9 +33,9 @@ LoopTimingModel::LoopTimingModel(Noelle &noelle, LoopDependenceInfo &ldi)
 uint64_t LoopTimingModel::getTimeSavedByParallelizingLoop(void) {
 
   /*
-   * Fetch the critical path per iteration
+   * Fetch the profiles
    */
-  auto seq = this->getTimeSpentInCriticalPathPerIteration();
+  auto profiles = this->n.getProfiles();
 
   /*
    * Fetch the loop structure
@@ -43,9 +43,16 @@ uint64_t LoopTimingModel::getTimeSavedByParallelizingLoop(void) {
   auto ls = this->loop.getLoopStructure();
 
   /*
-   * Fetch the profiles
+   * Check if the loop has been executed.
    */
-  auto profiles = this->n.getProfiles();
+  if (!profiles->hasBeenExecuted(ls)) {
+    return 0;
+  }
+
+  /*
+   * Fetch the critical path per iteration
+   */
+  auto seq = this->getTimeSpentInCriticalPathPerIteration();
 
   /*
    * Compute the total time saved.

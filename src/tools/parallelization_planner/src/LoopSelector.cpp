@@ -247,10 +247,7 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
      * Compute the maximum amount of time saved by any parallelization
      * technique.
      */
-    uint64_t timeSaved = 0;
-    if (profiles->getIterations(ls) > 0) {
-      timeSaved = loopTimeModel->getTimeSavedByParallelizingLoop();
-    }
+    auto timeSaved = loopTimeModel->getTimeSavedByParallelizingLoop();
     timeSavedLoops[ldi] = (uint64_t)timeSaved;
     timeSavedPerLoop[ls] = (uint64_t)timeSaved;
 
