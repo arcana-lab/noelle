@@ -62,11 +62,6 @@ bool Parallelizer::runOnModule(Module &M) {
   auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics(noelle);
 
   /*
-   * Fetch the profiles.
-   */
-  auto profiles = noelle.getProfiles();
-
-  /*
    * Fetch the verbosity level.
    */
   auto verbosity = noelle.getVerbosity();

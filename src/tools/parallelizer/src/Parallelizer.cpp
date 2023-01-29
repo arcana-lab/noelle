@@ -42,6 +42,11 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
   HELIX helix{ par, this->forceParallelization };
 
   /*
+   * Fetch the profiles.
+   */
+  auto profiles = par.getProfiles();
+
+  /*
    * Fetch the verbosity level.
    */
   auto verbose = par.getVerbosity();
@@ -83,6 +88,12 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
     errs() << prefix << "  Number of threads to extract = "
            << LDI->getLoopTransformationsManager()->getMaximumNumberOfCores()
            << "\n";
+    if (profiles->isAvailable()) {
+      errs() << prefix << "  Coverage = "
+             << (profiles->getDynamicTotalInstructionCoverage(loopStructure)
+                 * 100.0)
+             << "%\n";
+    }
 
     /*
      * Print the loop environment.
