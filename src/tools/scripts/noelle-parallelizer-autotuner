@@ -29,8 +29,12 @@ for arg in "$@"; do
       generateSearchSpace="0" ;
       shift # past argument with no value
       ;;
-    --nofiltering)
-      filterSearchSpace="0" ;
+    --noDOALLfiltering)
+      filterDOALLSearchSpace="0" ;
+      shift # past argument with no value
+      ;;
+    --noDOALLtimefiltering)
+      filterDOALLtimeSearchSpace="0" ;
       shift # past argument with no value
       ;;
     -*|--*)
@@ -78,7 +82,7 @@ if ! test -f ${autotunerSpace} ; then
   exit 1 ;
 fi
 
-if [ "${filterSearchSpace}" != "0" ] ; then
+if [ "${filterDOALLSearchSpace}" != "0" ] ; then
   # Adjust search space with DOALL only loops
   cmd="noelle-parallel-load -load ${installDir}/lib/AutotunerDoallFilter.so -autotunerdoallfilter ${inputbc} -disable-output" ;
   echo ${cmd} ;
@@ -99,7 +103,7 @@ export autotunerLIBS="${libs}" ;
 # Setup python virtualEnv
 source ${installDir}/autotuner/source-me-to-setup-python-virtual-environment ;
 
-if [ "${filterSearchSpace}" != "0" ] ; then
+if [ "${filterDOALLtimeSearchSpace}" != "0" ] ; then
   # Filter search space by trying to parallelize DOALL loops one by one
   # if they don't speedup compared to the baseline, then disable them
   # (note: modifies autotuner_space.info)

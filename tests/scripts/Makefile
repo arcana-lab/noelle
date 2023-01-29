@@ -36,8 +36,10 @@ TIME=100
 NUM_CONF=500
 # Disable generation of search space (implies the user will provide autotuner_space.info)
 NOSEARCHSPACE=
-# Disable filtering of search space
-NOFILTERING=
+# Disable filtering of search space that forces DOALL on loops that we know are DOALL at compile time
+NODOALLFILTERING=
+# Disable filtering of search space that checks if parallelizing one DOALL loop at a time yiels a better execution time
+NODOALLTIMEFILTERING=
 
 # Fetch the list of files to compile
 CPP_FILES := $(wildcard *.cpp)
@@ -69,7 +71,7 @@ test_parallelized.bc: baseline_with_metadata.bc Parallelizer_utils.bc
 	noelle-parallelizer $< -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
 
 test_parallelized_autotuned.bc: baseline_with_metadata.bc input.txt Parallelizer_utils.bc
-	noelle-parallelizer-autotuner --parallelizer-args="$< -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)" --libs="$(LIBS)" --input="input.txt" --autotuner-time="$(TIME)" --autotuner-numconf="$(NUM_CONF)" $(NOSEARCHSPACE) $(NOFILTERING)
+	noelle-parallelizer-autotuner --parallelizer-args="$< -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)" --libs="$(LIBS)" --input="input.txt" --autotuner-time="$(TIME)" --autotuner-numconf="$(NUM_CONF)" $(NOSEARCHSPACE) $(NODOALLFILTERING) $(NODOALLTIMEFILTERING)
 
 baseline.bc: test.bc
 	$(CPP) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
