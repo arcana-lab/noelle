@@ -70,7 +70,7 @@ InductionVariableManager::InductionVariableManager(LoopForestNode *loopNode,
        */
       InductionDescriptor ID{};
       auto llvmDeterminedValidIV = false;
-      bool llvmLoopValidForInductionAnalysis =
+      auto llvmLoopValidForInductionAnalysis =
           (phi.getBasicBlockIndex(preHeader) >= 0);
       if (llvmLoopValidForInductionAnalysis
           && InductionDescriptor::isInductionPHI(&phi, &LLVMLoop, &SE, ID)) {

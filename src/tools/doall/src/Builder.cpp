@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +21,7 @@
  */
 #include "noelle/core/LoopIterationSCC.hpp"
 #include "noelle/core/ReductionSCC.hpp"
+#include "noelle/core/SingleAccumulatorRecomputableSCC.hpp"
 #include "noelle/tools/DOALL.hpp"
 #include "noelle/tools/DOALLTask.hpp"
 
@@ -59,14 +60,16 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
 
   /*
    * Collect clones of step size deriving values for all induction variables
-   * of the top level loop
+   * of the parallelized loop.
    */
   auto clonedStepSizeMap =
       this->cloneIVStepValueComputation(LDI, 0, entryBuilder);
 
   /*
    * Determine start value of the IV for the task
-   * core_start: original_start + original_step_size * core_id * chunk_size
+   * The start value of an IV depends on the first iteration executed by a task.
+   * This value, for a given task, is: original_start + original_step_size *
+   * task_id * chunk_size
    */
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
     auto startOfIV = this->fetchClone(ivInfo->getStartValue());
@@ -316,9 +319,10 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
      *
      *
      * This is a special case because there are two values that we could use to
-     * store into the reduction variable: 1) the PHI instruction (e.g., %v2) 2)
-     * the non-PHI instruction that does the accumulation (e.g., %v1) We need to
-     * use the right value depending on whether the header would NOT have
+     * store into the reduction variable:
+     * 1) the PHI instruction (e.g., %v2)
+     * 2) the non-PHI instruction that does the accumulation (e.g., %v1) We need
+     * to use the right value depending on whether the header would NOT have
      * executed its last iteration. If that is the case, then we need to use the
      * PHI instruction. Otherwise, if the last instance of the header was meant
      * to be executed, then we need to use the non-PHI instruction.
@@ -338,8 +342,6 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
       /*
        * Fetch the clone of the producer of the current live-out variable.
        * Fetch the header PHI of the live-out variable.
-       * Check whether the header PHI is part of the set of PHIs we need to
-       * guard
        */
       auto producer = cast<Instruction>(env->getProducer(envID));
       assert(producer != nullptr);
@@ -347,12 +349,27 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
       assert(scc != nullptr);
       auto sccInfo = sccManager->getSCCAttrs(scc);
       assert(sccInfo != nullptr);
+
+      /*
+       * Check if the current live-out variable is reducible
+       *
+       * Live-out variables that are not reducible are handled separetely by
+       * "generateCodeToStoreLiveOutVariables"
+       */
+      if (!isa<ReductionSCC>(sccInfo)) {
+        continue;
+      }
       auto reductionSCC = cast<ReductionSCC>(sccInfo);
+
+      /*
+       * Check whether the header PHI is part of the set of PHIs we need to
+       * guard
+       */
       auto headerPHI =
           reductionSCC->getPhiThatAccumulatesValuesBetweenLoopIterations();
       assert(headerPHI != nullptr);
       auto clonePHI = task->getCloneOfOriginalInstruction(headerPHI);
-
+      assert(clonePHI != nullptr);
       if (reducibleHeaderPHIsWithHeaderLogic.find(clonePHI)
           != reducibleHeaderPHIsWithHeaderLogic.end()) {
         headerPHICloneAndProducerPairs.push_back(

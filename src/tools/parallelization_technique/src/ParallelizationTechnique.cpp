@@ -277,7 +277,7 @@ BasicBlock *ParallelizationTechnique::
     auto producer = environment->getProducer(envID);
     auto producerSCC = loopSCCDAG->sccOfValue(producer);
     auto producerSCCAttributes =
-        static_cast<BinaryReductionSCC *>(sccManager->getSCCAttrs(producerSCC));
+        cast<BinaryReductionSCC>(sccManager->getSCCAttrs(producerSCC));
     assert(producerSCCAttributes != nullptr);
 
     /*
@@ -956,7 +956,8 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
     auto envPtr = envUser->getEnvPtr(envID);
 
     /*
-     * If the variable is reducable, store the identity as the initial value
+     * If the variable is reducable, store the identity value as the initial
+     * value before the parallelized loop starts its execution.
      */
     if (isReduced) {
 
@@ -965,7 +966,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
        */
       auto producerSCC = loopSCCDAG->sccOfValue(producer);
       auto reductionVariable =
-          static_cast<ReductionSCC *>(sccManager->getSCCAttrs(producerSCC));
+          cast<ReductionSCC>(sccManager->getSCCAttrs(producerSCC));
       assert(reductionVariable != nullptr);
 
       /*
@@ -1046,7 +1047,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
          * execute. This is because threads have their own private copy.
          *
          * If the live-out variable is not reduced, then the store needs to be
-         * executed only by the thread that executed the last iteration.
+         * executed only by the thread that has executed the last iteration.
          */
         if (isReduced) {
 
@@ -1469,7 +1470,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
     assert(producer != nullptr);
     auto producerSCC = sccdag->sccOfValue(producer);
     auto reductionVar =
-        static_cast<ReductionSCC *>(sccManager->getSCCAttrs(producerSCC));
+        cast<ReductionSCC>(sccManager->getSCCAttrs(producerSCC));
     auto loopEntryProducerPHI =
         reductionVar->getPhiThatAccumulatesValuesBetweenLoopIterations();
     assert(loopEntryProducerPHI != nullptr);

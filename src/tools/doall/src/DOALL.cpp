@@ -54,9 +54,10 @@ bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   }
 
   /*
-   * Fetch the loop structure.
+   * Fetch information about the loop.
    */
   auto loopStructure = LDI->getLoopStructure();
+  auto loopEnv = LDI->getEnvironment();
 
   /*
    * The loop must have one single exit path.
@@ -98,7 +99,7 @@ bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
    */
   auto sccManager = LDI->getSCCManager();
   auto nonReducibleLiveOuts =
-      sccManager->getLiveOutVariablesThatAreNotReducable(LDI->getEnvironment());
+      sccManager->getLiveOutVariablesThatAreNotReducable(loopEnv);
   if (nonReducibleLiveOuts.size() > 0) {
     if (this->verbose != Verbosity::Disabled) {
       errs() << "DOALL:   The next live-out variables are not reducable\n";

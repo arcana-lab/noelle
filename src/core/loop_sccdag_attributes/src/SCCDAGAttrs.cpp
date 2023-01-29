@@ -183,7 +183,7 @@ std::set<LoopCarriedSCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDependencies(
   std::set<LoopCarriedSCC *> sccs;
   for (auto &sccDependencies : this->sccToLoopCarriedDependencies) {
     auto scc = sccDependencies.first;
-    auto sccAttrs = static_cast<LoopCarriedSCC *>(this->getSCCAttrs(scc));
+    auto sccAttrs = cast<LoopCarriedSCC>(this->getSCCAttrs(scc));
     sccs.insert(sccAttrs);
   }
   return sccs;
@@ -215,7 +215,7 @@ std::set<LoopCarriedSCC *> SCCDAGAttrs::
     }
     if (isControl) {
       auto scc = sccDependencies.first;
-      auto sccAttrs = static_cast<LoopCarriedSCC *>(this->getSCCAttrs(scc));
+      auto sccAttrs = cast<LoopCarriedSCC>(this->getSCCAttrs(scc));
       sccs.insert(sccAttrs);
     }
   }
@@ -253,7 +253,7 @@ std::set<LoopCarriedSCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies(
       }
     }
     if (isData) {
-      auto sccAttrs = static_cast<LoopCarriedSCC *>(this->getSCCAttrs(SCC));
+      auto sccAttrs = cast<LoopCarriedSCC>(this->getSCCAttrs(SCC));
       sccs.insert(sccAttrs);
     }
   }
