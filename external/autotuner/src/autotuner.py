@@ -79,9 +79,18 @@ class autotuneProgram(MeasurementInterface):
 
           # Create the parameter
           if paramType == 0:
+            start = 0
+            stop = dimension - 1
+            
+            # Check if we want to force a specific parallelization technique
+            forceDimension = len(elem.split("_")) == 2
+            if (forceDimension):
+              _, considerLoop = elem.split("_")
+              start = int(considerLoop)
+              stop = int(considerLoop)
+
             # Should the loop be parallelized?
-            openTuner_param = SwitchParameter(param, dimension)
-            #openTuner_param = BooleanParameter(param)
+            openTuner_param = IntegerParameter(param, start, stop)
 
           elif paramType == 1:
 
@@ -98,8 +107,8 @@ class autotuneProgram(MeasurementInterface):
             stop = dimension - 1
             
             # Check if we want to force a specific parallelization technique
-            forceTechnique = len(elem.split("_")) == 2
-            if (forceTechnique):
+            forceDimension = len(elem.split("_")) == 2
+            if (forceDimension):
               _, technique = elem.split("_")
               start = int(technique)
               stop = int(technique)
