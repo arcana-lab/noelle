@@ -40,9 +40,20 @@ bool LoopMetadataPass::runOnModule(Module &M) {
   bool modified = false;
 
   /*
+   * Fetch all the loops of the program.
+   */
+  auto loopStructures = this->getLoopStructuresWithoutNoelle(M);
+
+  /*
    * Set loop ID metadata
    */
-  modified |= this->setIDs(M);
+  modified |= this->setIDs(loopStructures);
+
+  /*
+   * Output loop id text file.
+   * Maps loop ids to the source code.
+   */
+  this->writeLoopIDFile(loopStructures);
 
   return modified;
 }

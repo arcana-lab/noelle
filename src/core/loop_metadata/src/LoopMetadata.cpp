@@ -20,9 +20,11 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <fstream>
 #include <algorithm>
 
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Support/raw_ostream.h"
 
 #include "LoopMetadataPass.hpp"
 
@@ -61,13 +63,7 @@ std::vector<LoopStructure *> LoopMetadataPass::getLoopStructuresWithoutNoelle(
   return loopStructures;
 }
 
-bool LoopMetadataPass::setIDs(Module &M) {
-
-  /*
-   * Fetch all the loops of the program.
-   * Min hotness is set to 0.0 to ensure we get all loops.
-   */
-  auto loopStructures = getLoopStructuresWithoutNoelle(M);
+bool LoopMetadataPass::setIDs(std::vector<LoopStructure *> &loopStructures) {
 
   /*
    * Initial scan of current loop IDs.
@@ -120,4 +116,39 @@ bool LoopMetadataPass::setIDs(Module &M) {
   }
 
   return modified;
+}
+
+void LoopMetadataPass::writeLoopIDFile(
+    std::vector<LoopStructure *> &loopStructures) {
+  /*
+   * Create loopIDtoSrcFile.txt
+   */
+  std::ofstream loopIDtoSrcFile;
+  loopIDtoSrcFile.open("loopIDtoSrc.txt");
+
+  for (auto *ls : loopStructures) {
+    // We don't need to check if the loop has an ID, we just assigned one to it
+    // with setIDs()
+    auto loopIDOpt = ls->getID();
+    assert(loopIDOpt);
+    uint64_t loopID = loopIDOpt.value();
+
+    BasicBlock *header = ls->getHeader();
+    Module *M = header->getModule();
+    Function *F = header->getParent();
+    const std::string &fileName = M->getModuleIdentifier();
+    Instruction *terminator = header->getTerminator();
+    std::string terminatorAsStr;
+    llvm::raw_string_ostream llvmStream(terminatorAsStr);
+    llvmStream << *terminator;
+
+    loopIDtoSrcFile << "Loop with ID: " << loopID << "\nin file: " << fileName
+                    << "\nat function: " << F->getName().str()
+                    << "\nwith header terminator: " << terminatorAsStr
+                    << "\n\n";
+  }
+
+  loopIDtoSrcFile.close();
+
+  return;
 }

@@ -40,9 +40,11 @@ public:
   void getAnalysisUsage(AnalysisUsage &AU) const override;
 
 private:
-  bool setIDs(Module &M);
-
   std::vector<LoopStructure *> getLoopStructuresWithoutNoelle(Module &M);
+
+  bool setIDs(std::vector<LoopStructure *> &loopStructures);
+
+  void writeLoopIDFile(std::vector<LoopStructure *> &loopStructures);
 };
 
 } // namespace llvm::noelle

@@ -38,7 +38,7 @@ NUM_CONF=500
 NOSEARCHSPACE=
 # Disable filtering of search space that forces DOALL on loops that we know are DOALL at compile time
 NODOALLFILTERING=
-# Disable filtering of search space that checks if parallelizing one DOALL loop at a time yiels a better execution time
+# Disable filtering of search space that checks if parallelizing one DOALL loop at a time yields a better execution time
 NODOALLTIMEFILTERING=
 
 # Fetch the list of files to compile
