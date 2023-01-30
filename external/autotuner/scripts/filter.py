@@ -7,10 +7,15 @@ import traceback
 
 thisPath = os.path.dirname(os.path.abspath(__file__))
 
+sys.path.append(thisPath + "/../utils")
+import utils
+
 class Filter:
   spaceFile = None
   confFile = None
   executionTimeFile = None
+  baselineTimeFile = None
+  baselineTime = None
   ranges = None
 
   def getArgs(self):
@@ -18,45 +23,10 @@ class Filter:
     self.confFile = os.environ['INDEX_FILE']
     self.executionTimeFile = os.environ['autotunerEXECUTION_TIME']
 
-    self.ranges = self.readSpaceFile(self.spaceFile)
+    self.ranges, _ = utils.readSpaceFile(self.spaceFile)
 
-    return
-
-
-  def readExecutionTimeFile(self, pathToFile):
-    lineAsFloat = None
-    with open(str(pathToFile), 'r') as f:
-      line = f.readline()
-      lineAsFloat = float(line)
-      f.close()
-
-    return lineAsFloat
-
-
-  def readSpaceFile(self, pathToFile):
-    ranges = {}
-    with open(str(pathToFile), 'r') as f:
-      for line in f.readlines():
-        loopID = int(line.split()[0])
-        ranges[loopID] = []
-        for elem in line.split()[1:]:
-          ranges[loopID].append(int(elem))
-      f.close()
-
-    return ranges
-
-
-  def writeConfFile(self, pathToFile, conf):
-    strToWrite = ""
-    for loopID in conf:
-      strToWrite += str(loopID)
-      for elem in conf[loopID]:
-        strToWrite += " " + str(elem)
-      strToWrite += "\n"
-
-    with open(str(pathToFile), "w") as f:
-      f.write(strToWrite)
-      f.close()
+    self.baselineTimeFile = os.environ['autotunerBASELINE_TIME']
+    self.baselineTime = utils.readExecutionTimeFile(self.baselineTimeFile)
 
     return
 
@@ -69,37 +39,12 @@ class Filter:
       else:
         space[loopID] = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
-    self.writeConfFile(self.spaceFile, space)
+    utils.writeConfFile(self.spaceFile, space)
 
     return
 
 
-  def compileAndRunBaseline(self):
-    conf = {}
-    for loopID in self.ranges:
-      conf[loopID] = []
-      for elem in self.ranges[loopID]:
-        conf[loopID].append(0)
-
-    # Compile
-    compileRetCode = self.myCompile(conf)
-    if (compileRetCode != 0):
-      sys.exit(1)
-
-    # Run parallel optimized binary
-    runRetCode = self.myRun()
-    if (runRetCode != 0):
-      sys.exit(1)
-
-    # Get execution time
-    time = self.readExecutionTimeFile(self.executionTimeFile)
-
-    return time
-
-
   def filter(self):
-    timeBaseline = self.compileAndRunBaseline()
-
     techniqueIndex = 3
     loopIDsToKeep = []
     for loopID in self.ranges:
@@ -117,33 +62,23 @@ class Filter:
         continue
 
       # Compile
-      compileRetCode = self.myCompile(conf)
+      compileRetCode = utils.myCompile(self.confFile, conf)
       if (compileRetCode != 0):
         sys.exit(1)
 
       # Run parallel optimized binary
-      runRetCode = self.myRun()
+      maxExecutionTime = 2*self.baselineTime
+      runRetCode = utils.myRun(maxExecutionTime)
       if (runRetCode != 0):
         sys.exit(1)
 
       # Get execution time
-      time = self.readExecutionTimeFile(self.executionTimeFile)
+      time = utils.readExecutionTimeFile(self.executionTimeFile)
       tolerance = 1.2 # 20%
-      if (time < (tolerance*timeBaseline)):
+      if (time < (tolerance*self.baselineTime)):
         loopIDsToKeep.append(loopID)
 
     return loopIDsToKeep
-
-
-  def myCompile(self, conf):
-    # Write autotuner.info file
-    self.writeConfFile(self.confFile, conf)
-
-    return os.system(thisPath + '/../scripts/compile')
-
-
-  def myRun(self):
-    return os.system(thisPath + '/../scripts/run')
 
 
 

@@ -22,6 +22,9 @@ regression: download
 performance: download
 	./scripts/test_performance.sh ;
 
+performance_autotuner: download
+	./scripts/test_performance_autotuner.sh ;
+
 unit:
 	cd unit ; make ;
 

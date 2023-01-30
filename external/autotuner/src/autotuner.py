@@ -18,6 +18,9 @@ from enum import Enum
 
 thisPath = os.path.dirname(os.path.abspath(__file__))
 
+sys.path.append(thisPath + "/../utils")
+import utils
+
 class Technique(Enum):
   DOALL = 4
   HELIX = 5
@@ -35,7 +38,7 @@ class autotuneProgram(MeasurementInterface):
   def getArgs(self):
     # Read the range of each dimension of the design space
     spaceFile = os.environ['autotunerSPACE_FILE']
-    self.ranges, self.loopIDs = self.readSpaceFile(spaceFile)
+    self.ranges, self.loopIDs = utils.readSpaceFile(spaceFile)
 
     # Get autotuner.info
     self.confFile = os.environ['INDEX_FILE']
@@ -43,46 +46,9 @@ class autotuneProgram(MeasurementInterface):
     # Get execution time file
     self.executionTimeFile = os.environ['autotunerEXECUTION_TIME']
 
-    return
+    self.baselineTimeFile = os.environ['autotunerBASELINE_TIME']
+    self.baselineTime = utils.readExecutionTimeFile(self.baselineTimeFile)
 
-
-  def readExecutionTimeFile(self, pathToFile):
-    lineAsFloat = None
-    with open(str(pathToFile), 'r') as f:
-      line = f.readline()
-      lineAsFloat = float(line)
-      f.close()
-  
-    return lineAsFloat
-
-
-  def readSpaceFile(self, pathToFile):
-    ranges = {}
-    loopIDs = []
-    with open(str(pathToFile), 'r') as f:
-      for line in f.readlines():
-        loopID = int(line.split()[0])
-        loopIDs.append(loopID)
-        ranges[loopID] = []
-        for elem in line.split()[1:]:
-          ranges[loopID].append(elem)
-      f.close()
-  
-    return ranges, loopIDs
-
-
-  def writeConfFile(self, pathToFile, conf):
-    strToWrite = ""
-    for loopID in conf:
-      strToWrite += str(loopID)
-      for elem in conf[loopID]:
-        strToWrite += " " + str(elem)
-      strToWrite += "\n"
-
-    with open(str(pathToFile), 'w') as f:
-      f.write(strToWrite)
-      f.close()
-  
     return
 
 
@@ -229,17 +195,6 @@ class autotuneProgram(MeasurementInterface):
     return conf
  
 
-  def myCompile(self, conf):
-    # Write autotuner.info file
-    self.writeConfFile(self.confFile, conf)
-
-    return os.system(thisPath + '/../scripts/compile')
-
-
-  def myRun(self):
-    return os.system(thisPath + '/../scripts/run')
-
-
   def getConfAsStr(self, conf):
     confAsStr = ''
     for key in sorted(conf.keys()):
@@ -269,19 +224,20 @@ class autotuneProgram(MeasurementInterface):
     # Compile
     confWithLoopIDs = self.getConfWithLoopIDs(confExpanded)
     sys.stderr.write('AUTOTUNER: exploring conf ' + str(confWithLoopIDs) + '\n')
-    compileRetCode = self.myCompile(confWithLoopIDs)
+    compileRetCode = utils.myCompile(self.confFile, confWithLoopIDs)
     if (compileRetCode != 0):
       time = float('inf')
       return Result(time = time)
 
     # Run parallel optimized binary
-    runRetCode = self.myRun()
+    maxExecutionTime = 2*self.baselineTime
+    runRetCode = utils.myRun(maxExecutionTime)
     if (runRetCode != 0):
       time = float('inf')
       return Result(time = time)
 
     # Get execution time
-    time = self.readExecutionTimeFile(self.executionTimeFile)
+    time = utils.readExecutionTimeFile(self.executionTimeFile)
 
     # Save conf in our list of explored configurations
     self.exploredConfs[confExpandedAsStr] = time
@@ -304,7 +260,7 @@ class autotuneProgram(MeasurementInterface):
     confExpanded = self.getExpandedConf(confNormalized)
     confExpandedAsStr = self.getConfAsStr(confExpanded)
     confWithLoopIDs = self.getConfWithLoopIDs(confExpanded)
-    compileRetCode = self.myCompile(confWithLoopIDs)
+    compileRetCode = utils.myCompile(self.confFile, confWithLoopIDs)
     if (compileRetCode != 0):
       sys.stderr.write("AUTOTUNER: final configuration " + confExpandedAsStr + " did not compile.\nAbort.")
       sys.exit(1)

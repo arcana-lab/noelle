@@ -92,6 +92,7 @@ fi
 # Export the remaining environment variables for the autotuner
 export autotunerPARALLELIZED_BINARY="binaryToRun" ;
 export autotunerEXECUTION_TIME="executionTime.txt" ;
+export autotunerBASELINE_TIME="baselineTime.txt" ;
 export autotunerSPACE_FILE="${autotunerSpace}" ;
 export INDEX_FILE="${autotunerConf}" ; # We need to export this env var to force loop parallelization in noelle
 export autotunerINSTALL_DIR="${installDir}" ;
@@ -103,7 +104,12 @@ export autotunerLIBS="${libs}" ;
 # Setup python virtualEnv
 source ${installDir}/autotuner/source-me-to-setup-python-virtual-environment ;
 
-if [ "${filterDOALLtimeSearchSpace}" != "0" ] ; then
+# Compile and run baseline
+cmd="python ${installDir}/autotuner/utils/compileAndRunBaseline.py" ;
+echo ${cmd} ;
+eval ${cmd} ;
+
+if [ "${filterDOALLtimeSearchSpace}" != "0" ] && [ "${filterDOALLSearchSpace}" != "0" ] ; then
   # Filter search space by trying to parallelize DOALL loops one by one
   # if they don't speedup compared to the baseline, then disable them
   # (note: modifies autotuner_space.info)
