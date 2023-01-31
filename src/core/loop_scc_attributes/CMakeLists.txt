@@ -24,6 +24,7 @@ install(
   include/noelle/core/MemoryClonableSCC.hpp
   include/noelle/core/StackObjectClonableSCC.hpp
   include/noelle/core/LoopCarriedUnknownSCC.hpp
+  include/noelle/core/OutputSequenceSCC.hpp
   DESTINATION 
   include/noelle/core
   )

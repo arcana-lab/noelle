@@ -21,6 +21,7 @@
  */
 #include "noelle/core/LoopIterationSCC.hpp"
 #include "noelle/core/ReductionSCC.hpp"
+#include "noelle/core/OutputSequenceSCC.hpp"
 #include "noelle/tools/DOALL.hpp"
 #include "noelle/tools/DOALLTask.hpp"
 
@@ -110,6 +111,9 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
                                          ivPHI,
                                          chunkPHI,
                                          chunkStepSize);
+
+    task->isChunkCompleted =
+        IVUtility::isChunkCompleted(preheaderClone, chunkPHI);
   }
 
   /*
@@ -535,6 +539,55 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
       headerClone);
 
   return;
+}
+
+void DOALL::replaceOutputSequences(LoopDependenceInfo *LDI) {
+  auto sccManager = LDI->getSCCManager();
+  auto task = (DOALLTask *)this->tasks[0];
+
+  auto newPrint = this->n.getProgram()->getFunction("NOELLE_paraPrintfOneInt");
+  auto markDone = this->n.getProgram()->getFunction("NOELLE_Scylax_ChunkEnd");
+
+  assert(newPrint != nullptr && "cant find the new print");
+  assert(markDone != nullptr && "cant find ChunkEnd");
+
+  bool needToMarkChunksDone = false;
+
+  auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDependencies();
+  for (auto sccInfo : nonDOALLSCCs) {
+    auto outputSCC = dyn_cast<OutputSequenceSCC>(sccInfo);
+    if (outputSCC == nullptr)
+      continue;
+
+    needToMarkChunksDone = true;
+
+    for (auto originalI : outputSCC->getOutputInstructions()) {
+
+      auto I = dyn_cast<CallInst>(fetchClone(originalI));
+
+      IRBuilder<> replacer(I);
+      std::vector<Value *> args = { task->coreArg,
+                                    task->numCoresArg,
+                                    task->chunkSizeArg,
+                                    task->outputQueueArg };
+      args.insert(args.end(), I->data_operands_begin(), I->data_operands_end());
+
+      auto newCall = replacer.CreateCall(newPrint, args);
+      I->replaceAllUsesWith(newCall);
+      I->eraseFromParent();
+    }
+
+    if (needToMarkChunksDone) {
+      IRBuilder<> doneMarker(task->isChunkCompleted->getNextNode());
+      auto asInt =
+          doneMarker.CreateIntCast(task->isChunkCompleted,
+                                   markDone->getFunctionType()->getParamType(0),
+                                   false);
+      doneMarker.CreateCall(markDone,
+                            ArrayRef<Value *>({ asInt, task->outputQueueArg }));
+    }
+    return;
+  }
 }
 
 } // namespace llvm::noelle

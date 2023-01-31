@@ -35,7 +35,14 @@ void DOALLTask::extractFuncArgs(void) {
   this->coreArg = (Value *)&*(argIter++);
   this->numCoresArg = (Value *)&*(argIter++);
   this->chunkSizeArg = (Value *)&*(argIter++);
+  this->outputQueueArg = (Value *)&*(argIter++);
   this->instanceIndexV = coreArg;
+
+  this->envArg->setName("env");
+  this->coreArg->setName("coreID");
+  this->numCoresArg->setName("numCores");
+  this->chunkSizeArg->setName("chunkSize");
+  this->outputQueueArg->setName("outputQueue");
 
   return;
 }

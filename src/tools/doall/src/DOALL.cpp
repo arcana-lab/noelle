@@ -265,7 +265,8 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   auto funcArgTypes = ArrayRef<Type *>({ tm->getVoidPointerType(),
                                          tm->getIntegerType(64),
                                          tm->getIntegerType(64),
-                                         tm->getIntegerType(64) });
+                                         tm->getIntegerType(64),
+                                         tm->getVoidPointerType() });
   auto taskSignature =
       FunctionType::get(tm->getVoidType(), funcArgTypes, false);
 
@@ -409,6 +410,11 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DOALL:  Rewired induction variables and reducible variables\n";
   }
+
+  /*
+   * Replace viable output sequences
+   */
+  this->replaceOutputSequences(LDI);
 
   /*
    * Add the final return to the single task's exit block.

@@ -6,10 +6,19 @@ typedef struct {
 } DispatcherInfo;
 
 extern DispatcherInfo NOELLE_DOALLDispatcher(
-    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t),
+    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t, void *),
     void *env,
     int64_t maxNumberOfCores,
     int64_t chunkSize);
+
+extern int NOELLE_paraPrintfOneInt(int64_t coreID,
+                                   int64_t numCores,
+                                   int64_t chunkSize,
+                                   void *outputQueue,
+                                   char *format,
+                                   int arg);
+
+extern void NOELLE_Scylax_ChunkEnd(int8_t isChunkCompleted, void *outputQueue);
 
 extern void queuePush8(void *, int8_t *);
 extern void queuePush16(void *, int16_t *);
@@ -78,6 +87,8 @@ void SIMONE_CAMPANONI_IS_GOING_TO_REMOVE_THIS_FUNCTION(void) {
   HELIX_signal(0);
 
   NOELLE_DOALLDispatcher(0, 0, 0, 0);
+  NOELLE_paraPrintfOneInt(0, 0, 0, 0, 0, 0);
+  NOELLE_Scylax_ChunkEnd(0, 0);
 
   NOELLE_getAvailableCores();
 }

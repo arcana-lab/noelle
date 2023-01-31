@@ -13,6 +13,7 @@ set(Srcs
   LinearInductionVariableSCC.cpp
   MemoryClonableSCC.cpp
   StackObjectClonableSCC.cpp
+  OutputSequenceSCC.cpp
   LoopCarriedUnknownSCC.cpp
 )
 

@@ -38,7 +38,7 @@ public:
   /*
    * Chunking function specific arguments
    */
-  Value *coreArg, *numCoresArg, *chunkSizeArg;
+  Value *coreArg, *numCoresArg, *chunkSizeArg, *outputQueueArg;
 
   /*
    * Clone of original IV loop, new outer loop
@@ -48,6 +48,8 @@ public:
   CmpInst *cloneOfOriginalCmp;
   BranchInst *cloneOfOriginalBr;
   PHINode *outermostLoopIV;
+
+  CmpInst *isChunkCompleted;
 
   void extractFuncArgs() override;
 };

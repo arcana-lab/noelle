@@ -40,6 +40,12 @@ public:
                                         Value *chunkStepSize);
 
   /*
+   * Finds the isChunkCompleted for a previously created chunkPHI
+   */
+  static CmpInst *isChunkCompleted(BasicBlock *preheaderBlock,
+                                   PHINode *chunkPHI);
+
+  /*
    * Inserts instruction to add offsetValue to startValue. Returns the result of
    * this addition
    */

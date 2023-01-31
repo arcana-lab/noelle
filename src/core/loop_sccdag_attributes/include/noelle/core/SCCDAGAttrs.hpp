@@ -116,6 +116,10 @@ private:
   std::set<Instruction *> checkIfRecomputable(SCC *scc,
                                               LoopForestNode *loopNode) const;
 
+  std::set<CallInst *> checkIfOutputSequence(SCC *scc,
+                                             LoopForestNode *loopNode) const;
+  bool isBufferablePrintf(SCC *scc, LoopForestNode *loopNode, Value *I) const;
+
   bool isClonableByInductionVars(SCC *scc) const;
   bool isClonableBySyntacticSugarInstrs(SCC *scc) const;
   bool isClonableByCmpBrInstrs(SCC *scc) const;

@@ -68,6 +68,7 @@ protected:
    * DOALL specific generation
    */
   void rewireLoopToIterateChunks(LoopDependenceInfo *LDI);
+  void replaceOutputSequences(LoopDependenceInfo *LDI);
 
   void addJumpToLoop(LoopDependenceInfo *LDI, Task *t);
 

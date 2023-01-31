@@ -40,13 +40,20 @@ static int64_t numberOfPushes64 = 0;
 #endif
 
 typedef struct {
-  void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t);
+  void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t, void *);
   void *env;
   int64_t coreID;
   int64_t numCores;
   int64_t chunkSize;
+  void *outputQueue;
   pthread_spinlock_t endLock;
 } DOALL_args_t;
+
+enum OutputMessageType { PRINT, CHUNK_DONE, CORE_DONE };
+typedef struct {
+  OutputMessageType messageType;
+  char *str;
+} NOELLE_OutputMessage_t;
 
 class NoelleRuntime {
 public:
@@ -112,10 +119,20 @@ public:
  * Dispatch threads to run a DOALL loop.
  */
 DispatcherInfo NOELLE_DOALLDispatcher(
-    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t),
+    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t, void *),
     void *env,
     int64_t maxNumberOfCores,
     int64_t chunkSize);
+
+int NOELLE_paraPrintfOneInt(
+    int64_t coreID,
+    int64_t numCores,
+    int64_t chunkSize,
+    ThreadSafeLockFreeQueue<NOELLE_OutputMessage_t> *outputQueue,
+    char *format,
+    int arg);
+
+void NOELLE_Scylax(void *args);
 
 #ifdef RUNTIME_PROFILE
 static __inline__ int64_t rdtsc_s(void) {
@@ -213,9 +230,29 @@ void queuePop64(ThreadSafeQueue<int64_t> *queue, int64_t *val) {
   return;
 }
 
+void queuePushOutputMessage(ThreadSafeQueue<NOELLE_OutputMessage_t> *queue,
+                            NOELLE_OutputMessage_t *val) {
+  queue->push(*val);
+  return;
+}
+
+void queuePopOutputMessage(ThreadSafeQueue<NOELLE_OutputMessage_t> *queue,
+                           NOELLE_OutputMessage_t *val) {
+  queue->waitPop(*val);
+  return;
+}
+
 /**********************************************************************
  *                DOALL
  **********************************************************************/
+
+typedef struct {
+  void *outputQueues;
+  int64_t numCores;
+  int64_t chunkSize;
+  pthread_spinlock_t printLock;
+} NOELLE_Scylax_args_t;
+
 static void NOELLE_DOALLTrampoline(void *args) {
 #ifdef RUNTIME_PROFILE
   auto clocks_start = rdtsc_s();
@@ -232,7 +269,8 @@ static void NOELLE_DOALLTrampoline(void *args) {
   DOALLArgs->parallelizedLoop(DOALLArgs->env,
                               DOALLArgs->coreID,
                               DOALLArgs->numCores,
-                              DOALLArgs->chunkSize);
+                              DOALLArgs->chunkSize,
+                              DOALLArgs->outputQueue);
 #ifdef RUNTIME_PROFILE
   auto clocks_end = rdtsc_e();
   clocks_starts[DOALLArgs->coreID] = clocks_start;
@@ -244,7 +282,7 @@ static void NOELLE_DOALLTrampoline(void *args) {
 }
 
 DispatcherInfo NOELLE_DOALLDispatcher(
-    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t),
+    void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t, void *),
     void *env,
     int64_t maxNumberOfCores,
     int64_t chunkSize) {
@@ -273,6 +311,15 @@ DispatcherInfo NOELLE_DOALLDispatcher(
   auto argsForAllCores = runtime.getDOALLArgs(numCores - 1, &doallMemoryIndex);
 
   /*
+   * Allocate the output queues.
+   */
+  ThreadSafeLockFreeQueue<NOELLE_OutputMessage_t> *outputQueues[numCores];
+  for (auto idx = 0; idx < numCores; idx++) {
+    outputQueues[idx] = new ThreadSafeLockFreeQueue<NOELLE_OutputMessage_t>();
+    //  std::cerr << outputQueues[idx] << " alloced as OMQ\n";
+  }
+
+  /*
    * Submit DOALL tasks.
    */
   for (auto i = 0; i < (numCores - 1); ++i) {
@@ -285,6 +332,7 @@ DispatcherInfo NOELLE_DOALLDispatcher(
     argsPerCore->env = env;
     argsPerCore->numCores = numCores;
     argsPerCore->chunkSize = chunkSize;
+    argsPerCore->outputQueue = outputQueues[i];
 
 #ifdef RUNTIME_PROFILE
     clocks_dispatch_starts[i] = rdtsc_s();
@@ -310,9 +358,26 @@ DispatcherInfo NOELLE_DOALLDispatcher(
 #endif
 
   /*
+   * Allocate and prepare print watchdog args
+   */
+  auto scylaxArgs =
+      (NOELLE_Scylax_args_t *)malloc(sizeof(NOELLE_Scylax_args_t));
+  scylaxArgs->outputQueues = (void *)outputQueues;
+  scylaxArgs->numCores = numCores;
+  scylaxArgs->chunkSize = chunkSize;
+  pthread_spin_init(&scylaxArgs->printLock, PTHREAD_PROCESS_SHARED);
+  pthread_spin_lock(&scylaxArgs->printLock);
+
+  virgil->submitAndDetach(NOELLE_Scylax, scylaxArgs);
+
+  /*
    * Run a task.
    */
-  parallelizedLoop(env, numCores - 1, numCores, chunkSize);
+  parallelizedLoop(env,
+                   numCores - 1,
+                   numCores,
+                   chunkSize,
+                   outputQueues[numCores - 1]);
 
 /*
  * Wait for the remaining DOALL tasks.
@@ -323,6 +388,19 @@ DispatcherInfo NOELLE_DOALLDispatcher(
   for (auto i = 0; i < (numCores - 1); ++i) {
     pthread_spin_lock(&(argsForAllCores[i].endLock));
   }
+
+  /*
+   * Mark the end of each output queue.
+   */
+  NOELLE_OutputMessage_t *chainLink =
+      (NOELLE_OutputMessage_t *)malloc(sizeof(NOELLE_OutputMessage_t));
+  chainLink->messageType = CORE_DONE;
+  for (auto idx = 0; idx < numCores; idx++) {
+    queuePushOutputMessage(outputQueues[idx], chainLink);
+  }
+
+  pthread_spin_lock(&(scylaxArgs->printLock));
+
 #ifdef RUNTIME_PRINT
   std::cerr << "All tasks completed" << std::endl;
 #endif
@@ -403,6 +481,105 @@ DispatcherInfo NOELLE_DOALLDispatcher(
 #ifdef RUNTIME_PRINT
 void *mySSGlobal = nullptr;
 #endif
+
+// WIP: https://en.cppreference.com/w/cpp/io/c/vfprintf
+int NOELLE_paraPrintfOneInt(
+    int64_t coreID,
+    int64_t numCores,
+    int64_t chunkSize,
+    ThreadSafeLockFreeQueue<NOELLE_OutputMessage_t> *outputQueue,
+    char *format,
+    int arg) {
+
+  int neededBytes = snprintf(0, 0, format, arg);
+  // printf("meow: will need %d+1 byte buffer for:\n", neededBytes);
+  // printf(format, arg);
+  char *chainString = (char *)malloc((neededBytes + 1) * sizeof(char));
+  sprintf(chainString, format, arg);
+  NOELLE_OutputMessage_t *chainLink =
+      (NOELLE_OutputMessage_t *)malloc(sizeof(NOELLE_OutputMessage_t));
+
+  chainLink->messageType = PRINT;
+  chainLink->str = chainString;
+  //  printf(chainString);
+  /*printf("coreID %ld, numCores %ld, chunkSize %ld, qaddr %p, arg %d\n",
+         coreID,
+         numCores,
+         chunkSize,
+         outputQueue,
+         arg);
+  std::cerr << "qaddr " << outputQueue << "\n";
+*/
+  queuePushOutputMessage(outputQueue, chainLink);
+  return neededBytes;
+}
+
+void NOELLE_Scylax_ChunkEnd(
+    int8_t isChunkCompleted,
+    ThreadSafeLockFreeQueue<NOELLE_OutputMessage_t> *outputQueue) {
+  // This function will be called every iteration, doing the check here instead
+  // simplifies manual IR generation for the same result when optimized
+  if (!isChunkCompleted) {
+    return;
+  }
+
+  NOELLE_OutputMessage_t *chainLink =
+      (NOELLE_OutputMessage_t *)malloc(sizeof(NOELLE_OutputMessage_t));
+  chainLink->messageType = CHUNK_DONE;
+  queuePushOutputMessage(outputQueue, chainLink);
+  return;
+}
+
+void NOELLE_Scylax(void *args) {
+
+  NOELLE_Scylax_args_t *p_args = reinterpret_cast<NOELLE_Scylax_args_t *>(args);
+
+  ThreadSafeQueue<NOELLE_OutputMessage_t> **outputQueues =
+      reinterpret_cast<ThreadSafeQueue<NOELLE_OutputMessage_t> **>(
+          p_args->outputQueues);
+  int64_t numCores = p_args->numCores;
+  int64_t chunkSize = p_args->chunkSize;
+
+  NOELLE_OutputMessage_t currentMessage;
+
+  bool coreDone[numCores];
+  for (auto idx = 0; idx < numCores; idx++)
+    coreDone[idx] = 0;
+  int numDoneCores = 0;
+
+  bool nextCore;
+  int coreIdx = 0;
+
+  do {   // loop through active cores until all are done
+    do { // handle messages for this core until the chunk/core is finished
+      nextCore = false;
+
+      if (coreDone[coreIdx]) {
+        nextCore = true;
+
+      } else {
+        outputQueues[coreIdx]->waitPop(currentMessage);
+        switch (currentMessage.messageType) {
+          case PRINT:
+            printf("%s", currentMessage.str);
+            break;
+          case CHUNK_DONE:
+            nextCore = true;
+            break;
+          case CORE_DONE:
+            nextCore = true;
+            coreDone[coreIdx] = true;
+            numDoneCores++;
+            break;
+        }
+      }
+    } while (!nextCore);
+    coreIdx = ++coreIdx % numCores;
+  } while (numDoneCores != numCores);
+
+  pthread_spin_unlock(&p_args->printLock);
+  return;
+}
 
 /**********************************************************************
  *                HELIX

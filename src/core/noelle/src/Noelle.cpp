@@ -205,7 +205,7 @@ bool Noelle::verifyCode(void) const {
   /*
    * Check the entire program.
    */
-  auto incorrect = llvm::verifyModule(*this->program);
+  auto incorrect = llvm::verifyModule(*this->program, &errs());
 
   return !incorrect;
 }

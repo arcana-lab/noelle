@@ -47,7 +47,8 @@ PHINode *IVUtility::createChunkPHI(BasicBlock *preheaderB,
       auto isChunkCompleted =
           latchBuilder.CreateICmp(CmpInst::Predicate::ICMP_EQ,
                                   chunkIncrement,
-                                  chunkSize);
+                                  chunkSize,
+                                  "isChunkCompleted");
       auto chunkWrap = latchBuilder.CreateSelect(isChunkCompleted,
                                                  zeroValueForChunking,
                                                  chunkIncrement,
@@ -88,6 +89,21 @@ void IVUtility::chunkInductionVariablePHI(BasicBlock *preheaderBlock,
                                                       initialLatchValue,
                                                       "nextStepOrNextChunk"));
   }
+}
+
+CmpInst *IVUtility::isChunkCompleted(BasicBlock *preheaderBlock,
+                                     PHINode *chunkPHI) {
+
+  for (auto idx = 0; idx++ < chunkPHI->getNumIncomingValues(); idx++) {
+    auto B = chunkPHI->getIncomingBlock(idx);
+    if (preheaderBlock == B)
+      continue;
+
+    CmpInst *isChunkCompleted = cast<CmpInst>(
+        cast<SelectInst>(chunkPHI->getIncomingValue(idx))->getCondition());
+    return isChunkCompleted;
+  }
+  assert(false && "can't find isChunkCompleted");
 }
 
 void IVUtility::stepInductionVariablePHI(BasicBlock *preheaderBlock,

@@ -25,6 +25,7 @@
 #include "noelle/core/LoopIterationSCC.hpp"
 #include "noelle/core/LinearInductionVariableSCC.hpp"
 #include "noelle/core/StackObjectClonableSCC.hpp"
+#include "noelle/core/OutputSequenceSCC.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 #include "noelle/core/UnknownClosedFormSCC.hpp"
@@ -60,17 +61,19 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
       loopGoverningIVs.insert(loopGoverningIV);
   }
 
-  // DGPrinter::writeGraph<SCCDAG, SCC>("sccdag.dot", sccdag);
-  // errs() << "IVs: " << ivs.size() << "\n";
-  // for (auto iv : ivs) {
-  //   iv->getLoopEntryPHI()->print(errs() << "IV: "); errs() << "\n";
-  // }
-  // errs() << "-------------\n";
-  // errs() << "Loop governing IVs: " << loopGoverningIVs.size() << "\n";
-  // for (auto iv : loopGoverningIVs) {
-  //   iv->getLoopEntryPHI()->print(errs() << "IV: "); errs() << "\n";
-  // }
-  // errs() << "-------------\n";
+  /*
+  DGPrinter::writeGraph<SCCDAG, SCC>("sccdag.dot", sccdag);
+  errs() << "IVs: " << ivs.size() << "\n";
+  for (auto iv : ivs) {
+    iv->getLoopEntryPHI()->print(errs() << "IV: "); errs() << "\n";
+  }
+  errs() << "-------------\n";
+  errs() << "Loop governing IVs: " << loopGoverningIVs.size() << "\n";
+  for (auto iv : loopGoverningIVs) {
+    iv->getLoopEntryPHI()->print(errs() << "IV: "); errs() << "\n";
+  }
+  errs() << "-------------\n";
+  */
 
   /*
    * Compute memory cloning location analysis
@@ -101,6 +104,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
         this->checkIfClonableByUsingLocalMemory(scc, loopNode);
     auto valuesToPropagateAcrossIterations =
         this->checkIfRecomputable(scc, loopNode);
+    auto outputInstructions = checkIfOutputSequence(scc, loopNode);
 
     /*
      * Allocate the metadata about this SCC.
@@ -159,6 +163,12 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
                                            loopCarriedDependences,
                                            stackObjectsThatAreClonable);
 
+    } else if (outputInstructions.size() > 0) {
+      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+      sccInfo = new OutputSequenceSCC(scc,
+                                      rootLoop,
+                                      loopCarriedDependences,
+                                      outputInstructions);
     } else {
 
       /*
@@ -191,7 +201,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
   collectSCCGraphAssumingDistributedClones();
 
   return;
-}
+} // namespace llvm::noelle
 
 std::set<LoopCarriedSCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDependencies(
     void) const {
@@ -479,7 +489,8 @@ std::set<InductionVariable *> SCCDAGAttrs::
     return {};
 
   /*
-   * If a contained IV is loop governing, ensure loop governance is well formed
+   * If a contained IV is loop governing, ensure loop governance is well
+   * formed
    * TODO: Remove this, as this loop governing attribution isn't necessary for
    * all users of SCCDAGAttrs
    */
@@ -510,8 +521,8 @@ std::set<InductionVariable *> SCCDAGAttrs::
   }
 
   /*
-   * NOTE: No side effects can be contained in the SCC; only instructions of the
-   * IVs
+   * NOTE: No side effects can be contained in the SCC; only instructions of
+   * the IVs
    */
   for (auto nodePair : scc->internalNodePairs()) {
     auto value = nodePair.first;
@@ -535,7 +546,8 @@ LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(SCC *scc,
 
   /*
    * Check if the SCC has loop-carried dependences.
-   * If not, then this SCC is not reducable because there is nothing to reduce.
+   * If not, then this SCC is not reducable because there is nothing to
+   * reduce.
    */
   if (this->sccToLoopCarriedDependencies.find(scc)
       == this->sccToLoopCarriedDependencies.end()) {
@@ -588,8 +600,8 @@ LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(SCC *scc,
     /*
      * Look for an internal consumer of a loop carried dependence
      *
-     * NOTE: External consumers may be last-live out propagations of a reducible
-     * variable or could disqualify this from reducibility: let the
+     * NOTE: External consumers may be last-live out propagations of a
+     * reducible variable or could disqualify this from reducibility: let the
      * LoopCarriedVariable analysis determine this
      */
     if (!scc->isInternal(consumerPHI)) {
@@ -740,7 +752,8 @@ std::set<ClonableMemoryObject *> SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
   }
 
   /*
-   * Ensure that loop carried dependencies belong to clonable memory locations.
+   * Ensure that loop carried dependencies belong to clonable memory
+   * locations.
    *
    * NOTE: Ignore PHIs and unconditional branch instructions
    */
@@ -777,7 +790,8 @@ std::set<ClonableMemoryObject *> SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
     /*
      * The current loop-carried dependence can be removed by cloning.
      */
-    // location->getAllocation()->print(errs() << "Location found: "); errs() <<
+    // location->getAllocation()->print(errs() << "Location found: "); errs()
+    // <<
     // "\n";
     locations.insert(locs.begin(), locs.end());
   }
@@ -790,6 +804,40 @@ std::set<ClonableMemoryObject *> SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
   }
 
   return locations;
+}
+
+std::set<CallInst *> SCCDAGAttrs::checkIfOutputSequence(
+    SCC *scc,
+    LoopForestNode *loopNode) const {
+
+  // WIP: absolute simplest case, one printf to itself
+
+  // single internal node?
+  if (std::distance(scc->internalNodePairs().begin(),
+                    scc->internalNodePairs().end())
+      != 1) {
+    return {};
+  }
+
+  auto singleInst = scc->internalNodePairs().begin()->first;
+  if (!isBufferablePrintf(scc, loopNode, singleInst)) {
+    return {};
+  }
+
+  return { cast<CallInst>(singleInst) };
+}
+
+bool SCCDAGAttrs::isBufferablePrintf(SCC *scc,
+                                     LoopForestNode *loopNode,
+                                     Value *I) const {
+  if (auto callI = dyn_cast<CallInst>(I)) {
+    if (auto called = callI->getCalledFunction()) {
+      if (called->getName() == "printf" && called->isDeclaration()) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 bool SCCDAGAttrs::isClonableByHavingNoMemoryOrLoopCarriedDataDependencies(
