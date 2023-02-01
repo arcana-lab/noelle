@@ -489,13 +489,6 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
     int64_t maxNumberOfCores,
     int64_t numOfsequentialSegments,
     bool LIO) {
-#ifdef RUNTIME_PRINT
-  std::cerr << "HELIX: dispatcher: Start" << std::endl;
-  std::cerr << "HELIX: dispatcher:  Number of sequential segments = "
-            << numOfsequentialSegments << std::endl;
-  std::cerr << "HELIX: dispatcher:  Number of cores = " << numCores
-            << std::endl;
-#endif
 
   /*
    * Assumptions.
@@ -514,6 +507,14 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
    */
   auto numCores = runtime.reserveCores(maxNumberOfCores);
   assert(numCores >= 1);
+
+#ifdef RUNTIME_PRINT
+  std::cerr << "HELIX: dispatcher: Start" << std::endl;
+  std::cerr << "HELIX: dispatcher:  Number of sequential segments = "
+            << numOfsequentialSegments << std::endl;
+  std::cerr << "HELIX: dispatcher:  Number of cores = " << numCores
+            << std::endl;
+#endif
 
   /*
    * Allocate the sequential segment arrays.
