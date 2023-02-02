@@ -270,7 +270,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
       cloneInstsThatCanStayInTheNewHeader.insert(cloneI);
       continue;
     }
-    if (false || (originalCmpInst == &I) || (originalBrInst == &I)) {
+    if ((originalCmpInst == &I) || (originalBrInst == &I)) {
       originalInstsThatCanStayInTheNewHeader.push_back(&I);
       cloneInstsThatCanStayInTheNewHeader.insert(cloneI);
       continue;
@@ -464,9 +464,8 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
      * Fetch the reducable variable.
      */
     auto producerSCC = sccdag->sccOfValue(originalProducer);
-    auto reducableVariable =
-        static_cast<ReductionSCC *>(sccManager->getSCCAttrs(producerSCC));
-    assert(reducableVariable != nullptr);
+    auto producerSCCInfo = sccManager->getSCCAttrs(producerSCC);
+    auto reducableVariable = cast<ReductionSCC>(producerSCCInfo);
 
     /*
      * We need a PHI after the last iteration block to track whether this core
@@ -475,6 +474,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
      */
     auto originalIntermedateInHeader =
         reducableVariable->getPhiThatAccumulatesValuesBetweenLoopIterations();
+    assert(originalIntermedateInHeader != nullptr);
     auto cloneIntermediateInHeader =
         task->getCloneOfOriginalInstruction(originalIntermedateInHeader);
     auto duplicateProducerInLastIterationBlock =

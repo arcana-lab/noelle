@@ -69,15 +69,6 @@ private:
   void addLiveOutProducer(Value *producer);
   uint64_t addProducer(Value *producer, bool liveIn);
 
-  /*
-   * DEPRECATED(angelo): use of this API suggests poor environment
-   * algorithm, as all producers should just be iterated over for
-   * any arbitrary operation
-   */
-  int getProducerID(Value *producer) {
-    return producerIDMap[producer];
-  }
-
   std::vector<Value *> envProducers;
   std::unordered_map<Value *, int> producerIDMap;
 
