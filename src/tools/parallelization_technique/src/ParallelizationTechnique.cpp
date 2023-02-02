@@ -1077,9 +1077,11 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
 
           /*
            * Check if the place to inject the store is included in a cycle in
-           * the CFG (hence, it can run multiple times). If that is the case,
-           * then we need to store the live-out variable only if the current
-           * task has executed the last iteration of the loop. Otherwise, the
+           * the CFG (hence, it can run multiple times). If that is not the
+           * case, then we need to store the live-out variable only if the
+           * current task has executed the last iteration of the loop.
+           *
+           * If instead the store is included in a cycle, then the
            * store will happen within the loop body and we assume to be
            * synchronized correctly by the parallelization technique.
            */
