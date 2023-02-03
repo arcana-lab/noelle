@@ -44,21 +44,27 @@ public:
    */
   Heuristics(Noelle &noelle);
 
-  void adjustParallelizationPartitionForDSWP(SCCDAGPartitioner *partitioner,
-                                             SCCDAGAttrs &attrs,
-                                             uint64_t numThreads,
-                                             Verbosity verbose);
+  void adjustParallelizationPartitionForDSWP(
+      SCCDAGPartitioner *partitioner,
+      SCCDAGAttrs &attrs,
+      uint64_t numThreads,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized,
+      Verbosity verbose);
 
 private:
-  void minMaxMergePartition(SCCDAGPartitioner &partitioner,
-                            SCCDAGAttrs &attrs,
-                            uint64_t numThreads,
-                            Verbosity verbose);
+  void minMaxMergePartition(
+      SCCDAGPartitioner &partitioner,
+      SCCDAGAttrs &attrs,
+      uint64_t numThreads,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized,
+      Verbosity verbose);
 
-  void smallestSizeMergePartition(SCCDAGPartitioner &partitioner,
-                                  SCCDAGAttrs &attrs,
-                                  uint64_t numThreads,
-                                  Verbosity verbose);
+  void smallestSizeMergePartition(
+      SCCDAGPartitioner &partitioner,
+      SCCDAGAttrs &attrs,
+      uint64_t numThreads,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized,
+      Verbosity verbose);
 
   InvocationLatency invocationLatency;
 };

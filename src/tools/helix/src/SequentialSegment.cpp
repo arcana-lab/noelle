@@ -500,19 +500,32 @@ void SequentialSegment::printSCCInfo(
   auto sccManager = LDI->getSCCManager();
   for (auto scc : sccs->sccs) {
 
+    /*
+     * Fetch the SCCAttrs
+     */
     auto sccInfo = sccManager->getSCCAttrs(scc);
+    assert(sccInfo != nullptr);
+    errs() << prefixString << "    Type = " << sccInfo->getKind() << "\n";
 
-    errs() << prefixString << "    Type = " << sccInfo->getType() << "\n";
+    /*
+     * Check if the SCC has loop-carried dependences.
+     */
+    auto lcSCC = dyn_cast<LoopCarriedSCC>(sccInfo);
+    if (lcSCC == nullptr) {
+      continue;
+    }
+
+    /*
+     * The current SCC has loop-carried dependences.
+     */
     errs() << prefixString << "    Loop-carried data dependences\n";
-    auto lcIterFunc = [scc, &prefixString](DGEdge<Value> *dep) -> bool {
+    for (auto dep : lcSCC->getLoopCarriedDependences()) {
       auto fromInst = dep->getOutgoingT();
       auto toInst = dep->getIncomingT();
       assert(scc->isInternal(fromInst) || scc->isInternal(toInst));
       errs()
           << prefixString << "      " << *fromInst << " -> " << *toInst << "\n";
-      return false;
-    };
-    sccManager->iterateOverLoopCarriedDataDependences(scc, lcIterFunc);
+    }
   }
 
   errs() << prefixString << "    Instructions that belong to the SS\n";

@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "noelle/core/InductionVariableSCC.hpp"
+#include "noelle/core/LoopCarriedUnknownSCC.hpp"
 #include "noelle/tools/HELIX.hpp"
 
 namespace llvm::noelle {
@@ -81,8 +83,8 @@ SCC *HELIX::getTheSequentialSCCThatCreatesTheSequentialPrologue(
    * Check the SCC to see if it has to run sequentially
    */
   auto sccInfo = sccManager->getSCCAttrs(preambleSCC);
-  if (true && (!sccInfo->isInductionVariableSCC())
-      && sccInfo->mustExecuteSequentially()) {
+  if ((!isa<InductionVariableSCC>(sccInfo))
+      && isa<LoopCarriedUnknownSCC>(sccInfo)) {
 
     /*
      * The SCC must execute sequentially.

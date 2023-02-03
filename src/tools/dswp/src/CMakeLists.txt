@@ -1,6 +1,7 @@
 # Sources
 set(Srcs 
   DSWP.cpp
+  DSWP_clonableSCCs.cpp
   CFG.cpp
   Environment.cpp
   Inliner.cpp

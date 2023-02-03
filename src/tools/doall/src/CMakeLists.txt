@@ -4,7 +4,9 @@ set(Srcs
   DOALLTask.cpp
   DOALL_analysis.cpp
   DOALL_lastIteration.cpp
-  Builder.cpp
+  DOALL_applicabilityGuard.cpp
+  DOALL_parallelization.cpp
+  DOALL_chunking.cpp
 )
 
 # Compilation flags

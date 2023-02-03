@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 myName="`whoami`" ;
 
@@ -12,6 +12,18 @@ for i in `ls regression_*/errors.txt` ; do
     pushd ./ &> /dev/null ;
     cd $failedTest ;
     if test -e parallelized ; then
+      popd &> /dev/null ;
+      continue ;
+    fi
+
+    # Check if the test timeout
+    grep Terminated compiler_output.txt &> /dev/null ;
+    if test $? -eq 0 ; then
+      popd &> /dev/null ;
+      continue ;
+    fi
+    grep Killed compiler_output.txt &> /dev/null ;
+    if test $? -eq 0 ; then
       popd &> /dev/null ;
       continue ;
     fi

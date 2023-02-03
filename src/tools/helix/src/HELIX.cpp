@@ -19,8 +19,10 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "noelle/core/Architecture.hpp"
+#include "noelle/core/ReductionSCC.hpp"
 #include "noelle/tools/HELIX.hpp"
-#include "DOALL.hpp"
+#include "noelle/tools/DOALL.hpp"
 
 namespace llvm::noelle {
 
@@ -87,8 +89,7 @@ bool HELIX::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   auto averageInstructionThreshold = 20;
   auto hasLittleExecution = averageInstructions < averageInstructionThreshold;
   auto maximumSequentialFraction = .2;
-  auto sequentialFraction =
-      this->computeSequentialFractionOfExecution(LDI, this->noelle);
+  auto sequentialFraction = this->computeSequentialFractionOfExecution(LDI);
   auto hasProportionallySignificantSequentialExecution =
       sequentialFraction >= maximumSequentialFraction;
   if (hasLittleExecution && hasProportionallySignificantSequentialExecution) {
@@ -119,6 +120,21 @@ bool HELIX::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   if (this->verbose != Verbosity::Disabled) {
     auto prefixStringWithIndentation = std::string{ this->prefixString };
     prefixStringWithIndentation.append("  ");
+
+    /*
+     * Print the loop.
+     */
+    auto ls = LDI->getLoopStructure();
+    auto bbs = ls->getBasicBlocks();
+    errs() << prefixStringWithIndentation << "Loop has " << bbs.size()
+           << " basic blocks:\n";
+    for (auto bb : bbs) {
+      errs() << *bb << "\n";
+    }
+
+    /*
+     * Print the sequential code.
+     */
     this->printSequentialCode(
         errs(),
         prefixStringWithIndentation,
@@ -249,7 +265,7 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
     auto producer = environment->getProducer(id);
     auto scc = sccManager->getSCCDAG()->sccOfValue(producer);
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (sccInfo->canExecuteReducibly()) {
+    if (isa<ReductionSCC>(sccInfo)) {
       errs()
           << this->prefixString
           << "    The following variable is reducable: " << *producer << "\n";
@@ -283,8 +299,7 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
       if (auto consumer = dyn_cast<PHINode>(*producer->user_begin())) {
         auto scc = sccManager->getSCCDAG()->sccOfValue(consumer);
         auto sccInfo = sccManager->getSCCAttrs(scc);
-        if (!sccInfo->isInductionVariableSCC()
-            && sccInfo->canExecuteReducibly()) {
+        if (isa<ReductionSCC>(sccInfo)) {
           helixTask->addSkippedEnvironmentVariable(producer);
           return true;
         }
@@ -594,6 +609,20 @@ bool HELIX::synchronizeTask(LoopDependenceInfo *LDI, Heuristics *h) {
 
 Function *HELIX::getTaskFunction(void) const {
   return tasks[0]->getTaskBody();
+}
+
+uint32_t HELIX::getMinimumNumberOfIdleCores(void) const {
+  return Architecture::getNumberOfPhysicalCores();
+  if (this->originalLDI == nullptr) {
+    abort();
+  }
+  auto ltm = this->originalLDI->getLoopTransformationsManager();
+
+  return ltm->getMaximumNumberOfCores();
+}
+
+std::string HELIX::getName(void) const {
+  return "HELIX";
 }
 
 HELIX::~HELIX() {

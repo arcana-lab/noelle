@@ -203,6 +203,14 @@ void LoopEnvironmentBuilder::createUsers(uint32_t numUsers) {
 
 void LoopEnvironmentBuilder::addVariableToEnvironment(uint64_t varID,
                                                       Type *varType) {
+
+  /*
+   * Check if the environment variable is already part of the builder.
+   */
+  if (this->envIDToIndex.find(varID) != this->envIDToIndex.end()) {
+    return;
+  }
+
   /*
    * Register the new variable in both maps
    */

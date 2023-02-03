@@ -32,7 +32,8 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 include_directories(${LLVM_INCLUDE_DIRS} 
   ../include 
   ../../basic_utilities/include 
-  ../../loops/include
+  ../../loop_content/include
+  ../../dg/include
   ../../pdg/include
   ../../loop_structure/include
   )

@@ -39,3 +39,4 @@ patchInstallDir "noelle-loop-stats" ;
 patchInstallDir "noelle-parallelization-planner" ;
 patchInstallDir "noelle-parallelizer-loop" ;
 patchInstallDir "noelle-repl" ;
+patchInstallDir "noelle-time-saved" ;

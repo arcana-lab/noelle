@@ -68,6 +68,13 @@ ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
 
 void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
     partitionSCCDAG(LoopDependenceInfo *LDI) {
+  auto f = [](GenericSCC *scc) -> bool { return false; };
+  this->partitionSCCDAG(LDI, f);
+}
+
+void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
+    partitionSCCDAG(LoopDependenceInfo *LDI,
+                    std::function<bool(GenericSCC *scc)> skipSCC) {
 
   /*
    * Fetch the SCC manager.
@@ -91,8 +98,9 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
   auto initialSets = std::unordered_set<SCCSet *>();
 
   /*
-   * Assign SCCs that have no partition to their own partitions.
+   * Fetch the SCCs that must be considered in the partitioning algorithm.
    */
+  std::set<SCC *> notClonableSCCs{};
   for (auto nodePair : sccdag->internalNodePairs()) {
 
     /*
@@ -100,27 +108,50 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
      */
     auto currentSCC = nodePair.first;
     auto currentSCCInfo = sccManager->getSCCAttrs(currentSCC);
+    assert(currentSCCInfo != nullptr);
 
     /*
      * Check if the current SCC can be removed (e.g., because it is due to
      * induction variables). If it is, then this SCC has already been assigned
      * to every dependent partition.
      */
-    if (currentSCCInfo->canBeCloned()) {
+    if (skipSCC(currentSCCInfo)) {
       continue;
     }
 
     /*
-     * The current SCC cannot be removed.
+     * The current SCC must be considered.
      */
+    notClonableSCCs.insert(currentSCC);
+  }
+
+  /*
+   * Print the SCCs.
+   */
+  if (this->verbose >= Verbosity::Maximal) {
+    /*
+    auto sortedSCCs = this->noelle.sortByHotness(notClonableSCCs);
+    errs() << "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences:
+    SCCs to consider when partitioning the SCCDAG:\n"; for (auto currentSCC :
+    sortedSCCs){ currentSCC->print(errs());
+    }
+    */
+  }
+
+  /*
+   * Assign SCCs that have no partition to their own partitions.
+   */
+  for (auto currentSCC : notClonableSCCs) {
     auto singleSet = new SCCSet();
     singleSet->sccs.insert(currentSCC);
     initialSets.insert(singleSet);
   }
 
+  auto newSCCDAGWithoutIgnoredSCCs =
+      sccManager->computeSCCDAGWhenSCCsAreIgnored(skipSCC);
   this->partitioner = new SCCDAGPartitioner(sccdag,
                                             initialSets,
-                                            sccManager->parentsViaClones,
+                                            newSCCDAGWithoutIgnoredSCCs.first,
                                             LDI->getLoopHierarchyStructures());
 
   /*
@@ -178,55 +209,51 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
     /*
      * Fetch the SCC metadata.
      */
-    auto sccInfo = sccManager->getSCCAttrs(scc);
-    assert(sccInfo != nullptr);
+    auto sccInfo = cast<LoopCarriedSCC>(sccManager->getSCCAttrs(scc));
 
     /*
      * The current SCC is sequential.
      */
     stream << prefixString << "    Loop-carried dependences\n";
-    sccManager->iterateOverLoopCarriedDependences(
-        scc,
-        [this, scc, &stream, &prefixString](DGEdge<Value> *dep) -> bool {
-          /*
-           * Fetch the instructions involved in the dependence
-           */
-          auto fromInst = dep->getOutgoingT();
-          auto toInst = dep->getIncomingT();
+    for (auto dep : sccInfo->getLoopCarriedDependences()) {
 
-          /*
-           * Check that both instructions belong to the SCC.
-           */
-          std::string fromInstClarification{};
-          if (scc->fetchNode(fromInst) == nullptr) {
-            fromInstClarification.append(" (outside the SCC) ");
-          }
-          std::string toInstClarification{};
-          if (scc->fetchNode(toInst) == nullptr) {
-            toInstClarification.append(" (outside the SCC) ");
-          }
-          stream << prefixString << "      " << *fromInst
-                 << fromInstClarification << " ---> " << *toInst
-                 << toInstClarification;
+      /*
+       * Fetch the instructions involved in the dependence
+       */
+      auto fromInst = dep->getOutgoingT();
+      auto toInst = dep->getIncomingT();
 
-          /*
-           * Control dependences.
-           */
-          if (dep->isControlDependence()) {
-            stream << " control\n";
-            return false;
-          }
+      /*
+       * Check that both instructions belong to the SCC.
+       */
+      std::string fromInstClarification{};
+      if (scc->fetchNode(fromInst) == nullptr) {
+        fromInstClarification.append(" (outside the SCC) ");
+      }
+      std::string toInstClarification{};
+      if (scc->fetchNode(toInst) == nullptr) {
+        toInstClarification.append(" (outside the SCC) ");
+      }
+      stream << prefixString << "      " << *fromInst << fromInstClarification
+             << " ---> " << *toInst << toInstClarification;
 
-          /*
-           * Data dependences.
-           */
-          if (dep->isMemoryDependence()) {
-            stream << " via memory\n";
-          } else {
-            stream << " via variable\n";
-          }
-          return false;
-        });
+      /*
+       * Control dependences.
+       */
+      if (dep->isControlDependence()) {
+        stream << " control\n";
+        continue;
+      }
+
+      /*
+       * Data dependences.
+       */
+      if (dep->isMemoryDependence()) {
+        stream << " via memory\n";
+      } else {
+        stream << " via variable\n";
+      }
+    }
 
     /*
      * Print the content of the SCC.

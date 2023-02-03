@@ -27,12 +27,12 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../dominators/include 
   ../../transformations/include
   ../../alloc_aa/include 
-  ../../loops/include 
+  ../../loop_content/include 
   ../../hotprofiler/include 
   ../../talkdown/include
   ../../dataflow/include
   ../../callgraph/include
-  ../../induction_variables/include
+  ../../loop_induction_variables/include
   ../include/ 
   ./ 
   ${CMAKE_INSTALL_PREFIX}/include

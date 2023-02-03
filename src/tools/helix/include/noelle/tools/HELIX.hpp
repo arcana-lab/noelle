@@ -63,6 +63,10 @@ public:
 
   bool doesHaveASequentialPrologue(LoopDependenceInfo *LDI) const;
 
+  uint32_t getMinimumNumberOfIdleCores(void) const override;
+
+  std::string getName(void) const override;
+
   virtual ~HELIX();
 
 protected:

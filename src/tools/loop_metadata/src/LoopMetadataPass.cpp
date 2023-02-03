@@ -40,12 +40,12 @@ bool LoopMetadataPass::runOnModule(Module &M) {
   /*
    * Fetch noelle.
    */
-  auto &noelle = getAnalysis<Noelle>();
+  // auto &noelle = getAnalysis<Noelle>();
 
   /*
    * Set loop ID metadata
    */
-  modified |= this->setIDs(M, noelle);
+  modified |= this->setIDs(M);
 
   return modified;
 }
@@ -55,7 +55,8 @@ void LoopMetadataPass::getAnalysisUsage(AnalysisUsage &AU) const {
   /*
    * Analyses.
    */
-  AU.addRequired<Noelle>();
+  // AU.addRequired<Noelle>();
+  AU.addRequired<LoopInfoWrapperPass>();
 
   return;
 }

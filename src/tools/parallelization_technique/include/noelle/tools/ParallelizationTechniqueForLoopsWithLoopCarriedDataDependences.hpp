@@ -55,6 +55,8 @@ protected:
    * Partition SCCDAG.
    */
   void partitionSCCDAG(LoopDependenceInfo *LDI);
+  void partitionSCCDAG(LoopDependenceInfo *LDI,
+                       std::function<bool(GenericSCC *scc)> skipSCC);
 
   void printSequentialCode(raw_ostream &stream,
                            const std::string &prefixString,

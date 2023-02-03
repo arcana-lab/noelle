@@ -20,9 +20,9 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "LoopStats.hpp"
+#include "noelle/core/LoopCarriedUnknownSCC.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void LoopStats::collectStatsOnLLVMSCCs(Hot *profiles,
                                        PDG *loopDG,
@@ -87,7 +87,6 @@ void LoopStats::collectStatsOnNoelleSCCs(Hot *profiles,
                                  loopDG,
                                  &loopInternalSCCDAG,
                                  loopHierarchy,
-                                 SE,
                                  inductionVariables,
                                  DS);
 
@@ -142,22 +141,7 @@ void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
       /*
        * Skip SCC that will not be executed sequentially
        */
-      if (!sccAttrs->mustExecuteSequentially()) {
-        continue;
-      }
-      if (sccAttrs->isInductionVariableSCC()) {
-        continue;
-      }
-      if (sccAttrs->canBeCloned()) {
-        continue;
-      }
-      if (sccAttrs->canExecuteReducibly()) {
-        continue;
-      }
-      if (sccAttrs->canBeClonedUsingLocalMemoryLocations()) {
-        continue;
-      }
-      if (sccAttrs->getType() != SCCAttrs::SCCType::SEQUENTIAL) {
+      if (!isa<LoopCarriedUnknownSCC>(sccAttrs)) {
         continue;
       }
     }
@@ -168,3 +152,5 @@ void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
 
   return;
 }
+
+} // namespace llvm::noelle

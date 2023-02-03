@@ -24,10 +24,9 @@
 
 namespace llvm::noelle {
 
-void Planner::removeLoopsNotWorthParallelizing(
-    Noelle &noelle,
-    Hot *profiles,
-    StayConnectedNestedLoopForest *forest) {
+void Planner::removeLoopsNotWorthParallelizing(Noelle &noelle,
+                                               Hot *profiles,
+                                               LoopForest *forest) {
 
   /*
    * Check if we are force to consider all loops.
@@ -129,8 +128,7 @@ void Planner::removeLoopsNotWorthParallelizing(
     /*
      * Print the tree.
      */
-    auto printTree = [profiles](noelle::StayConnectedNestedLoopForestNode *n,
-                                uint32_t treeLevel) {
+    auto printTree = [profiles](noelle::LoopForestNode *n, uint32_t treeLevel) {
       /*
        * Fetch the loop information.
        */
@@ -199,7 +197,7 @@ void Planner::removeLoopsNotWorthParallelizing(
 std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
     Noelle &noelle,
     Hot *profiles,
-    noelle::StayConnectedNestedLoopForestNode *tree,
+    noelle::LoopForestNode *tree,
     uint64_t &maxTimeSaved,
     uint64_t &maxTimeSavedWithDOALLOnly) {
   std::vector<LoopDependenceInfo *> selectedLoops{};
@@ -216,10 +214,11 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
   std::map<LoopDependenceInfo *, uint64_t> timeSavedLoops;
   std::map<LoopStructure *, bool> doallLoops;
   std::map<LoopStructure *, uint64_t> timeSavedPerLoop;
-  auto selector =
-      [&noelle, &timeSavedLoops, &timeSavedPerLoop, profiles, &doallLoops](
-          StayConnectedNestedLoopForestNode *n,
-          uint32_t treeLevel) -> bool {
+  auto selector = [&noelle,
+                   &timeSavedLoops,
+                   &timeSavedPerLoop,
+                   profiles,
+                   &doallLoops](LoopForestNode *n, uint32_t treeLevel) -> bool {
     /*
      * Fetch the loop.
      */
@@ -248,10 +247,7 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
      * Compute the maximum amount of time saved by any parallelization
      * technique.
      */
-    uint64_t timeSaved = 0;
-    if (profiles->getIterations(ls) > 0) {
-      timeSaved = loopTimeModel->getTimeSavedByParallelizingLoop();
-    }
+    auto timeSaved = loopTimeModel->getTimeSavedByParallelizingLoop();
     timeSavedLoops[ldi] = (uint64_t)timeSaved;
     timeSavedPerLoop[ls] = (uint64_t)timeSaved;
 

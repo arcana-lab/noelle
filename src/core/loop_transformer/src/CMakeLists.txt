@@ -28,15 +28,20 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../transformations/include
   ../../loop_structure/include 
   ../../loop_environment/include 
-  ../../forest/include
+  ../../loop_forest/include
+  ../../dg/include
   ../../pdg/include
-  ../../invariants/include
-  ../../induction_variables/include
-  ../../loops/include
+  ../../loop_invariants/include
+  ../../loop_induction_variables/include
+  ../../loop_content/include
   ../../scheduler/include
   ../../loop_whilifier/include
   ../../loop_unroll/include
   ../../loop_distribution/include
+  ../../loop_carried_dependences/include
+  ../../loop_scc_attributes/include
+  ../../loop_sccdag_attributes/include
+  ../../memory_cloning_analysis/include
 	../include
 )
 

@@ -1,0 +1,6 @@
+Dependence Graph
+
+Implementation
+  DGBase, DGGraphTraits
+    These provide templated classes DG<T>, DGNode<T>, DGEdge<T, SubT>,
+    and an interface to LLVM's GraphWriter to create .dot files of the graphs

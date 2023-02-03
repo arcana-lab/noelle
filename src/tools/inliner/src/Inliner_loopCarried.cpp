@@ -19,8 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "noelle/tools/DOALL.hpp"
 #include "Inliner.hpp"
-#include "DOALL.hpp"
 
 namespace llvm::noelle {
 
@@ -79,7 +79,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences(
       /*
        * Check if the current loop has been enabled.
        */
-      StayConnectedNestedLoopForestNode *summaryNode = nullptr;
+      LoopForestNode *summaryNode = nullptr;
       LoopStructure *summary = nullptr;
       for (auto enabledLoop : toCheck) {
         if (enabledLoop->getHeader() == LDI->getLoopStructure()->getHeader()) {
@@ -99,7 +99,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences(
        * moment.
        */
       DOALL doall{ noelle };
-      if (true && (summaryNode->getNumberOfSubLoops() >= 1)
+      if ((summaryNode->getNumberOfSubLoops() >= 1)
           && doall.canBeAppliedToLoop(LDI, nullptr)) {
 
         /*
@@ -301,6 +301,14 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(
       }
 
       /*
+       * Avoid inlining a call to a function that has loops.
+       */
+      auto calleeLoops = noelle.getLoopStructures(callF);
+      if (calleeLoops->size() > 0) {
+        continue;
+      }
+
+      /*
        * Count how many memory edges this call is involved in.
        */
       auto memEdgeCount = 0;
@@ -316,7 +324,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(
        * current loop size.
        */
       numberOfFunctionCallsToInline++;
-      if (true && (memEdgeCount > maxMemEdges)
+      if ((memEdgeCount > maxMemEdges)
           && (hot->getStaticInstructions(callF)
               < hot->getStaticInstructions(loopStructure))) {
         maxMemEdges = memEdgeCount;

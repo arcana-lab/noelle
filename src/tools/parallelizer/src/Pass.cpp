@@ -62,11 +62,6 @@ bool Parallelizer::runOnModule(Module &M) {
   auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics(noelle);
 
   /*
-   * Fetch the profiles.
-   */
-  auto profiles = noelle.getProfiles();
-
-  /*
    * Fetch the verbosity level.
    */
   auto verbosity = noelle.getVerbosity();
@@ -107,7 +102,7 @@ bool Parallelizer::runOnModule(Module &M) {
   std::map<uint32_t, LoopDependenceInfo *> loopParallelizationOrder;
   for (auto tree : forest->getTrees()) {
     auto selector = [&noelle, &mm, &loopParallelizationOrder](
-                        StayConnectedNestedLoopForestNode *n,
+                        LoopForestNode *n,
                         uint32_t treeLevel) -> bool {
       auto ls = n->getLoop();
       if (!mm->doesHaveMetadata(ls, "noelle.parallelizer.looporder")) {
@@ -131,6 +126,7 @@ bool Parallelizer::runOnModule(Module &M) {
    */
   auto modified = false;
   std::unordered_map<BasicBlock *, bool> modifiedBBs{};
+  std::unordered_set<Function *> modifiedFunctions;
   for (auto indexLoopPair : loopParallelizationOrder) {
     auto ldi = indexLoopPair.second;
 
@@ -180,6 +176,7 @@ bool Parallelizer::runOnModule(Module &M) {
       for (auto bb : ls->getBasicBlocks()) {
         modifiedBBs[bb] = true;
       }
+      modifiedFunctions.insert(ls->getFunction());
     }
   }
 
@@ -188,6 +185,23 @@ bool Parallelizer::runOnModule(Module &M) {
    */
   for (auto indexLoopPair : loopParallelizationOrder) {
     delete indexLoopPair.second;
+  }
+
+  /*
+   * Erase calls to intrinsics in modified functions
+   */
+  std::unordered_set<CallInst *> intrinsicCallsToRemove;
+  for (auto F : modifiedFunctions) {
+    for (auto &I : *F) {
+      if (auto callInst = dyn_cast<CallInst>(&I)) {
+        if (callInst->isLifetimeStartOrEnd()) {
+          intrinsicCallsToRemove.insert(callInst);
+        }
+      }
+    }
+  }
+  for (auto call : intrinsicCallsToRemove) {
+    call->eraseFromParent();
   }
 
   errs() << "Parallelizer: Exit\n";

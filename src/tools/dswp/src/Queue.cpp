@@ -107,7 +107,8 @@ void DSWP::collectControlQueueInfo(LoopDependenceInfo *LDI, Noelle &par) {
 
       auto controlNode = controlEdge->getOutgoingNode();
       auto controlSCC = sccdag->sccOfValue(controlNode->getT());
-      if (sccManager->getSCCAttrs(controlSCC)->canBeCloned())
+      auto sccAttrs = sccManager->getSCCAttrs(controlSCC);
+      if (this->canBeCloned(sccAttrs))
         continue;
 
       /*
@@ -146,7 +147,8 @@ void DSWP::collectControlQueueInfo(LoopDependenceInfo *LDI, Noelle &par) {
 
       auto condition = conditionToBranchDependency->getOutgoingT();
       auto conditionSCC = sccdag->sccOfValue(condition);
-      if (sccManager->getSCCAttrs(conditionSCC)->canBeCloned())
+      auto conditionSCCAttrs = sccManager->getSCCAttrs(conditionSCC);
+      if (this->canBeCloned(conditionSCCAttrs))
         continue;
 
       conditionsOfConditionalBranch.insert(cast<Instruction>(condition));
@@ -204,7 +206,8 @@ std::set<Task *> DSWP::collectTransitivelyControlledTasks(
   auto sccManager = LDI->getSCCManager();
   SCCDAG *sccdag = sccManager->getSCCDAG();
   auto getTaskOfNode = [this, sccManager, sccdag](DGNode<SCC> *node) -> Task * {
-    if (sccManager->getSCCAttrs(node->getT())->canBeCloned())
+    auto sccAttrs = sccManager->getSCCAttrs(node->getT());
+    if (this->canBeCloned(sccAttrs))
       return nullptr;
     return this->sccToStage.at(node->getT());
   };
@@ -260,7 +263,7 @@ void DSWP::collectDataAndMemoryQueueInfo(LoopDependenceInfo *LDI, Noelle &par) {
            sccManager->getSCCDAG()->fetchNode(scc)->getIncomingEdges()) {
         auto fromSCC = sccEdge->getOutgoingT();
         auto fromSCCInfo = sccManager->getSCCAttrs(fromSCC);
-        if (fromSCCInfo->canBeCloned()) {
+        if (this->canBeCloned(fromSCCInfo)) {
           continue;
         }
 

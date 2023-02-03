@@ -56,6 +56,8 @@ extern DispatcherInfo NOELLE_HELIX_dispatcher_sequentialSegments(
     int64_t numCores,
     int64_t numOfsequentialSegments);
 
+extern uint32_t NOELLE_getAvailableCores(void);
+
 void SIMONE_CAMPANONI_IS_GOING_TO_REMOVE_THIS_FUNCTION(void) {
   queuePush8(0, 0);
   queuePush16(0, 0);
@@ -76,4 +78,6 @@ void SIMONE_CAMPANONI_IS_GOING_TO_REMOVE_THIS_FUNCTION(void) {
   HELIX_signal(0);
 
   NOELLE_DOALLDispatcher(0, 0, 0, 0);
+
+  NOELLE_getAvailableCores();
 }

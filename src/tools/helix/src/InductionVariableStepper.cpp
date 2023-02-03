@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/Reduction.hpp"
+#include "noelle/core/ReductionSCC.hpp"
+#include "noelle/core/InductionVariableSCC.hpp"
 #include "noelle/tools/HELIX.hpp"
 
 namespace llvm::noelle {
@@ -82,7 +83,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
      */
     auto scc = sccdag->sccOfValue(loopEntryPHI);
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    if (sccInfo->canExecuteReducibly()) {
+    if (isa<ReductionSCC>(sccInfo)) {
       continue;
     }
 
@@ -256,7 +257,6 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
      */
     auto scc = sccdag->sccOfValue(&I);
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    auto sccType = sccInfo->getType();
 
     /*
      * Ensure the original instruction was not independent, not a PHI, not
@@ -270,12 +270,12 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
       cloneInstsThatCanStayInTheNewHeader.insert(cloneI);
       continue;
     }
-    if (false || (originalCmpInst == &I) || (originalBrInst == &I)) {
+    if ((originalCmpInst == &I) || (originalBrInst == &I)) {
       originalInstsThatCanStayInTheNewHeader.push_back(&I);
       cloneInstsThatCanStayInTheNewHeader.insert(cloneI);
       continue;
     }
-    if (sccInfo->isInductionVariableSCC()) {
+    if (isa<InductionVariableSCC>(sccInfo)) {
       originalInstsThatCanStayInTheNewHeader.push_back(&I);
       cloneInstsThatCanStayInTheNewHeader.insert(cloneI);
       continue;
@@ -464,9 +464,8 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
      * Fetch the reducable variable.
      */
     auto producerSCC = sccdag->sccOfValue(originalProducer);
-    auto reducableVariable =
-        static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
-    assert(reducableVariable != nullptr);
+    auto producerSCCInfo = sccManager->getSCCAttrs(producerSCC);
+    auto reducableVariable = cast<ReductionSCC>(producerSCCInfo);
 
     /*
      * We need a PHI after the last iteration block to track whether this core
@@ -475,6 +474,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
      */
     auto originalIntermedateInHeader =
         reducableVariable->getPhiThatAccumulatesValuesBetweenLoopIterations();
+    assert(originalIntermedateInHeader != nullptr);
     auto cloneIntermediateInHeader =
         task->getCloneOfOriginalInstruction(originalIntermedateInHeader);
     auto duplicateProducerInLastIterationBlock =

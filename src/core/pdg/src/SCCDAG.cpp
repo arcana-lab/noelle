@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -24,8 +24,7 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "llvm/InitializePasses.h"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 SCCDAG::SCCDAG(PDG *pdg) {
 
@@ -335,24 +334,6 @@ std::unordered_set<SCC *> SCCDAG::getSCCs(void) {
   return s;
 }
 
-SCCDAG::~SCCDAG() {
-  for (auto *edge : allEdges) {
-    if (edge) {
-      delete edge;
-    }
-  }
-
-  for (auto *node : allNodes) {
-    if (node) {
-      delete node;
-    }
-  }
-
-  this->clear();
-
-  return;
-}
-
 bool SCCDAG::orderedBefore(const SCC *earlySCC, const SCCSet &lates) const {
   for (auto lscc : lates) {
     if (orderedBefore(earlySCC, lscc)) {
@@ -419,3 +400,23 @@ uint32_t SCCDAG::getSCCIndex(const SCC *scc) const {
   auto sccF = sccIndexes.find(scc);
   return sccF->second;
 }
+
+SCCDAG::~SCCDAG() {
+  for (auto *edge : allEdges) {
+    if (edge) {
+      delete edge;
+    }
+  }
+
+  for (auto *node : allNodes) {
+    if (node) {
+      delete node;
+    }
+  }
+
+  this->clear();
+
+  return;
+}
+
+} // namespace llvm::noelle

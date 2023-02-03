@@ -7,10 +7,7 @@ set(Srcs
   Noelle_loops.cpp
   Noelle_transformations.cpp
   FunctionsManager.cpp
-  TypesManager.cpp
-  ConstantsManager.cpp
   CompilationOptionsManager.cpp
-  Linker.cpp
 )
 
 # Compilation flags
@@ -39,13 +36,15 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../alloc_aa/include 
   ../../hotprofiler/include 
   ../../talkdown/include
-  ../../loops/include
+  ../../loop_content/include
   ../../loop_nesting_graph/include
   ../../callgraph/include
   ../../scheduler/include
   ../../cfg_analysis/include
   ../../cfg_transformer/include
   ../../loop_transformer/include
+  ../../types_manager/include
+  ../../linker/include
   ${CMAKE_INSTALL_PREFIX}/include
   )
 

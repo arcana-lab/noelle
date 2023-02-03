@@ -42,6 +42,11 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
   HELIX helix{ par, this->forceParallelization };
 
   /*
+   * Fetch the profiles.
+   */
+  auto profiles = par.getProfiles();
+
+  /*
    * Fetch the verbosity level.
    */
   auto verbose = par.getVerbosity();
@@ -63,14 +68,17 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
    * Print
    */
   if (verbose != Verbosity::Disabled) {
+
     /*
      * Get loop ID.
      */
     auto loopIDOpt = loopStructure->getID();
-    assert(loopIDOpt); // ED: we are parallelizing a loop, we are supposed to
-                       // have a loop ID.
+    assert(loopIDOpt);
     auto loopID = loopIDOpt.value();
 
+    /*
+     * Print the most important loop information.
+     */
     errs() << prefix << "Start\n";
     errs() << prefix << "  Function = \"" << loopFunction->getName() << "\"\n";
     errs() << prefix << "  Loop " << loopID << " = \""
@@ -80,6 +88,28 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
     errs() << prefix << "  Number of threads to extract = "
            << LDI->getLoopTransformationsManager()->getMaximumNumberOfCores()
            << "\n";
+    if (profiles->isAvailable()) {
+      errs() << prefix << "  Coverage = "
+             << (profiles->getDynamicTotalInstructionCoverage(loopStructure)
+                 * 100.0)
+             << "%\n";
+    }
+
+    /*
+     * Print the loop environment.
+     */
+    errs() << prefix << "  Environment: live-in and live-out values\n";
+    auto env = LDI->getEnvironment();
+    for (auto envID : env->getEnvIDsOfLiveInVars()) {
+      auto producerOfLiveIn = env->getProducer(envID);
+      errs() << prefix << "  Environment:   Live-in " << envID << " = "
+             << *producerOfLiveIn << "\n";
+    }
+    for (auto envID : env->getEnvIDsOfLiveOutVars()) {
+      auto producer = env->getProducer(envID);
+      errs() << prefix << "  Environment:   Live-out " << envID << " = "
+             << *producer << "\n";
+    }
   }
 
   /*
@@ -196,19 +226,22 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
           : -1);
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
   auto linker = par.getLinker();
-  linker->linkTransformedLoopToOriginalFunction(loopPreHeader,
-                                            entryPoint,
-                                            exitPoint,
-                                            envArray,
-                                            exitIndex,
-                                            loopExitBlocks);
+  linker->linkTransformedLoopToOriginalFunction(
+      loopPreHeader,
+      entryPoint,
+      exitPoint,
+      envArray,
+      exitIndex,
+      loopExitBlocks,
+      usedTechnique->getMinimumNumberOfIdleCores());
   assert(par.verifyCode());
 
   // if (verbose >= Verbosity::Maximal) {
   //   loopFunction->print(errs() << "Final printout:\n"); errs() << "\n";
   // }
   if (verbose != Verbosity::Disabled) {
-    errs() << prefix << "  The loop has been parallelized\n";
+    errs() << prefix << "  The loop has been parallelized with "
+           << usedTechnique->getName() << "\n";
     errs() << prefix << "Exit\n";
   }
 

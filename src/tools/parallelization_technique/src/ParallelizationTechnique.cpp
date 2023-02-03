@@ -20,8 +20,9 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/tools/ParallelizationTechnique.hpp"
-#include "noelle/core/Reduction.hpp"
-#include "noelle/core/BinaryReduction.hpp"
+#include "noelle/core/ReductionSCC.hpp"
+#include "noelle/core/BinaryReductionSCC.hpp"
+#include "noelle/core/LoopCarriedUnknownSCC.hpp"
 
 namespace llvm::noelle {
 
@@ -276,7 +277,7 @@ BasicBlock *ParallelizationTechnique::
     auto producer = environment->getProducer(envID);
     auto producerSCC = loopSCCDAG->sccOfValue(producer);
     auto producerSCCAttributes =
-        static_cast<BinaryReduction *>(sccManager->getSCCAttrs(producerSCC));
+        cast<BinaryReductionSCC>(sccManager->getSCCAttrs(producerSCC));
     assert(producerSCCAttributes != nullptr);
 
     /*
@@ -493,9 +494,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
   auto memoryCloningAnalysis = LDI->getMemoryCloningAnalysis();
   auto envUser = this->envBuilder->getUser(taskIndex);
 
-  task->getTaskBody()->print(errs());
-  rootLoop->getFunction()->print(errs());
-
   /*
    * Fetch the environment of the loop
    */
@@ -503,9 +501,14 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
   assert(environment != nullptr);
 
   /*
+   * Fetch the types manager.
+   */
+  auto typesManager = this->noelle.getTypesManager();
+
+  /*
    * Check every stack object that can be safely cloned.
    */
-  for (auto location : memoryCloningAnalysis->getClonableMemoryLocations()) {
+  for (auto location : memoryCloningAnalysis->getClonableMemoryObjects()) {
 
     /*
      * Fetch the stack object.
@@ -537,9 +540,12 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
      * The stack object can be safely cloned (thanks to the object-cloning
      * analysis) and it is used by our loop.
      *
-     * First, we need to remove the alloca instruction to be a live-in.
+     * First, we need to remove the alloca instruction to be a live-in if the
+     * stack object doesn't need to be initialized.
      */
-    task->removeLiveIn(alloca);
+    if (!location->doPrivateCopiesNeedToBeInitialized()) {
+      task->removeLiveIn(alloca);
+    }
 
     /*
      * Now we need to traverse operands of loop instructions to clone
@@ -643,7 +649,6 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
            * cloned.
            */
           if (opJ == alloca) {
-            assert(!task->isAnOriginalLiveIn(opJ));
             continue;
           }
 
@@ -700,10 +705,108 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
     /*
      * Clone the stack object at the beginning of the task.
      */
-    auto allocaClone = alloca->clone();
+    auto allocaClone = cast<AllocaInst>(alloca->clone());
     auto firstInst = &*entryBlock.begin();
     entryBuilder.SetInsertPoint(firstInst);
     entryBuilder.Insert(allocaClone);
+
+    /*
+     * Initialize the private copy
+     */
+    if (location->doPrivateCopiesNeedToBeInitialized()) {
+
+      /*
+       * Fetch the pointer to the stack object that is passed as live-in.
+       */
+      Instruction *ptrToOriginalObjectInTask = alloca;
+      if (!task->isAnOriginalLiveIn(alloca)) {
+        ptrToOriginalObjectInTask = nullptr;
+        for (auto ptr : location->getPointersUsedToAccessObject()) {
+          if (task->isAnOriginalLiveIn(ptr) && isa<BitCastInst>(ptr)) {
+            ptrToOriginalObjectInTask = ptr;
+            break;
+          }
+        }
+      }
+      if (ptrToOriginalObjectInTask == nullptr) {
+        ptrToOriginalObjectInTask = alloca;
+
+        /*
+         * We must add a new live-in that is the pointer to the original stack
+         * object.
+         */
+        auto newLiveInEnvironmentID = environment->addLiveInValue(alloca, {});
+        this->envBuilder->addVariableToEnvironment(newLiveInEnvironmentID,
+                                                   alloca->getType());
+
+        /*
+         * Declare the new live-in of the loop is also a new live-in for the
+         * user (i.e., task) of the environment specified bt the input (i.e.,
+         * taskIndex).
+         */
+        envUser->addLiveIn(newLiveInEnvironmentID);
+
+        /*
+         * Add the load inside the task to load from the environment the new
+         * live-in.
+         */
+        IRBuilder<> entryBuilderAtTheEnd(&entryBlock);
+        auto lastInstruction = &*(--entryBlock.end());
+        entryBuilderAtTheEnd.SetInsertPoint(lastInstruction);
+        auto envVarPtr =
+            envUser->createEnvironmentVariablePointer(entryBuilderAtTheEnd,
+                                                      newLiveInEnvironmentID,
+                                                      alloca->getType());
+        auto environmentLocationLoad =
+            entryBuilderAtTheEnd.CreateLoad(envVarPtr);
+
+        /*
+         * Make the task aware that the new load represents the live-in value.
+         */
+        task->addLiveIn(alloca, environmentLocationLoad);
+      }
+      assert(ptrToOriginalObjectInTask != nullptr);
+      assert(task->isAnOriginalLiveIn(ptrToOriginalObjectInTask));
+
+      /*
+       * Fetch the original stack object.
+       */
+      auto ptrOfOriginalStackObject = cast<Instruction>(
+          task->getCloneOfOriginalLiveIn(ptrToOriginalObjectInTask));
+      assert(ptrOfOriginalStackObject != nullptr);
+
+      /*
+       * Initialize the private copy of the stack object.
+       */
+      auto t = allocaClone->getAllocatedType();
+      auto beforePtrOfOriginalStackObject =
+          ptrOfOriginalStackObject->getPrevNode();
+      entryBuilder.SetInsertPoint(ptrOfOriginalStackObject);
+      auto &DL = allocaClone->getFunction()->getParent()->getDataLayout();
+      auto sizeInBits = alloca->getAllocationSizeInBits(DL);
+      uint64_t bytes = 0;
+      if (sizeInBits.hasValue()) {
+        bytes = sizeInBits.getValue() / 8;
+      } else {
+        bytes = typesManager->getSizeOfType(t);
+      }
+      auto allocaCloneCasted = cast<Instruction>(
+          entryBuilder.CreateBitCast(allocaClone,
+                                     ptrOfOriginalStackObject->getType()));
+      auto initInst = entryBuilder.CreateMemCpy(allocaCloneCasted,
+                                                {},
+                                                ptrOfOriginalStackObject,
+                                                {},
+                                                bytes);
+      ptrOfOriginalStackObject->moveAfter(beforePtrOfOriginalStackObject);
+      allocaCloneCasted->moveAfter(allocaClone);
+
+      /*
+       * Register the task-private copy of @alloca as the clone of the live-in
+       * @alloca.
+       */
+      task->addLiveIn(ptrToOriginalObjectInTask, allocaCloneCasted);
+    }
 
     /*
      * Keep track of the original-clone mapping.
@@ -853,7 +956,8 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
     auto envPtr = envUser->getEnvPtr(envID);
 
     /*
-     * If the variable is reducable, store the identity as the initial value
+     * If the variable is reducable, store the identity value as the initial
+     * value before the parallelized loop starts its execution.
      */
     if (isReduced) {
 
@@ -862,7 +966,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
        */
       auto producerSCC = loopSCCDAG->sccOfValue(producer);
       auto reductionVariable =
-          static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
+          cast<ReductionSCC>(sccManager->getSCCAttrs(producerSCC));
       assert(reductionVariable != nullptr);
 
       /*
@@ -943,7 +1047,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
          * execute. This is because threads have their own private copy.
          *
          * If the live-out variable is not reduced, then the store needs to be
-         * executed only by the thread that executed the last iteration.
+         * executed only by the thread that has executed the last iteration.
          */
         if (isReduced) {
 
@@ -1366,7 +1470,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
     assert(producer != nullptr);
     auto producerSCC = sccdag->sccOfValue(producer);
     auto reductionVar =
-        static_cast<Reduction *>(sccManager->getSCCAttrs(producerSCC));
+        cast<ReductionSCC>(sccManager->getSCCAttrs(producerSCC));
     auto loopEntryProducerPHI =
         reductionVar->getPhiThatAccumulatesValuesBetweenLoopIterations();
     assert(loopEntryProducerPHI != nullptr);
@@ -1640,22 +1744,38 @@ void ParallelizationTechnique::
 }
 
 float ParallelizationTechnique::computeSequentialFractionOfExecution(
-    LoopDependenceInfo *LDI,
-    Noelle &par) const {
+    LoopDependenceInfo *LDI) const {
+  auto f = [](GenericSCC *sccInfo) -> bool {
+    auto mustBeSynchronized = isa<LoopCarriedUnknownSCC>(sccInfo);
+    return mustBeSynchronized;
+  };
 
+  auto fraction = this->computeSequentialFractionOfExecution(LDI, f);
+
+  return fraction;
+}
+
+float ParallelizationTechnique::computeSequentialFractionOfExecution(
+    LoopDependenceInfo *LDI,
+    std::function<bool(GenericSCC *scc)> doesItRunSequentially) const {
+
+  /*
+   * Fetch the SCCDAG.
+   */
   auto sccManager = LDI->getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
+
+  /*
+   * Compute the fraction of sequential code.
+   */
   float totalInstructionCount = 0, sequentialInstructionCount = 0;
   for (auto sccNode : sccdag->getNodes()) {
     auto scc = sccNode->getT();
     auto sccInfo = sccManager->getSCCAttrs(scc);
-    auto sccType = sccInfo->getType();
 
     auto numInstructionsInSCC = scc->numInternalNodes();
     totalInstructionCount += numInstructionsInSCC;
-    bool mustBeSynchronized =
-        sccType == SCCAttrs::SCCType::SEQUENTIAL && !sccInfo->canBeCloned();
-    if (mustBeSynchronized) {
+    if (doesItRunSequentially(sccInfo)) {
       sequentialInstructionCount += numInstructionsInSCC;
     }
   }
@@ -1664,13 +1784,15 @@ float ParallelizationTechnique::computeSequentialFractionOfExecution(
 }
 
 BasicBlock *ParallelizationTechnique::getParLoopEntryPoint(void) const {
-  return entryPointOfParallelizedLoop;
+  return this->entryPointOfParallelizedLoop;
 }
 
 BasicBlock *ParallelizationTechnique::getParLoopExitPoint(void) const {
-  return exitPointOfParallelizedLoop;
+  return this->exitPointOfParallelizedLoop;
 }
 
-ParallelizationTechnique::~ParallelizationTechnique() {}
+ParallelizationTechnique::~ParallelizationTechnique() {
+  return;
+}
 
 } // namespace llvm::noelle
