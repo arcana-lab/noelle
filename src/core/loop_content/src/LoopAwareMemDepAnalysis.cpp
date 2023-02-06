@@ -43,7 +43,7 @@ static liberty::LoopAA *NoelleSCAFAA = nullptr;
 static liberty::ModuleLoops *ModuleLoops = nullptr;
 #endif
 
-void *getSCAFLoopAA() {
+void *getSCAFLoopAA(void) {
 #ifdef ENABLE_SCAF
   return NoelleSCAFAA;
 #else
