@@ -44,6 +44,13 @@ public:
       std::function<void(BasicBlock *newBB, BasicBlock *newJoinBB)>
           addConditionalBranch);
 
+  void branchToTargetBasicBlockAndBack(
+      Instruction *splitPoint,
+      BasicBlock &targetBB,
+      std::string joinBasicBlockName,
+      std::function<void(BasicBlock *newBB, BasicBlock *newJoinBB)>
+          addConditionalBranch);
+
 private:
 };
 
