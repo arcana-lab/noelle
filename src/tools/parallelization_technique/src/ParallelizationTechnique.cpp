@@ -322,7 +322,8 @@ BasicBlock *ParallelizationTechnique::
       envVar = envBuilder->getAccumulatedReducedEnvironmentVariable(envID);
     } else {
       envVar = afterReductionBuilder->CreateLoad(
-          envBuilder->getEnvironmentVariable(envID));
+          envBuilder->getEnvironmentVariable(envID),
+          "noelle.environment_variable.live_out.reduction");
     }
     assert(envVar != nullptr);
 
@@ -692,7 +693,9 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
               envUser->createEnvironmentVariablePointer(entryBuilder,
                                                         newLiveInEnvironmentID,
                                                         opJ->getType());
-          auto environmentLocationLoad = entryBuilder.CreateLoad(envVarPtr);
+          auto environmentLocationLoad =
+              entryBuilder.CreateLoad(envVarPtr,
+                                      "noelle.environment_variable.live_in");
 
           /*
            * Make the task aware that the new load represents the live-in value.
@@ -757,8 +760,9 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
             envUser->createEnvironmentVariablePointer(entryBuilderAtTheEnd,
                                                       newLiveInEnvironmentID,
                                                       alloca->getType());
-        auto environmentLocationLoad =
-            entryBuilderAtTheEnd.CreateLoad(envVarPtr);
+        auto environmentLocationLoad = entryBuilderAtTheEnd.CreateLoad(
+            envVarPtr,
+            "noelle.environment_variable.live_in");
 
         /*
          * Make the task aware that the new load represents the live-in value.
@@ -1077,9 +1081,11 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
 
           /*
            * Check if the place to inject the store is included in a cycle in
-           * the CFG (hence, it can run multiple times). If that is the case,
-           * then we need to store the live-out variable only if the current
-           * task has executed the last iteration of the loop. Otherwise, the
+           * the CFG (hence, it can run multiple times). If that is not the
+           * case, then we need to store the live-out variable only if the
+           * current task has executed the last iteration of the loop.
+           *
+           * If instead the store is included in a cycle, then the
            * store will happen within the loop body and we assume to be
            * synchronized correctly by the parallelization technique.
            */
