@@ -63,6 +63,9 @@ outputbc="${parallelizerArgsArray[2]}" ;
 autotunerConf="autotuner_conf.info" ;
 autotunerSpace="autotuner_space.info" ;
 
+export autotunerSPACE_FILE="${autotunerSpace}" ; # Needed for the creation and filtering of the autotuner search space
+export INDEX_FILE="${autotunerConf}" ; # We need to export this env var to force loop parallelization in noelle
+
 # Add loop ID to all loops
 # NOTE: the outputbc file must be the same as the input because of --parallelizer-args
 cmd="noelle-meta-loop-embed ${inputbc} -o ${inputbc}"
@@ -93,8 +96,6 @@ fi
 export autotunerPARALLELIZED_BINARY="binaryToRun" ;
 export autotunerEXECUTION_TIME="executionTime.txt" ;
 export autotunerBASELINE_TIME="baselineTime.txt" ;
-export autotunerSPACE_FILE="${autotunerSpace}" ;
-export INDEX_FILE="${autotunerConf}" ; # We need to export this env var to force loop parallelization in noelle
 export autotunerINSTALL_DIR="${installDir}" ;
 export autotunerARGS="${parallelizerArgs}" ;
 export autotunerINPUT="${inputToRun}" ;

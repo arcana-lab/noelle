@@ -21,6 +21,9 @@
  */
 #include "AutotunerDoallFilter.hpp"
 
+#include <cstdlib>
+#include <fstream>
+
 namespace llvm::noelle {
 
 AutotunerDoallFilter::AutotunerDoallFilter() : ModulePass(this->ID) {}
@@ -38,11 +41,21 @@ bool AutotunerDoallFilter::runOnModule(Module &M) {
   auto &noelle = getAnalysis<Noelle>();
 
   /*
+   * Get autotuner_space.info file name
+   */
+  char *fileName = getenv("autotunerSPACE_FILE");
+  if (fileName == nullptr) {
+    errs()
+        << "ERROR: autotuner_doall_filter, no autotunerSPACE_FILE env var specified. Abort.\n";
+    abort();
+  }
+
+  /*
    * Write autotuner space file (i.e., number of loops that makes sense to
    * parallelize)
    */
   ofstream file;
-  file.open("autotuner_space.info");
+  file.open(fileName);
 
   /*
    * Meaning (per index):
