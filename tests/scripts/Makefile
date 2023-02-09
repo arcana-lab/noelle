@@ -30,6 +30,8 @@ OPTIMIZED_AUTOTUNED=parallelized_autotuned
 PRINT_OUTPUT_FILE=test.txt
 
 # Autotuner
+# Input to run the autotuner
+INPUT=input.txt
 # Time limit for the autotuner to run (in seconds)
 TIME=100
 # Max number of configurations the autotuner explores
@@ -62,16 +64,16 @@ Parallelizer_utils.bc: Parallelizer_utils.cpp
 	$(CPP) $(RUNTIME_CFLAGS) $(INCLUDES) -std=c++14 -emit-llvm $(OPT_LEVEL) -c $^ -o $@
 
 $(OPTIMIZED): test_parallelized.bc
-	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
+	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $< $(LIBS) -o $@
 
 $(OPTIMIZED_AUTOTUNED): test_parallelized_autotuned.bc
-	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $^ $(LIBS) -o $@
+	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $< $(LIBS) -o $@
 
 test_parallelized.bc: baseline_with_metadata.bc Parallelizer_utils.bc
 	noelle-parallelizer $< -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
 
 test_parallelized_autotuned.bc: baseline_with_metadata.bc input.txt Parallelizer_utils.bc
-	noelle-parallelizer-autotuner --parallelizer-args="$< -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)" --libs="$(LIBS)" --input="input.txt" --autotuner-time="$(TIME)" --autotuner-numconf="$(NUM_CONF)" $(NOSEARCHSPACE) $(NODOALLFILTERING) $(NODOALLTIMEFILTERING)
+	noelle-parallelizer-autotuner --parallelizer-args="$< -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)" --libs="$(LIBS)" --input="$(INPUT)" --autotuner-time="$(TIME)" --autotuner-numconf="$(NUM_CONF)" $(NOSEARCHSPACE) $(NODOALLFILTERING) $(NODOALLTIMEFILTERING)
 
 baseline.bc: test.bc
 	$(CPP) $(OPT_LEVEL) -c -emit-llvm $^ -o $@
@@ -105,10 +107,10 @@ test_correctness: input.txt baseline $(OPTIMIZED)
 	@../../scripts/test_correctness.sh $(NUM_RUNS)
 
 clean:
-	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o baseline $(OPTIMIZED) *.prof *.profraw *prof .*.dot
+	rm -f *.bc *.dot *.jpg *.ll *.S *.s *.o baseline $(OPTIMIZED) $(OPTIMIZED_AUTOTUNED) *.prof *.profraw *prof .*.dot
 	rm -f time_parallelized.txt compiler_output.txt input.txt ;
 	rm -f output*.txt ;
 	rm -f OUT ;
-	rm -rf binaryToRun autotuner_space.info executionTime.txt exploredConfs.json opentuner.db opentuner.log ;
+	rm -rf binaryToRun executionTime.txt exploredConfs.json opentuner.db opentuner.log ;
 
 .PHONY: test_correctness clean
