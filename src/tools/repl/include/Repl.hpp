@@ -33,6 +33,7 @@ namespace Repl {
 
 enum ReplAction {
   Help = 0,
+  Functions,
   Loops,
   Select,
   Quit,
@@ -51,6 +52,7 @@ enum ReplAction {
 const map<string, ReplAction> ReplActions = {
   { "help", ReplAction::Help },
   { "h", ReplAction::Help },
+  { "funcs", ReplAction::Functions },
   { "loops", ReplAction::Loops },
   { "ls", ReplAction::Loops },
   { "select", ReplAction::Select },
@@ -189,6 +191,7 @@ protected:
   const map<ReplAction, string> HelpText = {
     { Help, "help/h (command): \tprint help message (for certain command)" },
     { Loops, "loops/ls: \tprint all loops with loop id" },
+    { Functions, "funcs: \tprint all functions with body and their attributes" },
     { Select, "select/s \t$loop_id: select a loop to work with" },
     { Dump,
       "dump (-v):\t dump the loop information (verbose: dump the loop instructions)" },
@@ -321,6 +324,7 @@ public:
       M(m),
       parser("") {
     actionFuncs = { { Help, [this] { this->helpFn(); } },
+                    { Functions, [this] { this->funcsFn(); } },
                     { Loops, [this] { this->loopsFn(); } },
                     { Select, [this] { this->selectFn(); } },
                     { Dump, [this] { this->dumpFn(); } },
@@ -347,6 +351,7 @@ public:
   }
 
   virtual void helpFn();
+  virtual void funcsFn();
   virtual void loopsFn();
   virtual void selectFn();
   virtual void dumpFn();

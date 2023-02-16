@@ -100,6 +100,20 @@ char **completer(const char *text, int start, int end) {
   return rl_completion_matches(text, completion_generator);
 }
 
+void ReplDriver::funcsFn() {
+  outs() << "List of functions:\n";
+
+  for (auto &F : this->M) {
+    if (F.isDeclaration()) {
+      continue;
+    }
+    outs() << F.getName() << ":\n";
+    for (auto attr : F.getAttributes()) {
+      outs() << "\t" << attr.getAsString() << "\n";
+    }
+  }
+}
+
 void ReplDriver::loopsFn() {
   outs() << "List of hot loops:\n";
 
