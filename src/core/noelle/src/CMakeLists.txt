@@ -36,15 +36,20 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../alloc_aa/include 
   ../../hotprofiler/include 
   ../../talkdown/include
+  ../../loop_structure/include
   ../../loop_content/include
+  ../../loop_forest/include
   ../../loop_nesting_graph/include
   ../../callgraph/include
+  ../../pdg/include
+  ../../pdg_analysis/include
   ../../scheduler/include
   ../../cfg_analysis/include
   ../../cfg_transformer/include
   ../../loop_transformer/include
   ../../types_manager/include
   ../../linker/include
+  ../../alias_analysis_engine/include
   ${CMAKE_INSTALL_PREFIX}/include
   )
 

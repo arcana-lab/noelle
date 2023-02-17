@@ -20,6 +20,8 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/AliasAnalysisEngine.hpp"
+#include "noelle/core/PDGAnalysis.hpp"
 #include "IntegrationWithSVF.hpp"
 
 /*
@@ -198,6 +200,18 @@ AliasResult NoelleSVFIntegration::alias(const Value *v1, const Value *v2) {
 #else
   return AliasResult::MayAlias;
 #endif
+}
+
+std::set<AliasAnalysisEngine *> PDGAnalysis::getProgramAliasAnalysisEngines(
+    void) {
+  std::set<AliasAnalysisEngine *> s;
+
+#ifdef ENABLE_SVF
+  auto svf = new AliasAnalysisEngine("SVF", wpa);
+  s.insert(svf);
+#endif
+
+  return s;
 }
 
 } // namespace llvm::noelle

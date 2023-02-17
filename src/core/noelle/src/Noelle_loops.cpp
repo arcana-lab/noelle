@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,13 +19,15 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <algorithm>
+
+#include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopStructure.hpp"
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Architecture.hpp"
 #include "noelle/core/LoopForest.hpp"
 #include "noelle/core/HotProfiler.hpp"
-#include <algorithm>
 
 namespace llvm::noelle {
 
