@@ -210,4 +210,23 @@ bool Noelle::verifyCode(void) const {
   return !incorrect;
 }
 
+std::set<AliasAnalysisEngine *> Noelle::getAliasAnalysisEngines(void) {
+
+  /*
+   * Check if we have collected the engines already.
+   */
+  if (this->aaEngines.size() == 0) {
+
+    /*
+     * We didn't collect the engines yet.
+     * Let's collect them now.
+     */
+    this->aaEngines = LoopDependenceInfo::getLoopAliasAnalysisEngines();
+    auto programAAEngines = PDGAnalysis::getProgramAliasAnalysisEngines();
+    this->aaEngines.insert(programAAEngines.begin(), programAAEngines.end());
+  }
+
+  return this->aaEngines;
+}
+
 } // namespace llvm::noelle
