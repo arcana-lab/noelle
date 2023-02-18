@@ -23,15 +23,22 @@
 
 namespace llvm::noelle {
 
-CompilationOptionsManager::CompilationOptionsManager(Module &m,
-                                                     uint32_t maxCores)
+CompilationOptionsManager::CompilationOptionsManager(
+    Module &m,
+    uint32_t maxCores,
+    bool arePRVGsNonDeterministic)
   : program{ m },
-    maxCores{ maxCores } {
+    maxCores{ maxCores },
+    PRVGsNonDeterministic{ arePRVGsNonDeterministic } {
   return;
 }
 
 uint32_t CompilationOptionsManager::getMaximumNumberOfCores(void) const {
   return this->maxCores;
+}
+
+bool CompilationOptionsManager::arePRVGsNonDeterministic(void) const {
+  return this->PRVGsNonDeterministic;
 }
 
 } // namespace llvm::noelle

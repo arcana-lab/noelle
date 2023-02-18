@@ -22,6 +22,7 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/CompilationOptionsManager.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/InductionVariables.hpp"
@@ -41,13 +42,15 @@ public:
   /*
    * Constructors.
    */
-  LoopDependenceInfo(PDG *fG,
+  LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
+                     PDG *fG,
                      LoopForestNode *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
                      ScalarEvolution &SE);
 
-  LoopDependenceInfo(PDG *fG,
+  LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
+                     PDG *fG,
                      LoopForestNode *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
@@ -56,6 +59,7 @@ public:
                      bool enableFloatAsReal);
 
   LoopDependenceInfo(
+      CompilationOptionsManager *compilationOptionsManager,
       PDG *fG,
       LoopForestNode *loopNode,
       Loop *l,
@@ -65,7 +69,8 @@ public:
       bool enableFloatAsReal,
       std::unordered_set<LoopDependenceInfoOptimization> optimizations);
 
-  LoopDependenceInfo(PDG *fG,
+  LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
+                     PDG *fG,
                      LoopForestNode *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
@@ -75,6 +80,7 @@ public:
                      bool enableLoopAwareDependenceAnalyses);
 
   LoopDependenceInfo(
+      CompilationOptionsManager *compilationOptionsManager,
       PDG *fG,
       LoopForestNode *loop,
       Loop *l,
@@ -86,6 +92,7 @@ public:
       bool enableLoopAwareDependenceAnalyses);
 
   LoopDependenceInfo(
+      CompilationOptionsManager *compilationOptionsManager,
       PDG *fG,
       LoopForestNode *loop,
       Loop *l,
@@ -198,12 +205,15 @@ private:
 
   LoopTransformationsManager *loopTransformationsManager;
 
+  CompilationOptionsManager *com;
+
   /*
    * Methods
    */
   void fetchLoopAndBBInfo(Loop *l, ScalarEvolution &SE);
 
-  std::pair<PDG *, SCCDAG *> createDGsForLoop(Loop *l,
+  std::pair<PDG *, SCCDAG *> createDGsForLoop(CompilationOptionsManager *com,
+                                              Loop *l,
                                               LoopForestNode *loopNode,
                                               PDG *functionDG,
                                               DominatorSummary &DS,

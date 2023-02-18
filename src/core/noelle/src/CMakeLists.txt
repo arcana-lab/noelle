@@ -7,7 +7,6 @@ set(Srcs
   Noelle_loops.cpp
   Noelle_transformations.cpp
   FunctionsManager.cpp
-  CompilationOptionsManager.cpp
 )
 
 # Compilation flags
@@ -50,6 +49,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../types_manager/include
   ../../linker/include
   ../../alias_analysis_engine/include
+  ../../compilation_options_manager/include
   ${CMAKE_INSTALL_PREFIX}/include
   )
 

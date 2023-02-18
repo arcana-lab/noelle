@@ -1,4 +1,4 @@
-UTILS=transformations basic_utilities types_manager constants_manager linker dominators task loop_induction_variables loop_carried_dependences memory_cloning_analysis loop_scc_attributes loop_sccdag_attributes loop_content loop_nesting_graph architecture clean_metadata callgraph scheduler metadata_manager loop_transformer alias_analysis_engine
+UTILS=transformations basic_utilities types_manager constants_manager compilation_options_manager linker dominators task loop_induction_variables loop_carried_dependences memory_cloning_analysis loop_scc_attributes loop_sccdag_attributes loop_content loop_nesting_graph architecture clean_metadata callgraph scheduler metadata_manager loop_transformer alias_analysis_engine
 ANALYSIS=dg pdg pdg_analysis talkdown alloc_aa dataflow loop_structure loop_environment loop_forest loop_invariants
 ENABLERS=loop_distribution loop_unroll loop_whilifier outliner cfg_analysis cfg_transformer
 ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) hotprofiler unique_ir_marker noelle scripts
@@ -18,6 +18,9 @@ alias_analysis_engine:
 	cd $@ ; ../../scripts/run_me.sh
 
 dominators:
+	cd $@ ; ../../scripts/run_me.sh
+
+compilation_options_manager:
 	cd $@ ; ../../scripts/run_me.sh
 
 loop_transformer:

@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.13)
-project(Noelle)
+project(CompilationOptionsManager)
 
 # Dependences
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
@@ -11,8 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/noelle/core/Noelle.hpp
-  include/noelle/core/FunctionsManager.hpp
+  include/noelle/core/CompilationOptionsManager.hpp
   DESTINATION 
   include/noelle/core
   )

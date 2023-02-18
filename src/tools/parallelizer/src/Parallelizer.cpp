@@ -162,6 +162,7 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
     assert(newLoopNode != nullptr);
     auto lto = LDI->getLoopTransformationsManager();
     auto newLDI = new LoopDependenceInfo(
+        par.getCompilationOptionsManager(),
         taskFunctionDG,
         newLoopNode,
         l,

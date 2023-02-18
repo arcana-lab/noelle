@@ -41,6 +41,10 @@ static cl::opt<int> MaximumCores(
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Maximum number of logical cores that Noelle can use"));
+static cl::opt<bool> ND_PRVGs("noelle-nondeterministic-prvgs",
+                              cl::ZeroOrMore,
+                              cl::Hidden,
+                              cl::desc("Consider PRVGs nondeterministic"));
 static cl::opt<bool> DisableFloatAsReal(
     "noelle-disable-float-as-real",
     cl::ZeroOrMore,
@@ -152,7 +156,9 @@ bool Noelle::doInitialization(Module &M) {
   /*
    * Allocate the managers.
    */
-  this->om = new CompilationOptionsManager(M, optMaxCores);
+  this->om = new CompilationOptionsManager(M,
+                                           optMaxCores,
+                                           ND_PRVGs.getNumOccurrences() > 0);
 
   /*
    * Store the module.
