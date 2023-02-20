@@ -117,7 +117,15 @@ bool SCCDAGAttrTestSuite::runOnModule(Module &M) {
 
   this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
   this->ldi =
-      new LoopDependenceInfo(fdg, loopNode, topLoop, *DS, *SE, 2, true, true);
+      new LoopDependenceInfo(this->noelle->getCompilationOptionsManager(),
+                             fdg,
+                             loopNode,
+                             topLoop,
+                             *DS,
+                             *SE,
+                             2,
+                             true,
+                             true);
   auto sccManager = this->ldi->getSCCManager();
 
   this->sccdag = sccManager->getSCCDAG();
