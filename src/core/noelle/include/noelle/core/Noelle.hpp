@@ -218,15 +218,12 @@ public:
 
   bool shouldLoopsBeHoistToMain(void) const;
 
-  bool canFloatsBeConsideredRealNumbers(void) const;
-
   bool verifyCode(void) const;
 
   ~Noelle();
 
 private:
   Verbosity verbose;
-  bool enableFloatAsReal;
   double minHot;
   Module *program;
   Hot *profiles;

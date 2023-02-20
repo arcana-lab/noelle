@@ -43,7 +43,6 @@ LoopDependenceInfo::LoopDependenceInfo(
                         DS,
                         SE,
                         Architecture::getNumberOfLogicalCores(),
-                        true,
                         {},
                         true } {
   return;
@@ -56,11 +55,9 @@ LoopDependenceInfo::LoopDependenceInfo(
     Loop *l,
     DominatorSummary &DS,
     ScalarEvolution &SE,
-    uint32_t maxCores,
-    bool enableFloatAsReal)
+    uint32_t maxCores)
   : LoopDependenceInfo{
-      compilationOptionsManager, fG, loopNode, l, DS, SE, maxCores,
-      enableFloatAsReal,         {}, true
+      compilationOptionsManager, fG, loopNode, l, DS, SE, maxCores, {}, true
     } {
 
   return;
@@ -74,7 +71,6 @@ LoopDependenceInfo::LoopDependenceInfo(
     DominatorSummary &DS,
     ScalarEvolution &SE,
     uint32_t maxCores,
-    bool enableFloatAsReal,
     std::unordered_set<LoopDependenceInfoOptimization> optimizations)
   : LoopDependenceInfo{ compilationOptionsManager,
                         fG,
@@ -83,7 +79,6 @@ LoopDependenceInfo::LoopDependenceInfo(
                         DS,
                         SE,
                         maxCores,
-                        enableFloatAsReal,
                         optimizations,
                         true } {
 
@@ -98,18 +93,11 @@ LoopDependenceInfo::LoopDependenceInfo(
     DominatorSummary &DS,
     ScalarEvolution &SE,
     uint32_t maxCores,
-    bool enableFloatAsReal,
     bool enableLoopAwareDependenceAnalyses)
-  : LoopDependenceInfo{ compilationOptionsManager,
-                        fG,
-                        loopNode,
-                        l,
-                        DS,
-                        SE,
-                        maxCores,
-                        enableFloatAsReal,
-                        {},
-                        enableLoopAwareDependenceAnalyses } {
+  : LoopDependenceInfo{
+      compilationOptionsManager,        fG, loopNode, l, DS, SE, maxCores, {},
+      enableLoopAwareDependenceAnalyses
+    } {
 
   return;
 }
@@ -122,7 +110,6 @@ LoopDependenceInfo::LoopDependenceInfo(
     DominatorSummary &DS,
     ScalarEvolution &SE,
     uint32_t maxCores,
-    bool enableFloatAsReal,
     std::unordered_set<LoopDependenceInfoOptimization> optimizations,
     bool enableLoopAwareDependenceAnalyses)
   : LoopDependenceInfo(compilationOptionsManager,
@@ -132,7 +119,6 @@ LoopDependenceInfo::LoopDependenceInfo(
                        DS,
                        SE,
                        maxCores,
-                       enableFloatAsReal,
                        optimizations,
                        enableLoopAwareDependenceAnalyses,
                        8) {
@@ -147,7 +133,6 @@ LoopDependenceInfo::LoopDependenceInfo(
     DominatorSummary &DS,
     ScalarEvolution &SE,
     uint32_t maxCores,
-    bool enableFloatAsReal,
     std::unordered_set<LoopDependenceInfoOptimization> optimizations,
     bool enableLoopAwareDependenceAnalyses,
     uint32_t chunkSize)
@@ -255,12 +240,13 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Calculate various attributes on SCCs
    */
-  this->sccdagAttrs = new SCCDAGAttrs(enableFloatAsReal,
-                                      loopDG,
-                                      loopSCCDAG,
-                                      this->loop,
-                                      *inductionVariables,
-                                      DS);
+  this->sccdagAttrs = new SCCDAGAttrs(
+      compilationOptionsManager->canFloatsBeConsideredRealNumbers(),
+      loopDG,
+      loopSCCDAG,
+      this->loop,
+      *inductionVariables,
+      DS);
   this->domainSpaceAnalysis =
       new LoopIterationDomainSpaceAnalysis(this->loop,
                                            *this->inductionVariables,

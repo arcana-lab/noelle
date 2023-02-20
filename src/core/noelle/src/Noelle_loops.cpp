@@ -546,7 +546,6 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(Function *function,
                                         *DS,
                                         SE,
                                         this->om->getMaximumNumberOfCores(),
-                                        this->enableFloatAsReal,
                                         this->loopAwareDependenceAnalysis);
       allLoops->push_back(ldi);
     }
@@ -759,7 +758,6 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
                                        *DS,
                                        SE,
                                        this->om->getMaximumNumberOfCores(),
-                                       this->enableFloatAsReal,
                                        this->loopAwareDependenceAnalysis);
 
         } else {
@@ -1314,7 +1312,6 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
                                     *DS,
                                     *SE,
                                     maxCores,
-                                    this->enableFloatAsReal,
                                     optimizations,
                                     this->loopAwareDependenceAnalysis,
                                     DOALLChunkSizeForLoop);

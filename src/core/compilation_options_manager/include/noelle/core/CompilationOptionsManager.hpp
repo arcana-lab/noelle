@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 - 2021  Simone Campanoni
+ * Copyright 2020 - 2023  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -29,16 +29,20 @@ class CompilationOptionsManager {
 public:
   CompilationOptionsManager(Module &m,
                             uint32_t maxCores,
-                            bool arePRVGsNonDeterministic);
+                            bool arePRVGsNonDeterministic,
+                            bool areFloatRealNumbers);
 
   uint32_t getMaximumNumberOfCores(void) const;
+
+  bool canFloatsBeConsideredRealNumbers(void) const;
 
   bool arePRVGsNonDeterministic(void) const;
 
 private:
   Module &program;
-  uint32_t maxCores;
-  bool PRVGsNonDeterministic;
+  uint32_t _maxCores;
+  bool _arePRVGsNonDeterministic;
+  bool _areFloatRealNumbers;
 };
 
 } // namespace llvm::noelle

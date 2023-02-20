@@ -169,7 +169,6 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
         *DS,
         SE,
         par.getCompilationOptionsManager()->getMaximumNumberOfCores(),
-        par.canFloatsBeConsideredRealNumbers(),
         lto->getOptimizationsEnabled(),
         false,
         lto->getChunkSize());

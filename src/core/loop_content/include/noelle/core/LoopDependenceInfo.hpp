@@ -55,8 +55,7 @@ public:
                      Loop *l,
                      DominatorSummary &DS,
                      ScalarEvolution &SE,
-                     uint32_t maxCores,
-                     bool enableFloatAsReal);
+                     uint32_t maxCores);
 
   LoopDependenceInfo(
       CompilationOptionsManager *compilationOptionsManager,
@@ -66,7 +65,6 @@ public:
       DominatorSummary &DS,
       ScalarEvolution &SE,
       uint32_t maxCores,
-      bool enableFloatAsReal,
       std::unordered_set<LoopDependenceInfoOptimization> optimizations);
 
   LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
@@ -76,7 +74,6 @@ public:
                      DominatorSummary &DS,
                      ScalarEvolution &SE,
                      uint32_t maxCores,
-                     bool enableFloatAsReal,
                      bool enableLoopAwareDependenceAnalyses);
 
   LoopDependenceInfo(
@@ -87,7 +84,6 @@ public:
       DominatorSummary &DS,
       ScalarEvolution &SE,
       uint32_t maxCores,
-      bool enableFloatAsReal,
       std::unordered_set<LoopDependenceInfoOptimization> optimizations,
       bool enableLoopAwareDependenceAnalyses);
 
@@ -99,7 +95,6 @@ public:
       DominatorSummary &DS,
       ScalarEvolution &SE,
       uint32_t maxCores,
-      bool enableFloatAsReal,
       std::unordered_set<LoopDependenceInfoOptimization> optimizations,
       bool enableLoopAwareDependenceAnalyses,
       uint32_t chunkSize);
