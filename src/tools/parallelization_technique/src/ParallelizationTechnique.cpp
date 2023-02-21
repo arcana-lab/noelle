@@ -1789,6 +1789,96 @@ float ParallelizationTechnique::computeSequentialFractionOfExecution(
   return sequentialInstructionCount / totalInstructionCount;
 }
 
+void ParallelizationTechnique::makePRVGsReentrant(void) {
+
+  /*
+   * Fetch the reentrant version of the known PRVGs.
+   */
+  std::map<Function *, Function *> prvgs;
+  auto fm = this->noelle.getFunctionsManager();
+  auto rand = fm->getFunction("rand");
+  auto rand_r = fm->getFunction("rand_r");
+  if ((rand != nullptr) && (rand_r != nullptr)) {
+    prvgs[rand] = rand_r;
+  }
+
+  /*
+   * Substitute PRVGs.
+   */
+  auto tm = this->noelle.getTypesManager();
+  for (auto i = 0; i < this->tasks.size(); ++i) {
+
+    /*
+     * Fetch the task.
+     */
+    auto task = this->tasks[i];
+
+    /*
+     * Iterate over the instructions of the task.
+     */
+    auto f = task->getTaskBody();
+
+    /*
+     * Fetch the entry basic block.
+     */
+    auto &entryBB = f->getEntryBlock();
+    IRBuilder<> entryBuilder(&entryBB);
+    entryBuilder.SetInsertPoint(entryBB.getFirstNonPHIOrDbgOrLifetime());
+
+    /*
+     * Find the PRVG to substitute.
+     */
+    std::set<CallBase *> toPatch;
+    for (auto &I : instructions(f)) {
+
+      /*
+       * Fetch the next call instruction.
+       */
+      auto callI = dyn_cast<CallBase>(&I);
+      if (callI == nullptr) {
+        continue;
+      }
+
+      /*
+       * Fetch the next call instruction of a PRVG.
+       */
+      auto calleeF = callI->getCalledFunction();
+      if (calleeF == nullptr) {
+        continue;
+      }
+      auto reentrantPRVG = prvgs[calleeF];
+      if (reentrantPRVG == nullptr) {
+        continue;
+      }
+
+      /*
+       * Collect the current place to patch.
+       */
+      toPatch.insert(callI);
+    }
+
+    /*
+     * Substitute PRVGs.
+     */
+    for (auto callI : toPatch) {
+      auto calleeF = callI->getCalledFunction();
+      auto reentrantPRVG = prvgs[calleeF];
+      assert(reentrantPRVG != nullptr);
+
+      /*
+       * Allocate the PRVG reentrant state.
+       */
+      auto seedI = entryBuilder.CreateAlloca(tm->getIntegerType(32));
+      IRBuilder<> prvgBuilder(callI);
+      auto newCallI = prvgBuilder.CreateCall(reentrantPRVG, { seedI });
+      callI->replaceAllUsesWith(newCallI);
+      callI->eraseFromParent();
+    }
+  }
+
+  return;
+}
+
 BasicBlock *ParallelizationTechnique::getParLoopEntryPoint(void) const {
   return this->entryPointOfParallelizedLoop;
 }

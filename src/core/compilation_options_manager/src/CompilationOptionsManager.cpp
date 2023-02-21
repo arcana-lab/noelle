@@ -19,21 +19,32 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
-
-#include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/CompilationOptionsManager.hpp"
 
 namespace llvm::noelle {
 
-class CompilationOptionsManager {
-public:
-  CompilationOptionsManager(Module &m, uint32_t maxCores);
+CompilationOptionsManager::CompilationOptionsManager(
+    Module &m,
+    uint32_t maxCores,
+    bool arePRVGsNonDeterministic,
+    bool areFloatRealNumbers)
+  : program{ m },
+    _maxCores{ maxCores },
+    _arePRVGsNonDeterministic{ arePRVGsNonDeterministic },
+    _areFloatRealNumbers{ areFloatRealNumbers } {
+  return;
+}
 
-  uint32_t getMaximumNumberOfCores(void) const;
+uint32_t CompilationOptionsManager::getMaximumNumberOfCores(void) const {
+  return this->_maxCores;
+}
 
-private:
-  Module &program;
-  uint32_t maxCores;
-};
+bool CompilationOptionsManager::canFloatsBeConsideredRealNumbers(void) const {
+  return this->_areFloatRealNumbers;
+}
+
+bool CompilationOptionsManager::arePRVGsNonDeterministic(void) const {
+  return this->_arePRVGsNonDeterministic;
+}
 
 } // namespace llvm::noelle

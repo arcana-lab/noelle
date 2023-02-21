@@ -42,6 +42,8 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_scc_attributes/include
   ../../loop_sccdag_attributes/include
   ../../memory_cloning_analysis/include
+  ../../alias_analysis_engine/include
+  ../../compilation_options_manager/include
 	../include
 )
 

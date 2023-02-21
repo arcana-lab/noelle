@@ -162,13 +162,13 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
     assert(newLoopNode != nullptr);
     auto lto = LDI->getLoopTransformationsManager();
     auto newLDI = new LoopDependenceInfo(
+        par.getCompilationOptionsManager(),
         taskFunctionDG,
         newLoopNode,
         l,
         *DS,
         SE,
         par.getCompilationOptionsManager()->getMaximumNumberOfCores(),
-        par.canFloatsBeConsideredRealNumbers(),
         lto->getOptimizationsEnabled(),
         false,
         lto->getChunkSize());

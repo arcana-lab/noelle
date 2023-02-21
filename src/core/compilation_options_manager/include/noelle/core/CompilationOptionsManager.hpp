@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 - 2021  Simone Campanoni
+ * Copyright 2020 - 2023  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,19 +19,30 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/CompilationOptionsManager.hpp"
+#pragma once
+
+#include "noelle/core/SystemHeaders.hpp"
 
 namespace llvm::noelle {
 
-CompilationOptionsManager::CompilationOptionsManager(Module &m,
-                                                     uint32_t maxCores)
-  : program{ m },
-    maxCores{ maxCores } {
-  return;
-}
+class CompilationOptionsManager {
+public:
+  CompilationOptionsManager(Module &m,
+                            uint32_t maxCores,
+                            bool arePRVGsNonDeterministic,
+                            bool areFloatRealNumbers);
 
-uint32_t CompilationOptionsManager::getMaximumNumberOfCores(void) const {
-  return this->maxCores;
-}
+  uint32_t getMaximumNumberOfCores(void) const;
+
+  bool canFloatsBeConsideredRealNumbers(void) const;
+
+  bool arePRVGsNonDeterministic(void) const;
+
+private:
+  Module &program;
+  uint32_t _maxCores;
+  bool _arePRVGsNonDeterministic;
+  bool _areFloatRealNumbers;
+};
 
 } // namespace llvm::noelle

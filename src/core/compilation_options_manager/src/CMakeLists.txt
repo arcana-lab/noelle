@@ -1,21 +1,13 @@
 # Sources
 set(Srcs 
-  Pass.cpp
-  PDGAnalysis.cpp
-  PDGAnalysis_embedder.cpp
-  PDGAnalysis_controlDependences.cpp
-  PDGAnalysis_compare.cpp
-  PDGAnalysis_memory.cpp
-  PDGAnalysis_callGraph.cpp
-  AnalysisPass.cpp
-  IntegrationWithSVF.cpp
+  CompilationOptionsManager.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "PDGAnalysis")
+set(PassName "CompilationOptionsManager")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -29,18 +21,10 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS}
-  ../include
-  ../../basic_utilities/include
-  ../../alloc_aa/include 
-  ../../talkdown/include 
-  ../../dataflow/include
-  ../../callgraph/include
-  ../../dg/include
-  ../../pdg/include
-  ../../alias_analysis_engine/include
+include_directories(${LLVM_INCLUDE_DIRS} 
+  ../include 
+  ../../transformations/include
   ${CMAKE_INSTALL_PREFIX}/include
-  ${CMAKE_INSTALL_PREFIX}/include/svf
   )
 
 # Declare the LLVM pass to compile

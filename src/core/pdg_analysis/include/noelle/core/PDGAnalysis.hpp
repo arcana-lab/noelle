@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Yian Su, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -28,8 +28,10 @@
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/CallGraph.hpp"
+#include "noelle/core/AliasAnalysisEngine.hpp"
 
 namespace llvm::noelle {
+
 enum class PDGVerbosity { Disabled, Minimal, Maximal, MaximalAndPDG };
 
 class PDGAnalysis : public ModulePass {
@@ -57,6 +59,8 @@ public:
   static bool isTheLibraryFunctionPure(Function *libraryFunction);
 
   static bool isTheLibraryFunctionThreadSafe(Function *libraryFunction);
+
+  static std::set<AliasAnalysisEngine *> getProgramAliasAnalysisEngines(void);
 
 private:
   Module *M;

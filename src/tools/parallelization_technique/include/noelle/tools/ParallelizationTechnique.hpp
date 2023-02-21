@@ -193,6 +193,9 @@ protected:
   float computeSequentialFractionOfExecution(
       LoopDependenceInfo *LDI,
       std::function<bool(GenericSCC *scc)> doesItRunSequentially) const;
+
+  virtual void makePRVGsReentrant(void);
+
   /*
    * Fields
    */
