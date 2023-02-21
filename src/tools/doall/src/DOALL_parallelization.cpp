@@ -241,6 +241,15 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   this->addChunkFunctionExecutionAsideOriginalLoop(LDI, loopFunction, this->n);
 
   /*
+   * Make PRVGs reentrant to avoid cache sharing.
+   */
+  auto com = this->noelle.getCompilationOptionsManager();
+  if (com->arePRVGsNonDeterministic()) {
+    errs() << "DOALL:  Make PRVGs reentrant\n";
+    this->makePRVGsReentrant();
+  }
+
+  /*
    * Final printing.
    */
   if (this->verbose >= Verbosity::Maximal) {

@@ -77,6 +77,8 @@ void SIMONE_CAMPANONI_IS_GOING_TO_REMOVE_THIS_FUNCTION(void) {
   HELIX_wait(0);
   HELIX_signal(0);
 
+  int s;
+  rand_r(&s);
   NOELLE_DOALLDispatcher(0, 0, 0, 0);
 
   NOELLE_getAvailableCores();

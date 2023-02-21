@@ -586,6 +586,15 @@ bool HELIX::synchronizeTask(LoopDependenceInfo *LDI, Heuristics *h) {
   this->inlineCalls(helixTask);
 
   /*
+   * Make PRVGs reentrant to avoid cache sharing.
+   */
+  auto com = this->noelle.getCompilationOptionsManager();
+  if (com->arePRVGsNonDeterministic()) {
+    errs() << "HELIX:  Make PRVGs reentrant\n";
+    this->makePRVGsReentrant();
+  }
+
+  /*
    * Print the HELIX task.
    */
   if (this->verbose >= Verbosity::Maximal) {

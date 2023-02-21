@@ -357,25 +357,23 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
        * Fetch the callees.
        */
       auto voCallee = voCall->getCalledFunction();
-      if (voCallee == nullptr) {
-        continue;
-      }
       auto viCallee = viCall->getCalledFunction();
-      if (viCallee == nullptr) {
+      if ((viCallee == nullptr) && (voCallee == nullptr)) {
         continue;
       }
 
       /*
-       * Check the calls are related to PRVGs.
+       * Check if one of the calls is a PRVGs.
        */
-      if (voCallee->getName() != "rand") {
-        continue;
-      }
-      if (viCallee->getName() != "rand") {
+      if (((voCallee != nullptr) && (voCallee->getName() != "rand"))
+          && ((viCallee != nullptr) && (viCallee->getName() != "rand"))) {
         continue;
       }
 
       /*
+       * One of the call is a PRVG.
+       * Hence, all memory dependences with a PRVG can be removed.
+       *
        * We can remove this dependence as PRVGs are non-deterministics.
        */
       toDelete.insert(edge);
