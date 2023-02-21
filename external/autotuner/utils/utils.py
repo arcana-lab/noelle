@@ -2,9 +2,16 @@
 
 import os
 import sys
+from enum import Enum
 
 # Risky. It works because autotuner.py and filter.py are at the same level in the directoy tree.
 thisPath = os.path.dirname(os.path.abspath(__file__))
+
+
+class Technique(Enum):
+  DOALL = 4
+  HELIX = 5
+  DSWP = 6
 
 
 def readExecutionTimeFile(pathToFile):

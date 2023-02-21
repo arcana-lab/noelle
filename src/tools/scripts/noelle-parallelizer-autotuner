@@ -25,6 +25,10 @@ for arg in "$@"; do
       autotunerNumConf="${arg#*=}"
       shift # past argument=value
       ;;
+    --autotuner-seedconf=*)
+      autotunerSeedConf="${arg#*=}"
+      shift # past argument=value
+      ;;
     --nosearchspace)
       generateSearchSpace="0" ;
       shift # past argument with no value
@@ -38,7 +42,7 @@ for arg in "$@"; do
       shift # past argument with no value
       ;;
     -*|--*)
-      echo "Unknown option ${arg}"
+      echo "ERROR: Unknown option ${arg}"
       exit 1
       ;;
     *)
@@ -48,12 +52,12 @@ done
 
 # Get additional arguments
 if [ "${inputToRun}" == "" ] ; then
-  echo "--input cannot be empty. Abort." ;
+  echo "ERROR: --input cannot be empty. Abort." ;
   exit 1 ;
 fi
 
 if [ "${parallelizerArgs}" == "" ] ; then
-  echo "--parallelizer-args cannot be empty. Abort." ;
+  echo "ERROR: --parallelizer-args cannot be empty. Abort." ;
   exit 1 ;
 fi
 IFS=' ' read -ra parallelizerArgsArray <<< "${parallelizerArgs}" ;
@@ -119,7 +123,10 @@ if [ "${filterDOALLtimeSearchSpace}" != "0" ] && [ "${filterDOALLSearchSpace}" !
   eval ${cmd} ;
 fi
 
-# Execute autotuner only if space file is not empty
+# Execute autotuner only if space file is not empty.
+# This can happen for two reasons:
+# 1) the IR of the program has no loops
+# 2) the filtering of loops removed all of them
 if [ -s ${autotunerSpace} ] ; then
   echo "AUTOTUNER: space file ${autotunerSpace} contains:" ;
   echo `cat ${autotunerSpace}` ;
@@ -127,13 +134,29 @@ if [ -s ${autotunerSpace} ] ; then
   # Set the command to execute
   cmd="python ${installDir}/autotuner/src/autotuner.py --no-dups --parallelism=1" ;
 
-  # Get autotuner limits
+  # Get autotuner time limit
   if [ "${autotunerTime}" != "" ] ; then
     cmd="${cmd} --stop-after=${autotunerTime}" ;
   fi
 
+  # Get autotuner number of configurations to explore limit
   if [ "${autotunerNumConf}" != "" ] ; then
     cmd="${cmd} --test-limit=${autotunerNumConf}" ;
+  fi
+
+  # Get autotuner seed conf
+  if [ "${autotunerSeedConf}" != "" ] ; then
+    # Safety check: check if seed conf file and space file have at least the same number of lines
+    # (we really should check if the number of configuration parameters match, but good enough for now.)
+    seedConfNumLines="`wc -l < ${autotunerSeedConf}`" ;
+    spaceNumLines="`wc -l < ${autotunerSpace}`" ;
+    if [ "${seedConfNumLines}" != "${spaceNumLines}" ] ; then
+      echo "ERROR: #lines mismatch! autotuner seed conf file ${autotunerSeedConf} has ${seedConfNumLines} lines, while autotuner space file ${autotunerSpace} has ${spaceNumLines}. Abort." ;
+      exit 1 ;
+    fi
+
+    autotunerPathToSeedConf="`python ${installDir}/autotuner/utils/genSeedConf.py ${autotunerSeedConf}`" ;
+    cmd="${cmd} --seed-configuration=${autotunerPathToSeedConf}" ;
   fi
 
   # Print command we are about to execute

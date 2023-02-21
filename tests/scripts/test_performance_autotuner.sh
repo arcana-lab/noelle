@@ -115,7 +115,7 @@ function runningTests {
     # Compile
     # echo "   Make " ;
     make baseline ;
-    make parallelized_autotuned NOSEARCHSPACE="--nosearchspace" NODOALLFILTERING="--noDOALLfiltering" NODOALLTIMEFILTERING="--noDOALLtimefiltering" INPUT="perf_args.info" NOELLE_OPTIONS="$2" PARALLELIZATION_OPTIONS="$parOptions" RUNTIME_CFLAGS="-DNDEBUG" >> compiler_output.txt 2>&1 ;
+    make parallelized_autotuned TIME="600" SEED_CONF="autotuner.info" NOSEARCHSPACE="--nosearchspace" NODOALLFILTERING="--noDOALLfiltering" NODOALLTIMEFILTERING="--noDOALLtimefiltering" INPUT="perf_args.info" NOELLE_OPTIONS="$2" PARALLELIZATION_OPTIONS="$parOptions" RUNTIME_CFLAGS="-DNDEBUG" >> compiler_output.txt 2>&1 ;
 
     # Read input for arguments to performance runs
     local ARGS=$(< perf_args.info) ;

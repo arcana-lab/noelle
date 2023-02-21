@@ -14,19 +14,12 @@ from opentuner import SwitchParameter
 from opentuner import MeasurementInterface
 from opentuner import Result
 
-from enum import Enum
-
 thisPath = os.path.dirname(os.path.abspath(__file__))
 
 sys.path.append(thisPath + "/../utils")
 import utils
 
-class Technique(Enum):
-  DOALL = 4
-  HELIX = 5
-  DSWP = 6
-
-techniqueIndexConverter = [Technique.DOALL, Technique.HELIX, Technique.DSWP]
+techniqueIndexConverter = [utils.Technique.DOALL, utils.Technique.HELIX, utils.Technique.DSWP]
 
 class autotuneProgram(MeasurementInterface):
   ranges = None
@@ -78,7 +71,7 @@ class autotuneProgram(MeasurementInterface):
           paramType = param % 9
 
           # Create the parameter
-          if paramType == 0:
+          if (paramType == 0):
             start = 0
             stop = dimension - 1
             
@@ -90,19 +83,19 @@ class autotuneProgram(MeasurementInterface):
               stop = int(considerLoop)
 
             # Should the loop be parallelized?
-            openTuner_param = IntegerParameter(param, start, stop)
+            openTuner_param = IntegerParameter(str(param), start, stop)
 
-          elif paramType == 1:
+          elif (paramType == 1):
 
             # Unroll factor
-            openTuner_param = IntegerParameter(param, 0, dimension - 1)
+            openTuner_param = IntegerParameter(str(param), 0, dimension - 1)
 
-          elif paramType == 2:
+          elif (paramType == 2):
 
             # Peel factor
-            openTuner_param = IntegerParameter(param, 0, dimension - 1)
+            openTuner_param = IntegerParameter(str(param), 0, dimension - 1)
 
-          elif paramType == 3:
+          elif (paramType == 3):
             start = 0
             stop = dimension - 1
             
@@ -114,32 +107,32 @@ class autotuneProgram(MeasurementInterface):
               stop = int(technique)
 
             # Parallelization technique
-            openTuner_param = IntegerParameter(param, start, stop) # ED: should this be a SwitchParameter?
+            openTuner_param = IntegerParameter(str(param), start, stop) # ED: should this be a SwitchParameter?
 
-          elif paramType == 4:
+          elif (paramType == 4):
 
             # Number of cores to dedicate to the current loop
-            openTuner_param = IntegerParameter(param, 0, dimension - 1)
+            openTuner_param = IntegerParameter(str(param), 0, dimension - 1)
 
-          elif paramType == 5:
+          elif (paramType == 5):
 
             # DOALL parameter: chunk factor
-            openTuner_param = IntegerParameter(param, 0, dimension - 1)
+            openTuner_param = IntegerParameter(str(param), 0, dimension - 1)
 
-          elif paramType == 6:
+          elif (paramType == 6):
 
             # HELIX parameter: should we fix the maximum number of sequential segments?
-            openTuner_param = SwitchParameter(param, dimension)
+            openTuner_param = SwitchParameter(str(param), dimension)
 
-          elif paramType == 7:
+          elif (paramType == 7):
 
             # HELIX parameter: maximum number of sequential segments
-            openTuner_param = IntegerParameter(param, 0, dimension - 1)
+            openTuner_param = IntegerParameter(str(param), 0, dimension - 1)
 
-          elif paramType == 8:
+          elif (paramType == 8):
 
             # DSWP parameter: should we use queue packing?
-            openTuner_param = SwitchParameter(param, dimension)
+            openTuner_param = SwitchParameter(str(param), dimension)
 
           # Share the parameter to OpenTuner
           manipulator.add_parameter(openTuner_param)
@@ -153,26 +146,27 @@ class autotuneProgram(MeasurementInterface):
     conf = confArg.copy()
     startLoopIndex = 0
     isLoopEnabled = False
-    for key in confArg:
-      value = conf[key]
+    keysAsIntSorted = sorted([int(key) for key in confArg.keys()])
+    for key in keysAsIntSorted:
+      value = conf[str(key)]
       if ((key % 9) == 0):
         startLoopIndex = key
         if (value == 0): # Loop is disabled
           isLoopEnabled = False
           for keyToSetToZero in range(key, key + 9):
-            if (keyToSetToZero in conf):
-              conf[keyToSetToZero] = 0
+            if (str(keyToSetToZero) in conf):
+              conf[str(keyToSetToZero)] = 0
         else:
           isLoopEnabled = True
 
       if (not isLoopEnabled):
         continue
 
-      if (key - startLoopIndex) == 3:
-        conf[key] = techniqueIndexConverter[value]
-        if (value != Technique.DOALL): # DOALL was not chosen
+      if ((key - startLoopIndex) == 3):
+        conf[str(key)] = techniqueIndexConverter[value]
+        if (conf[str(key)] != utils.Technique.DOALL): # DOALL was not chosen
           chunkSizeIndex = key + 2
-          conf[chunkSizeIndex] = 0
+          conf[str(chunkSizeIndex)] = 0
 
     return conf
 
@@ -182,8 +176,8 @@ class autotuneProgram(MeasurementInterface):
     index = 0
     for loopID in self.loopIDs:
       for elem in range(0, len(self.ranges[loopID])):
-        if (index not in conf):
-          conf[index] = 0
+        if (str(index) not in conf):
+          conf[str(index)] = 0
         index += 1
 
     return conf
@@ -195,19 +189,21 @@ class autotuneProgram(MeasurementInterface):
       conf[loopID] = []
 
     loopIDIndex = -1
-    for key in sorted(confArg.keys()):
+    keysAsIntSorted = sorted([int(key) for key in confArg.keys()])
+    for key in keysAsIntSorted:
       if ((key % 9) == 0):
         loopIDIndex += 1
       loopID = self.loopIDs[loopIDIndex]
-      conf[loopID].append(confArg[key])
+      conf[loopID].append(confArg[str(key)])
 
     return conf
  
 
-  def getConfAsStr(self, conf):
+  def getConfAsStr(self, confArg):
     confAsStr = ''
-    for key in sorted(conf.keys()):
-      confAsStr += str(conf[key]) + '_'
+    keysAsIntSorted = sorted([int(key) for key in confArg.keys()])
+    for key in keysAsIntSorted:
+      confAsStr += str(confArg[str(key)]) + '_'
 
     return confAsStr
 
@@ -220,30 +216,39 @@ class autotuneProgram(MeasurementInterface):
 
     # Read the configuration to run
     conf = desired_result.configuration.data
+    sys.stderr.write("AUTOTUNER: conf " + str(conf) + "\n")
     confNormalized = self.getNormalizedConf(conf)
+    sys.stderr.write("AUTOTUNER: confNormalized " + str(confNormalized) + "\n")
     confExpanded = self.getExpandedConf(confNormalized)
+    sys.stderr.write("AUTOTUNER: confExpanded " + str(confExpanded) + "\n")
 
     confExpandedAsStr = self.getConfAsStr(confExpanded)
+    sys.stderr.write("AUTOTUNER: confExpandedAsStr " + str(confExpandedAsStr) + "\n")
     time = None
     # Check if configuration has already been run
     if (confExpandedAsStr in self.exploredConfs):
       time = self.exploredConfs[confExpandedAsStr]
       return Result(time = time)
-    
-    # Compile
-    confWithLoopIDs = self.getConfWithLoopIDs(confExpanded)
-    sys.stderr.write('AUTOTUNER: exploring conf ' + str(confWithLoopIDs) + '\n')
-    compileRetCode = utils.myCompile(self.confFile, confWithLoopIDs)
-    if (compileRetCode != 0):
-      time = float('inf')
-      return Result(time = time)
+   
+    try:
+      # Compile
+      confWithLoopIDs = self.getConfWithLoopIDs(confExpanded)
+      sys.stderr.write("AUTOTUNER: confWithLoopIDs " + str(confWithLoopIDs) + "\n")
+      compileRetCode = utils.myCompile(self.confFile, confWithLoopIDs)
+      if (compileRetCode != 0):
+        time = float('inf')
+        return Result(time = time)
 
-    # Run parallel optimized binary
-    maxExecutionTime = 2*self.baselineTime
-    runRetCode = utils.myRun(maxExecutionTime)
-    if (runRetCode != 0):
-      time = float('inf')
-      return Result(time = time)
+      # Run parallel optimized binary
+      maxExecutionTime = 2*self.baselineTime
+      runRetCode = utils.myRun(maxExecutionTime)
+      if (runRetCode != 0):
+        time = float('inf')
+        return Result(time = time)
+
+    except KeyboardInterrupt:
+      sys.stderr.write("AUTOTUNER: KeyboardInterrupt. Abort.\n")
+      sys.exit(1)
 
     # Get execution time
     time = utils.readExecutionTimeFile(self.executionTimeFile)
