@@ -35,7 +35,7 @@ download:
 clean:
 	./scripts/clean.sh ; rm -rf include/ ; rm -f regression/*.txt ;
 	rm -rf regression_* ;
-	rm -rf tmp.* ;
+	rm -rf tmp* ;
 	cd condor ; make clean ; 
 	cd unit ; make clean ;
 	rm -f compiler_output* ;

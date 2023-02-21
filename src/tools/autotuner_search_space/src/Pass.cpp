@@ -23,6 +23,7 @@
 
 #include <cstdlib>
 #include <fstream>
+#include <string>
 
 namespace llvm::noelle {
 
@@ -58,6 +59,13 @@ bool AutotunerSearchSpace::runOnModule(Module &M) {
   file.open(fileName);
 
   /*
+   * Get the maximum number of cores we are allowed to use.
+   * This will set the corresponding autotuner space parameter.
+   */
+  CompilationOptionsManager *com = noelle.getCompilationOptionsManager();
+  uint32_t maxNumCores = com->getMaximumNumberOfCores();
+
+  /*
    * Meaning (per index):
    * 0: disable/enable loop,
    * 1: unrool factor (NOT USED right now),
@@ -72,7 +80,8 @@ bool AutotunerSearchSpace::runOnModule(Module &M) {
    * 7: unknown (NOT USED right now),
    * 8: unknown (NOT USED right now)
    */
-  std::string enabledLoopString = "2 0 0 3 28 8 0 0 0\n";
+  std::string enabledLoopString =
+      "2 0 0 3 " + std::to_string(maxNumCores) + " 8 8 0 0 0\n";
 
   // Get loop structures with 0.0 min hotness to ensure we get all loops
   std::vector<LoopStructure *> *loopStructures = noelle.getLoopStructures(0.0);

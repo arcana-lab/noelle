@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-installDir
+installDir="/project/marc/enrico/repos/noelle_autotuner/install"
 
 # Parse arguments
 for arg in "$@"; do
@@ -67,8 +67,8 @@ outputbc="${parallelizerArgsArray[2]}" ;
 autotunerConf="autotuner_conf.info" ;
 autotunerSpace="autotuner_space.info" ;
 
-export autotunerSPACE_FILE="${autotunerSpace}" ; # Needed for the creation and filtering of the autotuner search space
-export INDEX_FILE="${autotunerConf}" ; # We need to export this env var to force loop parallelization in noelle
+# Needed for the creation and filtering of the autotuner search space
+export autotunerSPACE_FILE="${autotunerSpace}" ;
 
 # Add loop ID to all loops
 # NOTE: the outputbc file must be the same as the input because of --parallelizer-args
@@ -105,6 +105,8 @@ export autotunerARGS="${parallelizerArgs}" ;
 export autotunerINPUT="${inputToRun}" ;
 export autotunerOUTPUTBC="${outputbc}" ;
 export autotunerLIBS="${libs}" ;
+# We need to export this env var to force loop parallelization in noelle
+export INDEX_FILE="${autotunerConf}" ;
 
 # Setup python virtualEnv
 source ${installDir}/autotuner/source-me-to-setup-python-virtual-environment ;
