@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-installDir="/project/marc/enrico/repos/noelle_autotuner/install"
+installDir
 
 # Parse arguments
 for arg in "$@"; do
