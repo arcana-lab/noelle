@@ -604,68 +604,6 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction(PDG *pdg, Function &F) {
   delete dfr;
 }
 
-void PDGAnalysis::iterateInstForCall(PDG *pdg,
-                                     Function &F,
-                                     AAResults &AA,
-                                     DataFlowResult *dfr,
-                                     CallBase *call) {
-
-  /*
-   * Check if the call instruction is not actual code.
-   */
-  if (!Utils::isActualCode(call)) {
-    return;
-  }
-
-  /*
-   * Check if the call instruction is pure.
-   */
-  if (this->hasNoMemoryOperations(call)) {
-    return;
-  }
-
-  /*
-   * Identify all dependences with @call.
-   */
-  for (auto I : dfr->OUT(call)) {
-
-    /*
-     * Check stores.
-     */
-    if (auto store = dyn_cast<StoreInst>(I)) {
-      addEdgeFromFunctionModRef(pdg, F, AA, call, store, true);
-      continue;
-    }
-
-    /*
-     * Check loads.
-     */
-    if (auto load = dyn_cast<LoadInst>(I)) {
-      addEdgeFromFunctionModRef(pdg, F, AA, call, load, true);
-      continue;
-    }
-
-    /*
-     * Check calls.
-     */
-    if (auto baseOtherCall = dyn_cast<CallBase>(I)) {
-
-      /*
-       * Check direct calls
-       */
-      if (auto otherCall = dyn_cast<CallInst>(baseOtherCall)) {
-        if (!Utils::isActualCode(otherCall)) {
-          continue;
-        }
-      }
-      addEdgeFromFunctionModRef(pdg, F, AA, call, baseOtherCall);
-      continue;
-    }
-  }
-
-  return;
-}
-
 void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
   std::set<DGEdge<Value> *> removeEdges;
 
