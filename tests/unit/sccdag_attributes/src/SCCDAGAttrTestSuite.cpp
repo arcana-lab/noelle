@@ -123,7 +123,6 @@ bool SCCDAGAttrTestSuite::runOnModule(Module &M) {
                              topLoop,
                              *DS,
                              *SE,
-                             2,
                              true,
                              true);
   auto sccManager = this->ldi->getSCCManager();

@@ -149,7 +149,8 @@ bool Inliner::runOnModule(Module &M) {
   /*
    * Check if we should hoist loops to main.
    */
-  if (!noelle.shouldLoopsBeHoistToMain()) {
+  auto com = noelle.getCompilationOptionsManager();
+  if (!com->shouldLoopsBeHoistToMain()) {
     errs() << "Inliner:   The code has not been modified\n";
 
     /*

@@ -27,11 +27,13 @@ CompilationOptionsManager::CompilationOptionsManager(
     Module &m,
     uint32_t maxCores,
     bool arePRVGsNonDeterministic,
-    bool areFloatRealNumbers)
+    bool areFloatRealNumbers,
+    bool hoistLoopsToMain)
   : program{ m },
     _maxCores{ maxCores },
     _arePRVGsNonDeterministic{ arePRVGsNonDeterministic },
-    _areFloatRealNumbers{ areFloatRealNumbers } {
+    _areFloatRealNumbers{ areFloatRealNumbers },
+    _hoistLoopsToMain{ hoistLoopsToMain } {
   return;
 }
 
@@ -45,6 +47,10 @@ bool CompilationOptionsManager::canFloatsBeConsideredRealNumbers(void) const {
 
 bool CompilationOptionsManager::arePRVGsNonDeterministic(void) const {
   return this->_arePRVGsNonDeterministic;
+}
+
+bool CompilationOptionsManager::shouldLoopsBeHoistToMain(void) const {
+  return this->_hoistLoopsToMain;
 }
 
 } // namespace llvm::noelle

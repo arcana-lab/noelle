@@ -32,7 +32,6 @@ Noelle::Noelle()
     program{ nullptr },
     profiles{ nullptr },
     programDependenceGraph{ nullptr },
-    hoistLoopsToMain{ false },
     loopAwareDependenceAnalysis{ false },
     fm{ nullptr },
     tm{ nullptr },
@@ -145,10 +144,6 @@ uint64_t Noelle::numberOfProgramInstructions(void) const {
   }
 
   return t;
-}
-
-bool Noelle::shouldLoopsBeHoistToMain(void) const {
-  return this->hoistLoopsToMain;
 }
 
 Noelle::~Noelle() {

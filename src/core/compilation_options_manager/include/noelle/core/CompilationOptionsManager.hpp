@@ -30,7 +30,8 @@ public:
   CompilationOptionsManager(Module &m,
                             uint32_t maxCores,
                             bool arePRVGsNonDeterministic,
-                            bool areFloatRealNumbers);
+                            bool areFloatRealNumbers,
+                            bool hoistLoopsToMain);
 
   uint32_t getMaximumNumberOfCores(void) const;
 
@@ -38,11 +39,14 @@ public:
 
   bool arePRVGsNonDeterministic(void) const;
 
+  bool shouldLoopsBeHoistToMain(void) const;
+
 private:
   Module &program;
   uint32_t _maxCores;
   bool _arePRVGsNonDeterministic;
   bool _areFloatRealNumbers;
+  bool _hoistLoopsToMain;
 };
 
 } // namespace llvm::noelle
