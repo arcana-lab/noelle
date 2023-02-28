@@ -178,7 +178,8 @@ private:
                                  Function &,
                                  AAResults &,
                                  CallBase *,
-                                 CallBase *);
+                                 CallBase *,
+                                 bool);
 
   void removeEdgesNotUsedByParSchemes(PDG *pdg);
 
