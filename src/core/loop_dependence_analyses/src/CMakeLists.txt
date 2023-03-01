@@ -1,17 +1,13 @@
 # Sources
 set(Srcs 
-  ControlFlowEquivalence.cpp
-  LoopAwareMemDepAnalysis.cpp
-  SCCDAGNormalizer.cpp
-  LoopDependenceInfo.cpp
-  LoopTransformationsOptions.cpp
+  LoopIterationDomainSpaceAnalysis.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "LoopContent")
+set(PassName "LoopDependenceAnalyses")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -36,7 +32,6 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../dg/include 
   ../../pdg/include 
   ../../pdg_analysis/include 
-  ../../hotprofiler/include 
   ../../loop_structure/include 
   ../../loop_environment/include 
   ../../loop_forest/include
@@ -46,9 +41,6 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_scc_attributes/include
   ../../loop_sccdag_attributes/include
   ../../loop_carried_dependences/include
-  ../../alias_analysis_engine/include
-  ../../loop_dependence_analyses/include
-  ../../compilation_options_manager/include
   ../include
   ./
   ${CMAKE_INSTALL_PREFIX}/include
