@@ -216,8 +216,6 @@ public:
    */
   bool isTransformationEnabled(Transformation transformation);
 
-  bool shouldLoopsBeHoistToMain(void) const;
-
   bool verifyCode(void) const;
 
   ~Noelle();

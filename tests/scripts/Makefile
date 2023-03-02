@@ -15,7 +15,7 @@ RUNTIME_CFLAGS="-DDEBUG"
 # Parallelization options
 # 	- To dump the PDG: -noelle-pdg-dump
 PARALLELIZATION_OPTIONS=-alloc-aa-verbose=1 -noelle-parallelizer-force
-NOELLE_OPTIONS=-noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0
+NOELLE_OPTIONS=-noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main
 TOOLS_OPTIONS=
 OPT_LEVEL=-O3
 

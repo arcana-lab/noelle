@@ -1,19 +1,13 @@
 # Sources
 set(Srcs 
-  Pass.cpp
-  Noelle.cpp
-  Noelle_dependences.cpp
-  Noelle_function.cpp
-  Noelle_loops.cpp
-  Noelle_transformations.cpp
-  FunctionsManager.cpp
+  LoopIterationDomainSpaceAnalysis.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Noelle")
+set(PassName "LoopDependenceAnalyses")
 
 # configure LLVM 
 find_package(LLVM REQUIRED CONFIG)
@@ -28,29 +22,27 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
-  ../include 
-  ../../basic_utilities/include
-  ../../dominators/include
+  ../../basic_utilities/include 
+  ../../dominators/include 
   ../../transformations/include
+  ../../callgraph/include
+  ../../dataflow/include
   ../../architecture/include 
   ../../alloc_aa/include 
-  ../../hotprofiler/include 
-  ../../talkdown/include
-  ../../loop_structure/include
-  ../../loop_content/include
+  ../../dg/include 
+  ../../pdg/include 
+  ../../pdg_analysis/include 
+  ../../loop_structure/include 
+  ../../loop_environment/include 
   ../../loop_forest/include
-  ../../loop_nesting_graph/include
-  ../../callgraph/include
-  ../../pdg/include
-  ../../pdg_analysis/include
-  ../../scheduler/include
-  ../../cfg_analysis/include
-  ../../cfg_transformer/include
-  ../../loop_transformer/include
-  ../../types_manager/include
-  ../../linker/include
-  ../../alias_analysis_engine/include
-  ../../compilation_options_manager/include
+  ../../talkdown/include
+  ../../loop_invariants/include
+  ../../loop_induction_variables/include
+  ../../loop_scc_attributes/include
+  ../../loop_sccdag_attributes/include
+  ../../loop_carried_dependences/include
+  ../include
+  ./
   ${CMAKE_INSTALL_PREFIX}/include
   )
 

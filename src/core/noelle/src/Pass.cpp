@@ -143,9 +143,6 @@ bool Noelle::doInitialization(Module &M) {
   if (DisableInliner.getNumOccurrences() > 0) {
     this->enabledTransformations.erase(INLINER_ID);
   }
-  if (InlinerDisableHoistToMain.getNumOccurrences() == 0) {
-    this->hoistLoopsToMain = true;
-  }
   if (DisableLoopAwareDependenceAnalyses.getNumOccurrences() == 0) {
     this->loopAwareDependenceAnalysis = true;
   }
@@ -157,7 +154,8 @@ bool Noelle::doInitialization(Module &M) {
       M,
       optMaxCores,
       (ND_PRVGs.getNumOccurrences() > 0),
-      (DisableFloatAsReal.getNumOccurrences() == 0));
+      (DisableFloatAsReal.getNumOccurrences() == 0),
+      (InlinerDisableHoistToMain.getNumOccurrences() > 0));
 
   /*
    * Store the module.
