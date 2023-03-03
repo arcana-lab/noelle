@@ -705,15 +705,6 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
 
     } else if (rbv[1]) {
       /*
-       * Check the unique case that @otherCall and @call are the same.
-       * In this case, there is also a RAW and WAR dependence
-       */
-      if (otherCall == call) {
-        pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
-        pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
-      }
-
-      /*
        * @call may write a memory location that can be written by @otherCall
        * only need to add WAW data dependence from call to otherCall
        */
