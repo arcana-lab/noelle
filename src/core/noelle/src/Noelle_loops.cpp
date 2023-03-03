@@ -875,24 +875,6 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
   }
 
   /*
-   * Get file number of lines.
-   * Needed to allocate space for every loop data.
-   */
-  // auto numOfLines = 0;
-  // std::string line;
-  // std::ifstream fileStream(this->filterFileName);
-  // while (std::getline(fileStream, line)) {
-  //  numOfLines++;
-  //}
-
-  /*
-   * Pre-allocate loop data
-   */
-  // this->loopThreads.resize(numOfLines);
-  // this->techniquesToDisable.resize(numOfLines);
-  // this->DOALLChunkSize.resize(numOfLines);
-
-  /*
    * Read the file.
    */
   auto fileAsString = indexBuf.get()->getBuffer().str();
@@ -909,7 +891,6 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
      * Read loop ID
      */
     auto loopID = this->fetchTheNextValue(indexString);
-    // assert(loopID < numOfLines);
 
     /*
      * Should the loop be parallelized?

@@ -80,7 +80,7 @@ bool AutotunerDoallFilter::runOnModule(Module &M) {
    * 8: unknown (NOT USED right now)
    */
   std::string enabledNotDOALLLoopString =
-      "2 0 0 3 " + std::to_string(maxNumCores) + " 8 0 0 0 0\n";
+      "2 0 0 3 " + std::to_string(maxNumCores) + " 0 0 0 0 \n";
   std::string enabledDOALLLoopString = "2 0 0 1 " + std::to_string(maxNumCores)
                                        + " 8 0 0 0\n"; // Enable only DOALL
 

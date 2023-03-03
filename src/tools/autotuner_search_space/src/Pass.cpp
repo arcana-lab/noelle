@@ -81,7 +81,7 @@ bool AutotunerSearchSpace::runOnModule(Module &M) {
    * 8: unknown (NOT USED right now)
    */
   std::string enabledLoopString =
-      "2 0 0 3 " + std::to_string(maxNumCores) + " 8 8 0 0 0\n";
+      "2 0 0 3 " + std::to_string(maxNumCores) + " 8 0 0 0\n";
 
   // Get loop structures with 0.0 min hotness to ensure we get all loops
   std::vector<LoopStructure *> *loopStructures = noelle.getLoopStructures(0.0);
