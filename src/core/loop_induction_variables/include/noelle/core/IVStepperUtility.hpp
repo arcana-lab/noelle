@@ -119,6 +119,9 @@ public:
       Value *currentIterationValue,
       Value *stepValue);
 
+  void updateConditionToCheckIfTheLastLoopIterationWasExecuted(
+      CmpInst *condition);
+
 private:
   LoopStructure *loop;
   LoopGoverningIVAttribution &attribution;

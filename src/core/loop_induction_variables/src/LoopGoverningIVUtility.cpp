@@ -350,4 +350,12 @@ Value *LoopGoverningIVUtility::generateCodeToComputeValueToUseForAnIterationAgo(
   return currentIterationValue;
 }
 
+void LoopGoverningIVUtility::
+    updateConditionToCheckIfTheLastLoopIterationWasExecuted(
+        CmpInst *condition) {
+  condition->setPredicate(this->strictPredicate);
+
+  return;
+}
+
 } // namespace llvm::noelle
