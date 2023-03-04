@@ -23,15 +23,34 @@
 
 namespace llvm::noelle {
 
-CompilationOptionsManager::CompilationOptionsManager(Module &m,
-                                                     uint32_t maxCores)
+CompilationOptionsManager::CompilationOptionsManager(
+    Module &m,
+    uint32_t maxCores,
+    bool arePRVGsNonDeterministic,
+    bool areFloatRealNumbers,
+    bool hoistLoopsToMain)
   : program{ m },
-    maxCores{ maxCores } {
+    _maxCores{ maxCores },
+    _arePRVGsNonDeterministic{ arePRVGsNonDeterministic },
+    _areFloatRealNumbers{ areFloatRealNumbers },
+    _hoistLoopsToMain{ hoistLoopsToMain } {
   return;
 }
 
 uint32_t CompilationOptionsManager::getMaximumNumberOfCores(void) const {
-  return this->maxCores;
+  return this->_maxCores;
+}
+
+bool CompilationOptionsManager::canFloatsBeConsideredRealNumbers(void) const {
+  return this->_areFloatRealNumbers;
+}
+
+bool CompilationOptionsManager::arePRVGsNonDeterministic(void) const {
+  return this->_arePRVGsNonDeterministic;
+}
+
+bool CompilationOptionsManager::shouldLoopsBeHoistToMain(void) const {
+  return this->_hoistLoopsToMain;
 }
 
 } // namespace llvm::noelle

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni, Brian Homerding
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/CompilationOptionsManager.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/InductionVariables.hpp"
@@ -32,6 +33,7 @@
 #include "noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
 #include "noelle/core/LoopTransformationsOptions.hpp"
+#include "noelle/core/AliasAnalysisEngine.hpp"
 
 namespace llvm::noelle {
 
@@ -40,58 +42,59 @@ public:
   /*
    * Constructors.
    */
-  LoopDependenceInfo(PDG *fG,
+  LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
+                     PDG *fG,
                      LoopForestNode *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
                      ScalarEvolution &SE);
 
-  LoopDependenceInfo(PDG *fG,
+  LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
+                     PDG *fG,
                      LoopForestNode *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
                      ScalarEvolution &SE,
-                     uint32_t maxCores,
-                     bool enableFloatAsReal);
+                     uint32_t maxCores);
 
   LoopDependenceInfo(
+      CompilationOptionsManager *compilationOptionsManager,
       PDG *fG,
       LoopForestNode *loopNode,
       Loop *l,
       DominatorSummary &DS,
       ScalarEvolution &SE,
       uint32_t maxCores,
-      bool enableFloatAsReal,
       std::unordered_set<LoopDependenceInfoOptimization> optimizations);
 
-  LoopDependenceInfo(PDG *fG,
+  LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
+                     PDG *fG,
                      LoopForestNode *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
                      ScalarEvolution &SE,
                      uint32_t maxCores,
-                     bool enableFloatAsReal,
                      bool enableLoopAwareDependenceAnalyses);
 
   LoopDependenceInfo(
+      CompilationOptionsManager *compilationOptionsManager,
       PDG *fG,
       LoopForestNode *loop,
       Loop *l,
       DominatorSummary &DS,
       ScalarEvolution &SE,
       uint32_t maxCores,
-      bool enableFloatAsReal,
       std::unordered_set<LoopDependenceInfoOptimization> optimizations,
       bool enableLoopAwareDependenceAnalyses);
 
   LoopDependenceInfo(
+      CompilationOptionsManager *compilationOptionsManager,
       PDG *fG,
       LoopForestNode *loop,
       Loop *l,
       DominatorSummary &DS,
       ScalarEvolution &SE,
       uint32_t maxCores,
-      bool enableFloatAsReal,
       std::unordered_set<LoopDependenceInfoOptimization> optimizations,
       bool enableLoopAwareDependenceAnalyses,
       uint32_t chunkSize);
@@ -164,6 +167,8 @@ public:
    */
   ~LoopDependenceInfo();
 
+  static std::set<AliasAnalysisEngine *> getLoopAliasAnalysisEngines(void);
+
 private:
   /*
    * Fields
@@ -195,12 +200,15 @@ private:
 
   LoopTransformationsManager *loopTransformationsManager;
 
+  CompilationOptionsManager *com;
+
   /*
    * Methods
    */
   void fetchLoopAndBBInfo(Loop *l, ScalarEvolution &SE);
 
-  std::pair<PDG *, SCCDAG *> createDGsForLoop(Loop *l,
+  std::pair<PDG *, SCCDAG *> createDGsForLoop(CompilationOptionsManager *com,
+                                              Loop *l,
                                               LoopForestNode *loopNode,
                                               PDG *functionDG,
                                               DominatorSummary &DS,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,13 +19,15 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <algorithm>
+
+#include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopStructure.hpp"
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Architecture.hpp"
 #include "noelle/core/LoopForest.hpp"
 #include "noelle/core/HotProfiler.hpp"
-#include <algorithm>
 
 namespace llvm::noelle {
 
@@ -537,13 +539,13 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(Function *function,
       auto &newLI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
       auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
       auto llvmLoop = newLI.getLoopFor(ls->getHeader());
-      auto ldi = new LoopDependenceInfo(funcPDG,
+      auto ldi = new LoopDependenceInfo(this->getCompilationOptionsManager(),
+                                        funcPDG,
                                         loopNode,
                                         llvmLoop,
                                         *DS,
                                         SE,
                                         this->om->getMaximumNumberOfCores(),
-                                        this->enableFloatAsReal,
                                         this->loopAwareDependenceAnalysis);
       allLoops->push_back(ldi);
     }
@@ -749,13 +751,13 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
          */
         LoopDependenceInfo *ldi = nullptr;
         if (!filterLoops) {
-          ldi = new LoopDependenceInfo(funcPDG,
+          ldi = new LoopDependenceInfo(this->getCompilationOptionsManager(),
+                                       funcPDG,
                                        loopNode,
                                        LLVMLoop,
                                        *DS,
                                        SE,
                                        this->om->getMaximumNumberOfCores(),
-                                       this->enableFloatAsReal,
                                        this->loopAwareDependenceAnalysis);
 
         } else {
@@ -1303,13 +1305,13 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
   /*
    * Allocate the LDI.
    */
-  auto ldi = new LoopDependenceInfo(functionPDG,
+  auto ldi = new LoopDependenceInfo(this->getCompilationOptionsManager(),
+                                    functionPDG,
                                     loopNode,
                                     loop,
                                     *DS,
                                     *SE,
                                     maxCores,
-                                    this->enableFloatAsReal,
                                     optimizations,
                                     this->loopAwareDependenceAnalysis,
                                     DOALLChunkSizeForLoop);

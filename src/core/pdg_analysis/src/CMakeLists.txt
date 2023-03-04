@@ -38,6 +38,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../callgraph/include
   ../../dg/include
   ../../pdg/include
+  ../../alias_analysis_engine/include
   ${CMAKE_INSTALL_PREFIX}/include
   ${CMAKE_INSTALL_PREFIX}/include/svf
   )

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -40,12 +40,6 @@ public:
   LoopIterationDomainSpaceAnalysis() = delete;
 
   ~LoopIterationDomainSpaceAnalysis();
-
-  // TODO:
-  // bool areInstructionsAccessingDisjointMemoryLocationsOnTheSameIteration (
-  //   Instruction *from,
-  //   Instruction *to
-  // ) const ;
 
   bool areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(
       Instruction *from,
@@ -127,9 +121,6 @@ private:
 
   bool isInnerDimensionSubscriptsBounded(ScalarEvolution &SE,
                                          MemoryAccessSpace *space);
-
-  // bool isIVRelatedSCEVBounded (ScalarEvolution &SE, MemoryAccessSpace *space)
-  // ;
 };
 
 } // namespace llvm::noelle

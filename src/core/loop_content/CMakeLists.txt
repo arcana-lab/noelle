@@ -13,7 +13,6 @@ install(
   FILES
   include/noelle/core/ControlFlowEquivalence.hpp
   include/noelle/core/LoopDependenceInfo.hpp
-  include/noelle/core/LoopIterationDomainSpaceAnalysis.hpp
   include/noelle/core/SCCDAGNormalizer.hpp
   include/noelle/core/LoopTransformationsOptions.hpp
   DESTINATION 

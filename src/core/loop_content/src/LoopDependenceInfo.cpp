@@ -29,84 +29,96 @@
 
 namespace llvm::noelle {
 
-LoopDependenceInfo::LoopDependenceInfo(PDG *fG,
-                                       LoopForestNode *loopNode,
-                                       Loop *l,
-                                       DominatorSummary &DS,
-                                       ScalarEvolution &SE)
-  : LoopDependenceInfo{ fG,   loopNode, l,
-                        DS,   SE,       Architecture::getNumberOfLogicalCores(),
-                        true, {},       true } {
-  return;
-}
-
-LoopDependenceInfo::LoopDependenceInfo(PDG *fG,
-                                       LoopForestNode *loopNode,
-                                       Loop *l,
-                                       DominatorSummary &DS,
-                                       ScalarEvolution &SE,
-                                       uint32_t maxCores,
-                                       bool enableFloatAsReal)
-  : LoopDependenceInfo{ fG,       loopNode,          l,  DS,  SE,
-                        maxCores, enableFloatAsReal, {}, true } {
-
+LoopDependenceInfo::LoopDependenceInfo(
+    CompilationOptionsManager *compilationOptionsManager,
+    PDG *fG,
+    LoopForestNode *loopNode,
+    Loop *l,
+    DominatorSummary &DS,
+    ScalarEvolution &SE)
+  : LoopDependenceInfo{ compilationOptionsManager,
+                        fG,
+                        loopNode,
+                        l,
+                        DS,
+                        SE,
+                        Architecture::getNumberOfLogicalCores(),
+                        {},
+                        true } {
   return;
 }
 
 LoopDependenceInfo::LoopDependenceInfo(
+    CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopForestNode *loopNode,
     Loop *l,
     DominatorSummary &DS,
     ScalarEvolution &SE,
-    uint32_t maxCores,
-    bool enableFloatAsReal,
-    std::unordered_set<LoopDependenceInfoOptimization> optimizations)
+    uint32_t maxCores)
   : LoopDependenceInfo{
-      fG, loopNode, l, DS, SE, maxCores, enableFloatAsReal, optimizations, true
+      compilationOptionsManager, fG, loopNode, l, DS, SE, maxCores, {}, true
     } {
 
   return;
 }
 
-LoopDependenceInfo::LoopDependenceInfo(PDG *fG,
-                                       LoopForestNode *loopNode,
-                                       Loop *l,
-                                       DominatorSummary &DS,
-                                       ScalarEvolution &SE,
-                                       uint32_t maxCores,
-                                       bool enableFloatAsReal,
-                                       bool enableLoopAwareDependenceAnalyses)
-  : LoopDependenceInfo{ fG,
-                        loopNode,
-                        l,
-                        DS,
-                        SE,
-                        maxCores,
-                        enableFloatAsReal,
-                        {},
-                        enableLoopAwareDependenceAnalyses } {
-
-  return;
-}
-
 LoopDependenceInfo::LoopDependenceInfo(
+    CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopForestNode *loopNode,
     Loop *l,
     DominatorSummary &DS,
     ScalarEvolution &SE,
     uint32_t maxCores,
-    bool enableFloatAsReal,
+    std::unordered_set<LoopDependenceInfoOptimization> optimizations)
+  : LoopDependenceInfo{ compilationOptionsManager,
+                        fG,
+                        loopNode,
+                        l,
+                        DS,
+                        SE,
+                        maxCores,
+                        optimizations,
+                        true } {
+
+  return;
+}
+
+LoopDependenceInfo::LoopDependenceInfo(
+    CompilationOptionsManager *compilationOptionsManager,
+    PDG *fG,
+    LoopForestNode *loopNode,
+    Loop *l,
+    DominatorSummary &DS,
+    ScalarEvolution &SE,
+    uint32_t maxCores,
+    bool enableLoopAwareDependenceAnalyses)
+  : LoopDependenceInfo{
+      compilationOptionsManager,        fG, loopNode, l, DS, SE, maxCores, {},
+      enableLoopAwareDependenceAnalyses
+    } {
+
+  return;
+}
+
+LoopDependenceInfo::LoopDependenceInfo(
+    CompilationOptionsManager *compilationOptionsManager,
+    PDG *fG,
+    LoopForestNode *loopNode,
+    Loop *l,
+    DominatorSummary &DS,
+    ScalarEvolution &SE,
+    uint32_t maxCores,
     std::unordered_set<LoopDependenceInfoOptimization> optimizations,
     bool enableLoopAwareDependenceAnalyses)
-  : LoopDependenceInfo(fG,
+  : LoopDependenceInfo(compilationOptionsManager,
+                       fG,
                        loopNode,
                        l,
                        DS,
                        SE,
                        maxCores,
-                       enableFloatAsReal,
                        optimizations,
                        enableLoopAwareDependenceAnalyses,
                        8) {
@@ -114,18 +126,19 @@ LoopDependenceInfo::LoopDependenceInfo(
 }
 
 LoopDependenceInfo::LoopDependenceInfo(
+    CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopForestNode *loopNode,
     Loop *l,
     DominatorSummary &DS,
     ScalarEvolution &SE,
     uint32_t maxCores,
-    bool enableFloatAsReal,
     std::unordered_set<LoopDependenceInfoOptimization> optimizations,
     bool enableLoopAwareDependenceAnalyses,
     uint32_t chunkSize)
   : loop{ loopNode },
-    memoryCloningAnalysis{ nullptr } {
+    memoryCloningAnalysis{ nullptr },
+    com{ compilationOptionsManager } {
   assert(this->loop != nullptr);
 
   /*
@@ -156,7 +169,12 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->fetchLoopAndBBInfo(l, SE);
   auto ls = this->getLoopStructure();
   auto loopExitBlocks = ls->getLoopExitBasicBlocks();
-  auto DGs = this->createDGsForLoop(l, loopNode, fG, DS, SE);
+  auto DGs = this->createDGsForLoop(compilationOptionsManager,
+                                    l,
+                                    loopNode,
+                                    fG,
+                                    DS,
+                                    SE);
   this->loopDG = DGs.first;
   auto loopSCCDAG = DGs.second;
 
@@ -222,12 +240,13 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Calculate various attributes on SCCs
    */
-  this->sccdagAttrs = new SCCDAGAttrs(enableFloatAsReal,
-                                      loopDG,
-                                      loopSCCDAG,
-                                      this->loop,
-                                      *inductionVariables,
-                                      DS);
+  this->sccdagAttrs = new SCCDAGAttrs(
+      compilationOptionsManager->canFloatsBeConsideredRealNumbers(),
+      loopDG,
+      loopSCCDAG,
+      this->loop,
+      *inductionVariables,
+      DS);
   this->domainSpaceAnalysis =
       new LoopIterationDomainSpaceAnalysis(this->loop,
                                            *this->inductionVariables,
@@ -296,6 +315,7 @@ uint64_t LoopDependenceInfo::computeTripCounts(Loop *l, ScalarEvolution &SE) {
 }
 
 std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
+    CompilationOptionsManager *com,
     Loop *l,
     LoopForestNode *loopNode,
     PDG *functionDG,
@@ -313,6 +333,63 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
     assert(!edge->isLoopCarriedDependence() && "Flag was already set");
   }
 
+  /*
+   * Remove dependences thank to compilation options.
+   */
+  if (com->arePRVGsNonDeterministic()) {
+    std::set<DGEdge<Value> *> toDelete;
+    for (auto edge : loopDG->getEdges()) {
+      if (!edge->isMemoryDependence()) {
+        continue;
+      }
+      auto vo = edge->getOutgoingT();
+      auto vi = edge->getIncomingT();
+      if (!isa<CallBase>(vo)) {
+        continue;
+      }
+      if (!isa<CallBase>(vi)) {
+        continue;
+      }
+      auto voCall = cast<CallBase>(vo);
+      auto viCall = cast<CallBase>(vi);
+
+      /*
+       * Fetch the callees.
+       */
+      auto voCallee = voCall->getCalledFunction();
+      auto viCallee = viCall->getCalledFunction();
+      if ((viCallee == nullptr) && (voCallee == nullptr)) {
+        continue;
+      }
+
+      /*
+       * Check if one of the calls is a PRVGs.
+       */
+      if (((voCallee != nullptr) && (voCallee->getName() != "rand"))
+          && ((viCallee != nullptr) && (viCallee->getName() != "rand"))) {
+        continue;
+      }
+
+      /*
+       * One of the call is a PRVG.
+       * Hence, all memory dependences with a PRVG can be removed.
+       *
+       * We can remove this dependence as PRVGs are non-deterministics.
+       */
+      toDelete.insert(edge);
+    }
+
+    /*
+     * Remove dependences.
+     */
+    for (auto edge : toDelete) {
+      loopDG->removeEdge(edge);
+    }
+  }
+
+  /*
+   * Fetch the set of instructions that compose the loop.
+   */
   std::vector<Value *> loopInternals;
   for (auto internalNode : loopDG->internalNodePairs()) {
     loopInternals.push_back(internalNode.first);

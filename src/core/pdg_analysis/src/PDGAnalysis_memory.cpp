@@ -113,6 +113,75 @@ void PDGAnalysis::iterateInstForLoad(PDG *pdg,
   return;
 }
 
+void PDGAnalysis::iterateInstForCall(PDG *pdg,
+                                     Function &F,
+                                     AAResults &AA,
+                                     DataFlowResult *dfr,
+                                     CallBase *call) {
+
+  /*
+   * Check if the call instruction is not actual code.
+   */
+  if (!Utils::isActualCode(call)) {
+    return;
+  }
+
+  /*
+   * Check if the call instruction is pure.
+   */
+  if (this->hasNoMemoryOperations(call)) {
+    return;
+  }
+
+  /*
+   * Identify all dependences with @call.
+   */
+  for (auto I : dfr->OUT(call)) {
+
+    /*
+     * Check stores.
+     */
+    if (auto store = dyn_cast<StoreInst>(I)) {
+      addEdgeFromFunctionModRef(pdg, F, AA, call, store, true);
+      continue;
+    }
+
+    /*
+     * Check loads.
+     */
+    if (auto load = dyn_cast<LoadInst>(I)) {
+      addEdgeFromFunctionModRef(pdg, F, AA, call, load, true);
+      continue;
+    }
+
+    /*
+     * Check calls.
+     */
+    if (auto baseOtherCall = dyn_cast<CallBase>(I)) {
+
+      /*
+       * Check direct calls
+       */
+      if (auto otherCall = dyn_cast<CallInst>(baseOtherCall)) {
+        if (!Utils::isActualCode(otherCall)) {
+          continue;
+        }
+      }
+      bool isCallReachableFromOtherCall =
+          dfr->OUT(baseOtherCall).count(call) > 0 ? true : false;
+      addEdgeFromFunctionModRef(pdg,
+                                F,
+                                AA,
+                                call,
+                                baseOtherCall,
+                                isCallReachableFromOtherCall);
+      continue;
+    }
+  }
+
+  return;
+}
+
 bool PDGAnalysis::hasNoMemoryOperations(CallBase *call) {
   assert(call != nullptr);
 
@@ -368,12 +437,10 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                             Function &F,
                                             AAResults &AA,
                                             CallBase *call,
-                                            CallBase *otherCall) {
+                                            CallBase *otherCall,
+                                            bool isCallReachableFromOtherCall) {
   BitVector bv(3, false);
   BitVector rbv(3, false);
-  auto makeRefEdge = false, makeModEdge = false, makeModRefEdge = false;
-  auto reverseRefEdge = false, reverseModEdge = false,
-       reverseModRefEdge = false;
 
   /*
    * There is no dependence between allocators
@@ -421,48 +488,87 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
   /*
    * Query the LLVM alias analyses.
    */
-  switch (AA.getModRefInfo(call, otherCall)) {
+  switch (AA.getModRefInfo(otherCall, call)) {
     case ModRefInfo::NoModRef:
       return;
 
     case ModRefInfo::Ref:
 
       /*
-       * @call may read memory locations written by @otherCall
+       * @otherCall may read memory locations written by @call
+       * Add RAW data dependence from call to otherCall
        */
       bv[0] = true;
+
+      if (isCallReachableFromOtherCall) {
+        switch (AA.getModRefInfo(call, otherCall)) {
+          case ModRefInfo::NoModRef:
+          case ModRefInfo::Ref:
+            /*
+             * Contradicting
+             * if @otherCall Ref @call, and @call is reachable from @otherCall
+             * then @call should at least Mod @otherCall
+             */
+            return;
+          case ModRefInfo::Mod:
+          case ModRefInfo::ModRef:
+            break;
+        }
+      }
       break;
 
     case ModRefInfo::Mod:
 
       /*
-       * @call may write a memory location that can be read or written by
-       * @otherCall
+       * @otherCall may write a memory location that can be read or written by
+       * @call
        */
       bv[1] = true;
 
-      switch (AA.getModRefInfo(otherCall, call)) {
-        case ModRefInfo::NoModRef:
-          return;
-        case ModRefInfo::Ref:
-          rbv[0] = true;
-          break;
-        case ModRefInfo::Mod:
-          rbv[1] = true;
-          break;
-        case ModRefInfo::ModRef:
-          rbv[2] = true;
-          break;
+      if (isCallReachableFromOtherCall) {
+        switch (AA.getModRefInfo(call, otherCall)) {
+          case ModRefInfo::NoModRef:
+            return;
+          case ModRefInfo::Ref:
+            rbv[0] = true;
+            break;
+          case ModRefInfo::Mod:
+            rbv[1] = true;
+            break;
+          case ModRefInfo::ModRef:
+            rbv[2] = true;
+            break;
+        }
       }
       break;
 
     case ModRefInfo::ModRef:
 
       /*
-       * @call may read or write a memory location that can be written by
-       * @otherCall
+       * @otherCall may read or write a memory location that can be written by
+       * @call
        */
       bv[2] = true;
+
+      if (isCallReachableFromOtherCall) {
+        switch (AA.getModRefInfo(call, otherCall)) {
+          case ModRefInfo::NoModRef:
+            return;
+          case ModRefInfo::Ref:
+            /*
+             * Contradicting
+             * if @otherCall ModRef @call, and @call is reachable from
+             * @otherCall then @call should at least Mod @otherCall
+             */
+            return;
+          case ModRefInfo::Mod:
+            rbv[1] = true;
+            break;
+          case ModRefInfo::ModRef:
+            rbv[2] = true;
+            break;
+        }
+      }
       break;
   }
 
@@ -498,126 +604,198 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
      */
     if (true && isSafeToQueryModRefOfSVF(call, bv)
         && isSafeToQueryModRefOfSVF(otherCall, bv)) {
-      switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
+      switch (NoelleSVFIntegration::getModRefInfo(otherCall, call)) {
         case ModRefInfo::NoModRef:
           return;
 
         case ModRefInfo::Ref:
           bv[0] = true;
+          if (isCallReachableFromOtherCall) {
+            switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
+              case ModRefInfo::NoModRef:
+              case ModRefInfo::Ref:
+                return;
+              case ModRefInfo::Mod:
+              case ModRefInfo::ModRef:
+                break;
+            }
+          }
           break;
 
         case ModRefInfo::Mod:
           bv[1] = true;
-
-          switch (NoelleSVFIntegration::getModRefInfo(otherCall, call)) {
-            case ModRefInfo::NoModRef:
-              return;
-            case ModRefInfo::Ref:
-              rbv[0] = true;
-              break;
-            case ModRefInfo::Mod:
-              rbv[1] = true;
-              break;
-            case ModRefInfo::ModRef:
-              rbv[2] = true;
-              break;
+          if (isCallReachableFromOtherCall) {
+            switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
+              case ModRefInfo::NoModRef:
+                return;
+              case ModRefInfo::Ref:
+                rbv[0] = true;
+                break;
+              case ModRefInfo::Mod:
+                rbv[1] = true;
+                break;
+              case ModRefInfo::ModRef:
+                rbv[2] = true;
+                break;
+            }
           }
           break;
 
         case ModRefInfo::ModRef:
           bv[2] = true;
+          if (isCallReachableFromOtherCall) {
+            switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
+              case ModRefInfo::NoModRef:
+                return;
+              case ModRefInfo::Ref:
+                return;
+              case ModRefInfo::Mod:
+                rbv[1] = true;
+                break;
+              case ModRefInfo::ModRef:
+                rbv[2] = true;
+                break;
+            }
+          }
           break;
       }
     }
   }
 
   if (bv[0] && bv[1]) {
+    /*
+     * Contradicting
+     */
     return;
   }
   if (bv[0]) {
-    makeRefEdge = true;
+    /*
+     * @otherCall reads a memory location that @call writes.
+     * there is a RAW memory dependence from @call to @otherCall
+     */
+    pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
+
+    /*
+     * Check the unique case that @otherCall and @call are the same.
+     * In this case, there is also a WAR dependence
+     */
+    if (otherCall == call) {
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+    }
 
   } else if (bv[1]) {
-    makeModEdge = true;
     if (rbv[0] && rbv[1]) {
+      /*
+       * Contradicting
+       */
       return;
     }
 
     if (rbv[0]) {
-      reverseRefEdge = true;
+      /*
+       * Check the unique case that @otherCall and @call are the same.
+       */
+      if (otherCall == call) {
+        /*
+         * Contradicting
+         * if @call Mod itself, the reverse query should also return Mod result
+         */
+        return;
+      }
+
+      /*
+       * @call may read a memory location that can be written by @otherCall
+       * only need to add WAR data dependence from @call to @otherCall
+       */
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+
     } else if (rbv[1]) {
-      reverseModEdge = true;
+      /*
+       * @call may write a memory location that can be written by @otherCall
+       * only need to add WAW data dependence from call to otherCall
+       */
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+
     } else {
-      reverseModRefEdge = true;
+      /*
+       * Check the unique case that @otherCall and @call are the same.
+       */
+      if (otherCall == call) {
+        /*
+         * Contradicting
+         * if @call Mod itself, the reverse query should also return Mod result
+         */
+        return;
+      }
+
+      /*
+       * whatever rbv[2] (reverseModRef) is set or not
+       * need to add both WAR and WAW from @call to @otherCall
+       */
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
     }
 
   } else {
-    makeModRefEdge = true;
-  }
-
-  /*
-   * There is a dependence.
-   */
-  if (makeRefEdge) {
-
-    /*
-     * @call reads a memory location that @otherCall writes.
-     * The sequence of execution is @call and then @otherCall.
-     * Hence, there is a WAR memory dependence from @call to @otherCall
-     */
-    pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
-
-    /*
-     * Check the unique case that @call and @otherCall are the same.
-     * In this case, there is also a RAW dependence between them.
-     */
-    if (call == otherCall) {
-      pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_RAW);
-    }
-
-  } else if (makeModEdge) {
-
-    /*
-     * Dependency of a Mod-result between call and otherCall depends on the
-     * reverse getModRefInfo result
-     */
-    if (reverseRefEdge) {
-      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
-
+    assert(bv[2] == true
+           && "otherCall ModRef call but the bit isn't set correctnly\n");
+    if (rbv[0]) {
       /*
-       * Check the unique case that @call and @otherCall are the same.
-       * In this case, there is also a WAR dependence between them.
+       * Contradicting
        */
-      if (call == otherCall) {
-        pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_WAR);
+      return;
+
+    } else if (rbv[1]) {
+      /*
+       * Check the unique case that @otherCall and @call are the same.
+       */
+      if (otherCall == call) {
+        /*
+         * Contradicting
+         * if @call ModRef itself, the reverse query should also return ModRef
+         * result
+         */
+        return;
       }
 
-    } else if (reverseModEdge) {
-      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
-
-    } else if (reverseModRefEdge) {
+      /*
+       * @call may write a memory location that can be read or written by
+       * @otherCall need to add both RAW and WAW from call to otherCall
+       */
       pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
       pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+    } else if (rbv[2]) {
+      /*
+       * @call may read or write a memory location that can be written by
+       * @otherCall need to add all RAW, WAW and WAR from @call to @otherCall
+       */
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+
+    } else {
+      assert(
+          !rbv[0] && !rbv[1] && !rbv[2]
+          && "otherCall ModRef call and call is unreachable from otherCall, but the bit isn't set correctly\n");
 
       /*
-       * Check the unique case that @call and @otherCall are the same.
-       * In this case, there is also a WAR dependence between them.
+       * Check the unique case that @otherCall and @call are the same.
        */
-      if (call == otherCall) {
-        pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_WAR);
+      if (otherCall == call) {
+        /*
+         * Contradicting
+         * if @call ModRef itself, the reverse query should also return ModRef
+         * result
+         */
+        return;
       }
-    }
 
-  } else if (makeModRefEdge) {
-    pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
-    pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
-
-    /*
-     * Check the unique case that @call and @otherCall are the same.
-     * In this case, there is also a RAW dependence between them.
-     */
-    if (call == otherCall) {
-      pdg->addEdge(otherCall, call)->setMemMustType(true, false, DG_DATA_RAW);
+      /*
+       * @otherCall may read or write a memory location that can be written by
+       * @call need to add both RAW, WAW @call to @otherCall
+       */
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
+      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
     }
   }
 

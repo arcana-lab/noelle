@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -40,6 +40,7 @@
 #include "noelle/core/CFGAnalysis.hpp"
 #include "noelle/core/CFGTransformer.hpp"
 #include "noelle/core/Linker.hpp"
+#include "noelle/core/AliasAnalysisEngine.hpp"
 
 namespace llvm::noelle {
 
@@ -76,6 +77,8 @@ public:
   MetadataManager *getMetadataManager(void);
 
   Linker *getLinker(void);
+
+  std::set<AliasAnalysisEngine *> getAliasAnalysisEngines(void);
 
   LoopNestingGraph *getLoopNestingGraphForProgram(void);
 
@@ -213,17 +216,12 @@ public:
    */
   bool isTransformationEnabled(Transformation transformation);
 
-  bool shouldLoopsBeHoistToMain(void) const;
-
-  bool canFloatsBeConsideredRealNumbers(void) const;
-
   bool verifyCode(void) const;
 
   ~Noelle();
 
 private:
   Verbosity verbose;
-  bool enableFloatAsReal;
   double minHot;
   Module *program;
   Hot *profiles;
@@ -244,6 +242,7 @@ private:
   CompilationOptionsManager *om;
   MetadataManager *mm;
   Linker *linker;
+  std::set<AliasAnalysisEngine *> aaEngines;
 
   uint32_t fetchTheNextValue(std::stringstream &stream);
 

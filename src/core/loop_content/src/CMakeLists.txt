@@ -2,7 +2,6 @@
 set(Srcs 
   ControlFlowEquivalence.cpp
   LoopAwareMemDepAnalysis.cpp
-  LoopIterationDomainSpaceAnalysis.cpp
   SCCDAGNormalizer.cpp
   LoopDependenceInfo.cpp
   LoopTransformationsOptions.cpp
@@ -47,6 +46,9 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_scc_attributes/include
   ../../loop_sccdag_attributes/include
   ../../loop_carried_dependences/include
+  ../../alias_analysis_engine/include
+  ../../loop_dependence_analyses/include
+  ../../compilation_options_manager/include
   ../include
   ./
   ${CMAKE_INSTALL_PREFIX}/include
