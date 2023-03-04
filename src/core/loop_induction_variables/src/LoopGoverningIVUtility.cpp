@@ -350,4 +350,46 @@ Value *LoopGoverningIVUtility::generateCodeToComputeValueToUseForAnIterationAgo(
   return currentIterationValue;
 }
 
+void LoopGoverningIVUtility::
+    updateConditionToCheckIfTheLastLoopIterationWasExecuted(
+        CmpInst *condition) {
+  assert(condition != nullptr);
+
+  /*
+   * Fetch the loop governing IV.
+   */
+  auto IV = this->attribution.getInductionVariable();
+  assert(IV.isStepValueLoopInvariant());
+
+  /*
+   * Adjust the predicate.
+   */
+  if (this->doesOriginalCmpInstHaveIVAsLeftOperand) {
+    switch (condition->getPredicate()) {
+      case CmpInst::Predicate::ICMP_SGE:
+      case CmpInst::Predicate::ICMP_UGE:
+        condition->setPredicate(CmpInst::Predicate::ICMP_EQ);
+        break;
+
+      default:
+        condition->setPredicate(this->strictPredicate);
+        break;
+    }
+
+  } else {
+    switch (condition->getPredicate()) {
+      case CmpInst::Predicate::ICMP_SLE:
+      case CmpInst::Predicate::ICMP_ULE:
+        condition->setPredicate(CmpInst::Predicate::ICMP_EQ);
+        break;
+
+      default:
+        condition->setPredicate(this->strictPredicate);
+        break;
+    }
+  }
+
+  return;
+}
+
 } // namespace llvm::noelle

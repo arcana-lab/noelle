@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/tools/DOALL.hpp"
+#include "noelle/core/InductionVariableSCC.hpp"
 
 namespace llvm::noelle {
 
@@ -73,12 +74,37 @@ bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
    * The loop must have all live-out variables to be reducable.
    */
   auto sccManager = LDI->getSCCManager();
+  auto sccdag = sccManager->getSCCDAG();
   auto nonReducibleLiveOuts =
       sccManager->getLiveOutVariablesThatAreNotReducable(loopEnv);
-  if (nonReducibleLiveOuts.size() > 0) {
+  std::set<uint32_t> liveOutThatRequireSynchronizations{};
+  for (auto liveOutVar : nonReducibleLiveOuts) {
+
+    /*
+     * Fetch the SCC that generates the live-out variable.
+     */
+    auto producer = loopEnv->getProducer(liveOutVar);
+    auto scc = sccdag->sccOfValue(producer);
+    auto sccInfo = sccManager->getSCCAttrs(scc);
+    assert(sccInfo != nullptr);
+
+    /*
+     * Check if the SCC can be handled by DOALL.
+     */
+    if (isa<InductionVariableSCC>(sccInfo)) {
+      continue;
+    }
+
+    /*
+     * The SCC cannot be handled by DOALL.
+     */
+    liveOutThatRequireSynchronizations.insert(liveOutVar);
+  }
+  if (liveOutThatRequireSynchronizations.size() > 0) {
     if (this->verbose != Verbosity::Disabled) {
-      errs() << "DOALL:   The next live-out variables are not reducable\n";
-      for (auto envID : nonReducibleLiveOuts) {
+      errs()
+          << "DOALL:   The next live-out variables require synchronizations between loop iterations\n";
+      for (auto envID : liveOutThatRequireSynchronizations) {
         errs() << "DOALL:     Live-out ID = " << envID << "\n";
       }
     }

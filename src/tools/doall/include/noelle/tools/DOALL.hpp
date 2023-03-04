@@ -58,6 +58,7 @@ protected:
   bool enabled;
   Function *taskDispatcher;
   Noelle &n;
+  std::map<PHINode *, std::set<Instruction *>> IVValueJustBeforeEnteringBody;
 
   virtual void addChunkFunctionExecutionAsideOriginalLoop(
       LoopDependenceInfo *LDI,

@@ -97,7 +97,9 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
    */
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
-    auto ivPHI = cast<PHINode>(fetchClone(ivInfo->getLoopEntryPHI()));
+    auto cloneLoopEntryPHI = this->fetchClone(ivInfo->getLoopEntryPHI());
+    assert(cloneLoopEntryPHI != nullptr);
+    auto ivPHI = cast<PHINode>(cloneLoopEntryPHI);
     auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);
     auto chunkStepSize = IVUtility::scaleInductionVariableStep(
         preheaderClone,
@@ -109,10 +111,11 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
                                task->chunkSizeArg,
                                "numCoresMinus1_X_chunkSize"));
 
-    IVUtility::chunkInductionVariablePHI(preheaderClone,
-                                         ivPHI,
-                                         chunkPHI,
-                                         chunkStepSize);
+    auto chunkedIVValues = IVUtility::chunkInductionVariablePHI(preheaderClone,
+                                                                ivPHI,
+                                                                chunkPHI,
+                                                                chunkStepSize);
+    this->IVValueJustBeforeEnteringBody[ivPHI] = chunkedIVValues;
   }
 
   /*

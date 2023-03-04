@@ -59,11 +59,12 @@ PHINode *IVUtility::createChunkPHI(BasicBlock *preheaderB,
   return chunkPHI;
 }
 
-void IVUtility::chunkInductionVariablePHI(BasicBlock *preheaderBlock,
-                                          PHINode *ivPHI,
-                                          PHINode *chunkPHI,
-                                          Value *chunkStepSize) {
-
+std::set<Instruction *> IVUtility::chunkInductionVariablePHI(
+    BasicBlock *preheaderBlock,
+    PHINode *ivPHI,
+    PHINode *chunkPHI,
+    Value *chunkStepSize) {
+  std::set<Instruction *> chunkedIVValues;
   for (auto i = 0; i < ivPHI->getNumIncomingValues(); ++i) {
     auto B = ivPHI->getIncomingBlock(i);
     IRBuilder<> latchBuilder(B->getTerminator());
@@ -82,12 +83,16 @@ void IVUtility::chunkInductionVariablePHI(BasicBlock *preheaderBlock,
     /*
      * Iterate to next chunk if necessary
      */
-    ivPHI->setIncomingValue(i,
-                            latchBuilder.CreateSelect(isChunkCompleted,
-                                                      ivOffsetByChunk,
-                                                      initialLatchValue,
-                                                      "nextStepOrNextChunk"));
+    auto chunkedIVValue =
+        cast<Instruction>(latchBuilder.CreateSelect(isChunkCompleted,
+                                                    ivOffsetByChunk,
+                                                    initialLatchValue,
+                                                    "nextStepOrNextChunk"));
+    ivPHI->setIncomingValue(i, chunkedIVValue);
+    chunkedIVValues.insert(chunkedIVValue);
   }
+
+  return chunkedIVValues;
 }
 
 void IVUtility::stepInductionVariablePHI(BasicBlock *preheaderBlock,
