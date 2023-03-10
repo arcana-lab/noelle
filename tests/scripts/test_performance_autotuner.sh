@@ -172,7 +172,7 @@ export PATH=`pwd`/../install/bin:$PATH ;
 
 # Run
 cd performance ;
-runningTests "Measuring the default configuration" "-noelle-verbose=3" " " "speedups.txt" ;
+runningTests "Measuring the default configuration" "-noelle-verbose=3" " " "speedups_autotuner.txt" ;
 
 cd ../ ;
 
