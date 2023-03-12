@@ -46,7 +46,6 @@ public:
       Instruction *to) const;
 
 private:
-
   /*
    * Long-lived references
    */

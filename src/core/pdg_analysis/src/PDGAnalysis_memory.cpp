@@ -167,8 +167,14 @@ void PDGAnalysis::iterateInstForCall(PDG *pdg,
           continue;
         }
       }
-      bool isCallReachableFromOtherCall = dfr->OUT(baseOtherCall).count(call) > 0 ? true : false;
-      addEdgeFromFunctionModRef(pdg, F, AA, call, baseOtherCall, isCallReachableFromOtherCall);
+      bool isCallReachableFromOtherCall =
+          dfr->OUT(baseOtherCall).count(call) > 0 ? true : false;
+      addEdgeFromFunctionModRef(pdg,
+                                F,
+                                AA,
+                                call,
+                                baseOtherCall,
+                                isCallReachableFromOtherCall);
       continue;
     }
   }
@@ -551,8 +557,8 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
           case ModRefInfo::Ref:
             /*
              * Contradicting
-             * if @otherCall ModRef @call, and @call is reachable from @otherCall
-             * then @call should at least Mod @otherCall
+             * if @otherCall ModRef @call, and @call is reachable from
+             * @otherCall then @call should at least Mod @otherCall
              */
             return;
           case ModRefInfo::Mod:
@@ -705,15 +711,6 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
 
     } else if (rbv[1]) {
       /*
-       * Check the unique case that @otherCall and @call are the same.
-       * In this case, there is also a RAW and WAR dependence
-       */
-      if (otherCall == call) {
-        pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
-        pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
-      }
-
-      /*
        * @call may write a memory location that can be written by @otherCall
        * only need to add WAW data dependence from call to otherCall
        */
@@ -740,7 +737,8 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
     }
 
   } else {
-    assert(bv[2] == true && "otherCall ModRef call but the bit isn't set correctnly\n");
+    assert(bv[2] == true
+           && "otherCall ModRef call but the bit isn't set correctnly\n");
     if (rbv[0]) {
       /*
        * Contradicting
@@ -754,29 +752,31 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
       if (otherCall == call) {
         /*
          * Contradicting
-         * if @call ModRef itself, the reverse query should also return ModRef result
+         * if @call ModRef itself, the reverse query should also return ModRef
+         * result
          */
         return;
       }
 
       /*
-       * @call may write a memory location that can be read or written by @otherCall
-       * need to add both RAW and WAW from call to otherCall
+       * @call may write a memory location that can be read or written by
+       * @otherCall need to add both RAW and WAW from call to otherCall
        */
       pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
       pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
     } else if (rbv[2]) {
       /*
-       * @call may read or write a memory location that can be written by @otherCall
-       * need to add all RAW, WAW and WAR from @call to @otherCall
+       * @call may read or write a memory location that can be written by
+       * @otherCall need to add all RAW, WAW and WAR from @call to @otherCall
        */
       pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
       pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
       pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
 
     } else {
-      assert(!rbv[0] && !rbv[1] && !rbv[2] && 
-        "otherCall ModRef call and call is unreachable from otherCall, but the bit isn't set correctly\n");
+      assert(
+          !rbv[0] && !rbv[1] && !rbv[2]
+          && "otherCall ModRef call and call is unreachable from otherCall, but the bit isn't set correctly\n");
 
       /*
        * Check the unique case that @otherCall and @call are the same.
@@ -784,14 +784,15 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
       if (otherCall == call) {
         /*
          * Contradicting
-         * if @call ModRef itself, the reverse query should also return ModRef result
+         * if @call ModRef itself, the reverse query should also return ModRef
+         * result
          */
         return;
       }
 
       /*
-       * @otherCall may read or write a memory location that can be written by @call
-       * need to add both RAW, WAW @call to @otherCall
+       * @otherCall may read or write a memory location that can be written by
+       * @call need to add both RAW, WAW @call to @otherCall
        */
       pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
       pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);

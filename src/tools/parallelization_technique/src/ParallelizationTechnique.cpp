@@ -1101,11 +1101,12 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
                     taskIndex,
                     *BB);
             assert(lastIterationBB != nullptr);
+            IRBuilder<> b{ lastIterationBB };
             auto lastIterationBBTerminator = lastIterationBB->getTerminator();
             if (lastIterationBBTerminator != nullptr) {
               store->insertBefore(lastIterationBBTerminator);
             } else {
-              lastIterationBB->getInstList().push_back(store);
+              b.Insert(store);
             }
 
           } else {

@@ -34,10 +34,11 @@ public:
                                  Type *chunkPHIType,
                                  Value *chunkSize);
 
-  static void chunkInductionVariablePHI(BasicBlock *preheaderBlock,
-                                        PHINode *ivPHI,
-                                        PHINode *chunkPHI,
-                                        Value *chunkStepSize);
+  static std::set<Instruction *> chunkInductionVariablePHI(
+      BasicBlock *preheaderBlock,
+      PHINode *ivPHI,
+      PHINode *chunkPHI,
+      Value *chunkStepSize);
 
   /*
    * Inserts instruction to add offsetValue to startValue. Returns the result of
@@ -118,6 +119,9 @@ public:
       IRBuilder<> &builder,
       Value *currentIterationValue,
       Value *stepValue);
+
+  void updateConditionToCheckIfTheLastLoopIterationWasExecuted(
+      CmpInst *condition);
 
 private:
   LoopStructure *loop;
