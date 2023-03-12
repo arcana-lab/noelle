@@ -95,6 +95,23 @@ cd THE_TEST_YOU_ARE_INTERESTED ;
 ```
 where `regression_42` is the sub-directory of the configuration you are interested and `THE_TEST_YOU_ARE_INTERESTED` is the test you care.
 
+To run only the performance tests using Condor, invoke the following commands:
+```
+cd tests/condor ;
+make clean ;
+make performance.con ;
+make submit ;
+```
+The speedup results will be collected in the tests/performance/speedups.txt file.
+
+To run only the autotuned performance tests using Condor, invoke the following commands:
+```
+cd tests/condor ;
+make clean ;
+make performance_autotuner.con ;
+make submit ;
+```
+The speedup results will be collected in the tests/performance/speedups_autotuner.txt file.
 
 ## Repository structure
 The directory `src` includes sources of the noelle framework.
