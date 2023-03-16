@@ -23,8 +23,11 @@
 #include "llvm/Transforms/Utils/LoopUtils.h"
 #include "llvm/Transforms/Utils/UnrollLoop.h"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
+
+LoopUnroll::LoopUnroll() {
+  return;
+}
 
 bool LoopUnroll::fullyUnrollLoop(LoopDependenceInfo const &LDI,
                                  LoopInfo &LI,
@@ -102,3 +105,5 @@ bool LoopUnroll::fullyUnrollLoop(LoopDependenceInfo const &LDI,
 
   return modified;
 }
+
+} // namespace llvm::noelle
