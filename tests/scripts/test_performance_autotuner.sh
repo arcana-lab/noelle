@@ -89,9 +89,6 @@ function runningTests {
   echo $1 ;
   > $4 ;
 
-  # Export autotuner specifications for parallelization
-  #export INDEX_FILE="autotuner.info" ;
-
   for i in `ls`; do
     if ! test -d $i ; then
       continue ;
@@ -172,7 +169,7 @@ export PATH=`pwd`/../install/bin:$PATH ;
 
 # Run
 cd performance ;
-runningTests "Measuring the default configuration" "-noelle-verbose=3" " " "speedups_autotuner.txt" ;
+runningTests "Measuring the default configuration" "-noelle-verbose=3 -noelle-inliner-avoid-hoist-to-main" " " "speedups_autotuner.txt" ;
 
 cd ../ ;
 

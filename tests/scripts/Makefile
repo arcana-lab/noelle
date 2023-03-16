@@ -45,10 +45,6 @@ NODOALLFILTERING=
 # Disable filtering of search space that checks if parallelizing one DOALL loop at a time yields a better execution time
 NODOALLTIMEFILTERING=
 
-# Fetch the list of files to compile
-CPP_FILES := $(wildcard *.cpp)
-BC_FILES := $(notdir $(CPP_FILES:.cpp=.bc))
-
 all: baseline $(OPTIMIZED)
 
 %.bc: %.c

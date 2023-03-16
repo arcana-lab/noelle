@@ -66,53 +66,15 @@ std::vector<LoopStructure *> LoopMetadataPass::getLoopStructuresWithoutNoelle(
 bool LoopMetadataPass::setIDs(std::vector<LoopStructure *> &loopStructures) {
 
   /*
-   * Initial scan of current loop IDs.
-   * Get the max loopID to start assigning
-   * new loop IDs from there.
-   */
-  std::set<uint64_t> currLoopIDs;
-  for (auto loopStructure : loopStructures) {
-    if (loopStructure->doesHaveID()) {
-      auto loopIDOpt = loopStructure->getID();
-      assert(loopIDOpt);
-      uint64_t currLoopID = loopIDOpt.value();
-      currLoopIDs.insert(currLoopID);
-    }
-  }
-
-  /*
-   * Get the max loopID to start assigning
-   * new loop IDs from there.
-   */
-  uint64_t maxLoopID = 0;
-  if (!currLoopIDs.empty()) {
-    maxLoopID = *(currLoopIDs.rbegin());
-  }
-
-  /*
-   * Set ID for all remaining loops in the module.
+   * Set ID for all loops in the module.
    */
   auto modified = false;
   uint64_t loopID = 0;
-  if (maxLoopID != 0) {
-    loopID = maxLoopID + 1;
-  }
-  auto thereIsNewLoopWithoutID = false;
   for (auto loopStructure : loopStructures) {
-    if (!loopStructure->doesHaveID()) {
-      loopStructure->setID(loopID);
-      modified = true;
-      loopID++;
-
-      if (maxLoopID != 0) {
-        thereIsNewLoopWithoutID = true;
-      }
-    }
-  }
-
-  if (thereIsNewLoopWithoutID) {
-    errs()
-        << "LOOP_METADATA: there is at least one new loop that didn't have an ID.\n";
+    loopStructure->setID(loopID);
+    modified = true;
+    errs() << "LOOP_ID " << loopID << "\n";
+    loopID++;
   }
 
   return modified;
