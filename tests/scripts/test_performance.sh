@@ -90,7 +90,7 @@ function runningTests {
   > $4 ;
 
   # Export autotuner specifications for parallelization
-  export INDEX_FILE="autotuner.info" ;
+  export INDEX_FILE="autotuner_seed.info" ;
 
   for i in `ls`; do
     if ! test -d $i ; then
