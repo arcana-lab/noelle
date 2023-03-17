@@ -7,6 +7,9 @@ all: regression performance unit
 condor: download
 	cd condor ; make ; make submit ;
 
+condor_autotuner:
+	cd condor ; make performance_autotuner.con ; make submit ;
+
 condor_watch:
 	./scripts/condor_watch.sh ;
 
@@ -42,4 +45,4 @@ clean:
 	find ./ -name output_parallelized.txt.xz -delete
 	find ./ -name vgcore* -delete
 
-.PHONY: condor condor_check regression performance unit download clean condor_regression_add
+.PHONY: condor condor_autotuner condor_check regression performance performance_autotuner unit download clean condor_regression_add
