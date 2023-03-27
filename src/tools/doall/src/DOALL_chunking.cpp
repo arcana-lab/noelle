@@ -145,8 +145,8 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
    * Assert that any PHIs are invariant. Hoist one of those values (if
    * instructions) to the preheader.
    */
-  auto exitConditionValue =
-      fetchClone(loopGoverningIVAttr->getExitConditionValue());
+  auto exitConditionValue = this->fetchClone(loopGoverningIVAttr->getExitConditionValue());
+  assert(exitConditionValue != nullptr);
   if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
     auto &derivation = ivUtility.getConditionValueDerivation();
     for (auto I : derivation) {
@@ -546,7 +546,8 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
       prevIterationValue);
   preheaderBuilder.Insert(clonedExitCmpInst);
 
-  auto startValue = fetchClone(loopGoverningIV.getStartValue());
+  auto startValue = this->fetchClone(loopGoverningIV.getStartValue());
+  assert(startValue != nullptr);
   auto isNotFirstIteration =
       preheaderBuilder.CreateICmpNE(offsetStartValue, startValue);
   preheaderBuilder.CreateCondBr(

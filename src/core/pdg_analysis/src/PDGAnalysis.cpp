@@ -1176,7 +1176,8 @@ const StringSet<> PDGAnalysis::externalFuncsHaveNoSideEffectOrHandledBySVF{
   "exit",
   "strcmp",
   "strncmp",
-  "rand_r"
+  "rand_r",
+  "strlen"
 };
 
 const StringSet<> PDGAnalysis::externalThreadSafeFunctions{

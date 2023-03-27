@@ -1,7 +1,6 @@
 # Sources
 set(Srcs 
   LoopUnroll.cpp
-  Pass.cpp
 )
 
 # Compilation flags

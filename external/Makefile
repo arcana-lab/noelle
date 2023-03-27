@@ -3,7 +3,7 @@ JOBS?=8
 SVF_BRANCH?=SVF-1.8
 SCAF_BRANCH?=v9.1.6
 
-all: compile
+all: compile autotuner
 
 compile: svf patch.tar scaf
 	cd svf ; tar xf ../patch.tar ;
@@ -29,12 +29,16 @@ scaf:
 	git clone -b $(SCAF_BRANCH) https://github.com/PrincetonUniversity/SCAF scaf
 	./scripts/scaf_install.sh $(DEBUG) ;
 
+autotuner:
+	cd autotuner ; make
+
 clean:
 	./scripts/clean.sh
 	rm -f patch.tar 
+	cd autotuner ; make clean
 
 uninstall:
 	rm -rf svf ;
 	rm -rf scaf ;
 
-.PHONY: compile compile_without_scaf clean uninstall
+.PHONY: compile compile_without_scaf clean uninstall autotuner
