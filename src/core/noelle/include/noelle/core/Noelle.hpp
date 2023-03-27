@@ -232,10 +232,9 @@ private:
   PDGAnalysis *pdgAnalysis;
   char *filterFileName;
   bool hasReadFilterFile;
-  std::vector<uint32_t> loopThreads;
-  std::vector<uint32_t> techniquesToDisable;
-  std::vector<uint32_t> DOALLChunkSize;
-  std::unordered_map<BasicBlock *, uint32_t> loopHeaderToLoopIndexMap;
+  std::map<uint32_t, uint32_t> loopThreads;
+  std::map<uint32_t, uint32_t> techniquesToDisable;
+  std::map<uint32_t, uint32_t> DOALLChunkSize;
   FunctionsManager *fm;
   TypesManager *tm;
   ConstantsManager *cm;

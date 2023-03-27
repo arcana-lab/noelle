@@ -199,7 +199,6 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
   /*
    * Append loops of each function.
    */
-  auto nextLoopIndex = 0;
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "Noelle: Filter out cold code\n";
   }
@@ -238,7 +237,6 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
      */
     auto loops = LI.getLoopsInPreorder();
     for (auto loop : loops) {
-      auto currentLoopIndex = nextLoopIndex++;
 
       /*
        * Check if the loop is hot enough.
@@ -246,11 +244,16 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
       errs() << "Noelle:     Loop \"" << *loop->getHeader()->getFirstNonPHI()
              << "\" (";
       auto loopStructure = new LoopStructure{ loop };
+
       errs() << (this->getProfiles()->getDynamicTotalInstructionCoverage(
                      loopStructure)
                  * 100)
              << "%)\n";
-      auto loopHeader = loopStructure->getHeader();
+
+      auto loopIDOpt = loopStructure->getID();
+      assert(loopIDOpt);
+      auto currentLoopIndex = loopIDOpt.value();
+
       if (minimumHotness > 0) {
         if (!isLoopHot(loopStructure, minimumHotness)) {
           errs() << "Noelle:  Disable loop \"" << currentLoopIndex
@@ -275,8 +278,6 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
          * Allocate the loop wrapper.
          */
         allLoops->push_back(loopStructure);
-        this->loopHeaderToLoopIndexMap.insert(
-            std::make_pair(loopHeader, currentLoopIndex));
         continue;
       }
 
@@ -305,21 +306,9 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
              << maximumNumberOfCoresForTheParallelization << "\n";
 
       /*
-       * Safety code.
-       */
-      if (currentLoopIndex >= loopThreads.size()) {
-        errs()
-            << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than "
-            << loopThreads.size() << " loops available in the program\n";
-        abort();
-      }
-
-      /*
        * The current loop needs to be considered as specified by the user.
        */
       allLoops->push_back(loopStructure);
-      this->loopHeaderToLoopIndexMap.insert(
-          std::make_pair(loopHeader, currentLoopIndex));
     }
   }
 
@@ -377,29 +366,6 @@ LoopDependenceInfo *Noelle::getLoop(
   auto DS = this->getDominators(function);
 
   /*
-   * Check of loopIndex provided is within bounds
-   */
-  if (this->loopHeaderToLoopIndexMap.find(header)
-      == this->loopHeaderToLoopIndexMap.end()) {
-    auto ldi =
-        this->getLoopDependenceInfoForLoop(header,
-                                           funcPDG,
-                                           DS,
-                                           0,
-                                           8,
-                                           this->om->getMaximumNumberOfCores(),
-                                           optimizations);
-
-    delete DS;
-    return ldi;
-  }
-
-  /*
-   * Fetch the loop index.
-   */
-  auto loopIndex = this->loopHeaderToLoopIndexMap.at(header);
-
-  /*
    * No filter file was provided. Construct LDI without profiler configurables
    */
   if (!this->hasReadFilterFile) {
@@ -417,13 +383,11 @@ LoopDependenceInfo *Noelle::getLoop(
   }
 
   /*
-   * Ensure loop configurables exist for this loop index
+   * Fetch the loop index.
    */
-  if (loopIndex >= this->loopThreads.size()) {
-    errs() << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than "
-           << this->loopThreads.size() << " loops available in the program\n";
-    abort();
-  }
+  auto loopIDOpt = loop->getID();
+  assert(loopIDOpt);
+  auto loopIndex = loopIDOpt.value();
 
   auto maximumNumberOfCoresForTheParallelization = this->loopThreads[loopIndex];
   auto ldi = this->getLoopDependenceInfoForLoop(
@@ -591,9 +555,8 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "Noelle: Filter out cold code\n";
   }
-  auto nextLoopIndex = 0;
-  for (auto function : functions) {
 
+  for (auto function : functions) {
     /*
      * Check if this is application code.
      */
@@ -644,14 +607,15 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
      * Organize loops in their forest
      */
     std::vector<LoopStructure *> loopStructures;
-    std::map<LoopStructure *, uint32_t> loopIDs;
     for (auto loop : loops) {
-      auto currentLoopIndex = nextLoopIndex++;
 
       /*
        * Check if the loop is hot enough.
        */
       auto loopS = new LoopStructure(loop);
+      auto loopIDOpt = loopS->getID();
+      assert(loopIDOpt);
+      auto currentLoopIndex = loopIDOpt.value();
       if (minimumHotness > 0) {
         if (!this->isLoopHot(loopS, minimumHotness)) {
           errs() << "Noelle:  Disable loop \"" << currentLoopIndex
@@ -675,7 +639,6 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
          * Allocate the loop
          */
         loopStructures.push_back(loopS);
-        loopIDs[loopS] = currentLoopIndex;
         continue;
       }
 
@@ -705,20 +668,9 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
       }
 
       /*
-       * Safety code.
-       */
-      if (this->hasReadFilterFile && currentLoopIndex >= loopThreads.size()) {
-        errs()
-            << "ERROR: the 'INDEX_FILE' file isn't correct. There are more than "
-            << loopThreads.size() << " loops available in the program\n";
-        abort();
-      }
-
-      /*
        * The current loop needs to be considered as specified by the user.
        */
       loopStructures.push_back(loopS);
-      loopIDs[loopS] = currentLoopIndex;
     }
 
     /*
@@ -736,8 +688,9 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
          * Fetch the loop
          */
         auto ls = loopNode->getLoop();
-        assert(loopIDs.find(ls) != loopIDs.end());
-        auto currentLoopIndex = loopIDs[ls];
+        auto loopIDOpt = ls->getID();
+        assert(loopIDOpt);
+        auto currentLoopIndex = loopIDOpt.value();
 
         /*
          * Fetch the LLVM loop
@@ -811,9 +764,7 @@ uint32_t Noelle::getNumberOfProgramLoops(double minimumHotness) {
   /*
    * Append loops of each function.
    */
-  auto currentLoopIndex = 0;
   for (auto function : functions) {
-
     /*
      * Fetch the loop analysis.
      */
@@ -847,9 +798,11 @@ uint32_t Noelle::getNumberOfProgramLoops(double minimumHotness) {
        * Check if the loop is hot enough.
        */
       LoopStructure loopStructure{ loop };
+      auto loopIDOpt = loopStructure.getID();
+      assert(loopIDOpt);
+      auto currentLoopIndex = loopIDOpt.value();
       if (minimumHotness > 0) {
         if (!isLoopHot(&loopStructure, minimumHotness)) {
-          currentLoopIndex++;
           continue;
         }
       }
@@ -859,7 +812,6 @@ uint32_t Noelle::getNumberOfProgramLoops(double minimumHotness) {
        */
       if (!filterLoops) {
         counter++;
-        currentLoopIndex++;
         continue;
       }
 
@@ -876,10 +828,6 @@ uint32_t Noelle::getNumberOfProgramLoops(double minimumHotness) {
         /*
          * Only one thread has been assigned to the current loop.
          * Hence, the current loop will not be parallelized.
-         */
-        currentLoopIndex++;
-
-        /*
          * Jump to the next loop.
          */
         continue;
@@ -892,7 +840,6 @@ uint32_t Noelle::getNumberOfProgramLoops(double minimumHotness) {
        * the user.
        */
       counter++;
-      currentLoopIndex++;
     }
   }
 
@@ -939,6 +886,11 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
   auto filterLoops = false;
   while (indexString.peek() != EOF) {
     filterLoops = true;
+
+    /*
+     * Read loop ID
+     */
+    auto loopID = this->fetchTheNextValue(indexString);
 
     /*
      * Should the loop be parallelized?
@@ -993,14 +945,14 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
      * If the loop needs to be parallelized, then we enable it.
      */
     if ((shouldBeParallelized) && (cores >= 2)) {
-      this->loopThreads.push_back(cores);
-      this->techniquesToDisable.push_back(technique);
-      this->DOALLChunkSize.push_back(DOALLChunkFactor);
+      this->loopThreads[loopID] = cores;
+      this->techniquesToDisable[loopID] = technique;
+      this->DOALLChunkSize[loopID] = DOALLChunkFactor;
 
     } else {
-      this->loopThreads.push_back(1);
-      this->techniquesToDisable.push_back(0);
-      this->DOALLChunkSize.push_back(1); /*
+      this->loopThreads[loopID] = 1;
+      this->techniquesToDisable[loopID] = 0;
+      this->DOALLChunkSize[loopID] = 1; /*
                             DOALL chunk size is the one defined by INDEX_FILE
                             + 1. This is because chunk size must start from 1.
                            */

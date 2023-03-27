@@ -51,4 +51,4 @@ void HELIXTask::extractFuncArgs(void) {
   return;
 }
 
-}
+} // namespace llvm::noelle

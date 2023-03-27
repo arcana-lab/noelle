@@ -1,0 +1,15 @@
+#!/bin/bash -e
+
+# Get path to this file
+THIS_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )" ;
+
+# Deactivate virtual env
+deactivate ;
+
+# Remove opentuner repo
+#pathToOpentunerRepo="${THIS_PATH}/opentuner"
+#rm -rf ${pathToOpentunerRepo} ;
+
+# Remove the python virtual environment for opentuner
+virtualEnvDir="${THIS_PATH}/virtualEnv" ;
+rm -rf ${virtualEnvDir} ;
