@@ -293,6 +293,22 @@ InductionVariable *InductionVariableManager::getDerivingInductionVariable(
 }
 
 InductionVariable *InductionVariableManager::getLoopGoverningInductionVariable(
+    void) const {
+
+  /*
+   * Fetch the outermost loop of @this.
+   */
+  auto loop = this->loop->getLoop();
+
+  /*
+   * Fetch the loop governing IV.
+   */
+  auto GIV = this->getLoopGoverningInductionVariable(*loop);
+
+  return GIV;
+}
+
+InductionVariable *InductionVariableManager::getLoopGoverningInductionVariable(
     LoopStructure &LS) const {
 
   /*

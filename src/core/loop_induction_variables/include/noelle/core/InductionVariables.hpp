@@ -223,6 +223,8 @@ public:
   InductionVariable *getInductionVariable(LoopStructure &LS,
                                           Instruction *i) const;
 
+  InductionVariable *getLoopGoverningInductionVariable(void) const;
+
   InductionVariable *getLoopGoverningInductionVariable(LoopStructure &LS) const;
 
   bool doesContributeToComputeAnInductionVariable(Instruction *i) const;

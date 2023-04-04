@@ -76,11 +76,11 @@ struct CAT : public ModulePass {
        */
       errs() << " Induction variables\n";
       auto IVM = loop->getInductionVariableManager();
-      auto GIV = IVM->getLoopGoverningInductionVariable(*LS);
+      auto GIV = IVM->getLoopGoverningInductionVariable();
       if (GIV != nullptr) {
         errs() << "   GIV: " << *GIV->getLoopEntryPHI() << "\n";
       }
-      auto IVs = IVM->getInductionVariables(*LS);
+      auto IVs = IVM->getInductionVariables();
       for (auto IV : IVs) {
         errs() << "   IV: " << *IV->getLoopEntryPHI() << "\n";
       }
