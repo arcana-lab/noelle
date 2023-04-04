@@ -9,6 +9,7 @@ set(Srcs
   RecomputableSCC.cpp
   SingleAccumulatorRecomputableSCC.cpp
   InductionVariableSCC.cpp
+  PeriodicVariableSCC.cpp
   UnknownClosedFormSCC.cpp
   LinearInductionVariableSCC.cpp
   MemoryClonableSCC.cpp

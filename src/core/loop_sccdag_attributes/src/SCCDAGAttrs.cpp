@@ -24,10 +24,12 @@
 #include "noelle/core/BinaryReductionSCC.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
 #include "noelle/core/LinearInductionVariableSCC.hpp"
+#include "noelle/core/PeriodicVariableSCC.hpp"
 #include "noelle/core/StackObjectClonableSCC.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 #include "noelle/core/UnknownClosedFormSCC.hpp"
+#include "llvm/IR/Instruction.h"
 
 namespace llvm::noelle {
 
@@ -102,6 +104,8 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
     auto valuesToPropagateAcrossIterations =
         this->checkIfRecomputable(scc, loopNode);
 
+    auto isPeriodic = this->checkIfPeriodic(scc, loopNode);
+
     /*
      * Allocate the metadata about this SCC.
      */
@@ -112,6 +116,24 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
        * The SCC does not cross multiple loop iterations.
        */
       sccInfo = new LoopIterationSCC(scc, rootLoop);
+
+    } else if (isPeriodic.size() != 0) {
+      // errs() << "PERIODIC\n";
+      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+      auto initialValue = isPeriodic[0];
+      auto period = isPeriodic[1];
+      auto step = isPeriodic[2];
+
+      /*
+       * The SCC is a periodic variable.
+       */
+      sccInfo = new PeriodicVariableSCC(scc,
+                                        rootLoop,
+                                        loopCarriedDependences,
+                                        DS,
+                                        initialValue,
+                                        period,
+                                        step);
 
     } else if (doesSCCOnlyContainIV.size() > 0) {
 
@@ -519,6 +541,114 @@ std::set<InductionVariable *> SCCDAGAttrs::
   }
 
   return containedIVs;
+}
+
+std::vector<Value *> SCCDAGAttrs::checkIfPeriodic(SCC *scc,
+                                                  LoopForestNode *loopNode) {
+  if (this->sccToLoopCarriedDependencies.find(scc)
+      == this->sccToLoopCarriedDependencies.end()) {
+    return {};
+  }
+
+  /*
+   * Currently only handles SCCs with two nodes.
+   */
+  if (scc->numberOfInstructions() != 2)
+    return {};
+
+  for (auto edge : this->sccToLoopCarriedDependencies.at(scc)) {
+
+    /*
+     * Only look for loop-carried data dependencies.
+     */
+    if (!edge->isLoopCarriedDependence() || edge->isControlDependence())
+      continue;
+
+    Value *initialValue;
+    Value *period;
+    Value *step;
+
+    auto from = edge->getOutgoingT();
+    auto to = edge->getIncomingT();
+
+    if (!isa<PHINode>(to))
+      continue;
+    auto toPHI = cast<PHINode>(to);
+
+    if (toPHI->getNumIncomingValues() != 2)
+      continue;
+    initialValue = toPHI->getIncomingValue(0) == from
+                       ? toPHI->getIncomingValue(1)
+                       : toPHI->getIncomingValue(0);
+
+    auto fromInst = cast<Instruction>(from);
+
+    /*
+     * Check if the outgoing instruction is periodic.
+     */
+    bool found = false;
+    switch (fromInst->getOpcode()) {
+      Value *fromOperand;
+
+      /*
+       * XOR instructions with a loop invariant are periodic.
+       * NOTE: currently only handles {0, 1}-period variables.
+       */
+      case Instruction::Xor:
+        period = llvm::ConstantInt::get(
+            llvm::Type::getInt64Ty(fromInst->getContext()),
+            2);
+        fromOperand = fromInst->getOperand(1);
+
+        if (auto fromConstantInt = dyn_cast<ConstantInt>(fromOperand)) {
+          if (auto initialConstantInt = dyn_cast<ConstantInt>(initialValue)) {
+            if (initialConstantInt->isZero() && fromConstantInt->isOne()) {
+              step = fromOperand;
+              found = true;
+            }
+          }
+        }
+        break;
+
+      /*
+       * SUB instructions with a constant are periodic.
+       * NOTE: currently only handles {0, CI}-period variables, where CI is a
+       * ConstantInt.
+       */
+      case Instruction::Sub:
+        period = llvm::ConstantInt::get(
+            llvm::Type::getInt64Ty(fromInst->getContext()),
+            2);
+        fromOperand = fromInst->getOperand(0);
+
+        if (auto fromConstantInt = dyn_cast<ConstantInt>(fromOperand)) {
+          if (!fromConstantInt->isZero())
+            continue;
+          if (auto initialConstantInt = dyn_cast<ConstantInt>(initialValue)) {
+            auto c = initialConstantInt->isNegative() ? 1 : -1;
+            step = llvm::ConstantInt::get(
+                llvm::Type::getInt64Ty(fromInst->getContext()),
+                2 * c * initialConstantInt->getSExtValue());
+            found = true;
+          }
+        }
+        break;
+      default:
+        continue;
+    }
+    if (!found)
+      continue;
+
+    // errs() << "periodic variable with initial value " << *initialValue <<
+    // "\n"; errs() << "                          and period " << *period <<
+    // "\n"; errs() << "                            and step " << *step << "\n";
+    return { initialValue, period, step };
+  }
+
+  /*
+   * This SCC is not a periodic variable.
+   */
+  return {};
 }
 
 LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(SCC *scc,

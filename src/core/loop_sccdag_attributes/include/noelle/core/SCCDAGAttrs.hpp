@@ -27,6 +27,7 @@
 #include "noelle/core/GenericSCC.hpp"
 #include "noelle/core/LoopCarriedSCC.hpp"
 #include "noelle/core/InductionVariables.hpp"
+#include "noelle/core/PeriodicVariableSCC.hpp"
 #include "noelle/core/LoopGoverningIVAttribution.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
 #include "noelle/core/Variable.hpp"
@@ -96,6 +97,8 @@ private:
    * Helper methods on single SCC
    */
   LoopCarriedVariable *checkIfReducible(SCC *scc, LoopForestNode *loop);
+
+  std::vector<Value *> checkIfPeriodic(SCC *scc, LoopForestNode *loopNode);
 
   bool checkIfIndependent(SCC *scc);
 
