@@ -5,6 +5,7 @@ DOALL_IV               1
 DOALL_lbm	       6.261
 DOALL_limit	      20.118
 DOALL_object_cloning  22.170
+DOALL_periodic_variable  4.0
 DOALL_reduction	       3.560
 DOALL_streamclusters  22.4
 DSWP_communication     1.221
