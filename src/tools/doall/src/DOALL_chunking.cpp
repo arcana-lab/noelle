@@ -118,6 +118,107 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
     this->IVValueJustBeforeEnteringBody[ivPHI] = chunkedIVValues;
   }
 
+  auto sccManager = LDI->getSCCManager();
+  auto sccdag = sccManager->getSCCDAG();
+
+  /*
+   * Calculate chunking for periodic variable SCCs.
+   */
+  for (auto scc : sccdag->getSCCs()) {
+    auto sccInfo = sccManager->getSCCAttrs(scc);
+    auto periodicVariableSCC = dyn_cast<PeriodicVariableSCC>(sccInfo);
+    if (periodicVariableSCC == nullptr)
+      continue;
+    // errs() << "DOALL periodic variable:\n";
+    // errs() << "periodic variable with initial value " <<
+    // *periodicVariableSCC->getInitialValue() << "\n"; errs() << " and period "
+    // << *periodicVariableSCC->getPeriod() << "\n"; errs() << " and step " <<
+    // *periodicVariableSCC->getStepValue() << "\n";
+
+    /*
+     * Calculate initial value for task.
+     * This value is: initialValue + step_size * ((task_id * chunk_size) %
+     * period)
+     */
+    auto initialValue = periodicVariableSCC->getInitialValue();
+    auto period = periodicVariableSCC->getPeriod();
+    auto step = periodicVariableSCC->getStepValue();
+    for (auto phi : sccInfo->getPHIs()) {
+      if (phi->getNumIncomingValues() != 2)
+        continue;
+      // sccInfo->getSCC()->print(errs());
+      unsigned entryBlock = 1;
+      BasicBlock *loopBlock =
+          task->getCloneOfOriginalBasicBlock(phi->getIncomingBlock(0));
+      Value *loopValue = phi->getIncomingValue(0);
+      if (phi->getIncomingValue(0) == initialValue) {
+        entryBlock = 0;
+        loopBlock =
+            task->getCloneOfOriginalBasicBlock(phi->getIncomingBlock(1));
+        loopValue = phi->getIncomingValue(1);
+      } else if (phi->getIncomingValue(1) != initialValue)
+        continue;
+
+      auto taskPHI = cast<PHINode>(task->getCloneOfOriginalInstruction(phi));
+      auto newInitialValue = entryBuilder.CreateAdd(
+          initialValue,
+          entryBuilder.CreateTrunc(
+              entryBuilder.CreateMul(
+                  step,
+                  entryBuilder.CreateTrunc(
+                      entryBuilder.CreateSRem(
+                          entryBuilder.CreateMul(task->coreArg,
+                                                 task->chunkSizeArg,
+                                                 "coreIdx_X_chunkSize"),
+                          period,
+                          "numSteps"),
+                      step->getType()),
+                  "stepSize_X_steps"),
+              initialValue->getType()),
+          "initialValuePlusStep");
+      taskPHI->setIncomingValue(entryBlock, newInitialValue);
+
+      /*
+       * Determine value of the start of this core's next chunk
+       * from the beginning of the next core's chunk.
+       * Formula: next_core_initialValue + (step_size * (num_cores - 1) *
+       * chunk_size) % period
+       */
+      auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);
+      auto chunkStep = entryBuilder.CreateMul(
+          entryBuilder.CreateTrunc(
+              entryBuilder.CreateMul(
+                  entryBuilder.CreateSub(task->numCoresArg,
+                                         onesValueForChunking,
+                                         "numCoresMinus1"),
+                  task->chunkSizeArg,
+                  "numCoresMinus1_X_chunkSize"),
+              step->getType()),
+          step,
+          "chunkStep");
+
+      auto taskLoopValue =
+          task->getCloneOfOriginalInstruction(cast<Instruction>(loopValue));
+      IRBuilder<> loopBuilder(loopBlock);
+      loopBuilder.SetInsertPoint(loopBlock->getTerminator());
+      auto nextChunkValue = loopBuilder.CreateSRem(
+          loopBuilder.CreateAdd(
+              taskLoopValue,
+              loopBuilder.CreateTrunc(chunkStep, taskLoopValue->getType())),
+          loopBuilder.CreateTrunc(period, taskLoopValue->getType()),
+          "nextChunkValue");
+
+      auto isChunkCompleted =
+          cast<SelectInst>(chunkPHI->getIncomingValueForBlock(loopBlock))
+              ->getCondition();
+      auto nextValue = loopBuilder.CreateSelect(isChunkCompleted,
+                                                nextChunkValue,
+                                                taskLoopValue,
+                                                "nextValue");
+      taskPHI->setIncomingValueForBlock(loopBlock, nextValue);
+    }
+  }
+
   /*
    * The exit condition needs to be made non-strict to catch iterating past it
    */
@@ -145,7 +246,8 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
    * Assert that any PHIs are invariant. Hoist one of those values (if
    * instructions) to the preheader.
    */
-  auto exitConditionValue = this->fetchClone(loopGoverningIVAttr->getExitConditionValue());
+  auto exitConditionValue =
+      this->fetchClone(loopGoverningIVAttr->getExitConditionValue());
   assert(exitConditionValue != nullptr);
   if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
     auto &derivation = ivUtility.getConditionValueDerivation();
@@ -207,8 +309,6 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
   /*
    * Collect (1) by iterating the InductionVariableManager
    */
-  auto sccManager = LDI->getSCCManager();
-  auto sccdag = sccManager->getSCCDAG();
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
     for (auto I : ivInfo->getAllInstructions()) {
       repeatableInstructions.insert(task->getCloneOfOriginalInstruction(I));
