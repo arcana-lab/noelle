@@ -31,7 +31,7 @@
 #include "noelle/tools/DOALL.hpp"
 #include "noelle/tools/HELIX.hpp"
 #include "HeuristicsPass.hpp"
-#include "DSWP.hpp"
+#include "noelle/tools/DSWP.hpp"
 
 namespace llvm::noelle {
 

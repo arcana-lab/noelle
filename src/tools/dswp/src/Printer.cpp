@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/SCCDAG.hpp"
-#include "DSWP.hpp"
+#include "noelle/tools/DSWP.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
