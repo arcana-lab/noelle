@@ -19,42 +19,37 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/tools/SmallestSizePartitionAnalysis.hpp"
+#pragma once
 
-using namespace llvm;
-using namespace llvm::noelle;
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instructions.h"
 
-/*
- * Prioritize merge that best lowers overall cost without yielding a too costly
- * partitioner
- */
-void SmallestSizePartitionAnalysis::checkIfShouldMerge(
-    SCCSet *sA,
-    SCCSet *sB,
-    std::function<bool(GenericSCC *scc)> canBeRematerialized) {
+#include "noelle/core/SCC.hpp"
+#include "noelle/core/SCCDAGPartition.hpp"
+#include "noelle/core/SCCDAGAttrs.hpp"
 
-  // TODO:
-  return;
+#include "PartitionCostAnalysis.hpp"
 
-  // /*
-  //  * Determine cost of merge
-  //  */
-  // auto current = subsetCost[sA] + subsetCost[sB];
-  // auto insts = subsetInstCount[sA] + subsetInstCount[sB];
-  // std::unordered_set<SCCSet *> subsets = { sA, sB };
-  // uint64_t merge = IL.latencyPerInvocation(&dagAttrs, subsets);
-  // uint64_t lowered = current - merge;
+using namespace std;
 
-  // if (merge > totalCost / 1 || partitioner.getPartitionGraph()->numNodes() ==
-  // numCores) return ;
+namespace llvm::noelle {
 
-  // /*
-  //  * Only merge if it best lowers cost
-  //  */
-  // if (lowered < loweredCost) return ;
+class SmallestSizePartitionAnalysis : public PartitionCostAnalysis {
+public:
+  SmallestSizePartitionAnalysis(
+      InvocationLatency &IL,
+      SCCDAGPartitioner &p,
+      SCCDAGAttrs &attrs,
+      int cores,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized,
+      Verbosity v)
+    : PartitionCostAnalysis{ IL, p, attrs, cores, canBeRematerialized, v } {};
 
-  // /*
-  //  * Only merge if it is the smallest of equally cost effective merges
-  //  */
-  // if (lowered == loweredCost && insts > instCount) return ;
+  void checkIfShouldMerge(
+      SCCSet *sA,
+      SCCSet *sB,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized) override;
 };
+
+} // namespace llvm::noelle

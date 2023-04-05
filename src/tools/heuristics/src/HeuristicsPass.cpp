@@ -32,7 +32,7 @@
 
 #include "llvm/ADT/iterator_range.h"
 
-#include "HeuristicsPass.hpp"
+#include "noelle/tools/HeuristicsPass.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;

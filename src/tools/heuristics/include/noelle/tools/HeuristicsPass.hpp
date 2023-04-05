@@ -19,42 +19,29 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/tools/SmallestSizePartitionAnalysis.hpp"
+#pragma once
+
+#include "llvm/IR/Module.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instructions.h"
+
+#include "Heuristics.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
 
-/*
- * Prioritize merge that best lowers overall cost without yielding a too costly
- * partitioner
- */
-void SmallestSizePartitionAnalysis::checkIfShouldMerge(
-    SCCSet *sA,
-    SCCSet *sB,
-    std::function<bool(GenericSCC *scc)> canBeRematerialized) {
+namespace llvm::noelle {
+struct HeuristicsPass : public ModulePass {
+public:
+  static char ID;
 
-  // TODO:
-  return;
+  HeuristicsPass();
 
-  // /*
-  //  * Determine cost of merge
-  //  */
-  // auto current = subsetCost[sA] + subsetCost[sB];
-  // auto insts = subsetInstCount[sA] + subsetInstCount[sB];
-  // std::unordered_set<SCCSet *> subsets = { sA, sB };
-  // uint64_t merge = IL.latencyPerInvocation(&dagAttrs, subsets);
-  // uint64_t lowered = current - merge;
+  bool doInitialization(Module &M) override;
 
-  // if (merge > totalCost / 1 || partitioner.getPartitionGraph()->numNodes() ==
-  // numCores) return ;
+  void getAnalysisUsage(AnalysisUsage &AU) const override;
 
-  // /*
-  //  * Only merge if it best lowers cost
-  //  */
-  // if (lowered < loweredCost) return ;
+  bool runOnModule(Module &M) override;
 
-  // /*
-  //  * Only merge if it is the smallest of equally cost effective merges
-  //  */
-  // if (lowered == loweredCost && insts > instCount) return ;
+  Heuristics *getHeuristics(Noelle &noelle);
 };
+} // namespace llvm::noelle
