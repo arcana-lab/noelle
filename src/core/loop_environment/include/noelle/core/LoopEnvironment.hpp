@@ -43,7 +43,8 @@ public:
   iterator_range<std::set<int>::iterator> getEnvIDsOfLiveOutVars(void);
 
   /*
-   * One per external dependent + one to track exit block
+   * One per live-in variables + one per live-out variable + one to track the
+   * exit block (if needed)
    */
   uint64_t size(void) const;
 
