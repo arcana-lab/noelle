@@ -48,7 +48,7 @@ public:
 
   Instruction *getEntryInstruction(void) const;
 
-  BasicBlock *getFirstLoopBasicBlockAfterTheHeader(void) const;
+  BasicBlock *getSuccessorWithinLoopOfTheHeader(void) const;
 
   /*
    * Return the nesting level of the loop.
