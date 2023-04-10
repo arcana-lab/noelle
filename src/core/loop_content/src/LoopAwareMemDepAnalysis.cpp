@@ -77,12 +77,11 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-void refinePDGWithLoopAwareMemDepAnalysis(
-    PDG *loopDG,
-    Loop *l,
-    LoopStructure *loopStructure,
-    LoopForestNode *loops,
-    LoopIterationDomainSpaceAnalysis *LIDS) {
+void refinePDGWithLoopAwareMemDepAnalysis(PDG *loopDG,
+                                          Loop *l,
+                                          LoopStructure *loopStructure,
+                                          LoopForestNode *loops,
+                                          LoopIterationSpaceAnalysis *LIDS) {
   refinePDGWithSCAF(loopDG, l);
 
   if (LIDS) {
@@ -275,7 +274,7 @@ DataFlowResult *computeReachabilityFromInstructions(
 void refinePDGWithLIDS(PDG *loopDG,
                        LoopStructure *loopStructure,
                        LoopForestNode *loops,
-                       LoopIterationDomainSpaceAnalysis *LIDS) {
+                       LoopIterationSpaceAnalysis *LIDS) {
 
   /*
    * Compute the reachability of instructions within the loop.

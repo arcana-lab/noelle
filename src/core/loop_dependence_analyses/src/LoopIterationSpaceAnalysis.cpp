@@ -19,11 +19,11 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
+#include "noelle/core/LoopIterationSpaceAnalysis.hpp"
 
 namespace llvm::noelle {
 
-LoopIterationDomainSpaceAnalysis::LoopIterationDomainSpaceAnalysis(
+LoopIterationSpaceAnalysis::LoopIterationSpaceAnalysis(
     LoopForestNode *loops,
     InductionVariableManager &ivManager,
     ScalarEvolution &SE)
@@ -49,7 +49,7 @@ LoopIterationDomainSpaceAnalysis::LoopIterationDomainSpaceAnalysis(
   return;
 }
 
-bool LoopIterationDomainSpaceAnalysis::
+bool LoopIterationSpaceAnalysis::
     areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(
         Instruction *I,
         Instruction *J) const {
@@ -86,7 +86,7 @@ bool LoopIterationDomainSpaceAnalysis::
                                                                accessSpaceJ);
 }
 
-bool LoopIterationDomainSpaceAnalysis::
+bool LoopIterationSpaceAnalysis::
     isMemoryAccessSpaceEquivalentForTopLoopIVSubscript(
         MemoryAccessSpace *space1,
         MemoryAccessSpace *space2) const {
@@ -137,8 +137,7 @@ bool LoopIterationDomainSpaceAnalysis::
   return true;
 }
 
-void LoopIterationDomainSpaceAnalysis::indexIVInstructionSCEVs(
-    ScalarEvolution &SE) {
+void LoopIterationSpaceAnalysis::indexIVInstructionSCEVs(ScalarEvolution &SE) {
   for (auto loop : this->loops->getLoops()) {
     for (auto iv : ivManager.getInductionVariables(*loop)) {
       for (auto inst : iv->getAllInstructions()) {
@@ -183,8 +182,7 @@ void LoopIterationDomainSpaceAnalysis::indexIVInstructionSCEVs(
   return;
 }
 
-void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace(
-    ScalarEvolution &SE) {
+void LoopIterationSpaceAnalysis::computeMemoryAccessSpace(ScalarEvolution &SE) {
 
   std::unordered_set<Instruction *> memoryAccessors{};
   for (auto B : this->loops->getLoop()->getBasicBlocks()) {
@@ -214,7 +212,7 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace(
      * Construct memory space object to track this accessor
      */
     auto element = accessSpaces.insert(std::move(
-        std::make_unique<LoopIterationDomainSpaceAnalysis::MemoryAccessSpace>(
+        std::make_unique<LoopIterationSpaceAnalysis::MemoryAccessSpace>(
             memoryAccessor)));
     auto memAccessSpace = (*element.first).get();
     accessSpaceByInstruction.insert(
@@ -354,7 +352,7 @@ void LoopIterationDomainSpaceAnalysis::computeMemoryAccessSpace(
 // The IV should be used in conjunction with the subscript SCEV to determine
 // boundedness The subscript SCEV alone should be used to determine whether it
 // is one to one
-void LoopIterationDomainSpaceAnalysis::
+void LoopIterationSpaceAnalysis::
     identifyNonOverlappingAccessesBetweenIterationsAcrossOneLoopInvocation(
         ScalarEvolution &SE) {
 
@@ -535,7 +533,7 @@ void LoopIterationDomainSpaceAnalysis::
   return;
 }
 
-void LoopIterationDomainSpaceAnalysis::identifyIVForMemoryAccessSubscripts(
+void LoopIterationSpaceAnalysis::identifyIVForMemoryAccessSubscripts(
     ScalarEvolution &SE) {
 
   auto findCorrespondingIVForSubscript = [&](const SCEV *subscriptSCEV)
@@ -633,15 +631,15 @@ void LoopIterationDomainSpaceAnalysis::identifyIVForMemoryAccessSubscripts(
   return;
 }
 
-LoopIterationDomainSpaceAnalysis::MemoryAccessSpace::MemoryAccessSpace(
+LoopIterationSpaceAnalysis::MemoryAccessSpace::MemoryAccessSpace(
     Instruction *memoryAccessor)
   : memoryAccessor{ memoryAccessor } {}
 
-LoopIterationDomainSpaceAnalysis::~LoopIterationDomainSpaceAnalysis() {
+LoopIterationSpaceAnalysis::~LoopIterationSpaceAnalysis() {
   accessSpaces.clear();
 }
 
-bool LoopIterationDomainSpaceAnalysis::isOneToOneFunctionOnIV(
+bool LoopIterationSpaceAnalysis::isOneToOneFunctionOnIV(
     LoopStructure *loopStructure,
     InductionVariable *IV,
     Instruction *derivedInstruction) {
@@ -702,7 +700,7 @@ bool LoopIterationDomainSpaceAnalysis::isOneToOneFunctionOnIV(
   return true;
 }
 
-bool LoopIterationDomainSpaceAnalysis::isInnerDimensionSubscriptsBounded(
+bool LoopIterationSpaceAnalysis::isInnerDimensionSubscriptsBounded(
     ScalarEvolution &SE,
     MemoryAccessSpace *space) {
 

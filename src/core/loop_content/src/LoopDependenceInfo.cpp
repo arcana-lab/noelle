@@ -248,9 +248,7 @@ LoopDependenceInfo::LoopDependenceInfo(
       *inductionVariables,
       DS);
   this->domainSpaceAnalysis =
-      new LoopIterationDomainSpaceAnalysis(this->loop,
-                                           *this->inductionVariables,
-                                           SE);
+      new LoopIterationSpaceAnalysis(this->loop, *this->inductionVariables, SE);
 
   /*
    * Collect induction variable information
@@ -435,7 +433,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
    * Perform loop-aware memory dependence analysis to refine the loop dependence
    * graph.
    */
-  auto domainSpace = LoopIterationDomainSpaceAnalysis(loopNode, ivManager, SE);
+  auto domainSpace = LoopIterationSpaceAnalysis(loopNode, ivManager, SE);
   if (this->loopTransformationsManager->areLoopAwareAnalysesEnabled()) {
     refinePDGWithLoopAwareMemDepAnalysis(loopDG,
                                          l,
@@ -733,8 +731,8 @@ InvariantManager *LoopDependenceInfo::getInvariantManager(void) const {
   return this->invariantManager;
 }
 
-LoopIterationDomainSpaceAnalysis *LoopDependenceInfo::
-    getLoopIterationDomainSpaceAnalysis(void) const {
+LoopIterationSpaceAnalysis *LoopDependenceInfo::getLoopIterationSpaceAnalysis(
+    void) const {
   return this->domainSpaceAnalysis;
 }
 

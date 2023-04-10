@@ -1,6 +1,6 @@
 # Sources
 set(Srcs 
-  LoopIterationDomainSpaceAnalysis.cpp
+  LoopIterationSpaceAnalysis.cpp
 )
 
 # Compilation flags

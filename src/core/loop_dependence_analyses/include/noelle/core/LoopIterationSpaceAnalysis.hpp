@@ -31,15 +31,15 @@
 
 namespace llvm::noelle {
 
-class LoopIterationDomainSpaceAnalysis {
+class LoopIterationSpaceAnalysis {
 public:
-  LoopIterationDomainSpaceAnalysis(LoopForestNode *loops,
-                                   InductionVariableManager &ivManager,
-                                   ScalarEvolution &SE);
+  LoopIterationSpaceAnalysis(LoopForestNode *loops,
+                             InductionVariableManager &ivManager,
+                             ScalarEvolution &SE);
 
-  LoopIterationDomainSpaceAnalysis() = delete;
+  LoopIterationSpaceAnalysis() = delete;
 
-  ~LoopIterationDomainSpaceAnalysis();
+  ~LoopIterationSpaceAnalysis();
 
   bool areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(
       Instruction *from,

@@ -31,7 +31,7 @@
 #include "noelle/core/LoopEnvironment.hpp"
 #include "noelle/core/LoopEnvironmentBuilder.hpp"
 #include "noelle/core/SCCDAGAttrs.hpp"
-#include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
+#include "noelle/core/LoopIterationSpaceAnalysis.hpp"
 #include "noelle/core/LoopTransformationsOptions.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
 
@@ -153,8 +153,7 @@ public:
 
   LoopEnvironment *getEnvironment(void) const;
 
-  LoopIterationDomainSpaceAnalysis *getLoopIterationDomainSpaceAnalysis(
-      void) const;
+  LoopIterationSpaceAnalysis *getLoopIterationSpaceAnalysis(void) const;
 
   MemoryCloningAnalysis *getMemoryCloningAnalysis(void) const;
 
@@ -188,7 +187,7 @@ private:
 
   LoopGoverningIVAttribution *loopGoverningIVAttribution;
 
-  LoopIterationDomainSpaceAnalysis *domainSpaceAnalysis;
+  LoopIterationSpaceAnalysis *domainSpaceAnalysis;
 
   MemoryCloningAnalysis *memoryCloningAnalysis;
 

@@ -56,7 +56,7 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
      * between iterations, then DOALL can ignore them
      */
     auto areAllDataLCDsFromDisjointMemoryAccesses = true;
-    auto domainSpaceAnalysis = LDI->getLoopIterationDomainSpaceAnalysis();
+    auto domainSpaceAnalysis = LDI->getLoopIterationSpaceAnalysis();
     for (auto dep : sccInfo->getLoopCarriedDependences()) {
       if (dep->isControlDependence()) {
         continue;
