@@ -86,15 +86,6 @@ struct CAT : public ModulePass {
       }
 
       /*
-       * Invariants.
-       */
-      errs() << " Invariants\n";
-      auto IM = loop->getInvariantManager();
-      for (auto inv : IM->getLoopInstructionsThatAreLoopInvariants()) {
-        errs() << "   " << *inv << "\n";
-      }
-
-      /*
        * Trip count.
        */
       if (loop->doesHaveCompileTimeKnownTripCount()) {

@@ -8,6 +8,7 @@ clean: links
 	cd simple ; ./scripts/clean.sh
 	cd pdg ; ./scripts/clean.sh
 	cd callgraph ; ./scripts/clean.sh
+	cd loop_invariants ; ./scripts/clean.sh
 	cd loops ; ./scripts/clean.sh
 	cd profile ; ./scripts/clean.sh
 	cd dfa ; ./scripts/clean.sh

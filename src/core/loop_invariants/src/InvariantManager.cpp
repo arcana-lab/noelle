@@ -79,6 +79,23 @@ bool InvariantManager::isLoopInvariant(Value *value) const {
   return false;
 }
 
+bool InvariantManager::isLoopInvariant(SCC *scc) const {
+  assert(scc != nullptr);
+
+  auto f = [this](Instruction *i) -> bool {
+    if (!this->isLoopInvariant(i)) {
+      return true;
+    }
+    return false;
+  };
+  auto didIterationGetInterrupted = scc->iterateOverInstructions(f);
+  if (didIterationGetInterrupted) {
+    return false;
+  }
+
+  return true;
+}
+
 std::unordered_set<Instruction *> InvariantManager::
     getLoopInstructionsThatAreLoopInvariants(void) const {
   return this->invariants;
