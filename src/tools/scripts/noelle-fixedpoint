@@ -54,6 +54,10 @@ while true ; do
     echo "ERROR" ;
     exit 1;
   fi
+  if ! test -s $IRFileOutput ; then
+    echo "ERROR" ;
+    exit 1;
+  fi
 
   # Check if the bitcode has been modified
   # - Step 1: fetch the code size and loop code of the input bitcode
