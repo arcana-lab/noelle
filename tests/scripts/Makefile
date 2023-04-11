@@ -109,6 +109,6 @@ clean:
 	rm -f time_parallelized.txt compiler_output.txt input.txt ;
 	rm -f output*.txt ;
 	rm -f OUT ;
-	rm -rf binaryToRun loopIDtoSrc.txt baselineTime.txt executionTime.txt exploredConfs.json opentuner.db opentuner.log ;
+	rm -rf binaryToRun baselineTime.txt executionTime.txt exploredConfs.json opentuner.db opentuner.log ;
 
 .PHONY: test_correctness clean

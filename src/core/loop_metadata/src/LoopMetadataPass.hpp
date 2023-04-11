@@ -43,8 +43,6 @@ private:
   std::vector<LoopStructure *> getLoopStructuresWithoutNoelle(Module &M);
 
   bool setIDs(std::vector<LoopStructure *> &loopStructures);
-
-  void writeLoopIDFile(std::vector<LoopStructure *> &loopStructures);
 };
 
 } // namespace llvm::noelle
