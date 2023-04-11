@@ -135,12 +135,6 @@ public:
   bool iterateOverSubLoopsRecursively(
       std::function<bool(const LoopStructure &child)> funcToInvoke);
 
-  /*
-   * Return true if @param scc is fully contained in a subloop.
-   * Return false otherwise.
-   */
-  bool isSCCContainedInSubloop(SCC *scc) const;
-
   LoopGoverningIVAttribution *getLoopGoverningIVAttribution(void) const;
 
   InductionVariableManager *getInductionVariableManager(void) const;

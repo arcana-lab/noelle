@@ -697,10 +697,6 @@ LoopStructure *LoopDependenceInfo::getNestedMostLoopStructure(
   return this->loop->getInnermostLoopThatContains(I);
 }
 
-bool LoopDependenceInfo::isSCCContainedInSubloop(SCC *scc) const {
-  return this->sccdagAttrs->isSCCContainedInSubloop(this->loop, scc);
-}
-
 InductionVariableManager *LoopDependenceInfo::getInductionVariableManager(
     void) const {
   return inductionVariables;
