@@ -123,6 +123,27 @@ struct CAT : public ModulePass {
       auto GIV = IVM->getLoopGoverningInductionVariable();
       if (GIV != nullptr) {
         errs() << "   The loop has a loop governing IV\n";
+
+        auto IV = GIV->getInductionVariable();
+
+        /*
+         * Print the exit condition
+         */
+        auto exitCondition = GIV->getExitConditionValue();
+        errs() << "     Exit condition = " << *exitCondition << "\n";
+
+        /*
+         * Print the value to compare against the exit condition.
+         */
+        auto valueToCompare = GIV->getValueToCompareAgainstExitConditionValue();
+        errs()
+            << "     Evolving value to compare = " << *valueToCompare << "\n";
+
+        /*
+         * Print the comparison
+         */
+        auto cmpInst = GIV->getHeaderCompareInstructionToComputeExitCondition();
+        errs() << "     Comparison = " << *cmpInst << "\n";
       }
     }
     errs() << "\n";
