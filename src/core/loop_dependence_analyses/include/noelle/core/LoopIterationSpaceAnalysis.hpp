@@ -26,7 +26,7 @@
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/ScalarEvolutionDelinearization.hpp"
-#include "noelle/core/LoopGoverningIVAttribution.hpp"
+#include "noelle/core/LoopGoverningInductionVariable.hpp"
 #include "noelle/core/IVStepperUtility.hpp"
 
 namespace llvm::noelle {

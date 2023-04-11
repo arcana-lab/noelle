@@ -149,7 +149,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
    * 2) all non-clonable instructions in the header instead execute in the body
    * and after exiting the loop
    */
-  auto loopGoverningIVAttr = ivManager->getLoopGoverningIVAttribution();
+  auto loopGoverningIVAttr = ivManager->getLoopGoverningInductionVariable();
   if (!loopGoverningIVAttr) {
 
     /*
@@ -199,8 +199,8 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
   /*
    * TODO describe what the next code does
    */
-  auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
-  auto originalGoverningPHI = loopGoverningIV.getLoopEntryPHI();
+  auto loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
+  auto originalGoverningPHI = loopGoverningIV->getLoopEntryPHI();
   assert(originalGoverningPHI != nullptr);
   auto cloneGoverningPHI =
       task->getCloneOfOriginalInstruction(originalGoverningPHI);
@@ -387,7 +387,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
    * Compute the loop governing IV's value the previous iteration
    * (regardless of what core it would have executed on)
    */
-  auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
+  auto stepSize = clonedStepSizeMap.at(loopGoverningIV);
 
   /*
    * Guard against this previous iteration.

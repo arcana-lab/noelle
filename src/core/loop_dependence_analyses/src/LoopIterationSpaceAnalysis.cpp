@@ -829,13 +829,13 @@ bool LoopIterationSpaceAnalysis::isInnerDimensionSubscriptsBounded(
         auto loopHeader = loopEntryPHI->getParent();
         auto loopStructure =
             this->loops->getInnermostLoopThatContains(loopHeader);
-        auto attr = ivManager.getLoopGoverningIVAttribution(*loopStructure);
+        auto attr = ivManager.getLoopGoverningInductionVariable(*loopStructure);
 
         // attr->getInductionVariable().getLoopEntryPHI()->print(errs() << "ATTR
         // PHI: "); errs() << "\n";
 
-        if (attr != nullptr && iv == &attr->getInductionVariable()) {
-          auto loopGoverningIV = &attr->getInductionVariable();
+        if (attr != nullptr && iv == attr->getInductionVariable()) {
+          auto loopGoverningIV = attr->getInductionVariable();
           if (constantStepSCEV && !constantStepSCEV->getValue()->isNegative()) {
             auto conditionValue = attr->getExitConditionValue();
             auto cmpInst =

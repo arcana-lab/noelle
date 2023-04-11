@@ -57,7 +57,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
     ivs.insert(loopIVs.begin(), loopIVs.end());
     auto loopGoverningIV = IV.getLoopGoverningInductionVariable(*loop);
     if (loopGoverningIV)
-      loopGoverningIVs.insert(loopGoverningIV);
+      loopGoverningIVs.insert(loopGoverningIV->getInductionVariable());
   }
 
   // DGPrinter::writeGraph<SCCDAG, SCC>("sccdag.dot", sccdag);
@@ -480,10 +480,10 @@ std::set<InductionVariable *> SCCDAGAttrs::
     auto exitBlocks =
         loopNode->getInnermostLoopThatContains(containedIV->getLoopEntryPHI())
             ->getLoopExitBasicBlocks();
-    LoopGoverningIVAttribution attribution(loopNode->getLoop(),
-                                           *containedIV,
-                                           *scc,
-                                           exitBlocks);
+    LoopGoverningInductionVariable attribution(loopNode->getLoop(),
+                                               *containedIV,
+                                               *scc,
+                                               exitBlocks);
     if (!attribution.isSCCContainingIVWellFormed()) {
       // containedIV->getLoopEntryPHI()->print(errs() << "Not well formed SCC
       // for loop governing IV!\n"); errs() << "\n";

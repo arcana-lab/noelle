@@ -20,7 +20,6 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/InductionVariables.hpp"
-#include "noelle/core/LoopGoverningIVAttribution.hpp"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 
 namespace llvm::noelle {
@@ -154,10 +153,10 @@ InductionVariableManager::InductionVariableManager(LoopForestNode *loopNode,
        */
       this->loopToIVsMap[loop].insert(IV);
       auto exitBlocks = loop->getLoopExitBasicBlocks();
-      auto attribution = new LoopGoverningIVAttribution(loopToAnalyze,
-                                                        *IV,
-                                                        *sccContainingIV,
-                                                        exitBlocks);
+      auto attribution = new LoopGoverningInductionVariable(loopToAnalyze,
+                                                            *IV,
+                                                            *sccContainingIV,
+                                                            exitBlocks);
       if (attribution->isSCCContainingIVWellFormed()) {
         loopToGoverningIVAttrMap[loop] = attribution;
       } else {
@@ -292,42 +291,8 @@ InductionVariable *InductionVariableManager::getDerivingInductionVariable(
   return nullptr;
 }
 
-InductionVariable *InductionVariableManager::getLoopGoverningInductionVariable(
-    void) const {
-
-  /*
-   * Fetch the outermost loop of @this.
-   */
-  auto loop = this->loop->getLoop();
-
-  /*
-   * Fetch the loop governing IV.
-   */
-  auto GIV = this->getLoopGoverningInductionVariable(*loop);
-
-  return GIV;
-}
-
-InductionVariable *InductionVariableManager::getLoopGoverningInductionVariable(
-    LoopStructure &LS) const {
-
-  /*
-   * Check if the loop has the governing IV.
-   */
-  if (loopToGoverningIVAttrMap.find(&LS) == loopToGoverningIVAttrMap.end()) {
-    return nullptr;
-  }
-
-  /*
-   * Fetch the governing IV.
-   */
-  auto attribution = loopToGoverningIVAttrMap.at(&LS);
-
-  return &attribution->getInductionVariable();
-}
-
-LoopGoverningIVAttribution *InductionVariableManager::
-    getLoopGoverningIVAttribution(void) const {
+LoopGoverningInductionVariable *InductionVariableManager::
+    getLoopGoverningInductionVariable(void) const {
 
   /*
    * Fetch the loop
@@ -338,13 +303,13 @@ LoopGoverningIVAttribution *InductionVariableManager::
   /*
    * Fetch the loop governing IV (if it exists).
    */
-  auto IV = this->getLoopGoverningIVAttribution(*ls);
+  auto IV = this->getLoopGoverningInductionVariable(*ls);
 
   return IV;
 }
 
-LoopGoverningIVAttribution *InductionVariableManager::
-    getLoopGoverningIVAttribution(LoopStructure &LS) const {
+LoopGoverningInductionVariable *InductionVariableManager::
+    getLoopGoverningInductionVariable(LoopStructure &LS) const {
   if (loopToGoverningIVAttrMap.find(&LS) == loopToGoverningIVAttrMap.end()) {
     return nullptr;
   }

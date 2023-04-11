@@ -149,7 +149,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments(
    */
   auto originalIVManager = originalLDI->getInductionVariableManager();
   auto wasOriginalLoopIVGoverned =
-      (originalIVManager->getLoopGoverningIVAttribution() != nullptr);
+      (originalIVManager->getLoopGoverningInductionVariable() != nullptr);
 
   /*
    * Fetch the subsets.

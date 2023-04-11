@@ -165,7 +165,7 @@ bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
    * This is because the trip count must be controlled by an induction variable.
    */
   auto IVManager = LDI->getInductionVariableManager();
-  auto loopGoverningIVAttr = IVManager->getLoopGoverningIVAttribution();
+  auto loopGoverningIVAttr = IVManager->getLoopGoverningInductionVariable();
   if (!loopGoverningIVAttr) {
     if (this->verbose != Verbosity::Disabled) {
       errs()

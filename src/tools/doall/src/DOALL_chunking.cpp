@@ -121,7 +121,7 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
   /*
    * The exit condition needs to be made non-strict to catch iterating past it
    */
-  auto loopGoverningIVAttr = allIVInfo->getLoopGoverningIVAttribution();
+  auto loopGoverningIVAttr = allIVInfo->getLoopGoverningInductionVariable();
   LoopGoverningIVUtility ivUtility(loopSummary,
                                    *allIVInfo,
                                    *loopGoverningIVAttr);
@@ -275,16 +275,16 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
   /*
    * Fetch the required information to generate any extra condition code needed.
    */
-  auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
+  auto loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
   auto loopGoverningPHI =
-      task->getCloneOfOriginalInstruction(loopGoverningIV.getLoopEntryPHI());
+      task->getCloneOfOriginalInstruction(loopGoverningIV->getLoopEntryPHI());
   auto origValueUsedToCompareAgainstExitConditionValue =
       loopGoverningIVAttr->getValueToCompareAgainstExitConditionValue();
   auto valueUsedToCompareAgainstExitConditionValue =
       task->getCloneOfOriginalInstruction(
           origValueUsedToCompareAgainstExitConditionValue);
   assert(valueUsedToCompareAgainstExitConditionValue != nullptr);
-  auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
+  auto stepSize = clonedStepSizeMap.at(loopGoverningIV);
 
   /*
    * Check if we need to check whether we need to add a condition to execute
@@ -386,7 +386,7 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
      * logic
      */
     if (headerPHICloneAndProducerPairs.size() > 0) {
-      auto startValue = this->fetchClone(loopGoverningIV.getStartValue());
+      auto startValue = this->fetchClone(loopGoverningIV->getStartValue());
 
       /*
        * Piece together the condition for all the SelectInst:
@@ -547,7 +547,7 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
       prevIterationValue);
   preheaderBuilder.Insert(clonedExitCmpInst);
 
-  auto startValue = this->fetchClone(loopGoverningIV.getStartValue());
+  auto startValue = this->fetchClone(loopGoverningIV->getStartValue());
   assert(startValue != nullptr);
   auto isNotFirstIteration =
       preheaderBuilder.CreateICmpNE(offsetStartValue, startValue);

@@ -19,11 +19,11 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/LoopGoverningIVAttribution.hpp"
+#include "noelle/core/LoopGoverningInductionVariable.hpp"
 
 namespace llvm::noelle {
 
-LoopGoverningIVAttribution::LoopGoverningIVAttribution(
+LoopGoverningInductionVariable::LoopGoverningInductionVariable(
     LoopStructure *l,
     InductionVariable &iv,
     SCC &scc,
@@ -253,7 +253,7 @@ LoopGoverningIVAttribution::LoopGoverningIVAttribution(
   return;
 }
 
-bool LoopGoverningIVAttribution::valueOfExitConditionToJumpToTheLoopBody(
+bool LoopGoverningInductionVariable::valueOfExitConditionToJumpToTheLoopBody(
     void) const {
   assert(this->headerBr != nullptr);
   assert(this->headerBr->isConditional());
@@ -276,38 +276,38 @@ bool LoopGoverningIVAttribution::valueOfExitConditionToJumpToTheLoopBody(
   return false;
 }
 
-InductionVariable &LoopGoverningIVAttribution::getInductionVariable(
+InductionVariable *LoopGoverningInductionVariable::getInductionVariable(
     void) const {
-  return IV;
+  return &IV;
 }
 
-CmpInst *LoopGoverningIVAttribution::
+CmpInst *LoopGoverningInductionVariable::
     getHeaderCompareInstructionToComputeExitCondition(void) const {
   return headerCmp;
 }
 
-Value *LoopGoverningIVAttribution::getExitConditionValue(void) const {
+Value *LoopGoverningInductionVariable::getExitConditionValue(void) const {
   return conditionValue;
 }
 
-BranchInst *LoopGoverningIVAttribution::getHeaderBrInst(void) const {
+BranchInst *LoopGoverningInductionVariable::getHeaderBrInst(void) const {
   return headerBr;
 }
 
-BasicBlock *LoopGoverningIVAttribution::getExitBlockFromHeader(void) const {
+BasicBlock *LoopGoverningInductionVariable::getExitBlockFromHeader(void) const {
   return exitBlock;
 }
 
-bool LoopGoverningIVAttribution::isSCCContainingIVWellFormed(void) const {
+bool LoopGoverningInductionVariable::isSCCContainingIVWellFormed(void) const {
   return isWellFormed;
 }
 
-std::set<Instruction *> LoopGoverningIVAttribution::getConditionValueDerivation(
-    void) const {
+std::set<Instruction *> LoopGoverningInductionVariable::
+    getConditionValueDerivation(void) const {
   return conditionValueDerivation;
 }
 
-Instruction *LoopGoverningIVAttribution::
+Instruction *LoopGoverningInductionVariable::
     getValueToCompareAgainstExitConditionValue(void) const {
   return intermediateValueUsedInCompare;
 }
