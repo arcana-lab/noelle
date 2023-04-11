@@ -78,11 +78,42 @@ struct CAT : public ModulePass {
                << " elements\n";
 
         /*
-         * Iterate over elements of the environment.
+         * Iterate over live-in values
          */
-        errs() << " Environment of the loop\n";
+        errs() << "   Live-In values:\n";
+        for (auto liveInIndex : loopEnv->getEnvIDsOfLiveInVars()) {
+          auto p = loopEnv->getProducer(liveInIndex);
+          errs() << "     Index " << liveInIndex << ": " << *p << "\n";
+        }
+
+        /*
+         * Iterate over live-out values
+         */
+        errs() << "   Live-Out values:\n";
+        for (auto liveOutIndex : loopEnv->getEnvIDsOfLiveOutVars()) {
+          auto p = loopEnv->getProducer(liveOutIndex);
+          errs() << "     Index " << liveOutIndex << ": " << *p << "\n";
+        }
+
+        /*
+         * Iterate over producers of the elements of the environment.
+         */
+        errs()
+            << " Producers of the elements in the environment of the loop:\n";
         for (auto liveInOrOutValue : loopEnv->getProducers()) {
           errs() << "   " << *liveInOrOutValue << "\n";
+        }
+
+        /*
+         * Iterate over consumers of live-out values
+         */
+        errs() << "   Consumers of live-Out values:\n";
+        for (auto liveOutIndex : loopEnv->getEnvIDsOfLiveOutVars()) {
+          auto p = loopEnv->getProducer(liveOutIndex);
+          errs() << "     Index " << liveOutIndex << ": " << *p << "\n";
+          for (auto c : loopEnv->consumersOf(p)) {
+            errs() << "       Consumer = " << *c << "\n";
+          }
         }
       }
     }
