@@ -99,25 +99,19 @@ struct CAT : public ModulePass {
         /*
          * Check the SCC type
          */
-        if (isa<InductionVariableSCC>(sccInfo)) {
-          errs()
-              << "     It is due to the computation of an induction variable\n";
+        if (isa<LoopCarriedSCC>(sccInfo)) {
 
-        } else if (isa<ReductionSCC>(sccInfo)) {
-          errs() << "     It can be reduced\n";
+          if (isa<ReductionSCC>(sccInfo)) {
+            errs() << "     It can be reduced\n";
 
-        } else if (isa<LoopIterationSCC>(sccInfo)) {
-          errs() << "     It doesn't have loop-carried dependences\n";
-
-        } else if (isa<LoopCarriedUnknownSCC>(sccInfo)) {
-          errs() << "     It must be executed sequentially\n";
-
-        } else if (isa<MemoryClonableSCC>(sccInfo)) {
-          errs()
-              << "     It can run in parallel after cloning memory objects\n";
+          } else if (isa<LoopCarriedUnknownSCC>(sccInfo)) {
+            errs()
+                << "     We don't know how to avoid executing this SCC sequentially\n";
+          }
 
         } else {
-          errs() << "     Unknown\n";
+          auto liSCC = cast<LoopIterationSCC>(sccInfo);
+          errs() << "     It doesn't have loop-carried dependences\n";
         }
 
         if (auto redSCC = dyn_cast<ReductionSCC>(sccInfo)) {
