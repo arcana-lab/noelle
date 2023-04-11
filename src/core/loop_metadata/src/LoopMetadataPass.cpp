@@ -49,12 +49,6 @@ bool LoopMetadataPass::runOnModule(Module &M) {
    */
   modified |= this->setIDs(loopStructures);
 
-  /*
-   * Output loop id text file.
-   * Maps loop ids to the source code.
-   */
-  this->writeLoopIDFile(loopStructures);
-
   return modified;
 }
 
