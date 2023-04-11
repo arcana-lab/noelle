@@ -121,7 +121,7 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
   /*
    * The exit condition needs to be made non-strict to catch iterating past it
    */
-  auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
+  auto loopGoverningIVAttr = allIVInfo->getLoopGoverningIVAttribution();
   LoopGoverningIVUtility ivUtility(loopSummary,
                                    *allIVInfo,
                                    *loopGoverningIVAttr);
@@ -145,7 +145,8 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
    * Assert that any PHIs are invariant. Hoist one of those values (if
    * instructions) to the preheader.
    */
-  auto exitConditionValue = this->fetchClone(loopGoverningIVAttr->getExitConditionValue());
+  auto exitConditionValue =
+      this->fetchClone(loopGoverningIVAttr->getExitConditionValue());
   assert(exitConditionValue != nullptr);
   if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
     auto &derivation = ivUtility.getConditionValueDerivation();

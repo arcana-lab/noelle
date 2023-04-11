@@ -70,7 +70,7 @@ BasicBlock *DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
      */
     auto loopStructure = LDI->getLoopStructure();
     auto allIVInfo = LDI->getInductionVariableManager();
-    auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
+    auto loopGoverningIVAttr = allIVInfo->getLoopGoverningIVAttribution();
     LoopGoverningIVUtility ivUtility(loopStructure,
                                      *allIVInfo,
                                      *loopGoverningIVAttr);

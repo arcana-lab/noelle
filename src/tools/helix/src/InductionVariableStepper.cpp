@@ -149,7 +149,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
    * 2) all non-clonable instructions in the header instead execute in the body
    * and after exiting the loop
    */
-  auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
+  auto loopGoverningIVAttr = ivManager->getLoopGoverningIVAttribution();
   if (!loopGoverningIVAttr) {
 
     /*

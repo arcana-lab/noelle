@@ -30,7 +30,8 @@ bool HELIX::doesHaveASequentialPrologue(LoopDependenceInfo *LDI) const {
   /*
    * Fetch the loop governing IV.
    */
-  auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
+  auto IVManager = LDI->getInductionVariableManager();
+  auto loopGoverningIVAttr = IVManager->getLoopGoverningIVAttribution();
   if (!loopGoverningIVAttr) {
 
     /*

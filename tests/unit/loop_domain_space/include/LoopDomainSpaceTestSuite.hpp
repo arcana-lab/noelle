@@ -34,7 +34,7 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
+#include "noelle/core/LoopIterationSpaceAnalysis.hpp"
 #include "noelle/tools/SCEVSimplification.hpp"
 
 #include "TestSuite.hpp"
@@ -84,7 +84,7 @@ private:
 
   bool modifiedCodeWithSCEVSimplification;
   InductionVariableManager *IVM;
-  LoopIterationDomainSpaceAnalysis *domainSpaceAnalysis;
+  LoopIterationSpaceAnalysis *domainSpaceAnalysis;
   LoopForestNode *loopNode;
 };
 } // namespace llvm::noelle

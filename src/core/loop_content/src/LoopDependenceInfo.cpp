@@ -255,13 +255,6 @@ LoopDependenceInfo::LoopDependenceInfo(
    */
   auto iv =
       this->inductionVariables->getLoopGoverningInductionVariable(*topLoop);
-  loopGoverningIVAttribution =
-      iv == nullptr ? nullptr
-                    : new LoopGoverningIVAttribution(
-                        topLoop,
-                        *iv,
-                        *loopSCCDAG->sccOfValue(iv->getLoopEntryPHI()),
-                        loopExitBlocks);
 
   return;
 }
@@ -702,11 +695,6 @@ InductionVariableManager *LoopDependenceInfo::getInductionVariableManager(
   return inductionVariables;
 }
 
-LoopGoverningIVAttribution *LoopDependenceInfo::getLoopGoverningIVAttribution(
-    void) const {
-  return loopGoverningIVAttribution;
-}
-
 MemoryCloningAnalysis *LoopDependenceInfo::getMemoryCloningAnalysis(
     void) const {
   assert(
@@ -790,9 +778,6 @@ LoopDependenceInfo::~LoopDependenceInfo() {
 
   if (this->inductionVariables) {
     delete this->inductionVariables;
-  }
-  if (this->loopGoverningIVAttribution) {
-    delete this->loopGoverningIVAttribution;
   }
 
   assert(this->invariantManager);

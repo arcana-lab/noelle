@@ -135,8 +135,6 @@ public:
   bool iterateOverSubLoopsRecursively(
       std::function<bool(const LoopStructure &child)> funcToInvoke);
 
-  LoopGoverningIVAttribution *getLoopGoverningIVAttribution(void) const;
-
   InductionVariableManager *getInductionVariableManager(void) const;
 
   SCCDAGAttrs *getSCCManager(void) const;
@@ -178,8 +176,6 @@ private:
   InductionVariableManager *inductionVariables;
 
   InvariantManager *invariantManager;
-
-  LoopGoverningIVAttribution *loopGoverningIVAttribution;
 
   LoopIterationSpaceAnalysis *domainSpaceAnalysis;
 

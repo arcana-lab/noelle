@@ -164,7 +164,8 @@ bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
    * The loop must have at least one induction variable.
    * This is because the trip count must be controlled by an induction variable.
    */
-  auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
+  auto IVManager = LDI->getInductionVariableManager();
+  auto loopGoverningIVAttr = IVManager->getLoopGoverningIVAttribution();
   if (!loopGoverningIVAttr) {
     if (this->verbose != Verbosity::Disabled) {
       errs()
@@ -177,7 +178,6 @@ bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
    * NOTE: Due to a limitation in our ability to chunk induction variables,
    * all induction variables must have step sizes that are loop invariant
    */
-  auto IVManager = LDI->getInductionVariableManager();
   for (auto IV : IVManager->getInductionVariables(*loopStructure)) {
     if (IV->isStepValueLoopInvariant()) {
       continue;
