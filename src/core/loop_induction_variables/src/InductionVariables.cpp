@@ -327,6 +327,23 @@ InductionVariable *InductionVariableManager::getLoopGoverningInductionVariable(
 }
 
 LoopGoverningIVAttribution *InductionVariableManager::
+    getLoopGoverningIVAttribution(void) const {
+
+  /*
+   * Fetch the loop
+   */
+  auto ls = this->loop->getLoop();
+  assert(ls != nullptr);
+
+  /*
+   * Fetch the loop governing IV (if it exists).
+   */
+  auto IV = this->getLoopGoverningIVAttribution(*ls);
+
+  return IV;
+}
+
+LoopGoverningIVAttribution *InductionVariableManager::
     getLoopGoverningIVAttribution(LoopStructure &LS) const {
   if (loopToGoverningIVAttrMap.find(&LS) == loopToGoverningIVAttrMap.end()) {
     return nullptr;

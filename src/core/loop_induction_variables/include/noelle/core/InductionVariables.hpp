@@ -229,6 +229,8 @@ public:
 
   bool doesContributeToComputeAnInductionVariable(Instruction *i) const;
 
+  LoopGoverningIVAttribution *getLoopGoverningIVAttribution(void) const;
+
   LoopGoverningIVAttribution *getLoopGoverningIVAttribution(
       LoopStructure &LS) const;
 
