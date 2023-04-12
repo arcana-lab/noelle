@@ -79,38 +79,3 @@ bool LoopMetadataPass::setIDs(std::vector<LoopStructure *> &loopStructures) {
 
   return modified;
 }
-
-void LoopMetadataPass::writeLoopIDFile(
-    std::vector<LoopStructure *> &loopStructures) {
-  /*
-   * Create loopIDtoSrcFile.txt
-   */
-  std::ofstream loopIDtoSrcFile;
-  loopIDtoSrcFile.open("loopIDtoSrc.txt");
-
-  for (auto *ls : loopStructures) {
-    // We don't need to check if the loop has an ID, we just assigned one to it
-    // with setIDs()
-    auto loopIDOpt = ls->getID();
-    assert(loopIDOpt);
-    uint64_t loopID = loopIDOpt.value();
-
-    BasicBlock *header = ls->getHeader();
-    Module *M = header->getModule();
-    Function *F = header->getParent();
-    const std::string &fileName = M->getModuleIdentifier();
-    Instruction *terminator = header->getTerminator();
-    std::string terminatorAsStr;
-    llvm::raw_string_ostream llvmStream(terminatorAsStr);
-    llvmStream << *terminator;
-
-    loopIDtoSrcFile << "Loop with ID: " << loopID << "\nin file: " << fileName
-                    << "\nat function: " << F->getName().str()
-                    << "\nwith header terminator: " << terminatorAsStr
-                    << "\n\n";
-  }
-
-  loopIDtoSrcFile.close();
-
-  return;
-}

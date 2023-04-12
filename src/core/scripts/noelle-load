@@ -52,4 +52,8 @@ cmdToExecute="${OPT} ${OPTPASSES} ${ANALYSES} ${@}"
 
 # Execute the command
 echo $cmdToExecute
-eval $cmdToExecute 
+eval $cmdToExecute
+
+if test $? -ne 0 ; then
+  exit 1;
+fi

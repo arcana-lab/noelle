@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,8 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/InductionVariables.hpp"
-#include "noelle/core/LoopGoverningIVAttribution.hpp"
+#include "noelle/core/InductionVariable.hpp"
 
 namespace llvm::noelle {
 
@@ -534,7 +533,7 @@ bool InductionVariable::isStepValuePositive(void) const {
   return fpValue.isNonZero() && !fpValue.isNegative();
 }
 
-Type *InductionVariable::getIVType(void) const {
+Type *InductionVariable::getType(void) const {
   return loopEntryPHIType;
 }
 

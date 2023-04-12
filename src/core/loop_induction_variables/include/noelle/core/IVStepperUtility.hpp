@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/InductionVariables.hpp"
-#include "noelle/core/LoopGoverningIVAttribution.hpp"
+#include "noelle/core/LoopGoverningInductionVariable.hpp"
 
 namespace llvm::noelle {
 
@@ -80,7 +80,7 @@ class LoopGoverningIVUtility {
 public:
   LoopGoverningIVUtility(LoopStructure *loopOfGIV,
                          InductionVariableManager &IVM,
-                         LoopGoverningIVAttribution &GIV);
+                         LoopGoverningInductionVariable &GIV);
 
   LoopGoverningIVUtility() = delete;
 
@@ -125,7 +125,7 @@ public:
 
 private:
   LoopStructure *loop;
-  LoopGoverningIVAttribution &attribution;
+  LoopGoverningInductionVariable &attribution;
   CmpInst *condition;
   std::vector<Instruction *> conditionValueOrderedDerivation;
 

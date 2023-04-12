@@ -41,7 +41,8 @@ BasicBlock *HELIX::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
   /*
    * Check if we have a sequential prologue
    */
-  auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
+  auto allIVInfo = LDI->getInductionVariableManager();
+  auto loopGoverningIVAttr = allIVInfo->getLoopGoverningInductionVariable();
   if (false || (loopGoverningIVAttr == nullptr)
       || (this->doesHaveASequentialPrologue(LDI))) {
     return &bb;
@@ -64,7 +65,7 @@ BasicBlock *HELIX::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
   auto cfgTransformer = this->noelle.getCFGTransformer();
   assert(bb.size() > 0);
   auto splitPoint = bb.getTerminator();
-  auto addConditionalBranch = [&bb, LDI, task, &clonedStepSizeMap](
+  auto addConditionalBranch = [&bb, LDI, task, &clonedStepSizeMap, allIVInfo](
                                   BasicBlock *newBB,
                                   BasicBlock *newJoinBB) {
     IRBuilder<> lastBBBuilder(&bb);
@@ -73,9 +74,8 @@ BasicBlock *HELIX::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
      * Fetch the information about the loop.
      */
     auto loopStructure = LDI->getLoopStructure();
-    auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
+    auto loopGoverningIVAttr = allIVInfo->getLoopGoverningInductionVariable();
     assert(loopGoverningIVAttr != nullptr);
-    auto allIVInfo = LDI->getInductionVariableManager();
 
     /*
      * Generate the code to identify whether we have executed the last loop
@@ -91,10 +91,10 @@ BasicBlock *HELIX::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
      * Step 1: Compute the value that the loop governing IV had at the iteration
      * before.
      */
-    auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
+    auto loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
     auto loopGoverningPHI =
-        task->getCloneOfOriginalInstruction(loopGoverningIV.getLoopEntryPHI());
-    auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
+        task->getCloneOfOriginalInstruction(loopGoverningIV->getLoopEntryPHI());
+    auto stepSize = clonedStepSizeMap.at(loopGoverningIV);
     auto prevIterationValue =
         ivUtility
             .generateCodeToComputePreviousValueUsedToCompareAgainstExitConditionValue(

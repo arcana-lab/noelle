@@ -248,22 +248,13 @@ LoopDependenceInfo::LoopDependenceInfo(
       *inductionVariables,
       DS);
   this->domainSpaceAnalysis =
-      new LoopIterationDomainSpaceAnalysis(this->loop,
-                                           *this->inductionVariables,
-                                           SE);
+      new LoopIterationSpaceAnalysis(this->loop, *this->inductionVariables, SE);
 
   /*
    * Collect induction variable information
    */
   auto iv =
       this->inductionVariables->getLoopGoverningInductionVariable(*topLoop);
-  loopGoverningIVAttribution =
-      iv == nullptr ? nullptr
-                    : new LoopGoverningIVAttribution(
-                        topLoop,
-                        *iv,
-                        *loopSCCDAG->sccOfValue(iv->getLoopEntryPHI()),
-                        loopExitBlocks);
 
   return;
 }
@@ -435,7 +426,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
    * Perform loop-aware memory dependence analysis to refine the loop dependence
    * graph.
    */
-  auto domainSpace = LoopIterationDomainSpaceAnalysis(loopNode, ivManager, SE);
+  auto domainSpace = LoopIterationSpaceAnalysis(loopNode, ivManager, SE);
   if (this->loopTransformationsManager->areLoopAwareAnalysesEnabled()) {
     refinePDGWithLoopAwareMemDepAnalysis(loopDG,
                                          l,
@@ -699,18 +690,9 @@ LoopStructure *LoopDependenceInfo::getNestedMostLoopStructure(
   return this->loop->getInnermostLoopThatContains(I);
 }
 
-bool LoopDependenceInfo::isSCCContainedInSubloop(SCC *scc) const {
-  return this->sccdagAttrs->isSCCContainedInSubloop(this->loop, scc);
-}
-
 InductionVariableManager *LoopDependenceInfo::getInductionVariableManager(
     void) const {
   return inductionVariables;
-}
-
-LoopGoverningIVAttribution *LoopDependenceInfo::getLoopGoverningIVAttribution(
-    void) const {
-  return loopGoverningIVAttribution;
 }
 
 MemoryCloningAnalysis *LoopDependenceInfo::getMemoryCloningAnalysis(
@@ -733,8 +715,8 @@ InvariantManager *LoopDependenceInfo::getInvariantManager(void) const {
   return this->invariantManager;
 }
 
-LoopIterationDomainSpaceAnalysis *LoopDependenceInfo::
-    getLoopIterationDomainSpaceAnalysis(void) const {
+LoopIterationSpaceAnalysis *LoopDependenceInfo::getLoopIterationSpaceAnalysis(
+    void) const {
   return this->domainSpaceAnalysis;
 }
 
@@ -796,9 +778,6 @@ LoopDependenceInfo::~LoopDependenceInfo() {
 
   if (this->inductionVariables) {
     delete this->inductionVariables;
-  }
-  if (this->loopGoverningIVAttribution) {
-    delete this->loopGoverningIVAttribution;
   }
 
   assert(this->invariantManager);

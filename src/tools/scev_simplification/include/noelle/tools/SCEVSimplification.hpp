@@ -52,7 +52,7 @@ private:
    */
   struct IVCachedInfo {
     std::unordered_map<Instruction *, InductionVariable *> ivByInstruction;
-    std::unordered_map<InductionVariable *, LoopGoverningIVAttribution *>
+    std::unordered_map<InductionVariable *, LoopGoverningInductionVariable *>
         loopGoverningAttrByIV;
     std::unordered_set<Instruction *> instsDerivedFromMultipleIVs;
   };

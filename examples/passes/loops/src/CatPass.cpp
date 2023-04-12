@@ -34,17 +34,10 @@ struct CAT : public ModulePass {
     auto &noelle = getAnalysis<Noelle>();
 
     /*
-     * Fetch the entry point.
-     */
-    auto fm = noelle.getFunctionsManager();
-    auto mainF = fm->getEntryFunction();
-
-    /*
      * fetch the loops with all their abstractions
      * (e.g., loop dependence graph, sccdag)
      */
     auto loopStructures = noelle.getLoopStructures();
-    // auto loopStructures = noelle.getLoopStructures(mainF);
 
     /*
      * Print loop induction variables and invariant.
@@ -70,36 +63,6 @@ struct CAT : public ModulePass {
       errs() << " Nesting level = " << LS->getNestingLevel() << "\n";
       errs() << " This loop has " << loopNode->getNumberOfSubLoops()
              << " sub-loops (including sub-loops of sub-loops)\n";
-
-      /*
-       * Induction variables.
-       */
-      errs() << " Induction variables\n";
-      auto IVM = loop->getInductionVariableManager();
-      auto GIV = IVM->getLoopGoverningInductionVariable(*LS);
-      if (GIV != nullptr) {
-        errs() << "   GIV: " << *GIV->getLoopEntryPHI() << "\n";
-      }
-      auto IVs = IVM->getInductionVariables(*LS);
-      for (auto IV : IVs) {
-        errs() << "   IV: " << *IV->getLoopEntryPHI() << "\n";
-      }
-
-      /*
-       * Invariants.
-       */
-      errs() << " Invariants\n";
-      auto IM = loop->getInvariantManager();
-      for (auto inv : IM->getLoopInstructionsThatAreLoopInvariants()) {
-        errs() << "   " << *inv << "\n";
-      }
-
-      /*
-       * Trip count.
-       */
-      if (loop->doesHaveCompileTimeKnownTripCount()) {
-        errs() << " Trip count = " << loop->getCompileTimeTripCount() << "\n";
-      }
 
       /*
        * Dependences.

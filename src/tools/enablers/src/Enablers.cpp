@@ -112,7 +112,8 @@ bool EnablersManager::applyLoopWhilifier(LoopDependenceInfo *LDI,
    * Check if we need to whilify the loop.
    */
   auto loopStructure = LDI->getLoopStructure();
-  auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
+  auto IVManager = LDI->getInductionVariableManager();
+  auto loopGoverningIVAttr = IVManager->getLoopGoverningInductionVariable();
   if ((loopGoverningIVAttr != nullptr)
       && (loopStructure->numberOfExitBasicBlocks() == 1)) {
 

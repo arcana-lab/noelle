@@ -154,6 +154,8 @@ uint64_t LoopEnvironment::addProducer(Value *producer, bool liveIn) {
   }
 
   /*
+   * @producer is not part of the environment already.
+   *
    * Add @producer to the environment.
    */
   auto nextEnvID = this->envProducers.size();
