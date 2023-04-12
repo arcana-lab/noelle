@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -20,9 +20,6 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Parallelizer.hpp"
-
-using namespace llvm;
-using namespace llvm::noelle;
 
 namespace llvm::noelle {
 
@@ -64,4 +61,5 @@ bool Parallelizer::collectThreadPoolHelperFunctionsAndTypes(Module &M,
 
   return true;
 }
+
 } // namespace llvm::noelle

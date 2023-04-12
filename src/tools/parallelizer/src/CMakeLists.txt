@@ -1,7 +1,8 @@
 # Sources
 set(Srcs 
   Pass.cpp
-  Parallelizer.cpp
+  Parallelizer_loop.cpp
+  Parallelizer_loops.cpp
   Helper.cpp
 )
 

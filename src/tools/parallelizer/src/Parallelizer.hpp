@@ -62,6 +62,8 @@ private:
    */
   bool parallelizeLoop(LoopDependenceInfo *LDI, Noelle &par, Heuristics *h);
 
+  bool parallelizeLoops(Noelle &noelle, Heuristics *heuristics);
+
   std::vector<LoopDependenceInfo *> getLoopsToParallelize(Module &M,
                                                           Noelle &par);
 
