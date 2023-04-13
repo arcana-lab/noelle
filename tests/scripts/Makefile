@@ -90,7 +90,6 @@ pre_profiles.profraw: baseline_with_runtime_prof input.txt
 baseline_pre.bc: pre_profiles.profraw test.bc
 	noelle-meta-prof-embed $^ -o $@
 	noelle-pre $@ $(NOELLE_OPTIONS) $(TOOLS_OPTIONS)
-	noelle-meta-clean $@ $@
 
 default.profraw: baseline_pre_prof input.txt
 	./$< `cat input.txt` 
