@@ -98,7 +98,9 @@ private:
    */
   LoopCarriedVariable *checkIfReducible(SCC *scc, LoopForestNode *loop);
 
-  std::vector<Value *> checkIfPeriodic(SCC *scc, LoopForestNode *loopNode);
+  std::tuple<bool, Value *, Value *, Value *> checkIfPeriodic(
+      SCC *scc,
+      LoopForestNode *loopNode);
 
   bool checkIfIndependent(SCC *scc);
 

@@ -29,7 +29,6 @@
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 #include "noelle/core/UnknownClosedFormSCC.hpp"
-#include "llvm/IR/Instruction.h"
 
 namespace llvm::noelle {
 
@@ -117,12 +116,11 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
        */
       sccInfo = new LoopIterationSCC(scc, rootLoop);
 
-    } else if (isPeriodic.size() != 0) {
+    } else if (std::get<0>(isPeriodic)) {
       // errs() << "PERIODIC\n";
       auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
-      auto initialValue = isPeriodic[0];
-      auto period = isPeriodic[1];
-      auto step = isPeriodic[2];
+      Value *initialValue, *period, *step;
+      tie(std::ignore, initialValue, period, step) = isPeriodic;
 
       /*
        * The SCC is a periodic variable.
@@ -543,18 +541,21 @@ std::set<InductionVariable *> SCCDAGAttrs::
   return containedIVs;
 }
 
-std::vector<Value *> SCCDAGAttrs::checkIfPeriodic(SCC *scc,
-                                                  LoopForestNode *loopNode) {
+std::tuple<bool, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
+    SCC *scc,
+    LoopForestNode *loopNode) {
+  auto notPeriodic = make_tuple(false, nullptr, nullptr, nullptr);
+
   if (this->sccToLoopCarriedDependencies.find(scc)
       == this->sccToLoopCarriedDependencies.end()) {
-    return {};
+    return notPeriodic;
   }
 
   /*
    * Currently only handles SCCs with two nodes.
    */
   if (scc->numberOfInstructions() != 2)
-    return {};
+    return notPeriodic;
 
   for (auto edge : this->sccToLoopCarriedDependencies.at(scc)) {
 
@@ -572,11 +573,12 @@ std::vector<Value *> SCCDAGAttrs::checkIfPeriodic(SCC *scc,
     auto to = edge->getIncomingT();
 
     if (!isa<PHINode>(to))
-      continue;
+      return notPeriodic;
     auto toPHI = cast<PHINode>(to);
 
     if (toPHI->getNumIncomingValues() != 2)
-      continue;
+      return notPeriodic;
+
     initialValue = toPHI->getIncomingValue(0) == from
                        ? toPHI->getIncomingValue(1)
                        : toPHI->getIncomingValue(0);
@@ -623,7 +625,7 @@ std::vector<Value *> SCCDAGAttrs::checkIfPeriodic(SCC *scc,
 
         if (auto fromConstantInt = dyn_cast<ConstantInt>(fromOperand)) {
           if (!fromConstantInt->isZero())
-            continue;
+            return notPeriodic;
           if (auto initialConstantInt = dyn_cast<ConstantInt>(initialValue)) {
             auto c = initialConstantInt->isNegative() ? 1 : -1;
             step = llvm::ConstantInt::get(
@@ -634,21 +636,21 @@ std::vector<Value *> SCCDAGAttrs::checkIfPeriodic(SCC *scc,
         }
         break;
       default:
-        continue;
+        return notPeriodic;
     }
     if (!found)
-      continue;
+      return notPeriodic;
 
     // errs() << "periodic variable with initial value " << *initialValue <<
     // "\n"; errs() << "                          and period " << *period <<
     // "\n"; errs() << "                            and step " << *step << "\n";
-    return { initialValue, period, step };
+    return make_tuple(true, initialValue, period, step);
   }
 
   /*
    * This SCC is not a periodic variable.
    */
-  return {};
+  return notPeriodic;
 }
 
 LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(SCC *scc,
