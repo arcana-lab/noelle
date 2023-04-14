@@ -26,7 +26,7 @@ namespace llvm::noelle {
 LoopGoverningIVUtility::LoopGoverningIVUtility(
     LoopStructure *loopOfGIV,
     InductionVariableManager &IVM,
-    LoopGoverningIVAttribution &attribution)
+    LoopGoverningInductionVariable &attribution)
   : loop{ loopOfGIV },
     attribution{ attribution },
     conditionValueOrderedDerivation{},
@@ -61,14 +61,14 @@ LoopGoverningIVUtility::LoopGoverningIVUtility(
       continue;
     conditionValueOrderedDerivation.push_back(&I);
   }
-  assert(IV.getSingleComputedStepValue()
-         && (isa<ConstantInt>(IV.getSingleComputedStepValue())
-             || isa<ConstantFP>(IV.getSingleComputedStepValue())));
+  assert(IV->getSingleComputedStepValue()
+         && (isa<ConstantInt>(IV->getSingleComputedStepValue())
+             || isa<ConstantFP>(IV->getSingleComputedStepValue())));
 
   /*
    * Fetch information about the step value for the IV.
    */
-  auto isStepValuePositive = IV.isStepValuePositive();
+  auto isStepValuePositive = IV->isStepValuePositive();
 
   /*
    * Fetch information about the predicate that when true the execution needs to
@@ -246,9 +246,9 @@ void LoopGoverningIVUtility::updateConditionToCheckIfWeHavePastExitValue(
    * exit condition value is not an instruction of the PHI of the loop governing
    * IV.
    */
-  auto &IV = this->attribution.getInductionVariable();
+  auto IV = this->attribution.getInductionVariable();
   if (this->isWhile
-      && (!IV.getAllInstructions().count(
+      && (!IV->getAllInstructions().count(
           this->attribution.getValueToCompareAgainstExitConditionValue()))) {
     cmpToUpdate->setPredicate(this->strictPredicate);
   }
@@ -268,19 +268,19 @@ Value *LoopGoverningIVUtility::generateCodeToComputeTheTripCount(
    * Fetch the start and last value.
    */
   auto IV = this->attribution.getInductionVariable();
-  auto startValue = IV.getStartValue();
+  auto startValue = IV->getStartValue();
   auto lastValue = this->attribution.getExitConditionValue();
 
   /*
    * Compute the delta.
    */
   Value *delta = nullptr;
-  if (IV.isStepValuePositive()) {
-    delta = IV.getIVType()->isIntegerTy()
+  if (IV->isStepValuePositive()) {
+    delta = IV->getType()->isIntegerTy()
                 ? builder.CreateSub(lastValue, startValue)
                 : builder.CreateFSub(lastValue, startValue);
   } else {
-    delta = IV.getIVType()->isIntegerTy()
+    delta = IV->getType()->isIntegerTy()
                 ? builder.CreateSub(startValue, lastValue)
                 : builder.CreateFSub(startValue, lastValue);
   }
@@ -288,7 +288,7 @@ Value *LoopGoverningIVUtility::generateCodeToComputeTheTripCount(
   /*
    * Compute the number of steps to reach the delta.
    */
-  auto tripCount = builder.CreateUDiv(delta, IV.getSingleComputedStepValue());
+  auto tripCount = builder.CreateUDiv(delta, IV->getSingleComputedStepValue());
 
   return tripCount;
 }
@@ -326,9 +326,9 @@ Value *LoopGoverningIVUtility::generateCodeToComputeValueToUseForAnIterationAgo(
    * Check if the value used to compare against the exit condition value is the
    * PHI of the loop governing IV.
    */
-  auto &IV = this->attribution.getInductionVariable();
+  auto IV = this->attribution.getInductionVariable();
   if (this->attribution.getValueToCompareAgainstExitConditionValue()
-      == IV.getLoopEntryPHI()) {
+      == IV->getLoopEntryPHI()) {
 
     /*
      * The value used is the PHI.
@@ -336,7 +336,7 @@ Value *LoopGoverningIVUtility::generateCodeToComputeValueToUseForAnIterationAgo(
      * iteration.
      */
     auto prevIterationValue =
-        IV.getIVType()->isIntegerTy()
+        IV->getType()->isIntegerTy()
             ? builder.CreateSub(currentIterationValue, stepValue)
             : builder.CreateFSub(currentIterationValue, stepValue);
 
@@ -359,7 +359,7 @@ void LoopGoverningIVUtility::
    * Fetch the loop governing IV.
    */
   auto IV = this->attribution.getInductionVariable();
-  assert(IV.isStepValueLoopInvariant());
+  assert(IV->isStepValueLoopInvariant());
 
   /*
    * Adjust the predicate.

@@ -70,7 +70,7 @@ BasicBlock *DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
      */
     auto loopStructure = LDI->getLoopStructure();
     auto allIVInfo = LDI->getInductionVariableManager();
-    auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
+    auto loopGoverningIVAttr = allIVInfo->getLoopGoverningInductionVariable();
     LoopGoverningIVUtility ivUtility(loopStructure,
                                      *allIVInfo,
                                      *loopGoverningIVAttr);
@@ -79,9 +79,10 @@ BasicBlock *DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
      * Step 1: find the value of the loop governing IV that was updated to
      * (potentially) skip to the next chunk.
      */
-    auto &loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
-    auto originalLoopGoverningPHI = cast<PHINode>(
-        task->getCloneOfOriginalInstruction(loopGoverningIV.getLoopEntryPHI()));
+    auto loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
+    auto originalLoopGoverningPHI =
+        cast<PHINode>(task->getCloneOfOriginalInstruction(
+            loopGoverningIV->getLoopEntryPHI()));
     auto &setOfLoopGoverningLastValues =
         this->IVValueJustBeforeEnteringBody.at(originalLoopGoverningPHI);
     assert(setOfLoopGoverningLastValues.size() > 0);
@@ -143,7 +144,7 @@ BasicBlock *DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
      * Step 4: Compute the value that the loop governing IV had when the task
      * left the loop.
      */
-    auto stepSize = clonedStepSizeMap.at(&loopGoverningIV);
+    auto stepSize = clonedStepSizeMap.at(loopGoverningIV);
     auto prevIterationValue =
         ivUtility
             .generateCodeToComputePreviousValueUsedToCompareAgainstExitConditionValue(

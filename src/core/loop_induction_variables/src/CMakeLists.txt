@@ -1,8 +1,8 @@
 # Sources
 set(Srcs 
-  InductionVariables.cpp
   InductionVariable.cpp
-  LoopGoverningIVAttribution.cpp
+  LoopGoverningInductionVariable.cpp
+  InductionVariables.cpp
   IVStepperUtility.cpp
   LoopGoverningIVUtility.cpp
 )

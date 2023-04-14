@@ -36,7 +36,7 @@
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/Invariants.hpp"
-#include "noelle/core/LoopGoverningIVAttribution.hpp"
+#include "noelle/core/LoopGoverningInductionVariable.hpp"
 
 #include "TestSuite.hpp"
 

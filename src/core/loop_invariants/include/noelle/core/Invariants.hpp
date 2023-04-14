@@ -22,6 +22,7 @@
 #pragma once
 
 #include "noelle/core/PDG.hpp"
+#include "noelle/core/SCC.hpp"
 #include "noelle/core/LoopForest.hpp"
 
 namespace llvm::noelle {
@@ -33,6 +34,8 @@ public:
   InvariantManager() = delete;
 
   bool isLoopInvariant(Value *value) const;
+
+  bool isLoopInvariant(SCC *scc) const;
 
   std::unordered_set<Instruction *> getLoopInstructionsThatAreLoopInvariants(
       void) const;

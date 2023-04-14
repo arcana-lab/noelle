@@ -23,20 +23,20 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCC.hpp"
-#include "noelle/core/InductionVariables.hpp"
+#include "noelle/core/InductionVariable.hpp"
 
 namespace llvm::noelle {
 
-class LoopGoverningIVAttribution {
+class LoopGoverningInductionVariable {
 public:
-  LoopGoverningIVAttribution(LoopStructure *l,
-                             InductionVariable &IV,
-                             SCC &scc,
-                             std::vector<BasicBlock *> &exitBlocks);
+  LoopGoverningInductionVariable(LoopStructure *l,
+                                 InductionVariable &IV,
+                                 SCC &scc,
+                                 std::vector<BasicBlock *> &exitBlocks);
 
-  LoopGoverningIVAttribution() = delete;
+  LoopGoverningInductionVariable() = delete;
 
-  InductionVariable &getInductionVariable(void) const;
+  InductionVariable *getInductionVariable(void) const;
 
   CmpInst *getHeaderCompareInstructionToComputeExitCondition(void) const;
 

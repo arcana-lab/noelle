@@ -27,11 +27,11 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/Invariants.hpp"
-#include "noelle/core/LoopGoverningIVAttribution.hpp"
+#include "noelle/core/LoopGoverningInductionVariable.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
 #include "noelle/core/LoopEnvironmentBuilder.hpp"
 #include "noelle/core/SCCDAGAttrs.hpp"
-#include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
+#include "noelle/core/LoopIterationSpaceAnalysis.hpp"
 #include "noelle/core/LoopTransformationsOptions.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
 
@@ -135,14 +135,6 @@ public:
   bool iterateOverSubLoopsRecursively(
       std::function<bool(const LoopStructure &child)> funcToInvoke);
 
-  /*
-   * Return true if @param scc is fully contained in a subloop.
-   * Return false otherwise.
-   */
-  bool isSCCContainedInSubloop(SCC *scc) const;
-
-  LoopGoverningIVAttribution *getLoopGoverningIVAttribution(void) const;
-
   InductionVariableManager *getInductionVariableManager(void) const;
 
   SCCDAGAttrs *getSCCManager(void) const;
@@ -153,8 +145,7 @@ public:
 
   LoopEnvironment *getEnvironment(void) const;
 
-  LoopIterationDomainSpaceAnalysis *getLoopIterationDomainSpaceAnalysis(
-      void) const;
+  LoopIterationSpaceAnalysis *getLoopIterationSpaceAnalysis(void) const;
 
   MemoryCloningAnalysis *getMemoryCloningAnalysis(void) const;
 
@@ -186,9 +177,7 @@ private:
 
   InvariantManager *invariantManager;
 
-  LoopGoverningIVAttribution *loopGoverningIVAttribution;
-
-  LoopIterationDomainSpaceAnalysis *domainSpaceAnalysis;
+  LoopIterationSpaceAnalysis *domainSpaceAnalysis;
 
   MemoryCloningAnalysis *memoryCloningAnalysis;
 

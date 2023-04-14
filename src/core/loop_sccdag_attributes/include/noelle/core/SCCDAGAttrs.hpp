@@ -28,7 +28,7 @@
 #include "noelle/core/LoopCarriedSCC.hpp"
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/PeriodicVariableSCC.hpp"
-#include "noelle/core/LoopGoverningIVAttribution.hpp"
+#include "noelle/core/LoopGoverningInductionVariable.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
 #include "noelle/core/Variable.hpp"
 #include "noelle/core/MemoryCloningAnalysis.hpp"
