@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -104,6 +104,10 @@ public:
 
   BasicBlock *cloneAndAddBasicBlock(
       BasicBlock *original,
+      std::function<bool(Instruction *origInst)> filter);
+
+  void cloneAndAddBasicBlocks(
+      const std::unordered_set<BasicBlock *> &bbs,
       std::function<bool(Instruction *origInst)> filter);
 
   void removeOriginalBasicBlock(BasicBlock *b);

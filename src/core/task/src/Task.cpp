@@ -250,6 +250,20 @@ BasicBlock *Task::cloneAndAddBasicBlock(
   return cloneBB;
 }
 
+void Task::cloneAndAddBasicBlocks(
+    const std::unordered_set<BasicBlock *> &bbs,
+    std::function<bool(Instruction *origInst)> filter) {
+
+  /*
+   * Clone all the basic blocks given as input.
+   */
+  for (auto originBB : bbs) {
+    this->cloneAndAddBasicBlock(originBB, filter);
+  }
+
+  return;
+}
+
 Value *Task::getTaskInstanceID(void) const {
   return this->instanceIndexV;
 }

@@ -418,7 +418,7 @@ void ParallelizationTechnique::cloneSequentialLoop(LoopDependenceInfo *LDI,
   /*
    * Fetch the task.
    */
-  auto task = this->tasks[taskIndex];
+  auto task = this->tasks.at(taskIndex);
 
   /*
    * Code to filter out instructions we don't want to clone.
@@ -437,13 +437,7 @@ void ParallelizationTechnique::cloneSequentialLoop(LoopDependenceInfo *LDI,
    * Clone all basic blocks of the original loop
    */
   auto topLoop = LDI->getLoopStructure();
-  for (auto originBB : topLoop->getBasicBlocks()) {
-
-    /*
-     * Clone the basic block.
-     */
-    task->cloneAndAddBasicBlock(originBB, filter);
-  }
+  task->cloneAndAddBasicBlocks(topLoop->getBasicBlocks(), filter);
 }
 
 void ParallelizationTechnique::cloneSequentialLoopSubset(
@@ -454,7 +448,7 @@ void ParallelizationTechnique::cloneSequentialLoopSubset(
   /*
    * Fetch the task.
    */
-  auto task = tasks[taskIndex];
+  auto task = tasks.at(taskIndex);
 
   /*
    * Clone a portion of the original loop (determined by a set of SCCs
@@ -1514,9 +1508,10 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
     int taskIndex) {
 
   /*
-   * Fetch the metadata manager
+   * Fetch the NOELLE's managers
    */
   auto mm = this->noelle.getMetadataManager();
+  auto tm = this->noelle.getTypesManager();
 
   /*
    * Fetch the program.
@@ -1558,7 +1553,7 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
    * Add a store instruction to specify to the code outside the parallelized
    * loop which exit block is taken.
    */
-  auto int32 = IntegerType::get(program->getContext(), 32);
+  auto int32 = tm->getIntegerType(32);
   for (int i = 0; i < task->getNumberOfLastBlocks(); ++i) {
     auto bb = task->getLastBlock(i);
     auto term = bb->getTerminator();
