@@ -63,11 +63,12 @@ public:
 
   uint64_t getTotalInstructions(BasicBlock *bb) const;
 
-  void setBasicBlockInvocations(BasicBlock *bb, uint64_t invocations);
-
   /*
    * =========================== SCC  ========================================
    */
+  uint64_t getStaticInstructions(SCC *scc) const;
+
+  bool hasBeenExecuted(SCC *scc) const;
 
   uint64_t getSelfInstructions(SCC *scc) const;
 
@@ -158,12 +159,6 @@ public:
    */
   double getBranchFrequency(BasicBlock *sourceBB, BasicBlock *targetBB) const;
 
-  void setBranchFrequency(BasicBlock *src,
-                          BasicBlock *dst,
-                          double branchFrequency);
-
-  void computeProgramInvocations(Module &M);
-
 private:
   std::unordered_map<BasicBlock *, std::unordered_map<BasicBlock *, double>>
       branchProbability;
@@ -183,6 +178,16 @@ private:
   void setFunctionTotalInstructions(Function *f, uint64_t totalInstructions);
 
   bool isFunctionTotalInstructionsAvailable(Function &F) const;
+
+  void setBasicBlockInvocations(BasicBlock *bb, uint64_t invocations);
+
+  void setBranchFrequency(BasicBlock *src,
+                          BasicBlock *dst,
+                          double branchFrequency);
+
+  void computeProgramInvocations(Module &M);
+
+  friend class HotProfiler;
 };
 
 } // namespace llvm::noelle

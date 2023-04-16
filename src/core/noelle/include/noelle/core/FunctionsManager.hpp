@@ -45,6 +45,8 @@ public:
 
   std::set<Function *> getFunctions(void) const;
 
+  std::set<Function *> getFunctionsWithBody(void) const;
+
   std::set<Function *> getFunctionsReachableFrom(Function *startingPoint);
 
   void sortByHotness(std::vector<Function *> &functions);

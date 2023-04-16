@@ -153,6 +153,25 @@ std::set<Function *> FunctionsManager::getFunctions(void) const {
   return s;
 }
 
+std::set<Function *> FunctionsManager::getFunctionsWithBody(void) const {
+  std::set<Function *> s;
+
+  for (auto &f : this->program) {
+    if (f.empty()) {
+      continue;
+    }
+    if (f.size() == 0) {
+      continue;
+    }
+    if (f.isDeclaration()) {
+      continue;
+    }
+    s.insert(&f);
+  }
+
+  return s;
+}
+
 std::set<Function *> FunctionsManager::getFunctionsReachableFrom(
     Function *startingPoint) {
   std::set<Function *> functions;

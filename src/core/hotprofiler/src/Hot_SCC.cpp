@@ -22,8 +22,20 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Hot.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
+
+bool Hot::hasBeenExecuted(SCC *scc) const {
+  auto s = this->getSelfInstructions(scc);
+  if (s > 0) {
+    return true;
+  }
+
+  return false;
+}
+
+uint64_t Hot::getStaticInstructions(SCC *scc) const {
+  return scc->numberOfInstructions();
+}
 
 uint64_t Hot::getSelfInstructions(SCC *scc) const {
   uint64_t t = 0;
@@ -48,3 +60,5 @@ uint64_t Hot::getTotalInstructions(SCC *scc) const {
 
   return t;
 }
+
+} // namespace llvm::noelle
