@@ -2,9 +2,20 @@
 
 installDir
 
+# It is not guaranteed that noelle-loopsize receives normalized bitcode
+# and, more importantly, bitcode where all loops have an ID.
+# So, we call a subset of noelle-norm that adds the loop IDs metadata,
+# without changing the actual bitcode (i.e., adding/removing instructions),
+# which would be incorrect when noelle-loopsize is called in the context of
+# noelle-fixedpoint.
+bcFile="$@" ;
+cmdToExecute="noelle-meta-loop-embed ${bcFile} -o ${bcFile}" ;
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
 # Set the command to execute
-cmdToExecute="noelle-load -load ${installDir}/lib/LoopSize.so -loopsize $@ -disable-output -noelle-min-hot=0"
+cmdToExecute="noelle-load -load ${installDir}/lib/LoopSize.so -loopsize ${bcFile} -disable-output -noelle-min-hot=0"
 echo $cmdToExecute ;
 
 # Execute the command
-eval $cmdToExecute 
+eval $cmdToExecute ;
