@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,52 +22,44 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
-#include "noelle/core/PDG.hpp"
 #include "noelle/core/SCC.hpp"
-#include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/Noelle.hpp"
-#include "noelle/core/MetadataManager.hpp"
-#include "noelle/tools/DOALL.hpp"
-#include "noelle/tools/HELIX.hpp"
-#include "HeuristicsPass.hpp"
-#include "noelle/tools/DSWP.hpp"
+#include "noelle/core/SCCDAGAttrs.hpp"
+#include "noelle/core/SCCDAGPartition.hpp"
+#include "noelle/core/Hot.hpp"
 
 namespace llvm::noelle {
 
-class Parallelizer : public ModulePass {
+class InvocationLatency {
 public:
-  Parallelizer();
+  InvocationLatency(Hot *hot);
 
-  bool doInitialization(Module &M) override;
+  uint64_t latencyPerInvocation(SCC *scc);
 
-  bool runOnModule(Module &M) override;
+  uint64_t latencyPerInvocation(
+      SCCDAGAttrs *,
+      std::unordered_set<SCCSet *> &subsets,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized);
 
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
+  uint64_t latencyPerInvocation(Instruction *inst);
 
-  /*
-   * Class fields
-   */
-  static char ID;
+  uint64_t queueLatency(Value *queueVal);
+
+  std::set<Value *> &memoizeExternals(
+      SCCDAGAttrs *,
+      SCC *,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized);
+
+  std::set<SCC *> &memoizeParents(
+      SCCDAGAttrs *,
+      SCC *,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized);
 
 private:
-  /*
-   * Fields
-   */
-  bool forceParallelization;
-  bool forceNoSCCPartition;
-
-  /*
-   * Methods
-   */
-  bool parallelizeLoop(LoopDependenceInfo *LDI, Noelle &par, Heuristics *h);
-
-  bool parallelizeLoops(Noelle &noelle, Heuristics *heuristics);
-
-  std::vector<LoopDependenceInfo *> getLoopsToParallelize(Module &M,
-                                                          Noelle &par);
-
-  bool collectThreadPoolHelperFunctionsAndTypes(Module &M, Noelle &par);
+  Hot *profiles;
+  std::unordered_map<Function *, uint64_t> funcToCost;
+  std::unordered_map<Value *, uint64_t> queueValToCost;
+  std::unordered_map<SCC *, uint64_t> sccToCost;
+  std::unordered_map<SCC *, std::set<Value *>> incomingExternals;
+  std::unordered_map<SCC *, std::set<SCC *>> clonableParents;
 };
-
 } // namespace llvm::noelle

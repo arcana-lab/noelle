@@ -19,25 +19,29 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/tools/DSWPTask.hpp"
+#pragma once
+
+#include "llvm/IR/Module.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instructions.h"
+
+#include "Heuristics.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
 
-DSWPTask::DSWPTask(uint32_t ID, FunctionType *taskSignature, Module &M)
-  : Task{ ID, taskSignature, M },
-    stageSCCs{},
-    clonableSCCs{} {
+namespace llvm::noelle {
+struct HeuristicsPass : public ModulePass {
+public:
+  static char ID;
 
-  return;
-}
+  HeuristicsPass();
 
-void DSWPTask::extractFuncArgs(void) {
-  auto argIter = this->F->arg_begin();
-  this->envArg = (Value *)&*(argIter++);
-  this->queueArg = (Value *)&*(argIter++);
-  instanceIndexV =
-      ConstantInt::get(IntegerType::get(F->getContext(), 64), this->getID());
+  bool doInitialization(Module &M) override;
 
-  return;
-}
+  void getAnalysisUsage(AnalysisUsage &AU) const override;
+
+  bool runOnModule(Module &M) override;
+
+  Heuristics *getHeuristics(Noelle &noelle);
+};
+} // namespace llvm::noelle

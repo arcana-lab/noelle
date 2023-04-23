@@ -19,25 +19,36 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/tools/DSWPTask.hpp"
+#pragma once
 
-using namespace llvm;
-using namespace llvm::noelle;
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instructions.h"
 
-DSWPTask::DSWPTask(uint32_t ID, FunctionType *taskSignature, Module &M)
-  : Task{ ID, taskSignature, M },
-    stageSCCs{},
-    clonableSCCs{} {
+#include "noelle/core/SCC.hpp"
+#include "noelle/core/SCCDAGPartition.hpp"
+#include "noelle/core/SCCDAGAttrs.hpp"
 
-  return;
-}
+#include "PartitionCostAnalysis.hpp"
 
-void DSWPTask::extractFuncArgs(void) {
-  auto argIter = this->F->arg_begin();
-  this->envArg = (Value *)&*(argIter++);
-  this->queueArg = (Value *)&*(argIter++);
-  instanceIndexV =
-      ConstantInt::get(IntegerType::get(F->getContext(), 64), this->getID());
+using namespace std;
 
-  return;
-}
+namespace llvm::noelle {
+
+class MinMaxSizePartitionAnalysis : public PartitionCostAnalysis {
+public:
+  MinMaxSizePartitionAnalysis(
+      InvocationLatency &IL,
+      SCCDAGPartitioner &p,
+      SCCDAGAttrs &attrs,
+      int cores,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized,
+      Verbosity v)
+    : PartitionCostAnalysis{ IL, p, attrs, cores, canBeRematerialized, v } {};
+
+  void checkIfShouldMerge(
+      SCCSet *sA,
+      SCCSet *sB,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized);
+};
+} // namespace llvm::noelle
