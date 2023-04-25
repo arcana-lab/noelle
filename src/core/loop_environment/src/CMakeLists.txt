@@ -33,6 +33,8 @@ include_directories(
   ../../pdg/include 
   ../../hotprofiler/include 
   ../../loop_structure/include
+  ../../loop_scc_attributes/include
+  ../../loop_forest/include
   ${CMAKE_INSTALL_PREFIX}/include
   )
 

@@ -22,6 +22,7 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/BinaryReductionSCC.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
 #include "noelle/core/LoopEnvironmentUser.hpp"
 
@@ -71,10 +72,9 @@ public:
   BasicBlock *reduceLiveOutVariables(
       BasicBlock *bb,
       IRBuilder<> builder,
-      const std::unordered_map<uint32_t, Instruction::BinaryOps>
-          &reducableBinaryOps,
-      const std::unordered_map<uint32_t, Value *> &initialValues,
-      Value *numberOfThreadsExecuted);
+      const std::unordered_map<uint32_t, BinaryReductionSCC *> &reductions,
+      Value *numberOfThreadsExecuted,
+      std::function<Value *(ReductionSCC *scc)> castingInitialValue);
 
   /*
    * As all users of the environment know its structure, pass around the
