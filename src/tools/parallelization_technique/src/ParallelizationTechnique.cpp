@@ -233,7 +233,6 @@ BasicBlock *ParallelizationTechnique::
     performReductionToAllReducableLiveOutVariables(
         LoopDependenceInfo *LDI,
         Value *numberOfThreadsExecuted) {
-  IRBuilder<> builder{ this->entryPointOfParallelizedLoop };
 
   /*
    * Fetch the loop headers.
@@ -257,8 +256,8 @@ BasicBlock *ParallelizationTechnique::
    * Collect reduction operation information needed to accumulate reducable
    * variables after parallelization execution
    */
-  std::unordered_map<uint32_t, Instruction::BinaryOps> reducableBinaryOps;
-  std::unordered_map<uint32_t, Value *> initialValues;
+  std::unordered_map<uint32_t, BinaryReductionSCC *> reductions;
+  std::map<ReductionSCC *, Value *> fromReductionToProducer;
   for (auto envID : environment->getEnvIDsOfLiveOutVars()) {
 
     /*
@@ -281,22 +280,30 @@ BasicBlock *ParallelizationTechnique::
     assert(producerSCCAttributes != nullptr);
 
     /*
-     * Get the information about the reduction.
+     * Keep track about the reduction.
      */
-    reducableBinaryOps[envID] = producerSCCAttributes->getReductionOperation();
-    auto initialValue = producerSCCAttributes->getInitialValue();
-    initialValues[envID] =
-        this->castToCorrectReducibleType(builder,
-                                         initialValue,
-                                         producer->getType());
+    reductions[envID] = producerSCCAttributes;
+    fromReductionToProducer[producerSCCAttributes] = producer;
   }
 
+  /*
+   * Generate the code to perform the reduction.
+   */
+  IRBuilder<> builder{ this->entryPointOfParallelizedLoop };
+  auto castF =
+      [this, &builder, &fromReductionToProducer](ReductionSCC *red) -> Value * {
+    auto p = fromReductionToProducer.at(red);
+    auto initialValue = red->getInitialValue();
+    auto i =
+        this->castToCorrectReducibleType(builder, initialValue, p->getType());
+    return i;
+  };
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
       this->entryPointOfParallelizedLoop,
       builder,
-      reducableBinaryOps,
-      initialValues,
-      numberOfThreadsExecuted);
+      reductions,
+      numberOfThreadsExecuted,
+      castF);
 
   /*
    * If reduction occurred, then all environment loads to propagate live outs
