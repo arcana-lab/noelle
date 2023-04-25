@@ -20,18 +20,12 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "CodeSize.hpp"
-#include "noelle/core/Noelle.hpp"
 
 namespace llvm::noelle {
 
 CodeSize::CodeSize() : ModulePass{ ID } {}
 
 bool CodeSize::runOnModule(Module &M) {
-
-  /*
-   * Fetch NOELLE
-   */
-  auto &noelle = getAnalysis<Noelle>();
 
   /*
    * Compute the code size.
