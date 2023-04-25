@@ -77,7 +77,8 @@ void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
       assert(this->sccToStage.find(consumerSCC) != this->sccToStage.end());
       auto task = this->sccToStage.at(consumerSCC);
       auto id = task->getID();
-      envBuilder->getUser(id)->addLiveIn(envID);
+      auto userID = this->fromTaskIDToUserID.at(id);
+      envBuilder->getUser(userID)->addLiveIn(envID);
     }
   }
 
@@ -130,7 +131,8 @@ void DSWP::collectLiveOutEnvInfo(LoopDependenceInfo *LDI) {
     assert(this->sccToStage.find(producerSCC) != this->sccToStage.end());
     auto task = this->sccToStage.at(producerSCC);
     auto id = task->getID();
-    envBuilder->getUser(id)->addLiveOut(envID);
+    auto userID = this->fromTaskIDToUserID.at(id);
+    envBuilder->getUser(userID)->addLiveOut(envID);
   }
 }
 

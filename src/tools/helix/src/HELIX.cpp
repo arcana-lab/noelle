@@ -235,6 +235,7 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
    */
   auto program = this->noelle.getProgram();
   auto helixTask = new HELIXTask(taskSignature, *program);
+  this->fromTaskIDToUserID[helixTask->getID()] = 0;
   this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { helixTask });
   auto ltm = LDI->getLoopTransformationsManager();
   this->numTaskInstances = ltm->getMaximumNumberOfCores();

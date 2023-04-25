@@ -209,6 +209,7 @@ protected:
   BasicBlock *entryPointOfParallelizedLoop, *exitPointOfParallelizedLoop;
   std::vector<Task *> tasks;
   uint32_t numTaskInstances;
+  std::map<uint64_t, uint64_t> fromTaskIDToUserID;
 };
 
 } // namespace llvm::noelle

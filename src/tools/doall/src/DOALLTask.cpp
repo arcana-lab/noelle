@@ -24,12 +24,8 @@
 namespace llvm::noelle {
 
 DOALLTask::DOALLTask(FunctionType *taskSignature, Module &M)
-  : Task{ 0, taskSignature, M } {
+  : Task{ taskSignature, M } {
 
-  return;
-}
-
-void DOALLTask::extractFuncArgs(void) {
   auto argIter = this->F->arg_begin();
   this->envArg = (Value *)&*(argIter++);
   this->coreArg = (Value *)&*(argIter++);

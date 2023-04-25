@@ -380,11 +380,6 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks(
     tasks.push_back(task);
 
     /*
-     * Set the formal arguments of the task.
-     */
-    task->extractFuncArgs();
-
-    /*
      * Fetch the entry and exit basic blocks of the current task.
      */
     auto entryBB = task->getEntry();
@@ -481,13 +476,22 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
     int taskIndex) {
 
   /*
-   * Fetch the task and other loop-specific abstractions.
+   * Fetch the task.
    */
-  auto task = this->tasks[taskIndex];
+  auto task = this->tasks.at(taskIndex);
   assert(task != nullptr);
+
+  /*
+   * Fetch the user associated to the task.
+   */
+  auto userID = this->fromTaskIDToUserID.at(task->getID());
+  auto envUser = this->envBuilder->getUser(userID);
+
+  /*
+   * Fetch loop-specific abstractions.
+   */
   auto rootLoop = LDI->getLoopStructure();
   auto memoryCloningAnalysis = LDI->getMemoryCloningAnalysis();
-  auto envUser = this->envBuilder->getUser(taskIndex);
 
   /*
    * Fetch the environment of the loop
@@ -820,17 +824,18 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables(
   /*
    * Fetch the task.
    */
-  auto task = this->tasks[taskIndex];
+  auto task = this->tasks.at(taskIndex);
+
+  /*
+   * Fetch the user associated to the task.
+   */
+  auto userID = this->fromTaskIDToUserID.at(task->getID());
+  auto envUser = this->envBuilder->getUser(userID);
 
   /*
    * Fetch the environment of the loop.
    */
   auto env = LDI->getEnvironment();
-
-  /*
-   * Fetch the user of the environment attached to the task.
-   */
-  auto envUser = this->envBuilder->getUser(taskIndex);
 
   /*
    * Generate the loads to load values from the live-in environment variables.
@@ -883,7 +888,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
   /*
    * Fetch the requested task.
    */
-  auto task = this->tasks[taskIndex];
+  auto task = this->tasks.at(taskIndex);
   assert(task != nullptr);
 
   /*
@@ -913,11 +918,16 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
   auto loopSCCDAG = sccManager->getSCCDAG();
 
   /*
+   * Fetch the user associated to the task.
+   */
+  auto userID = this->fromTaskIDToUserID.at(task->getID());
+  auto envUser = this->envBuilder->getUser(userID);
+
+  /*
    * Iterate over live-out variables and inject stores at the end of the
    * execution of the function of the task to propagate the new live-out values
    * back to the caller of the parallelized loop.
    */
-  auto envUser = this->envBuilder->getUser(taskIndex);
   for (auto envID : envUser->getEnvIDsOfLiveOutVars()) {
 
     /*
@@ -1523,7 +1533,7 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
    * If there are more exit blocks, then we need to specify which one has been
    * taken.
    */
-  auto task = this->tasks[taskIndex];
+  auto task = this->tasks.at(taskIndex);
   if (task->getNumberOfLastBlocks() == 1) {
     return;
   }
@@ -1535,6 +1545,12 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
   assert(environment != nullptr);
 
   /*
+   * Fetch the user associated to the task.
+   */
+  auto userID = this->fromTaskIDToUserID.at(task->getID());
+  auto envUser = this->envBuilder->getUser(userID);
+
+  /*
    * There are multiple exit blocks.
    *
    * Fetch the pointer of the location where the exit block ID taken will be
@@ -1542,7 +1558,6 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
    */
   auto exitBlockID = environment->getExitBlockID();
   assert(exitBlockID != -1);
-  auto envUser = this->envBuilder->getUser(taskIndex);
   auto entryTerminator = task->getEntry()->getTerminator();
   IRBuilder<> entryBuilder(entryTerminator);
 

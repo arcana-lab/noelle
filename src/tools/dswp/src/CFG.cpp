@@ -60,7 +60,7 @@ void DSWP::generateLoopSubsetForStage(LoopDependenceInfo *LDI, int taskIndex) {
     }
   }
 
-  this->cloneSequentialLoopSubset(LDI, task->getID(), subset);
+  this->cloneSequentialLoopSubset(LDI, taskIndex, subset);
 
   /*
    * Create an empty basic block for all basic blocks in the loop to be

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,18 +21,13 @@
  */
 #include "noelle/tools/DSWPTask.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
-DSWPTask::DSWPTask(uint32_t ID, FunctionType *taskSignature, Module &M)
-  : Task{ ID, taskSignature, M },
+DSWPTask::DSWPTask(FunctionType *taskSignature, Module &M)
+  : Task{ taskSignature, M },
     stageSCCs{},
     clonableSCCs{} {
 
-  return;
-}
-
-void DSWPTask::extractFuncArgs(void) {
   auto argIter = this->F->arg_begin();
   this->envArg = (Value *)&*(argIter++);
   this->queueArg = (Value *)&*(argIter++);
@@ -41,3 +36,5 @@ void DSWPTask::extractFuncArgs(void) {
 
   return;
 }
+
+} // namespace llvm::noelle

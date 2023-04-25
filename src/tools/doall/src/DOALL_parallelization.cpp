@@ -84,6 +84,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
    * Generate an empty task for the parallel DOALL execution.
    */
   auto chunkerTask = new DOALLTask(taskSignature, *this->n.getProgram());
+  this->fromTaskIDToUserID[chunkerTask->getID()] = 0;
   this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { chunkerTask });
   this->numTaskInstances = maxCores;
 
@@ -224,7 +225,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Add the final return to the single task's exit block.
    */
-  IRBuilder<> exitB(tasks[0]->getExit());
+  IRBuilder<> exitB(chunkerTask->getExit());
   exitB.CreateRetVoid();
 
   /*

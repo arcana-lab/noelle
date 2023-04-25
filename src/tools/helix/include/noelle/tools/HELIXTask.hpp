@@ -54,7 +54,6 @@ public:
    */
   std::set<CallInst *> waits;
   std::set<CallInst *> signals;
-
-  void extractFuncArgs() override;
 };
+
 } // namespace llvm::noelle
