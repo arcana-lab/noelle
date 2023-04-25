@@ -23,14 +23,21 @@
 
 namespace llvm::noelle {
 
-Task::Task(uint32_t ID, FunctionType *taskSignature, Module &M) : ID{ ID } {
+Task::Task(FunctionType *taskSignature, Module &M)
+  : instanceIndexV{ nullptr },
+    envArg{ nullptr } {
+
+  /*
+   * Make task IDs unique
+   */
+  this->ID = Task::currentID;
+  Task::currentID++;
 
   /*
    * Create the name of the function.
    */
   auto functionName = std::string{ "noelle_task_" };
-  functionName.append(std::to_string(Task::currentID));
-  Task::currentID++;
+  functionName.append(std::to_string(this->ID));
 
   /*
    * Create the empty body of the task.

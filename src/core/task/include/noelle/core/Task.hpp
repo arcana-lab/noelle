@@ -27,7 +27,7 @@ namespace llvm::noelle {
 
 class Task {
 public:
-  Task(uint32_t ID, FunctionType *taskSignature, Module &M);
+  Task(FunctionType *taskSignature, Module &M);
 
   /*
    * IDs
@@ -131,8 +131,6 @@ public:
    * Dependences with the outside code
    */
   Value *getEnvironment(void) const;
-
-  virtual void extractFuncArgs(void) = 0;
 
   virtual ~Task();
 
