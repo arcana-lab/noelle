@@ -688,7 +688,7 @@ bool AllocAA::canPointToTheSameObject_ArgumentAttributes(Value *p1, Value *p2) {
 
 // Next there is code to register your pass to "opt"
 char AllocAA::ID = 0;
-static RegisterPass<AllocAA> X("AllocAA", "Dependence Graph modifier");
+static RegisterPass<AllocAA> X("AllocAA", "AllocAA");
 
 // Next there is code to register your pass to "clang"
 static AllocAA *_PassMaker = NULL;

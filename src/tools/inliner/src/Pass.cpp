@@ -50,7 +50,7 @@ void Inliner::getAnalysisUsage(AnalysisUsage &AU) const {
 
 // Next there is code to register your pass to "opt"
 char Inliner::ID = 0;
-static RegisterPass<Inliner> X("inliner", "Dependence Graph modifier");
+static RegisterPass<Inliner> X("inliner", "Inliner");
 
 // Next there is code to register your pass to "clang"
 static Inliner *_PassMaker = NULL;
