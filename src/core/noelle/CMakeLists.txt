@@ -12,7 +12,6 @@ add_subdirectory(src)
 install(
   FILES
   include/noelle/core/Noelle.hpp
-  include/noelle/core/FunctionsManager.hpp
   DESTINATION 
   include/noelle/core
   )

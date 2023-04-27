@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,7 @@ public:
   /*
    * Constructor
    */
-  DSWPTask(uint32_t ID, FunctionType *taskSignature, Module &M);
+  DSWPTask(FunctionType *taskSignature, Module &M);
 
   /*
    * DSWP specific task function arguments
@@ -70,8 +70,6 @@ public:
    * Stores information on queue/env usage within stage
    */
   unordered_map<int, std::unique_ptr<QueueInstrs>> queueInstrMap;
-
-  void extractFuncArgs(void) override;
 };
 
 struct QueueInfo {

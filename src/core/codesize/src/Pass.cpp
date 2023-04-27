@@ -20,7 +20,6 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "CodeSize.hpp"
-#include "noelle/core/Noelle.hpp"
 
 namespace llvm::noelle {
 
@@ -29,7 +28,6 @@ bool CodeSize::doInitialization(Module &M) {
 }
 
 void CodeSize::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<Noelle>();
   return;
 }
 

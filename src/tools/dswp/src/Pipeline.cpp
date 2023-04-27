@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,10 +19,9 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DSWP.hpp"
+#include "noelle/tools/DSWP.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void DSWP::generateStagesFromPartitionedSCCs(LoopDependenceInfo *LDI) {
   assert(LDI != nullptr);
@@ -37,7 +36,7 @@ void DSWP::generateStagesFromPartitionedSCCs(LoopDependenceInfo *LDI) {
    */
   std::vector<Task *> techniqueTasks;
   auto depthOrdered = this->partitioner->getDepthOrderedSets();
-  auto taskID = 0;
+  auto currentUserID = 0;
 
   /*
    * Create the tasks.
@@ -60,8 +59,9 @@ void DSWP::generateStagesFromPartitionedSCCs(LoopDependenceInfo *LDI) {
     /*
      * Create task (stage), populating its SCCs
      */
-    auto task = new DSWPTask(taskID, taskSignature, *program);
-    taskID++;
+    auto task = new DSWPTask(taskSignature, *program);
+    this->fromTaskIDToUserID[task->getID()] = currentUserID;
+    currentUserID++;
     techniqueTasks.push_back(task);
     for (auto scc : subset->sccs) {
       task->stageSCCs.insert(scc);
@@ -250,3 +250,5 @@ Value *DSWP::createQueueSizesArrayFromStages(LoopDependenceInfo *LDI,
       funcBuilder.CreateBitCast(queuesAlloca,
                                 PointerType::getUnqual(par.int64)));
 }
+
+} // namespace llvm::noelle

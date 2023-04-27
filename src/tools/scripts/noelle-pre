@@ -85,3 +85,8 @@ fi
 cmdToExecute="noelle-simplification $notOptions -o $notOptions"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
+
+# Clean up the metadata that is no longer valid
+cmdToExecute="noelle-meta-clean $notOptions $notOptions"
+echo $cmdToExecute ;
+eval $cmdToExecute ;

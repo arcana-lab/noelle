@@ -23,14 +23,21 @@
 
 namespace llvm::noelle {
 
-Task::Task(uint32_t ID, FunctionType *taskSignature, Module &M) : ID{ ID } {
+Task::Task(FunctionType *taskSignature, Module &M)
+  : instanceIndexV{ nullptr },
+    envArg{ nullptr } {
+
+  /*
+   * Make task IDs unique
+   */
+  this->ID = Task::currentID;
+  Task::currentID++;
 
   /*
    * Create the name of the function.
    */
   auto functionName = std::string{ "noelle_task_" };
-  functionName.append(std::to_string(Task::currentID));
-  Task::currentID++;
+  functionName.append(std::to_string(this->ID));
 
   /*
    * Create the empty body of the task.
@@ -248,6 +255,20 @@ BasicBlock *Task::cloneAndAddBasicBlock(
   }
 
   return cloneBB;
+}
+
+void Task::cloneAndAddBasicBlocks(
+    const std::unordered_set<BasicBlock *> &bbs,
+    std::function<bool(Instruction *origInst)> filter) {
+
+  /*
+   * Clone all the basic blocks given as input.
+   */
+  for (auto originBB : bbs) {
+    this->cloneAndAddBasicBlock(originBB, filter);
+  }
+
+  return;
 }
 
 Value *Task::getTaskInstanceID(void) const {

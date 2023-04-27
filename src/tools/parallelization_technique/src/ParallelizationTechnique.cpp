@@ -233,7 +233,6 @@ BasicBlock *ParallelizationTechnique::
     performReductionToAllReducableLiveOutVariables(
         LoopDependenceInfo *LDI,
         Value *numberOfThreadsExecuted) {
-  IRBuilder<> builder{ this->entryPointOfParallelizedLoop };
 
   /*
    * Fetch the loop headers.
@@ -257,8 +256,8 @@ BasicBlock *ParallelizationTechnique::
    * Collect reduction operation information needed to accumulate reducable
    * variables after parallelization execution
    */
-  std::unordered_map<uint32_t, Instruction::BinaryOps> reducableBinaryOps;
-  std::unordered_map<uint32_t, Value *> initialValues;
+  std::unordered_map<uint32_t, BinaryReductionSCC *> reductions;
+  std::map<ReductionSCC *, Value *> fromReductionToProducer;
   for (auto envID : environment->getEnvIDsOfLiveOutVars()) {
 
     /*
@@ -281,22 +280,30 @@ BasicBlock *ParallelizationTechnique::
     assert(producerSCCAttributes != nullptr);
 
     /*
-     * Get the information about the reduction.
+     * Keep track about the reduction.
      */
-    reducableBinaryOps[envID] = producerSCCAttributes->getReductionOperation();
-    auto initialValue = producerSCCAttributes->getInitialValue();
-    initialValues[envID] =
-        this->castToCorrectReducibleType(builder,
-                                         initialValue,
-                                         producer->getType());
+    reductions[envID] = producerSCCAttributes;
+    fromReductionToProducer[producerSCCAttributes] = producer;
   }
 
+  /*
+   * Generate the code to perform the reduction.
+   */
+  IRBuilder<> builder{ this->entryPointOfParallelizedLoop };
+  auto castF =
+      [this, &builder, &fromReductionToProducer](ReductionSCC *red) -> Value * {
+    auto p = fromReductionToProducer.at(red);
+    auto initialValue = red->getInitialValue();
+    auto i =
+        this->castToCorrectReducibleType(builder, initialValue, p->getType());
+    return i;
+  };
   auto afterReductionB = this->envBuilder->reduceLiveOutVariables(
       this->entryPointOfParallelizedLoop,
       builder,
-      reducableBinaryOps,
-      initialValues,
-      numberOfThreadsExecuted);
+      reductions,
+      numberOfThreadsExecuted,
+      castF);
 
   /*
    * If reduction occurred, then all environment loads to propagate live outs
@@ -380,11 +387,6 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks(
     tasks.push_back(task);
 
     /*
-     * Set the formal arguments of the task.
-     */
-    task->extractFuncArgs();
-
-    /*
      * Fetch the entry and exit basic blocks of the current task.
      */
     auto entryBB = task->getEntry();
@@ -418,7 +420,7 @@ void ParallelizationTechnique::cloneSequentialLoop(LoopDependenceInfo *LDI,
   /*
    * Fetch the task.
    */
-  auto task = this->tasks[taskIndex];
+  auto task = this->tasks.at(taskIndex);
 
   /*
    * Code to filter out instructions we don't want to clone.
@@ -437,13 +439,7 @@ void ParallelizationTechnique::cloneSequentialLoop(LoopDependenceInfo *LDI,
    * Clone all basic blocks of the original loop
    */
   auto topLoop = LDI->getLoopStructure();
-  for (auto originBB : topLoop->getBasicBlocks()) {
-
-    /*
-     * Clone the basic block.
-     */
-    task->cloneAndAddBasicBlock(originBB, filter);
-  }
+  task->cloneAndAddBasicBlocks(topLoop->getBasicBlocks(), filter);
 }
 
 void ParallelizationTechnique::cloneSequentialLoopSubset(
@@ -454,7 +450,7 @@ void ParallelizationTechnique::cloneSequentialLoopSubset(
   /*
    * Fetch the task.
    */
-  auto task = tasks[taskIndex];
+  auto task = tasks.at(taskIndex);
 
   /*
    * Clone a portion of the original loop (determined by a set of SCCs
@@ -487,13 +483,22 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
     int taskIndex) {
 
   /*
-   * Fetch the task and other loop-specific abstractions.
+   * Fetch the task.
    */
-  auto task = this->tasks[taskIndex];
+  auto task = this->tasks.at(taskIndex);
   assert(task != nullptr);
+
+  /*
+   * Fetch the user associated to the task.
+   */
+  auto userID = this->fromTaskIDToUserID.at(task->getID());
+  auto envUser = this->envBuilder->getUser(userID);
+
+  /*
+   * Fetch loop-specific abstractions.
+   */
   auto rootLoop = LDI->getLoopStructure();
   auto memoryCloningAnalysis = LDI->getMemoryCloningAnalysis();
-  auto envUser = this->envBuilder->getUser(taskIndex);
 
   /*
    * Fetch the environment of the loop
@@ -826,17 +831,18 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables(
   /*
    * Fetch the task.
    */
-  auto task = this->tasks[taskIndex];
+  auto task = this->tasks.at(taskIndex);
+
+  /*
+   * Fetch the user associated to the task.
+   */
+  auto userID = this->fromTaskIDToUserID.at(task->getID());
+  auto envUser = this->envBuilder->getUser(userID);
 
   /*
    * Fetch the environment of the loop.
    */
   auto env = LDI->getEnvironment();
-
-  /*
-   * Fetch the user of the environment attached to the task.
-   */
-  auto envUser = this->envBuilder->getUser(taskIndex);
 
   /*
    * Generate the loads to load values from the live-in environment variables.
@@ -889,7 +895,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
   /*
    * Fetch the requested task.
    */
-  auto task = this->tasks[taskIndex];
+  auto task = this->tasks.at(taskIndex);
   assert(task != nullptr);
 
   /*
@@ -919,11 +925,16 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
   auto loopSCCDAG = sccManager->getSCCDAG();
 
   /*
+   * Fetch the user associated to the task.
+   */
+  auto userID = this->fromTaskIDToUserID.at(task->getID());
+  auto envUser = this->envBuilder->getUser(userID);
+
+  /*
    * Iterate over live-out variables and inject stores at the end of the
    * execution of the function of the task to propagate the new live-out values
    * back to the caller of the parallelized loop.
    */
-  auto envUser = this->envBuilder->getUser(taskIndex);
   for (auto envID : envUser->getEnvIDsOfLiveOutVars()) {
 
     /*
@@ -1514,9 +1525,10 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
     int taskIndex) {
 
   /*
-   * Fetch the metadata manager
+   * Fetch the NOELLE's managers
    */
   auto mm = this->noelle.getMetadataManager();
+  auto tm = this->noelle.getTypesManager();
 
   /*
    * Fetch the program.
@@ -1528,7 +1540,7 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
    * If there are more exit blocks, then we need to specify which one has been
    * taken.
    */
-  auto task = this->tasks[taskIndex];
+  auto task = this->tasks.at(taskIndex);
   if (task->getNumberOfLastBlocks() == 1) {
     return;
   }
@@ -1540,6 +1552,12 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
   assert(environment != nullptr);
 
   /*
+   * Fetch the user associated to the task.
+   */
+  auto userID = this->fromTaskIDToUserID.at(task->getID());
+  auto envUser = this->envBuilder->getUser(userID);
+
+  /*
    * There are multiple exit blocks.
    *
    * Fetch the pointer of the location where the exit block ID taken will be
@@ -1547,7 +1565,6 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
    */
   auto exitBlockID = environment->getExitBlockID();
   assert(exitBlockID != -1);
-  auto envUser = this->envBuilder->getUser(taskIndex);
   auto entryTerminator = task->getEntry()->getTerminator();
   IRBuilder<> entryBuilder(entryTerminator);
 
@@ -1558,7 +1575,7 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
    * Add a store instruction to specify to the code outside the parallelized
    * loop which exit block is taken.
    */
-  auto int32 = IntegerType::get(program->getContext(), 32);
+  auto int32 = tm->getIntegerType(32);
   for (int i = 0; i < task->getNumberOfLastBlocks(); ++i) {
     auto bb = task->getLastBlock(i);
     auto term = bb->getTerminator();

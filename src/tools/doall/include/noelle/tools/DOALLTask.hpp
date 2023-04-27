@@ -48,7 +48,6 @@ public:
   CmpInst *cloneOfOriginalCmp;
   BranchInst *cloneOfOriginalBr;
   PHINode *outermostLoopIV;
-
-  void extractFuncArgs() override;
 };
+
 } // namespace llvm::noelle

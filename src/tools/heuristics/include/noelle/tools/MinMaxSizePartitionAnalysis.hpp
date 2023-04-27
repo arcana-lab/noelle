@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 - 2022  Simone Campanoni
+ * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,47 +19,36 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "CodeSize.hpp"
-#include "noelle/core/Noelle.hpp"
+#pragma once
+
+#include "llvm/IR/Function.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Instructions.h"
+
+#include "noelle/core/SCC.hpp"
+#include "noelle/core/SCCDAGPartition.hpp"
+#include "noelle/core/SCCDAGAttrs.hpp"
+
+#include "PartitionCostAnalysis.hpp"
+
+using namespace std;
 
 namespace llvm::noelle {
 
-CodeSize::CodeSize() : ModulePass{ ID } {}
+class MinMaxSizePartitionAnalysis : public PartitionCostAnalysis {
+public:
+  MinMaxSizePartitionAnalysis(
+      InvocationLatency &IL,
+      SCCDAGPartitioner &p,
+      SCCDAGAttrs &attrs,
+      int cores,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized,
+      Verbosity v)
+    : PartitionCostAnalysis{ IL, p, attrs, cores, canBeRematerialized, v } {};
 
-bool CodeSize::runOnModule(Module &M) {
-
-  /*
-   * Fetch NOELLE
-   */
-  auto &noelle = getAnalysis<Noelle>();
-
-  /*
-   * Compute the code size.
-   */
-  uint64_t s = 0;
-  for (auto &F : M) {
-    for (auto &bb : F) {
-      for (auto &I : bb) {
-
-        /*
-         * Check the current instruction
-         */
-        if (isa<PHINode>(&I)) {
-          continue;
-        }
-        if (auto brInst = dyn_cast<BranchInst>(&I)) {
-          if (brInst->isUnconditional()) {
-            continue;
-          }
-        }
-
-        s++;
-      }
-    }
-  }
-  outs() << s << "\n";
-
-  return false;
-}
-
+  void checkIfShouldMerge(
+      SCCSet *sA,
+      SCCSet *sB,
+      std::function<bool(GenericSCC *scc)> canBeRematerialized);
+};
 } // namespace llvm::noelle

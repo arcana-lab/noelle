@@ -73,7 +73,6 @@ bool LoopMetadataPass::setIDs(std::vector<LoopStructure *> &loopStructures) {
   for (auto loopStructure : loopStructures) {
     loopStructure->setID(loopID);
     modified = true;
-    errs() << "LOOP_ID " << loopID << "\n";
     loopID++;
   }
 

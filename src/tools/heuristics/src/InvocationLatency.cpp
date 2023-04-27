@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "InvocationLatency.hpp"
+#include "noelle/tools/InvocationLatency.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;

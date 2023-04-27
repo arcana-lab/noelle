@@ -378,16 +378,15 @@ void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> builder) {
 BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
     BasicBlock *bb,
     IRBuilder<> builder,
-    const std::unordered_map<uint32_t, Instruction::BinaryOps>
-        &reducableBinaryOps,
-    const std::unordered_map<uint32_t, Value *> &initialValues,
-    Value *numberOfThreadsExecuted) {
+    const std::unordered_map<uint32_t, BinaryReductionSCC *> &reductions,
+    Value *numberOfThreadsExecuted,
+    std::function<Value *(ReductionSCC *scc)> castingInitialValue) {
   assert(bb != nullptr);
 
   /*
    * Check if there are any live-out variable that needs to be reduced.
    */
-  if (initialValues.size() == 0) {
+  if (reductions.size() == 0) {
     return bb;
   }
 
@@ -433,10 +432,16 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
    */
   std::vector<PHINode *> phiNodes;
   auto count = 0;
-  for (auto envIDInitValue : initialValues) {
+  for (auto envIDInitValue : reductions) {
     auto envID = envIDInitValue.first;
     auto envIndex = this->envIDToIndex[envID];
-    auto initialValue = envIDInitValue.second;
+    auto red = envIDInitValue.second;
+    auto initialValue = red->getInitialValue();
+
+    /*
+     * Cast initial value.
+     */
+    initialValue = castingInitialValue(red);
 
     /*
      * Create a PHI node for the current reduced variable.
@@ -465,7 +470,7 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
    */
   count = 0;
   std::vector<Value *> loadedValues;
-  for (auto envIDInitValue : initialValues) {
+  for (auto envIDInitValue : reductions) {
     auto envID = envIDInitValue.first;
     auto envIndex = this->envIDToIndex[envID];
 
@@ -508,7 +513,7 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
    * Accumulate values to the appropriate accumulators.
    */
   count = 0;
-  for (auto envIDInitValue : initialValues) {
+  for (auto envIDInitValue : reductions) {
     auto envID = envIDInitValue.first;
     auto envIndex = this->envIDToIndex[envID];
 
@@ -516,7 +521,8 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
      * Fetch the information about the operation to perform to accumulate
      * values.
      */
-    auto binOp = reducableBinaryOps.at(envID);
+    auto red = reductions.at(envID);
+    auto binOp = red->getReductionOperation();
 
     /*
      * Fetch the accumulator, which is the PHI node related to the current
@@ -543,7 +549,7 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
    * Fix the PHI nodes of the accumulators.
    */
   count = 0;
-  for (auto envIDInitValue : initialValues) {
+  for (auto envIDInitValue : reductions) {
     auto envID = envIDInitValue.first;
     auto envIndex = this->envIDToIndex[envID];
 
