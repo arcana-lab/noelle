@@ -122,101 +122,97 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
   auto sccdag = sccManager->getSCCDAG();
 
   /*
-   * Calculate chunking for periodic variable SCCs.
+   * Generates code for periodic variable SCCs to match the DOALL chunking
+   * strategy.
    */
   for (auto scc : sccdag->getSCCs()) {
     auto sccInfo = sccManager->getSCCAttrs(scc);
     auto periodicVariableSCC = dyn_cast<PeriodicVariableSCC>(sccInfo);
     if (periodicVariableSCC == nullptr)
       continue;
-    // errs() << "DOALL periodic variable:\n";
-    // errs() << "periodic variable with initial value " <<
-    // *periodicVariableSCC->getInitialValue() << "\n"; errs() << " and period "
-    // << *periodicVariableSCC->getPeriod() << "\n"; errs() << " and step " <<
-    // *periodicVariableSCC->getStepValue() << "\n";
+    // errs() << "DOALL: periodic variable with initial value " <<
+    // *periodicVariableSCC->getInitialValue() << "\n"; errs() << "       and
+    // period " << *periodicVariableSCC->getPeriod() << "\n"; errs() << " and
+    // step " << *periodicVariableSCC->getStepValue() << "\n";
 
     /*
-     * Calculate initial value for task.
-     * This value is: initialValue + step_size * ((task_id * chunk_size) %
-     * period)
+     * Retrieve the relevant values of the periodic variable SCC.
      */
     auto initialValue = periodicVariableSCC->getInitialValue();
     auto period = periodicVariableSCC->getPeriod();
     auto step = periodicVariableSCC->getStepValue();
-    for (auto phi : sccInfo->getPHIs()) {
-      if (phi->getNumIncomingValues() != 2)
-        continue;
-      // sccInfo->getSCC()->print(errs());
-      unsigned entryBlock = 1;
-      BasicBlock *loopBlock =
-          task->getCloneOfOriginalBasicBlock(phi->getIncomingBlock(0));
-      Value *loopValue = phi->getIncomingValue(0);
-      if (phi->getIncomingValue(0) == initialValue) {
-        entryBlock = 0;
-        loopBlock =
-            task->getCloneOfOriginalBasicBlock(phi->getIncomingBlock(1));
-        loopValue = phi->getIncomingValue(1);
-      } else if (phi->getIncomingValue(1) != initialValue)
-        continue;
+    auto phi =
+        periodicVariableSCC->getPhiThatAccumulatesValuesBetweenLoopIterations();
+    auto taskPHI = cast<PHINode>(task->getCloneOfOriginalInstruction(phi));
 
-      auto taskPHI = cast<PHINode>(task->getCloneOfOriginalInstruction(phi));
-      auto newInitialValue = entryBuilder.CreateAdd(
-          initialValue,
-          entryBuilder.CreateTrunc(
-              entryBuilder.CreateMul(
-                  step,
-                  entryBuilder.CreateTrunc(
-                      entryBuilder.CreateSRem(
-                          entryBuilder.CreateMul(task->coreArg,
-                                                 task->chunkSizeArg,
-                                                 "coreIdx_X_chunkSize"),
-                          period,
-                          "numSteps"),
-                      step->getType()),
-                  "stepSize_X_steps"),
-              initialValue->getType()),
-          "initialValuePlusStep");
-      taskPHI->setIncomingValue(entryBlock, newInitialValue);
+    auto entryBlock = (phi->getIncomingValue(0) == initialValue) ? 0 : 1;
+    auto loopBlock = 1 - entryBlock;
+    auto taskLoopBlock =
+        task->getCloneOfOriginalBasicBlock(phi->getIncomingBlock(loopBlock));
+    auto loopValue = phi->getIncomingValue(loopBlock);
+    auto taskLoopValue =
+        task->getCloneOfOriginalInstruction(cast<Instruction>(loopValue));
 
-      /*
-       * Determine value of the start of this core's next chunk
-       * from the beginning of the next core's chunk.
-       * Formula: next_core_initialValue + (step_size * (num_cores - 1) *
-       * chunk_size) % period
-       */
-      auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);
-      auto chunkStep = entryBuilder.CreateMul(
-          entryBuilder.CreateTrunc(
-              entryBuilder.CreateMul(
-                  entryBuilder.CreateSub(task->numCoresArg,
-                                         onesValueForChunking,
-                                         "numCoresMinus1"),
-                  task->chunkSizeArg,
-                  "numCoresMinus1_X_chunkSize"),
-              step->getType()),
-          step,
-          "chunkStep");
+    /*
+     * Calculate the periodic variable's initial value for the task.
+     * This value is: initialValue + step_size * ((task_id * chunk_size) %
+     * period)
+     */
+    auto coreIDxChunkSize = entryBuilder.CreateMul(task->coreArg,
+                                                   task->chunkSizeArg,
+                                                   "coreIdx_X_chunkSize");
+    auto numSteps = entryBuilder.CreateTrunc(
+        entryBuilder.CreateSRem(coreIDxChunkSize, period, "numSteps"),
+        step->getType());
+    auto numStepsxStepSize = entryBuilder.CreateTrunc(
+        entryBuilder.CreateMul(step, numSteps, "stepSize_X_numSteps"),
+        initialValue->getType());
+    auto chunkInitialValue = entryBuilder.CreateAdd(initialValue,
+                                                    numStepsxStepSize,
+                                                    "initialValuePlusStep");
+    taskPHI->setIncomingValue(entryBlock, chunkInitialValue);
 
-      auto taskLoopValue =
-          task->getCloneOfOriginalInstruction(cast<Instruction>(loopValue));
-      IRBuilder<> loopBuilder(loopBlock);
-      loopBuilder.SetInsertPoint(loopBlock->getTerminator());
-      auto nextChunkValue = loopBuilder.CreateSRem(
-          loopBuilder.CreateAdd(
-              taskLoopValue,
-              loopBuilder.CreateTrunc(chunkStep, taskLoopValue->getType())),
-          loopBuilder.CreateTrunc(period, taskLoopValue->getType()),
-          "nextChunkValue");
+    /*
+     * Determine value of the start of this core's next chunk
+     * from the beginning of the next core's chunk.
+     * Formula: (next_chunk_initialValue + (step_size * (num_cores - 1) *
+     * chunk_size)) % period
+     */
+    auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);
+    auto chunkStepSize = entryBuilder.CreateTrunc(
+        entryBuilder.CreateMul(entryBuilder.CreateSub(task->numCoresArg,
+                                                      onesValueForChunking,
+                                                      "numCoresMinus1"),
+                               task->chunkSizeArg,
+                               "numCoresMinus1_X_chunkSize"),
+        step->getType());
+    auto chunkStep = entryBuilder.CreateMul(chunkStepSize, step, "chunkStep");
 
-      auto isChunkCompleted =
-          cast<SelectInst>(chunkPHI->getIncomingValueForBlock(loopBlock))
-              ->getCondition();
-      auto nextValue = loopBuilder.CreateSelect(isChunkCompleted,
-                                                nextChunkValue,
-                                                taskLoopValue,
-                                                "nextValue");
-      taskPHI->setIncomingValueForBlock(loopBlock, nextValue);
-    }
+    /*
+     * Add the instructions for the calculation of the next chunk's start value
+     * in the loop's body.
+     */
+    IRBuilder<> loopBuilder(taskLoopBlock);
+    loopBuilder.SetInsertPoint(taskLoopBlock->getTerminator());
+    auto nextChunkValue = loopBuilder.CreateSRem(
+        loopBuilder.CreateAdd(
+            taskLoopValue,
+            loopBuilder.CreateTrunc(chunkStep, taskLoopValue->getType())),
+        loopBuilder.CreateTrunc(period, taskLoopValue->getType()),
+        "nextChunkValue");
+
+    /*
+     * Determine if we have reached the end of the chunk, and choose the
+     * periodic variable's next value accordingly.
+     */
+    auto isChunkCompleted =
+        cast<SelectInst>(chunkPHI->getIncomingValueForBlock(taskLoopBlock))
+            ->getCondition();
+    auto nextValue = loopBuilder.CreateSelect(isChunkCompleted,
+                                              nextChunkValue,
+                                              taskLoopValue,
+                                              "nextValue");
+    taskPHI->setIncomingValueForBlock(taskLoopBlock, nextValue);
   }
 
   /*
