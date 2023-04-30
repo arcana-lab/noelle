@@ -87,6 +87,18 @@ void BinaryReductionSCC::setBinaryReductionInformation(Value *initialValue,
    * Set the reduction operation.
    */
   auto firstAccumI = *(accumulators.begin());
+  if (firstAccumI == nullptr) {
+    errs()
+        << "BinaryReductionSCC: Error: A binary reduction SCC relies on an unsupported reduction operation:\n ";
+    errs() << "BinaryReductionSCC: SCC =\n";
+    this->scc->print(errs());
+    errs() << "\n";
+    errs() << "BinaryReductionSCC: Loop =\n";
+    loop.print(errs());
+    errs() << "\n";
+    assert(firstAccumI != nullptr);
+  }
+
   auto binOpCode = firstAccumI->getOpcode();
   this->reductionOperation =
       accumOpInfo.accumOpForType(binOpCode, this->headerAccumulator->getType());
