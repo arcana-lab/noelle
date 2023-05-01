@@ -40,6 +40,31 @@ struct CAT : public ModulePass {
     auto loopForest = noelle.organizeLoopsInTheirNestingForest(*loopStructures);
 
     /*
+     * Fetch main
+     */
+    auto fm = noelle.getFunctionsManager();
+    auto mainF = fm->getEntryFunction();
+
+    /*
+     * Check the loop that contains each instruction of main.
+     */
+    errs() << "Check loops that contain instructions in main\n";
+    for (auto &inst : instructions(mainF)) {
+      errs() << "  Instruction: " << inst << "\n";
+
+      /*
+       * Fetch the loop.
+       */
+      auto loop = loopForest->getInnermostLoopThatContains(&inst);
+      if (loop == nullptr) {
+        errs() << "    The instruction does not belong in any loop\n";
+        continue;
+      }
+
+      errs() << "    The instruction belongs to a loop\n";
+    }
+
+    /*
      * Iterate over the trees that compose the forest.
      */
     errs() << "Printing the loop forest\n";
