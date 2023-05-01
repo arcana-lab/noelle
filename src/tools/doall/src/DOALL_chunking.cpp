@@ -130,10 +130,14 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
     auto periodicVariableSCC = dyn_cast<PeriodicVariableSCC>(sccInfo);
     if (periodicVariableSCC == nullptr)
       continue;
-    // errs() << "DOALL: periodic variable with initial value " <<
-    // *periodicVariableSCC->getInitialValue() << "\n"; errs() << "       and
-    // period " << *periodicVariableSCC->getPeriod() << "\n"; errs() << " and
-    // step " << *periodicVariableSCC->getStepValue() << "\n";
+
+    if (this->verbose >= Verbosity::Maximal) {
+      errs()
+          << "DOALL: periodic variable with initial value "
+          << *periodicVariableSCC->getInitialValue() << "\n"
+          << "       and period " << *periodicVariableSCC->getPeriod() << "\n"
+          << "       and step " << *periodicVariableSCC->getStepValue() << "\n";
+    }
 
     /*
      * Retrieve the relevant values of the periodic variable SCC.
@@ -145,8 +149,16 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
         periodicVariableSCC->getPhiThatAccumulatesValuesBetweenLoopIterations();
     auto taskPHI = cast<PHINode>(task->getCloneOfOriginalInstruction(phi));
 
-    auto entryBlock = (phi->getIncomingValue(0) == initialValue) ? 0 : 1;
-    auto loopBlock = 1 - entryBlock;
+    unsigned entryBlock, loopBlock;
+    if (phi->getIncomingValue(0) == initialValue) {
+      entryBlock = 0;
+      loopBlock = 1;
+    } else {
+      assert(phi->getIncomingValue(1) == initialValue
+             && "DOALL: periodic variable SCC selected the wrong PHINode!");
+      entryBlock = 1;
+      loopBlock = 0;
+    }
     auto taskLoopBlock =
         task->getCloneOfOriginalBasicBlock(phi->getIncomingBlock(loopBlock));
     auto loopValue = phi->getIncomingValue(loopBlock);
@@ -161,14 +173,15 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
     auto coreIDxChunkSize = entryBuilder.CreateMul(task->coreArg,
                                                    task->chunkSizeArg,
                                                    "coreIdx_X_chunkSize");
-    auto numSteps = entryBuilder.CreateTrunc(
-        entryBuilder.CreateSRem(coreIDxChunkSize, period, "numSteps"),
-        step->getType());
-    auto numStepsxStepSize = entryBuilder.CreateTrunc(
-        entryBuilder.CreateMul(step, numSteps, "stepSize_X_numSteps"),
-        initialValue->getType());
+    auto numSteps =
+        entryBuilder.CreateSRem(coreIDxChunkSize, period, "numSteps");
+    auto numStepsTrunc = entryBuilder.CreateTrunc(numSteps, step->getType());
+    auto numStepsxStepSize =
+        entryBuilder.CreateMul(step, numStepsTrunc, "stepSize_X_numSteps");
+    auto numStepsxStepSizeTrunc =
+        entryBuilder.CreateTrunc(numStepsxStepSize, initialValue->getType());
     auto chunkInitialValue = entryBuilder.CreateAdd(initialValue,
-                                                    numStepsxStepSize,
+                                                    numStepsxStepSizeTrunc,
                                                     "initialValuePlusStep");
     taskPHI->setIncomingValue(entryBlock, chunkInitialValue);
 
@@ -179,14 +192,16 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
      * chunk_size)) % period
      */
     auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);
-    auto chunkStepSize = entryBuilder.CreateTrunc(
-        entryBuilder.CreateMul(entryBuilder.CreateSub(task->numCoresArg,
-                                                      onesValueForChunking,
-                                                      "numCoresMinus1"),
-                               task->chunkSizeArg,
-                               "numCoresMinus1_X_chunkSize"),
-        step->getType());
-    auto chunkStep = entryBuilder.CreateMul(chunkStepSize, step, "chunkStep");
+    auto numCoresMinus1 = entryBuilder.CreateSub(task->numCoresArg,
+                                                 onesValueForChunking,
+                                                 "numCoresMinus1");
+    auto chunkStepSize = entryBuilder.CreateMul(numCoresMinus1,
+                                                task->chunkSizeArg,
+                                                "numCoresMinus1_X_chunkSize");
+    auto chunkStepSizeTrunc =
+        entryBuilder.CreateTrunc(chunkStepSize, step->getType());
+    auto chunkStep =
+        entryBuilder.CreateMul(chunkStepSizeTrunc, step, "chunkStep");
 
     /*
      * Add the instructions for the calculation of the next chunk's start value
@@ -194,12 +209,17 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
      */
     IRBuilder<> loopBuilder(taskLoopBlock);
     loopBuilder.SetInsertPoint(taskLoopBlock->getTerminator());
-    auto nextChunkValue = loopBuilder.CreateSRem(
-        loopBuilder.CreateAdd(
-            taskLoopValue,
-            loopBuilder.CreateTrunc(chunkStep, taskLoopValue->getType())),
-        loopBuilder.CreateTrunc(period, taskLoopValue->getType()),
-        "nextChunkValue");
+    auto chunkStepTrunc =
+        loopBuilder.CreateTrunc(chunkStep, taskLoopValue->getType());
+    auto nextChunkValueBeforeMod =
+        loopBuilder.CreateAdd(taskLoopValue,
+                              chunkStepTrunc,
+                              "nextChunkValueBeforeMod");
+    auto periodTrunc =
+        loopBuilder.CreateTrunc(period, taskLoopValue->getType());
+    auto nextChunkValue = loopBuilder.CreateSRem(nextChunkValueBeforeMod,
+                                                 periodTrunc,
+                                                 "nextChunkValue");
 
     /*
      * Determine if we have reached the end of the chunk, and choose the
