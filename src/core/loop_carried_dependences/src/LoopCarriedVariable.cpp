@@ -25,7 +25,7 @@
 namespace llvm::noelle {
 
 LoopCarriedVariable::LoopCarriedVariable(const LoopStructure &loop,
-                                         LoopForestNode *loopNode,
+                                         LoopTree *loopNode,
                                          PDG &loopDG,
                                          SCCDAG &sccdag,
                                          SCC &sccContainingVariable,

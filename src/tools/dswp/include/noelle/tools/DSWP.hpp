@@ -50,7 +50,7 @@ public:
   uint32_t getMinimumNumberOfIdleCores(void) const override;
 
   std::set<GenericSCC *> getClonableSCCs(SCCDAGAttrs *sccManager,
-                                         LoopForestNode *loopNode) const;
+                                         LoopTree *loopNode) const;
 
   std::string getName(void) const override;
 

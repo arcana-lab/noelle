@@ -155,7 +155,7 @@ void PDGStats::collectStatsForPotentialEdges(
     for (auto loopTree : loopForest->getTrees()) {
       auto visitor = [&totLoads,
                       &totStores,
-                      &totCalls](LoopForestNode *n, uint32_t level) -> bool {
+                      &totCalls](LoopTree *n, uint32_t level) -> bool {
         auto currentLoop = n->getLoop();
         for (auto inst : currentLoop->getInstructions()) {
           if (isa<LoadInst>(inst)) {
@@ -194,7 +194,7 @@ void PDGStats::printRefinedLoopGraphsForFunction(
   if (programLoops.find(&F) != programLoops.end()) {
     auto loopForest = programLoops[&F];
     for (auto loopTree : loopForest->getTrees()) {
-      auto visitor = [this, &lsToLDI, &loopCount, &F](LoopForestNode *n,
+      auto visitor = [this, &lsToLDI, &loopCount, &F](LoopTree *n,
                                                       uint32_t level) -> bool {
         /*
          * Fetch the loop.
@@ -237,7 +237,7 @@ void PDGStats::collectStatsForLoopEdges(
   if (programLoops.find(&F) != programLoops.end()) {
     auto loopForest = programLoops[&F];
     for (auto loopTree : loopForest->getTrees()) {
-      auto visitor = [this, &lsToLDI](LoopForestNode *n,
+      auto visitor = [this, &lsToLDI](LoopTree *n,
                                       uint32_t level) -> bool {
         /*
          * Fetch the loop.

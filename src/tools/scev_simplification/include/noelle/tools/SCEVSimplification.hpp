@@ -33,7 +33,7 @@ public:
 
   bool simplifyIVRelatedSCEVs(LoopDependenceInfo const &LDI);
 
-  bool simplifyIVRelatedSCEVs(LoopForestNode *rootLoopNode,
+  bool simplifyIVRelatedSCEVs(LoopTree *rootLoopNode,
                               InvariantManager *invariantManager,
                               InductionVariableManager *ivManager);
 
@@ -75,7 +75,7 @@ private:
   };
 
   void cacheIVInfo(IVCachedInfo &ivCache,
-                   LoopForestNode *rootLoopNode,
+                   LoopTree *rootLoopNode,
                    InductionVariableManager *ivManager);
 
   void searchForInstructionsDerivedFromMultipleIVs(
@@ -85,7 +85,7 @@ private:
 
   bool upCastIVRelatedInstructionsDerivingGEP(
       IVCachedInfo &ivCache,
-      LoopForestNode *rootLoopNode,
+      LoopTree *rootLoopNode,
       InductionVariableManager *ivManager,
       InvariantManager *invariantManager,
       std::unordered_set<GEPIndexDerivation *> gepDerivations);

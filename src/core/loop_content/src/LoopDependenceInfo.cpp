@@ -32,7 +32,7 @@ namespace llvm::noelle {
 LoopDependenceInfo::LoopDependenceInfo(
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
-    LoopForestNode *loopNode,
+    LoopTree *loopNode,
     Loop *l,
     DominatorSummary &DS,
     ScalarEvolution &SE)
@@ -51,7 +51,7 @@ LoopDependenceInfo::LoopDependenceInfo(
 LoopDependenceInfo::LoopDependenceInfo(
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
-    LoopForestNode *loopNode,
+    LoopTree *loopNode,
     Loop *l,
     DominatorSummary &DS,
     ScalarEvolution &SE,
@@ -66,7 +66,7 @@ LoopDependenceInfo::LoopDependenceInfo(
 LoopDependenceInfo::LoopDependenceInfo(
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
-    LoopForestNode *loopNode,
+    LoopTree *loopNode,
     Loop *l,
     DominatorSummary &DS,
     ScalarEvolution &SE,
@@ -88,7 +88,7 @@ LoopDependenceInfo::LoopDependenceInfo(
 LoopDependenceInfo::LoopDependenceInfo(
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
-    LoopForestNode *loopNode,
+    LoopTree *loopNode,
     Loop *l,
     DominatorSummary &DS,
     ScalarEvolution &SE,
@@ -105,7 +105,7 @@ LoopDependenceInfo::LoopDependenceInfo(
 LoopDependenceInfo::LoopDependenceInfo(
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
-    LoopForestNode *loopNode,
+    LoopTree *loopNode,
     Loop *l,
     DominatorSummary &DS,
     ScalarEvolution &SE,
@@ -128,7 +128,7 @@ LoopDependenceInfo::LoopDependenceInfo(
 LoopDependenceInfo::LoopDependenceInfo(
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
-    LoopForestNode *loopNode,
+    LoopTree *loopNode,
     Loop *l,
     DominatorSummary &DS,
     ScalarEvolution &SE,
@@ -308,7 +308,7 @@ uint64_t LoopDependenceInfo::computeTripCounts(Loop *l, ScalarEvolution &SE) {
 std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
     CompilationOptionsManager *com,
     Loop *l,
-    LoopForestNode *loopNode,
+    LoopTree *loopNode,
     PDG *functionDG,
     DominatorSummary &DS,
     ScalarEvolution &SE) {
@@ -495,7 +495,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
 
 void LoopDependenceInfo::
     removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions(
-        LoopForestNode *loopNode,
+        LoopTree *loopNode,
         PDG *loopDG,
         DominatorSummary &DS) {
 
@@ -562,7 +562,7 @@ void LoopDependenceInfo::
 }
 
 void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
-    LoopForestNode *loopNode,
+    LoopTree *loopNode,
     PDG *loopInternalDG,
     DominatorSummary &DS) {
 
@@ -720,7 +720,7 @@ LoopIterationSpaceAnalysis *LoopDependenceInfo::getLoopIterationSpaceAnalysis(
   return this->domainSpaceAnalysis;
 }
 
-LoopForestNode *LoopDependenceInfo::getLoopHierarchyStructures(void) const {
+LoopTree *LoopDependenceInfo::getLoopHierarchyStructures(void) const {
   return this->loop;
 }
 

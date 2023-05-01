@@ -39,7 +39,7 @@ public:
   SCCDAGAttrs(bool enableFloatAsReal,
               PDG *loopDG,
               SCCDAG *loopSCCDAG,
-              LoopForestNode *loopNode,
+              LoopTree *loopNode,
               InductionVariableManager &IV,
               DominatorSummary &DS);
 
@@ -60,7 +60,7 @@ public:
   /*
    * Methods on single SCC.
    */
-  bool isSCCContainedInSubloop(LoopForestNode *loop, SCC *scc) const;
+  bool isSCCContainedInSubloop(LoopTree *loop, SCC *scc) const;
   GenericSCC *getSCCAttrs(SCC *scc) const;
 
   /*
@@ -90,27 +90,27 @@ private:
   /*
    * Helper methods on SCCDAG
    */
-  void collectLoopCarriedDependencies(LoopForestNode *loopNode);
+  void collectLoopCarriedDependencies(LoopTree *loopNode);
 
   /*
    * Helper methods on single SCC
    */
-  LoopCarriedVariable *checkIfReducible(SCC *scc, LoopForestNode *loop);
+  LoopCarriedVariable *checkIfReducible(SCC *scc, LoopTree *loop);
 
   bool checkIfIndependent(SCC *scc);
 
   std::set<InductionVariable *> checkIfSCCOnlyContainsInductionVariables(
       SCC *scc,
-      LoopForestNode *loop,
+      LoopTree *loop,
       std::set<InductionVariable *> &loopGoverningIVs,
       std::set<InductionVariable *> &IVs) const;
 
   std::set<ClonableMemoryObject *> checkIfClonableByUsingLocalMemory(
       SCC *scc,
-      LoopForestNode *loop) const;
+      LoopTree *loop) const;
 
   std::set<Instruction *> checkIfRecomputable(SCC *scc,
-                                              LoopForestNode *loopNode) const;
+                                              LoopTree *loopNode) const;
 
   bool isClonableByInductionVars(SCC *scc) const;
 };

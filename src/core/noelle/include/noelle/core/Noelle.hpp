@@ -156,8 +156,8 @@ public:
 
   void sortByHotness(std::vector<LoopStructure *> &loops);
 
-  std::vector<LoopForestNode *> sortByHotness(
-      const std::unordered_set<LoopForestNode *> &loops);
+  std::vector<LoopTree *> sortByHotness(
+      const std::unordered_set<LoopTree *> &loops);
 
   std::vector<SCC *> sortByHotness(const std::set<SCC *> &SCCs);
 
@@ -257,7 +257,7 @@ private:
       std::unordered_set<LoopDependenceInfoOptimization> optimizations);
 
   LoopDependenceInfo *getLoopDependenceInfoForLoop(
-      LoopForestNode *loopNode,
+      LoopTree *loopNode,
       Loop *loop,
       PDG *functionPDG,
       DominatorSummary *DS,

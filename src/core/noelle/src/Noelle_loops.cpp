@@ -1025,9 +1025,9 @@ void Noelle::sortByHotness(std::vector<LoopStructure *> &loops) {
   return;
 }
 
-std::vector<LoopForestNode *> Noelle::sortByHotness(
-    const std::unordered_set<LoopForestNode *> &loops) {
-  std::vector<LoopForestNode *> s;
+std::vector<LoopTree *> Noelle::sortByHotness(
+    const std::unordered_set<LoopTree *> &loops) {
+  std::vector<LoopTree *> s;
 
   /*
    * Convert the loops into the vector
@@ -1051,7 +1051,7 @@ std::vector<LoopForestNode *> Noelle::sortByHotness(
   /*
    * Define the order between loops.
    */
-  auto compareLoops = [hot](LoopForestNode *n0, LoopForestNode *n1) -> bool {
+  auto compareLoops = [hot](LoopTree *n0, LoopTree *n1) -> bool {
     assert(n0 != nullptr);
     assert(n1 != nullptr);
 
@@ -1190,7 +1190,7 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
    */
   auto forest = this->organizeLoopsInTheirNestingForest(allLoops);
   // Add existing loop nesting relation as must edges
-  auto f = [&loopNestingGraph](LoopForestNode *n, uint32_t treeLevel) -> bool {
+  auto f = [&loopNestingGraph](LoopTree *n, uint32_t treeLevel) -> bool {
     if (n->getParent() == nullptr) {
       return false;
     }
@@ -1244,7 +1244,7 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
 }
 
 LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
-    LoopForestNode *loopNode,
+    LoopTree *loopNode,
     Loop *loop,
     PDG *functionPDG,
     DominatorSummary *DS,
@@ -1382,9 +1382,9 @@ void Noelle::filterOutLoops(noelle::LoopForest *f,
   /*
    * Iterate over the trees and find the nodes to delete.
    */
-  std::vector<noelle::LoopForestNode *> toDelete{};
+  std::vector<noelle::LoopTree *> toDelete{};
   for (auto tree : f->getTrees()) {
-    auto myF = [&filter, &toDelete](noelle::LoopForestNode *n,
+    auto myF = [&filter, &toDelete](noelle::LoopTree *n,
                                     uint32_t l) -> bool {
       auto ls = n->getLoop();
       if (filter(ls)) {

@@ -33,7 +33,7 @@ namespace llvm::noelle {
 void refinePDGWithLoopAwareMemDepAnalysis(PDG *loopDG,
                                           Loop *l,
                                           LoopStructure *loopStructure,
-                                          LoopForestNode *loops,
+                                          LoopTree *loops,
                                           LoopIterationSpaceAnalysis *LIDS);
 
 // Refine the loop PDG with SCAF
@@ -41,7 +41,7 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l);
 
 void refinePDGWithLIDS(PDG *loopDG,
                        LoopStructure *loopStructure,
-                       LoopForestNode *loops,
+                       LoopTree *loops,
                        LoopIterationSpaceAnalysis *LIDS);
 
 } // namespace llvm::noelle

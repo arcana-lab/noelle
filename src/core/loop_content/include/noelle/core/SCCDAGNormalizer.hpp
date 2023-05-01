@@ -31,14 +31,14 @@ namespace llvm::noelle {
 
 class SCCDAGNormalizer {
 public:
-  SCCDAGNormalizer(SCCDAG &dag, LoopForestNode *loop);
+  SCCDAGNormalizer(SCCDAG &dag, LoopTree *loop);
 
   SCCDAGNormalizer() = delete;
 
   void normalizeInPlace(void);
 
 private:
-  LoopForestNode *loop;
+  LoopTree *loop;
   SCCDAG &sccdag;
 
   void mergeLCSSAPhis(void);

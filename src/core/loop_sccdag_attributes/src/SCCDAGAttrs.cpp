@@ -34,7 +34,7 @@ namespace llvm::noelle {
 SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
                          PDG *loopDG,
                          SCCDAG *loopSCCDAG,
-                         LoopForestNode *loopNode,
+                         LoopTree *loopNode,
                          InductionVariableManager &IV,
                          DominatorSummary &DS)
   : enableFloatAsReal{ enableFloatAsReal },
@@ -336,7 +336,7 @@ std::set<uint32_t> SCCDAGAttrs::getLiveOutVariablesThatAreNotReducable(
   return s;
 }
 
-bool SCCDAGAttrs::isSCCContainedInSubloop(LoopForestNode *loop,
+bool SCCDAGAttrs::isSCCContainedInSubloop(LoopTree *loop,
                                           SCC *scc) const {
   auto instInSubloops = true;
   auto topLoop = loop->getLoop();
@@ -407,7 +407,7 @@ SCCDAGAttrs::computeSCCDAGWhenSCCsAreIgnored(
   return make_pair(parentsViaClones, edgesViaClones);
 }
 
-void SCCDAGAttrs::collectLoopCarriedDependencies(LoopForestNode *loopNode) {
+void SCCDAGAttrs::collectLoopCarriedDependencies(LoopTree *loopNode) {
 
   /*
    * Iterate over all the loops contained within the one handled by @this
@@ -450,7 +450,7 @@ void SCCDAGAttrs::collectLoopCarriedDependencies(LoopForestNode *loopNode) {
 std::set<InductionVariable *> SCCDAGAttrs::
     checkIfSCCOnlyContainsInductionVariables(
         SCC *scc,
-        LoopForestNode *loopNode,
+        LoopTree *loopNode,
         std::set<InductionVariable *> &IVs,
         std::set<InductionVariable *> &loopGoverningIVs) const {
 
@@ -522,7 +522,7 @@ std::set<InductionVariable *> SCCDAGAttrs::
 }
 
 LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(SCC *scc,
-                                                   LoopForestNode *loopNode) {
+                                                   LoopTree *loopNode) {
 
   /*
    * Check if the SCC has loop-carried dependences.
@@ -652,7 +652,7 @@ bool SCCDAGAttrs::checkIfIndependent(SCC *scc) {
 
 std::set<Instruction *> SCCDAGAttrs::checkIfRecomputable(
     SCC *scc,
-    LoopForestNode *loopNode) const {
+    LoopTree *loopNode) const {
 
   /*
    * Make sure there is no memory dependences within the SCC.
@@ -704,7 +704,7 @@ std::set<Instruction *> SCCDAGAttrs::checkIfRecomputable(
 
 std::set<ClonableMemoryObject *> SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
     SCC *scc,
-    LoopForestNode *loopNode) const {
+    LoopTree *loopNode) const {
 
   /*
    * Ignore SCC without loop carried dependencies

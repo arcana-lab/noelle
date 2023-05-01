@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2022 Simone Campanoni
+ * Copyright 2019 - 2023 Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -23,14 +23,14 @@
 
 namespace llvm::noelle {
 
-LoopForestNode::LoopForestNode(LoopForest *f, LoopStructure *l)
-  : LoopForestNode(f, l, nullptr) {
+LoopTree::LoopTree(LoopForest *f, LoopStructure *l)
+  : LoopTree(f, l, nullptr) {
   return;
 }
 
-LoopForestNode::LoopForestNode(LoopForest *f,
+LoopTree::LoopTree(LoopForest *f,
                                LoopStructure *l,
-                               LoopForestNode *parent)
+                               LoopTree *parent)
   : forest{ f },
     loop{ l },
     parent{ parent } {
@@ -38,11 +38,11 @@ LoopForestNode::LoopForestNode(LoopForest *f,
   return;
 }
 
-LoopStructure *LoopForestNode::getLoop(void) const {
+LoopStructure *LoopTree::getLoop(void) const {
   return this->loop;
 }
 
-bool LoopForestNode::isIncludedInItsSubLoops(Instruction *inst) const {
+bool LoopTree::isIncludedInItsSubLoops(Instruction *inst) const {
 
   /*
    * Check if the instruction is part of the loop.
@@ -73,7 +73,7 @@ bool LoopForestNode::isIncludedInItsSubLoops(Instruction *inst) const {
   return false;
 }
 
-uint32_t LoopForestNode::getNumberOfSubLoops(void) const {
+uint32_t LoopTree::getNumberOfSubLoops(void) const {
 
   /*
    * Check its children.
@@ -95,13 +95,13 @@ uint32_t LoopForestNode::getNumberOfSubLoops(void) const {
   return subloops;
 }
 
-LoopStructure *LoopForestNode::getInnermostLoopThatContains(Instruction *i) {
+LoopStructure *LoopTree::getInnermostLoopThatContains(Instruction *i) {
   auto bb = i->getParent();
   auto ls = this->getInnermostLoopThatContains(bb);
   return ls;
 }
 
-LoopStructure *LoopForestNode::getInnermostLoopThatContains(BasicBlock *bb) {
+LoopStructure *LoopTree::getInnermostLoopThatContains(BasicBlock *bb) {
 
   /*
    * Check if the basic block is included in the current loop.
@@ -117,7 +117,7 @@ LoopStructure *LoopForestNode::getInnermostLoopThatContains(BasicBlock *bb) {
    */
   LoopStructure *innerLoop = nullptr;
   uint32_t innerLoopLevel = 0;
-  auto f = [bb, &innerLoop, &innerLoopLevel](LoopForestNode *n,
+  auto f = [bb, &innerLoop, &innerLoopLevel](LoopTree *n,
                                              uint32_t treeLevel) -> bool {
     auto nl = n->getLoop();
     if (!nl->isIncluded(bb)) {
@@ -140,13 +140,13 @@ LoopStructure *LoopForestNode::getInnermostLoopThatContains(BasicBlock *bb) {
   return innerLoop;
 }
 
-LoopStructure *LoopForestNode::getOutermostLoopThatContains(Instruction *i) {
+LoopStructure *LoopTree::getOutermostLoopThatContains(Instruction *i) {
   auto bb = i->getParent();
   auto ls = this->getOutermostLoopThatContains(bb);
   return ls;
 }
 
-LoopStructure *LoopForestNode::getOutermostLoopThatContains(BasicBlock *bb) {
+LoopStructure *LoopTree::getOutermostLoopThatContains(BasicBlock *bb) {
 
   /*
    * Check if the basic block is included in the current loop.
@@ -162,7 +162,7 @@ LoopStructure *LoopForestNode::getOutermostLoopThatContains(BasicBlock *bb) {
    */
   LoopStructure *outerLoop = nullptr;
   uint32_t outerLoopLevel = 0;
-  auto f = [bb, &outerLoop, &outerLoopLevel](LoopForestNode *n,
+  auto f = [bb, &outerLoop, &outerLoopLevel](LoopTree *n,
                                              uint32_t treeLevel) -> bool {
     auto nl = n->getLoop();
     if (!nl->isIncluded(bb)) {
@@ -185,14 +185,14 @@ LoopStructure *LoopForestNode::getOutermostLoopThatContains(BasicBlock *bb) {
   return outerLoop;
 }
 
-LoopForestNode *LoopForestNode::getParent(void) const {
+LoopTree *LoopTree::getParent(void) const {
   return this->parent;
 }
 
-std::unordered_set<LoopForestNode *> LoopForestNode::getDescendants(void) {
-  std::unordered_set<LoopForestNode *> s;
+std::unordered_set<LoopTree *> LoopTree::getDescendants(void) {
+  std::unordered_set<LoopTree *> s;
 
-  auto f = [this, &s](LoopForestNode *n, uint32_t treeLevel) -> bool {
+  auto f = [this, &s](LoopTree *n, uint32_t treeLevel) -> bool {
     if (n == this) {
       return false;
     }
@@ -204,14 +204,14 @@ std::unordered_set<LoopForestNode *> LoopForestNode::getDescendants(void) {
   return s;
 }
 
-std::unordered_set<LoopForestNode *> LoopForestNode::getChildren(void) const {
+std::unordered_set<LoopTree *> LoopTree::getChildren(void) const {
   return this->children;
 }
 
-std::set<LoopForestNode *> LoopForestNode::getNodes(void) {
-  std::set<LoopForestNode *> s;
+std::set<LoopTree *> LoopTree::getNodes(void) {
+  std::set<LoopTree *> s;
 
-  auto f = [&s](LoopForestNode *n, uint32_t l) -> bool {
+  auto f = [&s](LoopTree *n, uint32_t l) -> bool {
     s.insert(n);
     return false;
   };
@@ -220,10 +220,10 @@ std::set<LoopForestNode *> LoopForestNode::getNodes(void) {
   return s;
 }
 
-std::set<LoopStructure *> LoopForestNode::getLoops(void) {
+std::set<LoopStructure *> LoopTree::getLoops(void) {
   std::set<LoopStructure *> s;
 
-  auto f = [&s](LoopForestNode *n, uint32_t l) -> bool {
+  auto f = [&s](LoopTree *n, uint32_t l) -> bool {
     s.insert(n->getLoop());
     return false;
   };
@@ -232,18 +232,18 @@ std::set<LoopStructure *> LoopForestNode::getLoops(void) {
   return s;
 }
 
-bool LoopForestNode::visitPreOrder(
-    std::function<bool(LoopForestNode *n, uint32_t treeLevel)> funcToInvoke) {
+bool LoopTree::visitPreOrder(
+    std::function<bool(LoopTree *n, uint32_t treeLevel)> funcToInvoke) {
   return this->visitPreOrder(funcToInvoke, 1);
 }
 
-bool LoopForestNode::visitPostOrder(
-    std::function<bool(LoopForestNode *n, uint32_t treeLevel)> funcToInvoke) {
+bool LoopTree::visitPostOrder(
+    std::function<bool(LoopTree *n, uint32_t treeLevel)> funcToInvoke) {
   return this->visitPostOrder(funcToInvoke, 1);
 }
 
-bool LoopForestNode::visitPreOrder(
-    std::function<bool(LoopForestNode *n, uint32_t treeLevel)> funcToInvoke,
+bool LoopTree::visitPreOrder(
+    std::function<bool(LoopTree *n, uint32_t treeLevel)> funcToInvoke,
     uint32_t treeLevel) {
 
   /*
@@ -265,8 +265,8 @@ bool LoopForestNode::visitPreOrder(
   return false;
 }
 
-bool LoopForestNode::visitPostOrder(
-    std::function<bool(LoopForestNode *n, uint32_t treeLevel)> funcToInvoke,
+bool LoopTree::visitPostOrder(
+    std::function<bool(LoopTree *n, uint32_t treeLevel)> funcToInvoke,
     uint32_t treeLevel) {
 
   /*
@@ -288,7 +288,7 @@ bool LoopForestNode::visitPostOrder(
   return false;
 }
 
-LoopForestNode::~LoopForestNode() {
+LoopTree::~LoopTree() {
 
   /*
    * Check if this object is an internal node of a tree.

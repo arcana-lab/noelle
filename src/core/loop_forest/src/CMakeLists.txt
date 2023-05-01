@@ -1,7 +1,7 @@
 # Sources
 set(Srcs 
-  Forest.cpp
-  ForestNode.cpp
+  LoopForest.cpp
+  LoopTree.cpp
 )
 
 # Compilation flags

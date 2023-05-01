@@ -102,7 +102,7 @@ bool EnablersManager::runOnModule(Module &M) {
               &noelle,
               &modifiedFunctions,
               this,
-              &modified](LoopForestNode *n, uint32_t l) -> bool {
+              &modified](LoopTree *n, uint32_t l) -> bool {
       /*
        * Fetch the loop
        */
