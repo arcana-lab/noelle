@@ -36,4 +36,5 @@ patchInstallDir "noelle-meta-prof-embed" ;
 patchInstallDir "noelle-prof-coverage" ;
 patchInstallDir "noelle-config" ;
 patchInstallDir "noelle-simplification" ;
+patchInstallDir "noelle-codesize" ;
 patchInstallDir "loopaa" ;

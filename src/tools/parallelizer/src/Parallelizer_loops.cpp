@@ -58,7 +58,7 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
     return false;
   }
   errs() << "Parallelizer:    There are " << forest->getNumberOfLoops()
-         << " loops in the program we are going to consider\n";
+         << " loops in the program that are enabled from the options used\n";
 
   /*
    * Determine the parallelization order from the metadata.
@@ -85,6 +85,9 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
     };
     tree->visitPreOrder(selector);
   }
+  errs() << "Parallelizer:    There are " << loopParallelizationOrder.size()
+         << " loops that the planner has selected\n";
+  errs() << "Parallelizer:    We are going to try to parallelize all of them\n";
 
   /*
    * Parallelize the loops in order.

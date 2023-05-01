@@ -27,7 +27,8 @@ AccumulatorOpInfo::AccumulatorOpInfo() {
   this->sideEffectFreeOps = { Instruction::Add, Instruction::FAdd,
                               Instruction::Mul, Instruction::FMul,
                               Instruction::Sub, Instruction::FSub,
-                              Instruction::Or,  Instruction::And };
+                              Instruction::Or,  Instruction::And,
+                              Instruction::Xor };
 
   this->accumOps =
       std::set<unsigned>(sideEffectFreeOps.begin(), sideEffectFreeOps.end());
@@ -35,7 +36,8 @@ AccumulatorOpInfo::AccumulatorOpInfo() {
   this->opIdentities = { { Instruction::Add, 0 }, { Instruction::FAdd, 0 },
                          { Instruction::Mul, 1 }, { Instruction::FMul, 1 },
                          { Instruction::Sub, 0 }, { Instruction::FSub, 0 },
-                         { Instruction::Or, 0 },  { Instruction::And, 1 } };
+                         { Instruction::Or, 0 },  { Instruction::And, 1 },
+                         { Instruction::Xor, 0 } };
 
   this->integerReducingOperators = { { Instruction::Add, Instruction::Add },
                                      { Instruction::FAdd, Instruction::Add },
@@ -44,7 +46,8 @@ AccumulatorOpInfo::AccumulatorOpInfo() {
                                      { Instruction::Sub, Instruction::Add },
                                      { Instruction::FSub, Instruction::Add },
                                      { Instruction::Or, Instruction::Or },
-                                     { Instruction::And, Instruction::And } };
+                                     { Instruction::And, Instruction::And },
+                                     { Instruction::Xor, Instruction::Xor } };
 
   this->floatingReducingOperators = {
     { Instruction::Add, Instruction::FAdd },
