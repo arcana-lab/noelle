@@ -154,28 +154,27 @@ struct CAT : public ModulePass {
     /*
      * Define the iterator that will print all nodes of a tree.
      */
-    std::function<void(LoopForestNode *)> printTree =
-        [&printTree](LoopForestNode *n) {
-          /*
-           * Print the current node.
-           */
-          auto l = n->getLoop();
-          for (auto i = 1; i < l->getNestingLevel(); i++) {
-            errs() << "-";
-          }
-          errs() << "-> ";
-          errs() << "[ " << l->getFunction()->getName() << " ] "
-                 << *l->getEntryInstruction() << "\n";
+    std::function<void(LoopTree *)> printTree = [&printTree](LoopTree *n) {
+      /*
+       * Print the current node.
+       */
+      auto l = n->getLoop();
+      for (auto i = 1; i < l->getNestingLevel(); i++) {
+        errs() << "-";
+      }
+      errs() << "-> ";
+      errs() << "[ " << l->getFunction()->getName() << " ] "
+             << *l->getEntryInstruction() << "\n";
 
-          /*
-           * Print the children
-           */
-          for (auto c : n->getDescendants()) {
-            printTree(c);
-          }
+      /*
+       * Print the children
+       */
+      for (auto c : n->getDescendants()) {
+        printTree(c);
+      }
 
-          return;
-        };
+      return;
+    };
 
     /*
      * Iterate over the trees that compose the forest.
