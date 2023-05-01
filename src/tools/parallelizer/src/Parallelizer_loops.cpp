@@ -67,7 +67,7 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
   std::map<uint32_t, LoopDependenceInfo *> loopParallelizationOrder;
   for (auto tree : forest->getTrees()) {
     auto selector = [&noelle, &mm, &loopParallelizationOrder](
-                        LoopForestNode *n,
+                        LoopTree *n,
                         uint32_t treeLevel) -> bool {
       auto ls = n->getLoop();
       if (!mm->doesHaveMetadata(ls, "noelle.parallelizer.looporder")) {

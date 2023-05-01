@@ -26,7 +26,7 @@
 namespace llvm::noelle {
 
 std::set<GenericSCC *> DSWP::getClonableSCCs(SCCDAGAttrs *sccManager,
-                                             LoopForestNode *loopNode) const {
+                                             LoopTree *loopNode) const {
   std::set<GenericSCC *> set;
 
   auto SCCDAG = sccManager->getSCCDAG();

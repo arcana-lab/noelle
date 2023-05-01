@@ -70,7 +70,7 @@ public:
 class LoopCarriedVariable : public LoopCarriedCycle {
 public:
   LoopCarriedVariable(const LoopStructure &loop,
-                      LoopForestNode *loopNode,
+                      LoopTree *loopNode,
                       PDG &loopDG,
                       SCCDAG &sccdag,
                       SCC &variableSCC,

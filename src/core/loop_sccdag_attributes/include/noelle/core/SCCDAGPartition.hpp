@@ -84,7 +84,7 @@ public:
       SCCDAG *sccdag,
       std::unordered_set<SCCSet *> initialSets,
       std::unordered_map<SCC *, std::unordered_set<SCC *>> sccToParentsMap,
-      LoopForestNode *loopNode);
+      LoopTree *loopNode);
 
   SCCDAGPartitioner() = delete;
 
@@ -142,8 +142,8 @@ private:
   std::unordered_map<SCC *, int> SCCDebugIndex;
 
   SCCDAGPartition *partition;
-  LoopForestNode *rootLoop;
-  std::unordered_set<LoopForestNode *> allLoops;
+  LoopTree *rootLoop;
+  std::unordered_set<LoopTree *> allLoops;
 };
 
 } // namespace noelle

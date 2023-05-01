@@ -24,7 +24,7 @@
 namespace llvm::noelle {
 
 void LoopCarriedDependencies::setLoopCarriedDependencies(
-    LoopForestNode *loopNode,
+    LoopTree *loopNode,
     const DominatorSummary &DS,
     PDG &dgForLoops) {
   for (auto edge : dgForLoops.getEdges()) {
@@ -50,7 +50,7 @@ void LoopCarriedDependencies::setLoopCarriedDependencies(
 }
 
 bool LoopCarriedDependencies::isALoopCarriedDependence(
-    LoopForestNode *loopNode,
+    LoopTree *loopNode,
     const DominatorSummary &DS,
     DGEdge<Value> *edge) {
 
@@ -221,7 +221,7 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
 
 std::set<DGEdge<Value> *> LoopCarriedDependencies::
     getLoopCarriedDependenciesForLoop(const LoopStructure &LS,
-                                      LoopForestNode *loopNode,
+                                      LoopTree *loopNode,
                                       PDG &LoopDG) {
 
   std::set<DGEdge<Value> *> LCEdges;
@@ -245,7 +245,7 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::
 
 std::set<DGEdge<Value> *> LoopCarriedDependencies::
     getLoopCarriedDependenciesForLoop(const LoopStructure &LS,
-                                      LoopForestNode *loopNode,
+                                      LoopTree *loopNode,
                                       SCCDAG &sccdag) {
 
   std::set<DGEdge<Value> *> LCEdges;

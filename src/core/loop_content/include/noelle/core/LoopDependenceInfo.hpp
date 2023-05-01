@@ -44,14 +44,14 @@ public:
    */
   LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
                      PDG *fG,
-                     LoopForestNode *loopNode,
+                     LoopTree *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
                      ScalarEvolution &SE);
 
   LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
                      PDG *fG,
-                     LoopForestNode *loopNode,
+                     LoopTree *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
                      ScalarEvolution &SE,
@@ -60,7 +60,7 @@ public:
   LoopDependenceInfo(
       CompilationOptionsManager *compilationOptionsManager,
       PDG *fG,
-      LoopForestNode *loopNode,
+      LoopTree *loopNode,
       Loop *l,
       DominatorSummary &DS,
       ScalarEvolution &SE,
@@ -69,7 +69,7 @@ public:
 
   LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
                      PDG *fG,
-                     LoopForestNode *loopNode,
+                     LoopTree *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
                      ScalarEvolution &SE,
@@ -79,7 +79,7 @@ public:
   LoopDependenceInfo(
       CompilationOptionsManager *compilationOptionsManager,
       PDG *fG,
-      LoopForestNode *loop,
+      LoopTree *loop,
       Loop *l,
       DominatorSummary &DS,
       ScalarEvolution &SE,
@@ -90,7 +90,7 @@ public:
   LoopDependenceInfo(
       CompilationOptionsManager *compilationOptionsManager,
       PDG *fG,
-      LoopForestNode *loop,
+      LoopTree *loop,
       Loop *l,
       DominatorSummary &DS,
       ScalarEvolution &SE,
@@ -105,7 +105,7 @@ public:
    * Return the object containing all loop structures at and nested within this
    * loop
    */
-  LoopForestNode *getLoopHierarchyStructures(void) const;
+  LoopTree *getLoopHierarchyStructures(void) const;
 
   /*
    * Return the object that describes the loop in terms of induction variables,
@@ -164,7 +164,7 @@ private:
   /*
    * Fields
    */
-  LoopForestNode *loop;
+  LoopTree *loop;
 
   LoopEnvironment *environment;
 
@@ -198,7 +198,7 @@ private:
 
   std::pair<PDG *, SCCDAG *> createDGsForLoop(CompilationOptionsManager *com,
                                               Loop *l,
-                                              LoopForestNode *loopNode,
+                                              LoopTree *loopNode,
                                               PDG *functionDG,
                                               DominatorSummary &DS,
                                               ScalarEvolution &SE);
@@ -206,12 +206,12 @@ private:
   uint64_t computeTripCounts(Loop *l, ScalarEvolution &SE);
 
   void removeUnnecessaryDependenciesThatCloningMemoryNegates(
-      LoopForestNode *loopNode,
+      LoopTree *loopNode,
       PDG *loopInternalDG,
       DominatorSummary &DS);
 
   void removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions(
-      LoopForestNode *loopNode,
+      LoopTree *loopNode,
       PDG *loopDG,
       DominatorSummary &DS);
 

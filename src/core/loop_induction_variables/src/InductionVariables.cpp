@@ -24,7 +24,7 @@
 
 namespace llvm::noelle {
 
-InductionVariableManager::InductionVariableManager(LoopForestNode *loopNode,
+InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
                                                    InvariantManager &IVM,
                                                    ScalarEvolution &SE,
                                                    SCCDAG &sccdag,

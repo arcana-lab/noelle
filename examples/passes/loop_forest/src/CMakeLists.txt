@@ -1,14 +1,11 @@
 # Sources
-set(Srcs 
-  LoopForest.cpp
-  LoopTree.cpp
-)
+file(GLOB CATPassSrc "*.cpp")
 
 # Compilation flags
-set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
+set_source_files_properties(${CATPassSrc} PROPERTIES COMPILE_FLAGS " -std=c++17")
 
 # Name of the LLVM pass
-set(PassName "Forest")
+set(CATPassName "CAT")
 
 # configure LLVM 
 find_package(LLVM 9 REQUIRED CONFIG)
@@ -22,14 +19,7 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(
-  ${LLVM_INCLUDE_DIRS} 
-  ../include 
-  ../../basic_utilities/include 
-  ../../dominators/include 
-  ../../loop_structure/include 
-  ${CMAKE_INSTALL_PREFIX}/include
-  )
+include_directories(${LLVM_INCLUDE_DIRS} ../../../../install/include ../../../../install/include/svf)
 
 # Declare the LLVM pass to compile
-add_llvm_library(${PassName} MODULE ${Srcs})
+add_llvm_library(${CATPassName} MODULE ${CATPassSrc})

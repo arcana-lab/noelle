@@ -24,7 +24,7 @@
 
 namespace llvm::noelle {
 
-SCCDAGNormalizer::SCCDAGNormalizer(SCCDAG &dag, LoopForestNode *loop)
+SCCDAGNormalizer::SCCDAGNormalizer(SCCDAG &dag, LoopTree *loop)
   : loop{ loop },
     sccdag{ dag } {
 

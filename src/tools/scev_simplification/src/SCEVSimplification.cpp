@@ -261,7 +261,7 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs(LoopDependenceInfo const &LDI) {
 }
 
 bool SCEVSimplification::simplifyIVRelatedSCEVs(
-    LoopForestNode *rootLoopNode,
+    LoopTree *rootLoopNode,
     InvariantManager *invariantManager,
     InductionVariableManager *ivManager) {
   if (noelle.getVerbosity() != Verbosity::Disabled) {
@@ -347,7 +347,7 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs(
 }
 
 void SCEVSimplification::cacheIVInfo(IVCachedInfo &ivCache,
-                                     LoopForestNode *rootLoopNode,
+                                     LoopTree *rootLoopNode,
                                      InductionVariableManager *ivManager) {
 
   /*
@@ -505,7 +505,7 @@ void SCEVSimplification::searchForInstructionsDerivedFromMultipleIVs(
  */
 bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP(
     IVCachedInfo &ivCache,
-    LoopForestNode *rootLoopNode,
+    LoopTree *rootLoopNode,
     InductionVariableManager *ivManager,
     InvariantManager *invariantManager,
     std::unordered_set<GEPIndexDerivation *> gepDerivations) {

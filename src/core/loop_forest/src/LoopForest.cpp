@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2022 Simone Campanoni
+ * Copyright 2019 - 2023 Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -30,11 +30,11 @@ LoopForest::LoopForest(
   /*
    * Allocate the nodes.
    */
-  std::unordered_set<LoopForestNode *> potentialTrees{};
+  std::unordered_set<LoopTree *> potentialTrees{};
   for (auto l : loops) {
     auto func = l->getFunction();
     auto header = l->getHeader();
-    auto n = new LoopForestNode(this, l);
+    auto n = new LoopTree(this, l);
     this->nodes[l] = n;
     this->functionLoops[func].insert(l);
     this->headerLoops[header] = n;
@@ -95,9 +95,9 @@ uint64_t LoopForest::getNumberOfLoops(void) const {
 }
 
 void LoopForest::addChildrenToTree(
-    LoopForestNode *root,
+    LoopTree *root,
     std::unordered_map<Function *, DominatorSummary *> const &doms,
-    std::unordered_set<LoopForestNode *> &potentialTrees) {
+    std::unordered_set<LoopTree *> &potentialTrees) {
 
   /*
    * Fetch the loop.
@@ -218,11 +218,11 @@ void LoopForest::addChildrenToTree(
   return;
 }
 
-std::unordered_set<LoopForestNode *> LoopForest::getTrees(void) const {
+std::unordered_set<LoopTree *> LoopForest::getTrees(void) const {
   return this->trees;
 }
 
-void LoopForest::removeTree(LoopForestNode *tree) {
+void LoopForest::removeTree(LoopTree *tree) {
   assert(this->trees.find(tree) != this->trees.end());
   this->trees.erase(tree);
   assert(this->trees.find(tree) == this->trees.end());
@@ -230,7 +230,7 @@ void LoopForest::removeTree(LoopForestNode *tree) {
   return;
 }
 
-void LoopForest::addTree(LoopForestNode *tree) {
+void LoopForest::addTree(LoopTree *tree) {
   assert(this->trees.find(tree) == this->trees.end());
 
   this->trees.insert(tree);
@@ -244,7 +244,7 @@ LoopForest::~LoopForest() {
   }
 }
 
-LoopForestNode *LoopForest::getNode(LoopStructure *loop) const {
+LoopTree *LoopForest::getNode(LoopStructure *loop) const {
 
   /*
    * Fetch the header
@@ -261,8 +261,8 @@ LoopForestNode *LoopForest::getNode(LoopStructure *loop) const {
   return n;
 }
 
-LoopForestNode *LoopForest::getInnermostLoopThatContains(Instruction *i) const {
-  LoopForestNode *n = nullptr;
+LoopTree *LoopForest::getInnermostLoopThatContains(Instruction *i) const {
+  LoopTree *n = nullptr;
 
   /*
    * Identify only the trees that are about the same function of the target
@@ -301,8 +301,8 @@ LoopForestNode *LoopForest::getInnermostLoopThatContains(Instruction *i) const {
      *
      * Fetch the innermost loop that contains it.
      */
-    LoopForestNode *innermostLoop = nullptr;
-    auto finderFunction = [i, &innermostLoop](LoopForestNode *n,
+    LoopTree *innermostLoop = nullptr;
+    auto finderFunction = [i, &innermostLoop](LoopTree *n,
                                               uint32_t treeLevel) -> bool {
       /*
        * Fetch the loop
@@ -322,7 +322,7 @@ LoopForestNode *LoopForest::getInnermostLoopThatContains(Instruction *i) const {
   return n;
 }
 
-LoopForestNode *LoopForest::getInnermostLoopThatContains(BasicBlock *bb) const {
+LoopTree *LoopForest::getInnermostLoopThatContains(BasicBlock *bb) const {
   auto n = this->getInnermostLoopThatContains(&*bb->begin());
   return n;
 }

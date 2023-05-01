@@ -80,7 +80,7 @@ static RegisterStandardPasses _RegPass2(
 void refinePDGWithLoopAwareMemDepAnalysis(PDG *loopDG,
                                           Loop *l,
                                           LoopStructure *loopStructure,
-                                          LoopForestNode *loops,
+                                          LoopTree *loops,
                                           LoopIterationSpaceAnalysis *LIDS) {
   refinePDGWithSCAF(loopDG, l);
 
@@ -273,7 +273,7 @@ DataFlowResult *computeReachabilityFromInstructions(
 
 void refinePDGWithLIDS(PDG *loopDG,
                        LoopStructure *loopStructure,
-                       LoopForestNode *loops,
+                       LoopTree *loops,
                        LoopIterationSpaceAnalysis *LIDS) {
 
   /*

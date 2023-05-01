@@ -32,21 +32,21 @@ namespace llvm::noelle {
 
 class LoopCarriedDependencies {
 public:
-  static void setLoopCarriedDependencies(LoopForestNode *loopNode,
+  static void setLoopCarriedDependencies(LoopTree *loopNode,
                                          const DominatorSummary &DS,
                                          PDG &dgForLoops);
 
   static std::set<DGEdge<Value> *> getLoopCarriedDependenciesForLoop(
       const LoopStructure &LS,
-      LoopForestNode *loopNode,
+      LoopTree *loopNode,
       PDG &LoopDG);
   static std::set<DGEdge<Value> *> getLoopCarriedDependenciesForLoop(
       const LoopStructure &LS,
-      LoopForestNode *loopNode,
+      LoopTree *loopNode,
       SCCDAG &sccdag);
 
 private:
-  static bool isALoopCarriedDependence(LoopForestNode *loopNode,
+  static bool isALoopCarriedDependence(LoopTree *loopNode,
                                        const DominatorSummary &DS,
                                        DGEdge<Value> *edge);
 

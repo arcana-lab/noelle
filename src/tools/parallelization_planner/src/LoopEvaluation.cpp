@@ -25,7 +25,7 @@ namespace llvm::noelle {
 
 std::pair<uint64_t, uint64_t> Planner::evaluateSavings(
     Noelle &noelle,
-    noelle::LoopForestNode *tree,
+    noelle::LoopTree *tree,
     const std::map<LoopStructure *, uint64_t> &timeSaved,
     const std::map<LoopStructure *, bool> &doallLoops) {
 
@@ -55,7 +55,7 @@ std::pair<uint64_t, uint64_t> Planner::evaluateSavings(
 
 uint64_t Planner::evaluateSavings(
     Noelle &noelle,
-    noelle::LoopForestNode *tree,
+    noelle::LoopTree *tree,
     const std::map<LoopStructure *, uint64_t> &timeSaved,
     std::function<bool(LoopStructure *)> considerLoop) {
 
@@ -65,7 +65,7 @@ uint64_t Planner::evaluateSavings(
   std::map<LoopStructure *, uint64_t> maxTimeSaved;
   auto f = [&maxTimeSaved,
             &timeSaved,
-            &considerLoop](LoopForestNode *n, uint32_t treeLevel) -> bool {
+            &considerLoop](LoopTree *n, uint32_t treeLevel) -> bool {
     /*
      * Check if we should consider this loop.
      */

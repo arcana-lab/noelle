@@ -29,11 +29,11 @@ namespace llvm::noelle {
 
 class LoopForest;
 
-class LoopForestNode {
+class LoopTree {
 public:
-  LoopForestNode(LoopForest *f, LoopStructure *l);
+  LoopTree(LoopForest *f, LoopStructure *l);
 
-  LoopForestNode(LoopForest *f, LoopStructure *l, LoopForestNode *parent);
+  LoopTree(LoopForest *f, LoopStructure *l, LoopTree *parent);
 
   LoopStructure *getLoop(void) const;
 
@@ -45,15 +45,15 @@ public:
 
   LoopStructure *getOutermostLoopThatContains(BasicBlock *bb);
 
-  std::set<LoopForestNode *> getNodes(void);
+  std::set<LoopTree *> getNodes(void);
 
   std::set<LoopStructure *> getLoops(void);
 
-  LoopForestNode *getParent(void) const;
+  LoopTree *getParent(void) const;
 
-  std::unordered_set<LoopForestNode *> getChildren(void) const;
+  std::unordered_set<LoopTree *> getChildren(void) const;
 
-  std::unordered_set<LoopForestNode *> getDescendants(void);
+  std::unordered_set<LoopTree *> getDescendants(void);
 
   bool isIncludedInItsSubLoops(Instruction *inst) const;
 
@@ -64,25 +64,25 @@ public:
   uint32_t getNumberOfSubLoops(void) const;
 
   bool visitPreOrder(
-      std::function<bool(LoopForestNode *n, uint32_t treeLevel)> funcToInvoke);
+      std::function<bool(LoopTree *n, uint32_t treeLevel)> funcToInvoke);
 
   bool visitPostOrder(
-      std::function<bool(LoopForestNode *n, uint32_t treeLevel)> funcToInvoke);
+      std::function<bool(LoopTree *n, uint32_t treeLevel)> funcToInvoke);
 
-  ~LoopForestNode();
+  ~LoopTree();
 
 private:
   friend class LoopForest;
   LoopForest *forest;
   LoopStructure *loop;
-  LoopForestNode *parent;
-  std::unordered_set<LoopForestNode *> children;
+  LoopTree *parent;
+  std::unordered_set<LoopTree *> children;
 
   bool visitPreOrder(
-      std::function<bool(LoopForestNode *n, uint32_t treeLevel)> funcToInvoke,
+      std::function<bool(LoopTree *n, uint32_t treeLevel)> funcToInvoke,
       uint32_t treeLevel);
   bool visitPostOrder(
-      std::function<bool(LoopForestNode *n, uint32_t treeLevel)> funcToInvoke,
+      std::function<bool(LoopTree *n, uint32_t treeLevel)> funcToInvoke,
       uint32_t treeLevel);
 };
 
@@ -93,31 +93,31 @@ public:
 
   uint64_t getNumberOfLoops(void) const;
 
-  std::unordered_set<LoopForestNode *> getTrees(void) const;
+  std::unordered_set<LoopTree *> getTrees(void) const;
 
-  void removeTree(LoopForestNode *tree);
+  void removeTree(LoopTree *tree);
 
-  void addTree(LoopForestNode *tree);
+  void addTree(LoopTree *tree);
 
-  LoopForestNode *getNode(LoopStructure *loop) const;
+  LoopTree *getNode(LoopStructure *loop) const;
 
-  LoopForestNode *getInnermostLoopThatContains(Instruction *i) const;
+  LoopTree *getInnermostLoopThatContains(Instruction *i) const;
 
-  LoopForestNode *getInnermostLoopThatContains(BasicBlock *bb) const;
+  LoopTree *getInnermostLoopThatContains(BasicBlock *bb) const;
 
   ~LoopForest();
 
 private:
-  std::unordered_map<LoopStructure *, LoopForestNode *> nodes;
-  std::unordered_set<LoopForestNode *> trees;
+  std::unordered_map<LoopStructure *, LoopTree *> nodes;
+  std::unordered_set<LoopTree *> trees;
   std::unordered_map<Function *, std::unordered_set<LoopStructure *>>
       functionLoops;
-  std::unordered_map<BasicBlock *, LoopForestNode *> headerLoops;
+  std::unordered_map<BasicBlock *, LoopTree *> headerLoops;
 
   void addChildrenToTree(
-      LoopForestNode *root,
+      LoopTree *root,
       std::unordered_map<Function *, DominatorSummary *> const &doms,
-      std::unordered_set<LoopForestNode *> &potentialTrees);
+      std::unordered_set<LoopTree *> &potentialTrees);
 };
 
 } // namespace llvm::noelle

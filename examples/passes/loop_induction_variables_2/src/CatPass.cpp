@@ -67,7 +67,7 @@ struct CAT : public ModulePass {
      * Fetch the governing IV
      */
     auto IVM = hottestLoop->getInductionVariableManager();
-    auto GIV_attr = IVM->getLoopGoverningIVAttribution();
+    auto GIV_attr = IVM->getLoopGoverningInductionVariable();
     if (GIV_attr == nullptr) {
       errs() << " The loop doesn't have a governing IV\n";
       return false;
@@ -81,12 +81,12 @@ struct CAT : public ModulePass {
     auto IV = GIV_attr->getInductionVariable();
     auto condValue =
         GIV_attr->getHeaderCompareInstructionToComputeExitCondition();
-    auto startValue = IV.getStartValue();
+    auto startValue = IV->getStartValue();
     errs() << " Governing induction variable\n";
     errs() << "   Condition = " << *cond << "\n";
     errs() << "   Start value = " << *startValue << "\n";
     errs() << "   Condition value = " << *condValue << "\n";
-    if (!IV.isStepValueLoopInvariant()) {
+    if (!IV->isStepValueLoopInvariant()) {
       errs() << "   Step value isn't constant\n";
       return false;
     }

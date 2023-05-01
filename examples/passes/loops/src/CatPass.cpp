@@ -99,31 +99,6 @@ struct CAT : public ModulePass {
         };
         scc->iterateOverInstructions(mySCCIter);
 
-        /*
-         * Fetch the SCC information.
-         */
-        auto sccInfo = sccManager->getSCCAttrs(scc);
-        if (isa<InductionVariableSCC>(sccInfo)) {
-          errs()
-              << "     It is due to the computation of an induction variable\n";
-
-        } else if (isa<ReductionSCC>(sccInfo)) {
-          errs() << "     It can be reduced\n";
-
-        } else if (isa<LoopIterationSCC>(sccInfo)) {
-          errs() << "     It doesn't have loop-carried dependences\n";
-
-        } else if (isa<LoopCarriedUnknownSCC>(sccInfo)) {
-          errs() << "     It must be executed sequentially\n";
-
-        } else if (isa<MemoryClonableSCC>(sccInfo)) {
-          errs()
-              << "     It can run in parallel after cloning memory objects\n";
-
-        } else {
-          errs() << "     Unknown\n";
-        }
-
         return false;
       };
 
@@ -144,53 +119,6 @@ struct CAT : public ModulePass {
        * Get the LoopDependenceInfo
        */
       auto ldi = noelle.getLoop(l);
-    }
-
-    /*
-     * Fetch the loop forest.
-     */
-    auto loopForest = noelle.organizeLoopsInTheirNestingForest(*loopStructures);
-
-    /*
-     * Define the iterator that will print all nodes of a tree.
-     */
-    std::function<void(LoopForestNode *)> printTree =
-        [&printTree](LoopForestNode *n) {
-          /*
-           * Print the current node.
-           */
-          auto l = n->getLoop();
-          for (auto i = 1; i < l->getNestingLevel(); i++) {
-            errs() << "-";
-          }
-          errs() << "-> ";
-          errs() << "[ " << l->getFunction()->getName() << " ] "
-                 << *l->getEntryInstruction() << "\n";
-
-          /*
-           * Print the children
-           */
-          for (auto c : n->getDescendants()) {
-            printTree(c);
-          }
-
-          return;
-        };
-
-    /*
-     * Iterate over the trees that compose the forest.
-     */
-    errs() << "Printing the loop forest\n";
-    for (auto loopTree : loopForest->getTrees()) {
-
-      /*
-       * Fetch the root of the current tree.
-       */
-      auto rootLoop = loopTree->getLoop();
-      errs() << "======= Tree with root " << *rootLoop->getEntryInstruction()
-             << "\n";
-      printTree(loopTree);
-      errs() << "\n";
     }
 
     return false;

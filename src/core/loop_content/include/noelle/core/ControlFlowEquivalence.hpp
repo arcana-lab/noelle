@@ -31,11 +31,11 @@ namespace llvm::noelle {
 class ControlFlowEquivalence {
 public:
   ControlFlowEquivalence(const DominatorSummary *ds,
-                         LoopForestNode *loops,
+                         LoopTree *loops,
                          Function &F);
 
   ControlFlowEquivalence(const DominatorSummary *ds,
-                         LoopForestNode *loops,
+                         LoopTree *loops,
                          const LoopStructure *loopStructure);
 
   std::unordered_set<BasicBlock *> getEquivalences(BasicBlock *bb) const;
@@ -44,7 +44,7 @@ public:
 
 private:
   void calculateControlFlowEquivalences(const DominatorSummary *DS,
-                                        LoopForestNode *loops);
+                                        LoopTree *loops);
 
   void createEquivalenceSet(BasicBlock *singleB);
 

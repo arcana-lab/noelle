@@ -303,7 +303,7 @@ SCCDAGPartitioner::SCCDAGPartitioner(
     SCCDAG *sccdag,
     std::unordered_set<SCCSet *> initialSets,
     std::unordered_map<SCC *, std::unordered_set<SCC *>> sccToParentsMap,
-    LoopForestNode *loopNode)
+    LoopTree *loopNode)
   : rootLoop{ loopNode } {
 
   this->partition = new SCCDAGPartition(sccdag, initialSets, sccToParentsMap);

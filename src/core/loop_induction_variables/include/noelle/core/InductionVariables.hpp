@@ -38,7 +38,7 @@ namespace llvm::noelle {
 
 class InductionVariableManager {
 public:
-  InductionVariableManager(LoopForestNode *loop,
+  InductionVariableManager(LoopTree *loop,
                            InvariantManager &IVM,
                            ScalarEvolution &SE,
                            SCCDAG &sccdag,
@@ -83,7 +83,7 @@ public:
   ~InductionVariableManager();
 
 private:
-  LoopForestNode *loop;
+  LoopTree *loop;
   std::unordered_map<LoopStructure *, std::unordered_set<InductionVariable *>>
       loopToIVsMap;
   std::unordered_map<LoopStructure *, LoopGoverningInductionVariable *>
