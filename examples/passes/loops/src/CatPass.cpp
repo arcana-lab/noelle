@@ -121,52 +121,6 @@ struct CAT : public ModulePass {
       auto ldi = noelle.getLoop(l);
     }
 
-    /*
-     * Fetch the loop forest.
-     */
-    auto loopForest = noelle.organizeLoopsInTheirNestingForest(*loopStructures);
-
-    /*
-     * Define the iterator that will print all nodes of a tree.
-     */
-    std::function<void(LoopTree *)> printTree = [&printTree](LoopTree *n) {
-      /*
-       * Print the current node.
-       */
-      auto l = n->getLoop();
-      for (auto i = 1; i < l->getNestingLevel(); i++) {
-        errs() << "-";
-      }
-      errs() << "-> ";
-      errs() << "[ " << l->getFunction()->getName() << " ] "
-             << *l->getEntryInstruction() << "\n";
-
-      /*
-       * Print the children
-       */
-      for (auto c : n->getDescendants()) {
-        printTree(c);
-      }
-
-      return;
-    };
-
-    /*
-     * Iterate over the trees that compose the forest.
-     */
-    errs() << "Printing the loop forest\n";
-    for (auto loopTree : loopForest->getTrees()) {
-
-      /*
-       * Fetch the root of the current tree.
-       */
-      auto rootLoop = loopTree->getLoop();
-      errs() << "======= Tree with root " << *rootLoop->getEntryInstruction()
-             << "\n";
-      printTree(loopTree);
-      errs() << "\n";
-    }
-
     return false;
   }
 
