@@ -147,6 +147,9 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
     auto step = periodicVariableSCC->getStepValue();
     auto phi =
         periodicVariableSCC->getPhiThatAccumulatesValuesBetweenLoopIterations();
+    assert(
+        phi->getNumIncomingValues() == 2
+        && "DOALL: PHINode in periodic variable SCC doesn't have exactly two entries!");
     auto taskPHI = cast<PHINode>(task->getCloneOfOriginalInstruction(phi));
 
     unsigned entryBlock, loopBlock;
