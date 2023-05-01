@@ -356,8 +356,7 @@ std::set<uint32_t> SCCDAGAttrs::getLiveOutVariablesThatAreNotReducable(
   return s;
 }
 
-bool SCCDAGAttrs::isSCCContainedInSubloop(LoopTree *loop,
-                                          SCC *scc) const {
+bool SCCDAGAttrs::isSCCContainedInSubloop(LoopTree *loop, SCC *scc) const {
   auto instInSubloops = true;
   auto topLoop = loop->getLoop();
   for (auto iNodePair : scc->internalNodePairs()) {
@@ -543,7 +542,7 @@ std::set<InductionVariable *> SCCDAGAttrs::
 
 std::tuple<bool, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
     SCC *scc,
-    LoopForestNode *loopNode) {
+    LoopTree *loopNode) {
   auto notPeriodic = make_tuple(false, nullptr, nullptr, nullptr);
 
   if (this->sccToLoopCarriedDependencies.find(scc)

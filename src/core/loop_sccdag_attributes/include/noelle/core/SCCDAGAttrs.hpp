@@ -100,7 +100,7 @@ private:
 
   std::tuple<bool, Value *, Value *, Value *> checkIfPeriodic(
       SCC *scc,
-      LoopForestNode *loopNode);
+      LoopTree *loopNode);
 
   bool checkIfIndependent(SCC *scc);
 
