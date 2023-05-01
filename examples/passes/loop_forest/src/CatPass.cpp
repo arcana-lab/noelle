@@ -108,7 +108,7 @@ struct CAT : public ModulePass {
     }
 
     return;
-  };
+  }
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.addRequired<Noelle>();
