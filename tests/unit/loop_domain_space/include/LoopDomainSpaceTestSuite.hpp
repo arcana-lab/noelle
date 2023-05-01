@@ -85,6 +85,6 @@ private:
   bool modifiedCodeWithSCEVSimplification;
   InductionVariableManager *IVM;
   LoopIterationSpaceAnalysis *domainSpaceAnalysis;
-  LoopForestNode *loopNode;
+  LoopTree *loopNode;
 };
 } // namespace llvm::noelle

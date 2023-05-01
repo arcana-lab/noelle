@@ -72,7 +72,7 @@ private:
   Module *M;
   ScalarEvolution *SE;
   LoopInfo *LI;
-  LoopForestNode *topLoop;
+  LoopTree *topLoop;
   PDG *fdg;
   SCCDAG *sccdag;
   InductionVariableManager *IVs;
