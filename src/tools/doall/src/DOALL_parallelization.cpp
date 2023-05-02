@@ -193,16 +193,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
           LoopDependenceInfoOptimization::MEMORY_CLONING_ID)) {
     this->cloneMemoryLocationsLocallyAndRewireLoop(LDI, 0);
   }
-
-  /*
-   * Fix the data flow within the parallelized loop by redirecting operands of
-   * cloned instructions to refer to the other cloned instructions. Currently,
-   * they still refer to the original loop's instructions.
-   */
-  this->adjustDataFlowToUseClones(LDI, 0);
-  if (this->verbose >= Verbosity::Maximal) {
-    errs() << "DOALL:  Adjusted data flow\n";
-  }
+  chunkerTask->adjustDataFlowToUseClones();
 
   /*
    * Handle the reduction variables.

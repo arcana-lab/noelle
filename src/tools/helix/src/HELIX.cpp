@@ -349,7 +349,11 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
    * Fix the data flow within the parallelized loop by redirecting operands of
    * cloned instructions to refer to the other cloned instructions.
    */
-  this->adjustDataFlowToUseClones(LDI, 0);
+  helixTask->adjustDataFlowToUseClones();
+
+  /*
+   * Set the initial value of the private versions of the reducable variables to their identity value.
+   */
   this->setReducableVariablesToBeginAtIdentityValue(LDI, 0);
 
   /*

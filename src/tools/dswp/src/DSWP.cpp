@@ -344,10 +344,7 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
      * cloned instructions to refer to the other cloned instructions. Currently,
      * they still refer to the original loop's instructions.
      */
-    adjustDataFlowToUseClones(LDI, i);
-    if (this->verbose >= Verbosity::Maximal) {
-      errs() << "DSWP:  Adjusted data flow between cloned instructions\n";
-    }
+    task->adjustDataFlowToUseClones();
 
     /*
      * Add the unconditional branch from the entry basic block to the header of

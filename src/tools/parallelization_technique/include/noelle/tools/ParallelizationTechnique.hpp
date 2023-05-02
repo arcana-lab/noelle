@@ -162,10 +162,6 @@ protected:
       bool isReduced,
       DominatorSummary &taskDS);
 
-  void adjustDataFlowToUseClones(LoopDependenceInfo *LDI, int taskIndex);
-
-  void adjustDataFlowToUseClones(Instruction *cloneI, int taskIndex);
-
   void setReducableVariablesToBeginAtIdentityValue(LoopDependenceInfo *LDI,
                                                    int taskIndex);
 
