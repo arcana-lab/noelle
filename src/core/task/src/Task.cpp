@@ -194,6 +194,8 @@ std::unordered_set<BasicBlock *> Task::getOriginalBasicBlocks(void) const {
 void Task::addBasicBlock(BasicBlock *original, BasicBlock *internal) {
   this->basicBlockClones[original] = internal;
 
+  //this->adjustDataFlowToUseClones();
+
   return;
 }
 
@@ -220,6 +222,8 @@ BasicBlock *Task::addBasicBlockStub(BasicBlock *original) {
 BasicBlock *Task::cloneAndAddBasicBlock(BasicBlock *original) {
   auto f = [](Instruction *o) -> bool { return true; };
   auto newBB = this->cloneAndAddBasicBlock(original, f);
+
+  //this->adjustDataFlowToUseClones();
 
   return newBB;
 }
@@ -254,6 +258,8 @@ BasicBlock *Task::cloneAndAddBasicBlock(
     this->instructionCloneToOriginal[cloneI] = &I;
   }
 
+  //this->adjustDataFlowToUseClones();
+
   return cloneBB;
 }
 
@@ -267,6 +273,8 @@ void Task::cloneAndAddBasicBlocks(
   for (auto originBB : bbs) {
     this->cloneAndAddBasicBlock(originBB, filter);
   }
+
+  //this->adjustDataFlowToUseClones();
 
   return;
 }
@@ -349,6 +357,8 @@ void Task::addInstruction(Instruction *original, Instruction *internal) {
   this->instructionClones[original] = internal;
   this->instructionCloneToOriginal[internal] = original;
 
+  //this->adjustDataFlowToUseClones();
+
   return;
 }
 
@@ -365,6 +375,8 @@ Instruction *Task::cloneAndAddInstruction(Instruction *original) {
   auto cloneI = original->clone();
 
   this->addInstruction(original, cloneI);
+
+  //this->adjustDataFlowToUseClones();
 
   return cloneI;
 }

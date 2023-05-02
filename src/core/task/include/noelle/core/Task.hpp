@@ -132,6 +132,13 @@ public:
    */
   Value *getEnvironment(void) const;
 
+  /*
+   * Adjust data flows
+   */
+  void adjustDataFlowToUseClones(void);
+
+  void adjustDataFlowToUseClones(Instruction *cloneI);
+
   virtual ~Task();
 
 protected:

@@ -1,6 +1,7 @@
 # Sources
 set(Srcs 
   Task.cpp
+  Task_dataflow.cpp
 )
 
 # Compilation flags
