@@ -868,8 +868,10 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables(
     /*
      * Load the live-in value from the environment pointer.
      */
-    errs() << "GenerateCodeToLoadLiveInVariables:   Environment ID = " << envID << "\n";
-    errs() << "GenerateCodeToLoadLiveInVariables:     Pointer = " << *envPointer << "\n";
+    errs() << "GenerateCodeToLoadLiveInVariables:   Environment ID = " << envID
+           << "\n";
+    errs() << "GenerateCodeToLoadLiveInVariables:     Pointer = " << *envPointer
+           << "\n";
     auto metaString = std::string{ "noelle_environment_variable_" };
     metaString.append(std::to_string(envID));
     auto envLoad = builder.CreateLoad(envPointer, metaString);
@@ -1605,7 +1607,8 @@ std::unordered_map<InductionVariable *, Value *> ParallelizationTechnique::
      * Wire the instructions in the expansion to use the cloned values
      */
     for (auto expandedInst : expandedInsts) {
-      task->adjustDataFlowToUseClones(task->getCloneOfOriginalInstruction(expandedInst));
+      task->adjustDataAndControlFlowToUseClones(
+          task->getCloneOfOriginalInstruction(expandedInst));
     }
     auto clonedStepValue =
         task->getCloneOfOriginalInstruction(expandedInsts.back());

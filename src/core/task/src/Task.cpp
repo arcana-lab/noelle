@@ -194,7 +194,7 @@ std::unordered_set<BasicBlock *> Task::getOriginalBasicBlocks(void) const {
 void Task::addBasicBlock(BasicBlock *original, BasicBlock *internal) {
   this->basicBlockClones[original] = internal;
 
-  //this->adjustDataFlowToUseClones();
+  // this->adjustDataAndControlFlowToUseClones();
 
   return;
 }
@@ -223,7 +223,7 @@ BasicBlock *Task::cloneAndAddBasicBlock(BasicBlock *original) {
   auto f = [](Instruction *o) -> bool { return true; };
   auto newBB = this->cloneAndAddBasicBlock(original, f);
 
-  //this->adjustDataFlowToUseClones();
+  // this->adjustDataAndControlFlowToUseClones();
 
   return newBB;
 }
@@ -258,7 +258,7 @@ BasicBlock *Task::cloneAndAddBasicBlock(
     this->instructionCloneToOriginal[cloneI] = &I;
   }
 
-  //this->adjustDataFlowToUseClones();
+  // this->adjustDataAndControlFlowToUseClones();
 
   return cloneBB;
 }
@@ -274,7 +274,7 @@ void Task::cloneAndAddBasicBlocks(
     this->cloneAndAddBasicBlock(originBB, filter);
   }
 
-  //this->adjustDataFlowToUseClones();
+  // this->adjustDataAndControlFlowToUseClones();
 
   return;
 }
@@ -357,7 +357,7 @@ void Task::addInstruction(Instruction *original, Instruction *internal) {
   this->instructionClones[original] = internal;
   this->instructionCloneToOriginal[internal] = original;
 
-  //this->adjustDataFlowToUseClones();
+  // this->adjustDataAndControlFlowToUseClones();
 
   return;
 }
@@ -376,7 +376,7 @@ Instruction *Task::cloneAndAddInstruction(Instruction *original) {
 
   this->addInstruction(original, cloneI);
 
-  //this->adjustDataFlowToUseClones();
+  // this->adjustDataAndControlFlowToUseClones();
 
   return cloneI;
 }

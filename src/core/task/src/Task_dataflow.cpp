@@ -23,20 +23,20 @@
 
 namespace llvm::noelle {
 
-void Task::adjustDataFlowToUseClones(void){
+void Task::adjustDataAndControlFlowToUseClones(void) {
 
   /*
    * Rewire the data flows.
    */
   for (auto origI : this->getOriginalInstructions()) {
     auto cloneI = this->getCloneOfOriginalInstruction(origI);
-    this->adjustDataFlowToUseClones(cloneI);
+    this->adjustDataAndControlFlowToUseClones(cloneI);
   }
 
-  return ;
+  return;
 }
 
-void Task::adjustDataFlowToUseClones(Instruction *cloneI){
+void Task::adjustDataAndControlFlowToUseClones(Instruction *cloneI) {
 
   /*
    * Adjust basic block references of terminators and PHI nodes
@@ -46,17 +46,20 @@ void Task::adjustDataFlowToUseClones(Instruction *cloneI){
       auto succBB = cloneI->getSuccessor(i);
 
       /*
-       * If the successor basic block is already part of the task body, then we don't need to do anything.
+       * If the successor basic block is already part of the task body, then we
+       * don't need to do anything.
        */
-      if (succBB->getParent() == this->getTaskBody()){
+      if (succBB->getParent() == this->getTaskBody()) {
         continue;
       }
 
       /*
-       * If the basic block is not part of the original set of basic blocks, then we can skip it for now as the task body is in transition to be modified.
+       * If the basic block is not part of the original set of basic blocks,
+       * then we can skip it for now as the task body is in transition to be
+       * modified.
        */
-      if (!this->isAnOriginalBasicBlock(succBB)){
-        continue ;
+      if (!this->isAnOriginalBasicBlock(succBB)) {
+        continue;
       }
 
       /*
@@ -74,17 +77,20 @@ void Task::adjustDataFlowToUseClones(Instruction *cloneI){
       auto incomingBB = phi->getIncomingBlock(i);
 
       /*
-       * If the incoming basic block is already part of the task body, then we have already adjusted it.
+       * If the incoming basic block is already part of the task body, then we
+       * have already adjusted it.
        */
-      if (incomingBB->getParent() == this->getTaskBody()){
+      if (incomingBB->getParent() == this->getTaskBody()) {
         continue;
       }
 
       /*
-       * If the basic block is not part of the original set of basic blocks, then we can skip it for now as the task body is in transition to be modified.
+       * If the basic block is not part of the original set of basic blocks,
+       * then we can skip it for now as the task body is in transition to be
+       * modified.
        */
-      if (!this->isAnOriginalBasicBlock(incomingBB)){
-        continue ;
+      if (!this->isAnOriginalBasicBlock(incomingBB)) {
+        continue;
       }
 
       /*
@@ -145,12 +151,11 @@ void Task::adjustDataFlowToUseClones(Instruction *cloneI){
         errs() << "XAN:       It is an original instruction\n";
         auto cloneOpI = this->getCloneOfOriginalInstruction(opI);
         op.set(cloneOpI);
-
       }
     }
   }
 
-  return ;
+  return;
 }
 
-}
+} // namespace llvm::noelle

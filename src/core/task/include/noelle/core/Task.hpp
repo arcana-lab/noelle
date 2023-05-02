@@ -135,9 +135,9 @@ public:
   /*
    * Adjust data flows
    */
-  void adjustDataFlowToUseClones(void);
+  void adjustDataAndControlFlowToUseClones(void);
 
-  void adjustDataFlowToUseClones(Instruction *cloneI);
+  void adjustDataAndControlFlowToUseClones(Instruction *cloneI);
 
   virtual ~Task();
 

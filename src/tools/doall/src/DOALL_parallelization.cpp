@@ -193,7 +193,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
           LoopDependenceInfoOptimization::MEMORY_CLONING_ID)) {
     this->cloneMemoryLocationsLocallyAndRewireLoop(LDI, 0);
   }
-  chunkerTask->adjustDataFlowToUseClones();
+  chunkerTask->adjustDataAndControlFlowToUseClones();
 
   /*
    * Handle the reduction variables.
