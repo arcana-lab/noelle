@@ -30,6 +30,10 @@ namespace llvm::noelle {
 
 class LoopEnvironmentBuilder {
 public:
+  LoopEnvironmentBuilder(LLVMContext &cxt,
+                         LoopEnvironment *env,
+                         uint64_t numberOfUsers);
+
   LoopEnvironmentBuilder(
       LLVMContext &cxt,
       LoopEnvironment *env,

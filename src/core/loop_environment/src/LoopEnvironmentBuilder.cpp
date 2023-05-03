@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,19 @@
 #include "noelle/core/Architecture.hpp"
 
 namespace llvm::noelle {
+
+LoopEnvironmentBuilder::LoopEnvironmentBuilder(LLVMContext &cxt,
+                                               LoopEnvironment *environment,
+                                               uint64_t numberOfUsers)
+  : LoopEnvironmentBuilder(
+      cxt,
+      environment,
+      [](uint32_t variableID, bool isLiveOut) -> bool { return false; },
+      1,
+      numberOfUsers) {
+
+  return;
+}
 
 LoopEnvironmentBuilder::LoopEnvironmentBuilder(
     LLVMContext &cxt,
