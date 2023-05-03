@@ -214,12 +214,6 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   }
 
   /*
-   * Add the final return to the single task's exit block.
-   */
-  IRBuilder<> exitB(chunkerTask->getExit());
-  exitB.CreateRetVoid();
-
-  /*
    * Store final results to loop live-out variables. Note this occurs after
    * all other code is generated. Propagated PHIs through the generated
    * outer loop might affect the values stored

@@ -382,12 +382,6 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
   }
   this->rewireLoopForIVsToIterateNthIterations(LDI);
 
-  /*
-   * Add the final return instruction to the single task's exit block.
-   */
-  IRBuilder<> exitB(helixTask->getExit());
-  exitB.CreateRetVoid();
-
   if (this->verbose >= Verbosity::Maximal) {
     SubCFGs execGraph(*helixTask->getTaskBody());
     // DGPrinter::writeGraph<SubCFGs, BasicBlock>("unsync-helixtask-loop" +

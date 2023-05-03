@@ -57,6 +57,12 @@ Task::Task(FunctionType *taskSignature, Module &M)
   this->entryBlock = BasicBlock::Create(cxt, "", this->F);
   this->exitBlock = BasicBlock::Create(cxt, "", this->F);
 
+  /*
+   * Add the return instruction.
+   */
+  IRBuilder<> exitB(this->exitBlock);
+  exitB.CreateRetVoid();
+
   return;
 }
 

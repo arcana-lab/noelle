@@ -354,12 +354,6 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
     entryBuilder.CreateBr(task->getCloneOfOriginalBasicBlock(loopHeader));
 
     /*
-     * Add the return instruction at the end of the exit basic block.
-     */
-    IRBuilder<> exitBuilder(task->getExit());
-    exitBuilder.CreateRetVoid();
-
-    /*
      * Store final results to loop live-out variables.
      * Generate a store to propagate the information about which exit block has
      * been taken from the parallelized loop to the code outside it.
