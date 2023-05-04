@@ -24,6 +24,93 @@
 namespace llvm::noelle {
 
 MetadataManager::MetadataManager(Module &M) : program{ M } {
+
+  /*
+   * Collect variable metadata.
+   */
+  for (auto &F : M) {
+    for (auto &inst : instructions(F)) {
+      auto call = dyn_cast<CallInst>(&inst);
+      if (call == nullptr) {
+        continue;
+      }
+      auto callee = call->getCalledFunction();
+      if (callee == nullptr) {
+        continue;
+      }
+      if (callee->getName().compare("llvm.var.annotation") != 0) {
+        continue;
+      }
+      auto ptr = dyn_cast<Instruction>(call->getOperand(0));
+      if (ptr == nullptr) {
+        continue;
+      }
+      if (auto aliasPtr = dyn_cast<BitCastInst>(ptr)) {
+        auto origPtr = aliasPtr->getOperand(0);
+        ptr = dyn_cast<Instruction>(origPtr);
+      }
+      if (ptr == nullptr) {
+        continue;
+      }
+      auto var = dyn_cast<AllocaInst>(ptr);
+      if (var == nullptr) {
+        continue;
+      }
+      auto gep = dyn_cast<GetElementPtrInst>(call->getOperand(1));
+      if (gep != nullptr) {
+        auto annoteStr = dyn_cast<GlobalVariable>(gep->getOperand(0));
+        if (annoteStr == nullptr) {
+          continue;
+        }
+        auto data =
+            dyn_cast<ConstantDataSequential>(annoteStr->getInitializer());
+        if (data == nullptr) {
+          continue;
+        }
+        if (data->isString()) {
+          this->varMetadata[var].insert(data->getAsString());
+        }
+      }
+    }
+  }
+
+  /*
+   * Collect metadata attached to functions.
+   */
+  auto globalArray = M.getGlobalVariable("llvm.global.annotations");
+  if (globalArray != nullptr) {
+    for (auto &globalArrayEntry : globalArray->operands()) {
+      auto globalArrayEntryConstant = dyn_cast<ConstantArray>(globalArrayEntry);
+      if (globalArrayEntryConstant == nullptr) {
+        continue;
+      }
+      for (auto &globalArrayEntryOperand :
+           globalArrayEntryConstant->operands()) {
+        auto globalArrayEntryOperandStruct =
+            dyn_cast<ConstantStruct>(globalArrayEntryOperand);
+        if (globalArrayEntryOperandStruct == nullptr) {
+          continue;
+        }
+        if (globalArrayEntryOperandStruct->getNumOperands() < 2) {
+          continue;
+        }
+        auto annotatedFunction = cast<Function>(
+            globalArrayEntryOperandStruct->getOperand(0)->getOperand(0));
+        auto annotationVariable = dyn_cast<GlobalVariable>(
+            globalArrayEntryOperandStruct->getOperand(1)->getOperand(0));
+        if (annotationVariable == nullptr) {
+          continue;
+        }
+        auto A = dyn_cast<ConstantDataArray>(annotationVariable->getOperand(0));
+        if (A == nullptr) {
+          continue;
+        }
+        auto AS = A->getAsString();
+        this->functionMetadata[annotatedFunction].insert(AS);
+      }
+    }
+  }
+
   return;
 }
 

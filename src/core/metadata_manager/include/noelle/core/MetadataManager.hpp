@@ -128,6 +128,10 @@ public:
                       const std::string &metadataName,
                       const std::string &metadataValue);
 
+  std::set<std::string> getLLVMMetadata(Function *f) const;
+
+  std::set<std::string> getLLVMMetadata(AllocaInst *var) const;
+
 private:
   Module &program;
   std::unordered_map<LoopStructure *,
@@ -135,6 +139,9 @@ private:
       metadata;
 
   void addMetadata(LoopStructure *loop, const std::string &metadataName);
+
+  std::map<Function *, std::set<std::string>> functionMetadata;
+  std::map<AllocaInst *, std::set<std::string>> varMetadata;
 };
 
 } // namespace llvm::noelle

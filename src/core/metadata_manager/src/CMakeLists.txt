@@ -4,6 +4,7 @@ set(Srcs
   MetadataManager.cpp
   MetadataManager_Module.cpp
   MetadataManager_Instruction.cpp
+  MetadataManager_LLVM.cpp
 )
 
 # Compilation flags
