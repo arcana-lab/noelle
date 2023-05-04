@@ -153,6 +153,19 @@ std::set<Function *> FunctionsManager::getFunctions(void) const {
   return s;
 }
 
+std::set<Function *> FunctionsManager::getFunctionsWithPrefix(
+    const std::string &prefixName) const {
+  std::set<Function *> s;
+
+  for (auto &f : this->program) {
+    if (f.getName().startswith(prefixName)) {
+      s.insert(&f);
+    }
+  }
+
+  return s;
+}
+
 std::set<Function *> FunctionsManager::getFunctionsWithBody(void) const {
   std::set<Function *> s;
 

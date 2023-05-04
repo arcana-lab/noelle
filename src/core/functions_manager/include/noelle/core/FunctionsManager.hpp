@@ -45,6 +45,9 @@ public:
 
   std::set<Function *> getFunctions(void) const;
 
+  std::set<Function *> getFunctionsWithPrefix(
+      const std::string &prefixName) const;
+
   std::set<Function *> getFunctionsWithBody(void) const;
 
   std::set<Function *> getFunctionsReachableFrom(Function *startingPoint);
