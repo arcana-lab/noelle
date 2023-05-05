@@ -83,9 +83,9 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Generate an empty task for the parallel DOALL execution.
    */
-  auto chunkerTask = new DOALLTask(taskSignature, *this->n.getProgram());
-  this->fromTaskIDToUserID[chunkerTask->getID()] = 0;
-  this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { chunkerTask });
+  auto doallTask = new DOALLTask(taskSignature, *this->n.getProgram());
+  this->fromTaskIDToUserID[doallTask->getID()] = 0;
+  this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { doallTask });
   this->numTaskInstances = maxCores;
 
   /*
@@ -130,7 +130,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
 
     return true;
   };
-  auto isSkippable = [this, loopEnvironment, sccManager, chunkerTask](
+  auto isSkippable = [this, loopEnvironment, sccManager, doallTask](
                          uint32_t id,
                          bool isLiveOut) -> bool {
     if (isLiveOut) {
@@ -153,7 +153,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
         auto scc = sccManager->getSCCDAG()->sccOfValue(consumer);
         auto sccInfo = sccManager->getSCCAttrs(scc);
         if (isa<ReductionSCC>(sccInfo)) {
-          chunkerTask->addSkippedEnvironmentVariable(producer);
+          doallTask->addSkippedEnvironmentVariable(producer);
           return true;
         }
       }
@@ -185,7 +185,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   this->generateCodeToLoadLiveInVariables(LDI, 0);
 
   /*
-   * HACK: For now, this must follow loading live-ins as this re-wiring
+   * This must follow loading live-ins as this re-wiring
    * overrides the live-in mapping to use locally cloned memory instructions
    * that are live-in to the loop
    */
@@ -193,7 +193,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
           LoopDependenceInfoOptimization::MEMORY_CLONING_ID)) {
     this->cloneMemoryLocationsLocallyAndRewireLoop(LDI, 0);
   }
-  chunkerTask->adjustDataAndControlFlowToUseClones();
+  doallTask->adjustDataAndControlFlowToUseClones();
 
   /*
    * Handle the reduction variables.
@@ -203,7 +203,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Add the jump to start the loop from within the task.
    */
-  this->addJumpToLoop(LDI, chunkerTask);
+  this->addJumpToLoop(LDI, doallTask);
 
   /*
    * Perform the iteration-chunking optimization
@@ -219,7 +219,6 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
    * outer loop might affect the values stored
    */
   this->generateCodeToStoreLiveOutVariables(LDI, 0);
-
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DOALL:  Stored live outs\n";
   }
@@ -239,17 +238,9 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
    * Final printing.
    */
   if (this->verbose >= Verbosity::Maximal) {
-    // loopFunction->print(errs() << "DOALL:  Final outside-loop code:\n" );
-    // errs() << "\n";
-    tasks[0]->getTaskBody()->print(errs()
-                                   << "DOALL:  Final parallelized loop:\n");
+    doallTask->getTaskBody()->print(errs()
+                                    << "DOALL:  Final parallelized loop:\n");
     errs() << "\n";
-    // SubCFGs execGraph(*chunkerTask->getTaskBody());
-    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("doalltask-loop" +
-    // std::to_string(LDI->getID()) + ".dot", &execGraph); SubCFGs
-    // execGraph2(*loopFunction); DGPrinter::writeGraph<SubCFGs,
-    // BasicBlock>("doall-loop-" + std::to_string(LDI->getID()) +
-    // "-function.dot", &execGraph);
   }
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Exit\n";
