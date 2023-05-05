@@ -223,7 +223,10 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
     errs() << "DOALL:  Stored live outs\n";
   }
 
-  this->addChunkFunctionExecutionAsideOriginalLoop(LDI, loopFunction, this->n);
+  /*
+   * Add code to invoke the parallelized loop.
+   */
+  this->invokeParallelizedLoop(LDI);
 
   /*
    * Make PRVGs reentrant to avoid cache sharing.
@@ -249,60 +252,6 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   return true;
 }
 
-void DOALL::addChunkFunctionExecutionAsideOriginalLoop(LoopDependenceInfo *LDI,
-                                                       Function *loopFunction,
-                                                       Noelle &par) {
-
-  /*
-   * Create the environment.
-   */
-  this->allocateEnvironmentArray(LDI);
-  this->populateLiveInEnvironment(LDI);
-
-  /*
-   * Fetch the pointer to the environment.
-   */
-  auto envPtr = envBuilder->getEnvironmentArrayVoidPtr();
-
-  /*
-   * Fetch the number of cores
-   */
-  auto ltm = LDI->getLoopTransformationsManager();
-  auto cm = par.getConstantsManager();
-  auto numCores = cm->getIntegerConstant(ltm->getMaximumNumberOfCores(), 64);
-
-  /*
-   * Fetch the chunk size.
-   */
-  auto chunkSize = cm->getIntegerConstant(ltm->getChunkSize(), 64);
-
-  /*
-   * Call the function that incudes the parallelized loop.
-   */
-  IRBuilder<> doallBuilder(this->entryPointOfParallelizedLoop);
-  auto doallCallInst = doallBuilder.CreateCall(
-      this->taskDispatcher,
-      ArrayRef<Value *>(
-          { tasks[0]->getTaskBody(), envPtr, numCores, chunkSize }));
-  auto numThreadsUsed =
-      doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)0);
-
-  /*
-   * Propagate the last value of live-out variables to the code outside the
-   * parallelized loop.
-   */
-  auto latestBBAfterDOALLCall =
-      this->performReductionToAllReducableLiveOutVariables(LDI, numThreadsUsed);
-
-  /*
-   * Jump to the unique successor of the loop.
-   */
-  IRBuilder<> afterDOALLBuilder{ latestBBAfterDOALLCall };
-  afterDOALLBuilder.CreateBr(this->exitPointOfParallelizedLoop);
-
-  return;
-}
-
 void DOALL::addJumpToLoop(LoopDependenceInfo *LDI, Task *t) {
 
   /*
@@ -317,8 +266,6 @@ void DOALL::addJumpToLoop(LoopDependenceInfo *LDI, Task *t) {
    */
   IRBuilder<> entryBuilder(t->getEntry());
   entryBuilder.CreateBr(headerClone);
-
-  return;
 }
 
 } // namespace llvm::noelle

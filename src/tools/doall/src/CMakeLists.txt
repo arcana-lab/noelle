@@ -7,6 +7,7 @@ set(Srcs
   DOALL_applicabilityGuard.cpp
   DOALL_parallelization.cpp
   DOALL_chunking.cpp
+  DOALL_linker.cpp
 )
 
 # Compilation flags

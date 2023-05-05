@@ -60,10 +60,7 @@ protected:
   Noelle &n;
   std::map<PHINode *, std::set<Instruction *>> IVValueJustBeforeEnteringBody;
 
-  virtual void addChunkFunctionExecutionAsideOriginalLoop(
-      LoopDependenceInfo *LDI,
-      Function *loopFunction,
-      Noelle &par);
+  virtual void invokeParallelizedLoop(LoopDependenceInfo *LDI);
 
   /*
    * DOALL specific generation
