@@ -23,14 +23,16 @@
 
 namespace llvm::noelle {
 
-std::set<std::string> MetadataManager::getLLVMMetadata(Function *f) const {
+std::set<std::string> MetadataManager::getSourceCodeAnnotations(
+    Function *f) const {
   if (this->functionMetadata.find(f) == this->functionMetadata.end()) {
     return {};
   }
   return this->functionMetadata.at(f);
 }
 
-std::set<std::string> MetadataManager::getLLVMMetadata(AllocaInst *var) const {
+std::set<std::string> MetadataManager::getSourceCodeAnnotations(
+    AllocaInst *var) const {
   if (this->varMetadata.find(var) == this->varMetadata.end()) {
     return {};
   }

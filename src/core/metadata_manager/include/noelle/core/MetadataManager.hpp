@@ -128,9 +128,9 @@ public:
                       const std::string &metadataName,
                       const std::string &metadataValue);
 
-  std::set<std::string> getLLVMMetadata(Function *f) const;
+  std::set<std::string> getSourceCodeAnnotations(Function *f) const;
 
-  std::set<std::string> getLLVMMetadata(AllocaInst *var) const;
+  std::set<std::string> getSourceCodeAnnotations(AllocaInst *var) const;
 
 private:
   Module &program;

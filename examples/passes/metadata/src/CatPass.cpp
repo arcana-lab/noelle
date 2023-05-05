@@ -42,13 +42,13 @@ struct CAT : public ModulePass {
      * Check metadata attached to functions.
      */
     for (auto &F : M) {
-      auto annotations = mm->getLLVMMetadata(&F);
+      auto annotations = mm->getSourceCodeAnnotations(&F);
       if (annotations.size() == 0) {
         continue;
       }
       errs() << "Function \"" << F.getName()
              << "\" has the following annotations:\n";
-      for (auto annotation : mm->getLLVMMetadata(&F)) {
+      for (auto annotation : annotations) {
         errs() << "  \"" << annotation << "\"\n";
       }
     }
@@ -62,7 +62,7 @@ struct CAT : public ModulePass {
         if (var == nullptr) {
           continue;
         }
-        auto annotations = mm->getLLVMMetadata(var);
+        auto annotations = mm->getSourceCodeAnnotations(var);
         if (annotations.size() == 0) {
           continue;
         }
