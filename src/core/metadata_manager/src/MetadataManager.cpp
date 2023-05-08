@@ -94,8 +94,11 @@ MetadataManager::MetadataManager(Module &M) : program{ M } {
         if (globalArrayEntryOperandStruct->getNumOperands() < 2) {
           continue;
         }
-        auto annotatedFunction = cast<Function>(
+        auto annotatedFunction = dyn_cast<Function>(
             globalArrayEntryOperandStruct->getOperand(0)->getOperand(0));
+        if (annotatedFunction == nullptr) {
+          continue;
+        }
         auto annotationVariable = dyn_cast<GlobalVariable>(
             globalArrayEntryOperandStruct->getOperand(1)->getOperand(0));
         if (annotationVariable == nullptr) {
