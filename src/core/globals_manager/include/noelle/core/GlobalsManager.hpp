@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 - 2022  Simone Campanoni
+ * Copyright 2022 - 2023  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,32 +19,20 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/MetadataManager.hpp"
+#pragma once
+
+#include "noelle/core/SystemHeaders.hpp"
 
 namespace llvm::noelle {
 
-std::set<std::string> MetadataManager::getSourceCodeAnnotations(
-    Function *f) const {
-  if (this->functionMetadata.find(f) == this->functionMetadata.end()) {
-    return {};
-  }
-  return this->functionMetadata.at(f);
-}
+class GlobalsManager {
+public:
+  GlobalsManager(Module &m);
 
-std::set<std::string> MetadataManager::getSourceCodeAnnotations(
-    AllocaInst *var) const {
-  if (this->varMetadata.find(var) == this->varMetadata.end()) {
-    return {};
-  }
-  return this->varMetadata.at(var);
-}
+  std::set<GlobalVariable *> getGlobals(void) const;
 
-std::set<std::string> MetadataManager::getSourceCodeAnnotations(
-    GlobalVariable *g) const {
-  if (this->globalMetadata.find(g) == this->globalMetadata.end()) {
-    return {};
-  }
-  return this->globalMetadata.at(g);
-}
+private:
+  Module &program;
+};
 
 } // namespace llvm::noelle

@@ -219,4 +219,12 @@ std::set<AliasAnalysisEngine *> Noelle::getAliasAnalysisEngines(void) {
   return this->aaEngines;
 }
 
+GlobalsManager *Noelle::getGlobalsManager(void) {
+  if (!this->gm) {
+    this->gm = new GlobalsManager(*this->program);
+  }
+
+  return this->gm;
+}
+
 } // namespace llvm::noelle

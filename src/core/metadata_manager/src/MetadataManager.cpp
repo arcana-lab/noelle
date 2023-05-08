@@ -86,17 +86,16 @@ MetadataManager::MetadataManager(Module &M) : program{ M } {
       }
       for (auto &globalArrayEntryOperand :
            globalArrayEntryConstant->operands()) {
+
+        /*
+         * Fetch the annotation.
+         */
         auto globalArrayEntryOperandStruct =
             dyn_cast<ConstantStruct>(globalArrayEntryOperand);
         if (globalArrayEntryOperandStruct == nullptr) {
           continue;
         }
         if (globalArrayEntryOperandStruct->getNumOperands() < 2) {
-          continue;
-        }
-        auto annotatedFunction = dyn_cast<Function>(
-            globalArrayEntryOperandStruct->getOperand(0)->getOperand(0));
-        if (annotatedFunction == nullptr) {
           continue;
         }
         auto annotationVariable = dyn_cast<GlobalVariable>(
@@ -109,7 +108,28 @@ MetadataManager::MetadataManager(Module &M) : program{ M } {
           continue;
         }
         auto AS = A->getAsString();
-        this->functionMetadata[annotatedFunction].insert(AS);
+
+        /*
+         * Attach the annotation.
+         *
+         * Case 0: function
+         */
+        auto annotatedFunction = dyn_cast<Function>(
+            globalArrayEntryOperandStruct->getOperand(0)->getOperand(0));
+        if (annotatedFunction != nullptr) {
+          this->functionMetadata[annotatedFunction].insert(AS);
+          continue;
+        }
+
+        /*
+         * Case 1: global
+         */
+        auto annotatedGlobal = dyn_cast<GlobalVariable>(
+            globalArrayEntryOperandStruct->getOperand(0)->getOperand(0));
+        if (annotatedGlobal != nullptr) {
+          this->globalMetadata[annotatedGlobal].insert(AS);
+          continue;
+        }
       }
     }
   }

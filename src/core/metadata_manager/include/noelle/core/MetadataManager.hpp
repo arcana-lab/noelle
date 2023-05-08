@@ -132,6 +132,8 @@ public:
 
   std::set<std::string> getSourceCodeAnnotations(AllocaInst *var) const;
 
+  std::set<std::string> getSourceCodeAnnotations(GlobalVariable *g) const;
+
 private:
   Module &program;
   std::unordered_map<LoopStructure *,
@@ -142,6 +144,7 @@ private:
 
   std::map<Function *, std::set<std::string>> functionMetadata;
   std::map<AllocaInst *, std::set<std::string>> varMetadata;
+  std::map<GlobalVariable *, std::set<std::string>> globalMetadata;
 };
 
 } // namespace llvm::noelle

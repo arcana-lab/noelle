@@ -34,6 +34,7 @@
 #include "noelle/core/MetadataManager.hpp"
 #include "noelle/core/LoopTransformer.hpp"
 #include "noelle/core/FunctionsManager.hpp"
+#include "noelle/core/GlobalsManager.hpp"
 #include "noelle/core/TypesManager.hpp"
 #include "noelle/core/ConstantsManager.hpp"
 #include "noelle/core/CompilationOptionsManager.hpp"
@@ -67,6 +68,8 @@ public:
   bool runOnModule(Module &M) override;
 
   FunctionsManager *getFunctionsManager(void);
+
+  GlobalsManager *getGlobalsManager(void);
 
   CompilationOptionsManager *getCompilationOptionsManager(void);
 
@@ -236,6 +239,7 @@ private:
   std::map<uint32_t, uint32_t> techniquesToDisable;
   std::map<uint32_t, uint32_t> DOALLChunkSize;
   FunctionsManager *fm;
+  GlobalsManager *gm;
   TypesManager *tm;
   ConstantsManager *cm;
   CompilationOptionsManager *om;
