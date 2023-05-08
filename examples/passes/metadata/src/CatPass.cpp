@@ -34,9 +34,10 @@ struct CAT : public ModulePass {
     auto &noelle = getAnalysis<Noelle>();
 
     /*
-     * Fetch the metadata manager.
+     * Fetch the managers.
      */
     auto mm = noelle.getMetadataManager();
+    auto gm = noelle.getGlobalsManager();
 
     /*
      * Check metadata attached to functions.
@@ -72,6 +73,20 @@ struct CAT : public ModulePass {
         for (auto annotation : annotations) {
           errs() << "       \"" << annotation << "\"\n";
         }
+      }
+    }
+
+    /*
+     * Check metadata attached to globals.
+     */
+    for (auto g : gm->getGlobals()) {
+      auto annotations = mm->getSourceCodeAnnotations(g);
+      if (annotations.size() == 0) {
+        continue;
+      }
+      errs() << "Global \"" << *g << "\" has the following annotations:\n";
+      for (auto annotation : annotations) {
+        errs() << "       \"" << annotation << "\"\n";
       }
     }
 
