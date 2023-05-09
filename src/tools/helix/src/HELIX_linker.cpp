@@ -23,9 +23,8 @@
 
 namespace llvm::noelle {
 
-void HELIX::addChunkFunctionExecutionAsideOriginalLoop(
-    LoopDependenceInfo *LDI,
-    uint64_t numberOfSequentialSegments) {
+void HELIX::invokeParallelizedLoop(LoopDependenceInfo *LDI,
+                                   uint64_t numberOfSequentialSegments) {
 
   /*
    * Fetch the loop function.

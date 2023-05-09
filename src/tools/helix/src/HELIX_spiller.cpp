@@ -236,17 +236,6 @@ void HELIX::createLoadsAndStoresToSpilledLCD(
                                          spillEnvPtr,
                                          DS,
                                          originalFrontierBlocks);
-
-  // for (auto load : spill->environmentLoads) {
-  // load->getParent()->print(errs() << "Load block: "); errs() << "\n";
-  // }
-  // for (auto clonedLiveOut :
-  // helixTask->getClonesOfOriginalLiveOut(spill->originalLoopCarriedPHI)) {
-  // clonedLiveOut->print(errs() << "Cloned live out: "); errs() << "\n";
-  // }
-  // helixTask->getTaskBody()->print(errs() << "Task after:\n"); errs() << "\n";
-
-  return;
 }
 
 void HELIX::insertStoresToSpilledLCD(
@@ -294,8 +283,6 @@ void HELIX::insertStoresToSpilledLCD(
     spill->environmentStores.insert(
         builder.CreateStore(incomingV, spillEnvPtr));
   }
-
-  return;
 }
 
 void HELIX::defineFrontierForLoadsToSpilledLCD(
@@ -534,8 +521,6 @@ void HELIX::replaceUsesOfSpilledPHIWithLoads(
     }
     assert(isCovered);
   }
-
-  return;
 }
 
 } // namespace llvm::noelle

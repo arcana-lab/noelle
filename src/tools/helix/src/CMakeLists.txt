@@ -1,18 +1,20 @@
 # Sources
 set(Srcs 
   HELIX.cpp
-  HELIXTask.cpp
-  HELIXTaskInternalDependenceGraph.cpp
-  Linker.cpp
-  Spiller.cpp
+  HELIX_applicabilityGuard.cpp
+  HELIX_parallelization.cpp
+  HELIX_lastIteration.cpp
+  HELIX_prologue.cpp
+  HELIX_synchronization.cpp
+  HELIX_spiller.cpp
+  HELIX_scheduler.cpp
+  HELIX_inliner.cpp
   InductionVariableStepper.cpp
   SequentialSegments.cpp
   SequentialSegment.cpp
-  Scheduler.cpp
-  Synchronization.cpp
-  Inliner.cpp
-  HELIXPreamble.cpp
-  HELIXLastIteration.cpp
+  HELIX_linker.cpp
+  HELIXTask.cpp
+  HELIXTaskInternalDependenceGraph.cpp
 )
 
 # Compilation flags

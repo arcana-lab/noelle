@@ -74,9 +74,8 @@ protected:
 
   virtual bool synchronizeTask(LoopDependenceInfo *LDI, Heuristics *h);
 
-  virtual void addChunkFunctionExecutionAsideOriginalLoop(
-      LoopDependenceInfo *LDI,
-      uint64_t numberOfSequentialSegments);
+  virtual void invokeParallelizedLoop(LoopDependenceInfo *LDI,
+                                      uint64_t numberOfSequentialSegments);
 
   void spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
                                         DataFlowResult *reachabilityDFR);
