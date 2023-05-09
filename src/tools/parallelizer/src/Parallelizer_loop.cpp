@@ -128,7 +128,7 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
     codeModified = doall.apply(LDI, h);
     usedTechnique = &doall;
 
-  } else if (true && par.isTransformationEnabled(HELIX_ID)
+  } else if (par.isTransformationEnabled(HELIX_ID)
              && ltm->isTransformationEnabled(HELIX_ID)
              && helix.canBeAppliedToLoop(LDI, h)) {
 
