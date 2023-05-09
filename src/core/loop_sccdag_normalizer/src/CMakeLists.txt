@@ -1,16 +1,13 @@
 # Sources
 set(Srcs 
-  ControlFlowEquivalence.cpp
-  LoopAwareMemDepAnalysis.cpp
-  LoopDependenceInfo.cpp
-  LoopTransformationsOptions.cpp
+  SCCDAGNormalizer.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "LoopContent")
+set(PassName "LoopSCCDAGNormalizer")
 
 # configure LLVM 
 find_package(LLVM 9 REQUIRED CONFIG)
@@ -28,14 +25,12 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../basic_utilities/include 
   ../../dominators/include 
   ../../transformations/include
-  ../../callgraph/include
   ../../dataflow/include
   ../../architecture/include 
   ../../alloc_aa/include 
   ../../dg/include 
   ../../pdg/include 
   ../../pdg_analysis/include 
-  ../../hotprofiler/include 
   ../../loop_structure/include 
   ../../loop_environment/include 
   ../../loop_forest/include
