@@ -68,8 +68,12 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
   /*
    * Determine start value of the IV for the task
    * The start value of an IV depends on the first iteration executed by a task.
-   * This value, for a given task, is: original_start + original_step_size *
-   * task_id * chunk_size
+   * This value, for a given task, is
+   *    = original_start + (original_step_size * task_instance_id * chunk_size)
+   *
+   * where task_logical_id is the dynamic ID that spawn tasks will have, which
+   * start at 0 (for the first task instance), 1 (for the second task instance),
+   * until N-1 (for the last task instance).
    */
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
     auto startOfIV = this->fetchClone(ivInfo->getStartValue());
@@ -81,7 +85,7 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
         preheaderClone,
         ivPHI,
         stepOfIV,
-        entryBuilder.CreateMul(task->coreArg,
+        entryBuilder.CreateMul(task->taskInstanceID,
                                task->chunkSizeArg,
                                "coreIdx_X_chunkSize"));
 
@@ -91,9 +95,12 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
   }
 
   /*
-   * Determine additional step size from the beginning of the next core's chunk
-   * to the start of this core's next chunk
-   * chunk_step_size: original_step_size * (num_cores - 1) * chunk_size
+   * Determine additional step size
+   *   from the beginning of the chunk that will be executed by the next task
+   *   to the start of the next chunk that task-instance will execute.
+   * The step size is this:
+   *   chunk_step_size: original_step_size * (num_task_instances - 1) *
+   * chunk_size
    */
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
@@ -105,7 +112,7 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
         preheaderClone,
         ivPHI,
         stepOfIV,
-        entryBuilder.CreateMul(entryBuilder.CreateSub(task->numCoresArg,
+        entryBuilder.CreateMul(entryBuilder.CreateSub(task->numTaskInstances,
                                                       onesValueForChunking,
                                                       "numCoresMinus1"),
                                task->chunkSizeArg,
@@ -118,6 +125,9 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
     this->IVValueJustBeforeEnteringBody[ivPHI] = chunkedIVValues;
   }
 
+  /*
+   * Fetch the SCCDAG of the loop.
+   */
   auto sccManager = LDI->getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
 
@@ -173,7 +183,7 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
      * This value is: initialValue + step_size * ((task_id * chunk_size) %
      * period)
      */
-    auto coreIDxChunkSize = entryBuilder.CreateMul(task->coreArg,
+    auto coreIDxChunkSize = entryBuilder.CreateMul(task->taskInstanceID,
                                                    task->chunkSizeArg,
                                                    "coreIdx_X_chunkSize");
     auto numSteps =
@@ -195,7 +205,7 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
      * chunk_size)) % period
      */
     auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);
-    auto numCoresMinus1 = entryBuilder.CreateSub(task->numCoresArg,
+    auto numCoresMinus1 = entryBuilder.CreateSub(task->numTaskInstances,
                                                  onesValueForChunking,
                                                  "numCoresMinus1");
     auto chunkStepSize = entryBuilder.CreateMul(numCoresMinus1,

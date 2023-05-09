@@ -38,7 +38,7 @@ public:
   /*
    * Chunking function specific arguments
    */
-  Value *coreArg, *numCoresArg, *chunkSizeArg;
+  Value *taskInstanceID, *numTaskInstances, *chunkSizeArg;
 
   /*
    * Clone of original IV loop, new outer loop
