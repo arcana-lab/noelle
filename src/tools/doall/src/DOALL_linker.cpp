@@ -52,25 +52,32 @@ void DOALL::invokeParallelizedLoop(LoopDependenceInfo *LDI) {
   auto chunkSize = cm->getIntegerConstant(ltm->getChunkSize(), 64);
 
   /*
-   * Call the function that incudes the parallelized loop.
+   * Call the dispatcher that will dispatch the tasks that execute the
+   * parallelized loop.
    */
   IRBuilder<> doallBuilder(this->entryPointOfParallelizedLoop);
   auto doallCallInst = doallBuilder.CreateCall(
       this->taskDispatcher,
       ArrayRef<Value *>(
           { tasks[0]->getTaskBody(), envPtr, numCores, chunkSize }));
+
+  /*
+   * Get the return value of the dispatcher, which has the information about how
+   * many threads have been spawn.
+   */
   auto numThreadsUsed =
       doallBuilder.CreateExtractValue(doallCallInst, (uint64_t)0);
 
   /*
-   * Propagate the last value of live-out variables to the code outside the
-   * parallelized loop.
+   * Propagate the live-out variables computed within tasks to the code outside
+   * the parallelized loop.
    */
   auto latestBBAfterDOALLCall =
       this->performReductionToAllReducableLiveOutVariables(LDI, numThreadsUsed);
 
   /*
    * Jump to the unique successor of the loop.
+   * This loop can only have one successor because it is a DOALL.
    */
   IRBuilder<> afterDOALLBuilder{ latestBBAfterDOALLCall };
   afterDOALLBuilder.CreateBr(this->exitPointOfParallelizedLoop);
