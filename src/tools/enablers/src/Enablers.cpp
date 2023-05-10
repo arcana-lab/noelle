@@ -32,6 +32,12 @@ bool EnablersManager::applyEnablers(
     LoopInvariantCodeMotion &loopInvariantCodeMotion,
     SCEVSimplification &scevSimplification) {
 
+  if (auto getcFunc =
+          LDI->getLoopStructure()->getHeader()->getModule()->getFunction(
+              "getc")) {
+    getcFunc->setName("getc_unlocked");
+  }
+
   /*
    * Apply loop distribution.
    */
