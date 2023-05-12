@@ -102,12 +102,6 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister(void) {
       errs() << "\n";
     }
 
-    // if (hoistMemoryInstructionsRelyingOnExistingRegisterValues(memorySCC,
-    // memoryInst)) {
-    //   modified = true;
-    //   continue;
-    // }
-
     /*
      * Promote the single memory location used in the current SCC to variables.
      */
@@ -172,11 +166,14 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations(
        * Check if the current instruction cannot access memory and therefore it
        * can be safely skipped
        *
-       * TODO: Expand understanding of instructions that won't interfere
+       * TODO: Expand understanding of instructions that won't interfere by
+       * including call instructions using the call graph
        */
       if (isa<BinaryOperator>(value) || isa<CmpInst>(value)
           || isa<BranchInst>(value) || isa<SelectInst>(value)
-          || isa<CastInst>(value) || isa<PHINode>(value)) {
+          || isa<SwitchInst>(value) || isa<CastInst>(value)
+          || isa<GetElementPtrInst>(value) || isa<IndirectBrInst>(value)
+          || isa<PHINode>(value)) {
         continue;
       }
 

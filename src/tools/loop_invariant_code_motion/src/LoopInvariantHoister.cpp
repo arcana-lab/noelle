@@ -82,13 +82,18 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
         if (calleeFunction == nullptr) {
 
           /*
-           * The callee is unknown
+           * The callee is unknown.
+           * Hence, we must be conservative and assume that callee will write to
+           * memory.
+           * TODO: this can be improved by using the call graph of NOELLE to
+           * check all possible callees.
            */
           mayWriteToMemory = true;
+
         } else {
 
           /*
-           * The callee is known.
+           * The callee is known and there is only one possible callee.
            *
            * Check if the callee is a library function.
            */
@@ -157,6 +162,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
       }
       if (dependentInvariantsInLoop.size() == 0) {
         errs() << "LICM:       The instruction can be hoisted\n";
+
       } else {
         errs()
             << "LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:\n";
@@ -193,13 +199,15 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
       Value *valueToReplacePHI = nullptr;
       for (auto i = 0; i < phi->getNumIncomingValues(); ++i) {
         auto incomingBlock = phi->getIncomingBlock(i);
-        if (!DS->DT.dominates(incomingBlock, B))
+        if (!DS->DT.dominates(incomingBlock, B)) {
           continue;
+        }
         valueToReplacePHI = phi->getIncomingValue(i);
         break;
       }
-      if (!valueToReplacePHI)
+      if (!valueToReplacePHI) {
         continue;
+      }
 
       /*
        * Note, the users are modified, so we must cache them first
