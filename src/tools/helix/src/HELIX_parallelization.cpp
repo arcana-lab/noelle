@@ -67,7 +67,13 @@ bool HELIX::apply(LoopDependenceInfo *LDI, Heuristics *h) {
     return true;
   }
 
-  auto modified = this->synchronizeTask(LDI, h);
+  /*
+   * A task has been defined already.
+   * Add synchronizations into it.
+   */
+  assert(this->tasks.size() == 1);
+  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
+  auto modified = this->synchronizeTask(LDI, h, helixTask);
 
   return modified;
 }
@@ -153,7 +159,6 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
   this->addPredecessorAndSuccessorsBasicBlocksToTasks(LDI, { helixTask });
   auto ltm = LDI->getLoopTransformationsManager();
   this->numTaskInstances = ltm->getMaximumNumberOfCores();
-  assert(helixTask == this->tasks[0]);
 
   /*
    * Fetch the environment of the loop
@@ -286,7 +291,7 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
         << this->prefixString
         << "  Check if we need to spill variables because they are part of loop carried data dependencies\n";
   }
-  this->spillLoopCarriedDataDependencies(LDI, reachabilityDFR);
+  this->spillLoopCarriedDataDependencies(LDI, reachabilityDFR, helixTask);
 
   /*
    * For IVs that were not spilled, adjust their step size appropriately
@@ -296,28 +301,18 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
   }
   this->rewireLoopForIVsToIterateNthIterations(LDI);
 
-  if (this->verbose >= Verbosity::Maximal) {
-    SubCFGs execGraph(*helixTask->getTaskBody());
-    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("unsync-helixtask-loop" +
-    // std::to_string(LDI->getID()) + ".dot", &execGraph);
-  }
-
   /*
    * Delete reachability results
    */
   delete reachabilityDFR;
-
-  return;
 }
 
-bool HELIX::synchronizeTask(LoopDependenceInfo *LDI, Heuristics *h) {
+bool HELIX::synchronizeTask(LoopDependenceInfo *LDI,
+                            Heuristics *h,
+                            HELIXTask *helixTask) {
   assert(LDI != nullptr);
   assert(h != nullptr);
-
-  /*
-   * Fetch the HELIX task.
-   */
-  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
+  assert(helixTask != nullptr);
 
   /*
    * Compute reachability analysis for computing SS frontiers and scheduling SS
@@ -410,7 +405,7 @@ bool HELIX::synchronizeTask(LoopDependenceInfo *LDI, Heuristics *h) {
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "HELIX:  Synchronizing sequential segments\n";
   }
-  this->addSynchronizations(LDI, &sequentialSegments);
+  this->addSynchronizations(LDI, &sequentialSegments, helixTask);
 
   /*
    * Store final results of loop live-out variables.
@@ -513,10 +508,6 @@ bool HELIX::synchronizeTask(LoopDependenceInfo *LDI, Heuristics *h) {
   if (this->verbose >= Verbosity::Maximal) {
     helixTask->getTaskBody()->print(errs() << "HELIX:  Task code:\n");
     errs() << "\n";
-    // errs() << "HELIX: Exit\n";
-    // SubCFGs execGraph(*helixTask->getTaskBody());
-    // DGPrinter::writeGraph<SubCFGs, BasicBlock>("helixtask-loop" +
-    // std::to_string(LDI->getID()) + ".dot", &execGraph);
   }
 
   /*

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -26,13 +26,8 @@
 namespace llvm::noelle {
 
 void HELIX::spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
-                                             DataFlowResult *reachabilityDFR) {
-
-  /*
-   * Fetch the task
-   */
-  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
-  assert(helixTask != nullptr);
+                                             DataFlowResult *reachabilityDFR,
+                                             HELIXTask *helixTask) {
 
   /*
    * Fetch the header.

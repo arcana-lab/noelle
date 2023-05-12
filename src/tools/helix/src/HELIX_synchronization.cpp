@@ -25,7 +25,8 @@
 namespace llvm::noelle {
 
 void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
-                                std::vector<SequentialSegment *> *sss) {
+                                std::vector<SequentialSegment *> *sss,
+                                HELIXTask *helixTask) {
 
   /*
    * Check if there are sequential segments.
@@ -36,13 +37,6 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
     }
     return;
   }
-
-  /*
-   * Fetch the HELIX task.
-   */
-  assert(this->tasks.size() == 1);
-  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
-  IRBuilder<> entryBuilder(helixTask->getEntry()->getTerminator());
 
   /*
    * Fetch the header.
@@ -90,6 +84,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
    * Allocate space to track sequential segment entry state
    */
   std::vector<Value *> ssStates{};
+  IRBuilder<> entryBuilder(helixTask->getEntry()->getTerminator());
   for (auto ss : *sss) {
     this->computeAndCachePointerOfPastSequentialSegment(helixTask, ss->getID());
     this->computeAndCachePointerOfFutureSequentialSegment(helixTask,

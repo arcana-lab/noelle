@@ -83,8 +83,6 @@ void HELIX::invokeParallelizedLoop(LoopDependenceInfo *LDI,
 
   IRBuilder<> afterCallBuilder{ latestBBAfterCall };
   afterCallBuilder.CreateBr(this->exitPointOfParallelizedLoop);
-
-  return;
 }
 
 } // namespace llvm::noelle

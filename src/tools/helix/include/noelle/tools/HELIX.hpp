@@ -72,13 +72,16 @@ public:
 protected:
   virtual void createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h);
 
-  virtual bool synchronizeTask(LoopDependenceInfo *LDI, Heuristics *h);
+  virtual bool synchronizeTask(LoopDependenceInfo *LDI,
+                               Heuristics *h,
+                               HELIXTask *helixTask);
 
   virtual void invokeParallelizedLoop(LoopDependenceInfo *LDI,
                                       uint64_t numberOfSequentialSegments);
 
   void spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
-                                        DataFlowResult *reachabilityDFR);
+                                        DataFlowResult *reachabilityDFR,
+                                        HELIXTask *helixTask);
 
   void createLoadsAndStoresToSpilledLCD(
       LoopDependenceInfo *LDI,
@@ -123,7 +126,8 @@ protected:
                                   DataFlowResult *reachabilityDFR);
 
   void addSynchronizations(LoopDependenceInfo *LDI,
-                           std::vector<SequentialSegment *> *sss);
+                           std::vector<SequentialSegment *> *sss,
+                           HELIXTask *helixTask);
 
   virtual CallInst *injectWaitCall(IRBuilder<> &builder, uint32_t ssID);
 
