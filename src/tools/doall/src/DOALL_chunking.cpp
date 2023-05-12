@@ -683,8 +683,6 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
       preheaderBuilder.CreateAnd(isNotFirstIteration, clonedExitCmpInst),
       task->getExit(),
       headerClone);
-
-  return;
 }
 
 } // namespace llvm::noelle
