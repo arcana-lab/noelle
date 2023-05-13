@@ -52,6 +52,11 @@ cmdToExecute="noelle-simplification $notOptions -o $notOptions"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 
+# Make file accesses more amenable for parallelization
+cmdToExecute="noelle-io $notOptions"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+
 # Inline functions
 cmdToExecute="noelle-inline $notOptions \"-noelle-inliner-verbose=1 $options\""
 echo $cmdToExecute ;
