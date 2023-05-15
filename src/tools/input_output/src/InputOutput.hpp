@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2021  Simone Campanoni
+ * Copyright 2023  Tzu-Hsuan Huang, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
