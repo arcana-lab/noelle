@@ -1,0 +1,12 @@
+#!/bin/bash
+
+installDir
+
+bcFile="$@" ;
+
+# Set the command to execute
+cmdToExecute="noelle-load -load ${installDir}/lib/InputOutput.so -inputoutput ${bcFile} -o ${bcFile}"
+echo $cmdToExecute ;
+
+# Execute the command
+eval $cmdToExecute ;
