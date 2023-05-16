@@ -403,6 +403,56 @@ LoopDependenceInfo *Noelle::getLoop(
   return ldi;
 }
 
+LoopDependenceInfo *Noelle::getLoop(BasicBlock *header,
+                                    PDG *functionPDG,
+                                    LoopTransformationsManager *ltm) {
+
+  /*
+   * Get the dominators.
+   */
+  auto function = header->getParent();
+  auto DS = this->getDominators(function);
+
+  /*
+   * Set the parallelizations that are enabled.
+   */
+  uint32_t techniquesToDisable = 0;
+  auto doallEnabled = ltm->isTransformationEnabled(Transformation::DOALL_ID);
+  auto dswpEnabled = ltm->isTransformationEnabled(Transformation::DSWP_ID);
+  auto helixEnabled = ltm->isTransformationEnabled(Transformation::HELIX_ID);
+  if (doallEnabled && (!dswpEnabled) && helixEnabled) {
+    techniquesToDisable = 1;
+  }
+  if (doallEnabled && dswpEnabled && (!helixEnabled)) {
+    techniquesToDisable = 2;
+  }
+  if ((!doallEnabled) && dswpEnabled && helixEnabled) {
+    techniquesToDisable = 3;
+  }
+  if (doallEnabled && (!dswpEnabled) && (!helixEnabled)) {
+    techniquesToDisable = 4;
+  }
+  if ((!doallEnabled) && (!dswpEnabled) && helixEnabled) {
+    techniquesToDisable = 5;
+  }
+  if ((!doallEnabled) && dswpEnabled && (!helixEnabled)) {
+    techniquesToDisable = 6;
+  }
+
+  /*
+   * Fetch the loop content.
+   */
+  auto ldi = this->getLoopDependenceInfoForLoop(header,
+                                                functionPDG,
+                                                DS,
+                                                techniquesToDisable,
+                                                ltm->getChunkSize(),
+                                                ltm->getMaximumNumberOfCores(),
+                                                ltm->getOptimizationsEnabled());
+
+  return ldi;
+}
+
 std::vector<LoopDependenceInfo *> *Noelle::getLoops(Function *function) {
   if (function->empty()) {
     return {};
@@ -1384,8 +1434,7 @@ void Noelle::filterOutLoops(noelle::LoopForest *f,
    */
   std::vector<noelle::LoopTree *> toDelete{};
   for (auto tree : f->getTrees()) {
-    auto myF = [&filter, &toDelete](noelle::LoopTree *n,
-                                    uint32_t l) -> bool {
+    auto myF = [&filter, &toDelete](noelle::LoopTree *n, uint32_t l) -> bool {
       auto ls = n->getLoop();
       if (filter(ls)) {
         toDelete.push_back(n);

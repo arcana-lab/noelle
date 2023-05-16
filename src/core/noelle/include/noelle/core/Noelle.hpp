@@ -151,6 +151,10 @@ public:
       LoopStructure *loop,
       std::unordered_set<LoopDependenceInfoOptimization> optimizations);
 
+  LoopDependenceInfo *getLoop(BasicBlock *header,
+                              PDG *functionPDG,
+                              LoopTransformationsManager *ltm);
+
   uint32_t getNumberOfProgramLoops(void);
 
   uint32_t getNumberOfProgramLoops(double minimumHotness);
