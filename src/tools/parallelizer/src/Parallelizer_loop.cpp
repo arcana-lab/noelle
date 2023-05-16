@@ -118,7 +118,7 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
   auto codeModified = false;
   auto ltm = LDI->getLoopTransformationsManager();
   ParallelizationTechnique *usedTechnique = nullptr;
-  if (true && par.isTransformationEnabled(DOALL_ID)
+  if (par.isTransformationEnabled(DOALL_ID)
       && ltm->isTransformationEnabled(DOALL_ID)
       && doall.canBeAppliedToLoop(LDI, h)) {
 
@@ -139,8 +139,6 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
 
     auto function = helix.getTaskFunction();
     auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
-    auto &PDT =
-        getAnalysis<PostDominatorTreeWrapperPass>(*function).getPostDomTree();
     auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
 
     if (par.getVerbosity() >= Verbosity::Maximal) {
@@ -148,7 +146,7 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
     }
 
     auto taskFunctionDG =
-        helix.constructTaskInternalDependenceGraphFromOriginalLoopDG(LDI, PDT);
+        helix.constructTaskInternalDependenceGraphFromOriginalLoopDG(LDI);
 
     if (par.getVerbosity() >= Verbosity::Maximal) {
       errs() << "HELIX:  Constructing task loop dependence info\n";
@@ -175,7 +173,7 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
     codeModified = helix.apply(newLDI, h);
     usedTechnique = &helix;
 
-  } else if (true && par.isTransformationEnabled(DSWP_ID)
+  } else if (par.isTransformationEnabled(DSWP_ID)
              && ltm->isTransformationEnabled(DSWP_ID)
              && dswp.canBeAppliedToLoop(LDI, h)) {
 

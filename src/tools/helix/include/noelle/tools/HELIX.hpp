@@ -53,8 +53,7 @@ public:
                           Heuristics *h) const override;
 
   PDG *constructTaskInternalDependenceGraphFromOriginalLoopDG(
-      LoopDependenceInfo *LDI,
-      PostDominatorTree &postDomTreeOfTaskFunction);
+      LoopDependenceInfo *LDI);
 
   Function *getTaskFunction(void) const;
 

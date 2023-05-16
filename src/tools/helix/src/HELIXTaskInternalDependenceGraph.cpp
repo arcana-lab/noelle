@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -28,11 +28,10 @@ static void constructEdgesFromUseDefs(PDG *pdg);
 static void constructEdgesFromControlForFunction(
     PDG *pdg,
     Function &F,
-    PostDominatorTree &postDomTree);
+    const DominatorForest &postDominatorForest);
 
 PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
-    LoopDependenceInfo *LDI,
-    PostDominatorTree &postDomTreeOfTaskFunction) {
+    LoopDependenceInfo *LDI) {
 
   /*
    * Fetch the task.
@@ -41,14 +40,17 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
   auto taskBody = helixTask->getTaskBody();
 
   /*
+   * Fetch the dominators.
+   */
+  auto doms = this->noelle.getDominators(taskBody);
+
+  /*
    * Create a new PDG for the internals of the task.
    */
   auto taskFunctionDG = new PDG(*taskBody);
   constructEdgesFromUseDefs(taskFunctionDG);
 
-  constructEdgesFromControlForFunction(taskFunctionDG,
-                                       *taskBody,
-                                       postDomTreeOfTaskFunction);
+  constructEdgesFromControlForFunction(taskFunctionDG, *taskBody, doms->PDT);
 
   auto copyEdgeUsingTaskClonedValues =
       [&](DGEdge<Value> *originalEdge) -> void {
@@ -169,6 +171,11 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
                                         spill->environmentLoads);
   }
 
+  /*
+   * Free the memory
+   */
+  delete doms;
+
   return taskFunctionDG;
 }
 
@@ -200,21 +207,26 @@ static void constructEdgesFromUseDefs(PDG *pdg) {
 static void constructEdgesFromControlForFunction(
     PDG *pdg,
     Function &F,
-    PostDominatorTree &postDomTree) {
+    const DominatorForest &postDominatorForest) {
+
   for (auto &B : F) {
-    SmallVector<BasicBlock *, 10> dominatedBBs;
-    postDomTree.getDescendants(&B, dominatedBBs);
+
+    /*
+     * Fetch the basic blocks that are dominated by @B.
+     */
+    auto descendants = postDominatorForest.getDescendants(&B);
 
     /*
      * For each basic block that B post dominates, check if B doesn't stricly
      * post dominate its predecessor If it does not, then there is a control
      * dependency from the predecessor to B
      */
-    for (auto dominatedBB : dominatedBBs) {
+    for (auto dominatedBB : descendants) {
       for (auto predBB :
            make_range(pred_begin(dominatedBB), pred_end(dominatedBB))) {
-        if (postDomTree.properlyDominates(&B, predBB))
+        if (postDominatorForest.strictlyDominates(&B, predBB)) {
           continue;
+        }
         auto controlTerminator = predBB->getTerminator();
         for (auto &I : B) {
           auto edge = pdg->addEdge((Value *)controlTerminator, (Value *)&I);
