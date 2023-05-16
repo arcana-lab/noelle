@@ -376,7 +376,8 @@ LoopDependenceInfo *Noelle::getLoop(
                                            0,
                                            8,
                                            this->om->getMaximumNumberOfCores(),
-                                           optimizations);
+                                           optimizations,
+                                           this->loopAwareDependenceAnalysis);
 
     delete DS;
     return ldi;
@@ -397,7 +398,8 @@ LoopDependenceInfo *Noelle::getLoop(
       this->techniquesToDisable[loopIndex],
       this->DOALLChunkSize[loopIndex],
       maximumNumberOfCoresForTheParallelization,
-      optimizations);
+      optimizations,
+      this->loopAwareDependenceAnalysis);
 
   delete DS;
   return ldi;
@@ -405,7 +407,8 @@ LoopDependenceInfo *Noelle::getLoop(
 
 LoopDependenceInfo *Noelle::getLoop(BasicBlock *header,
                                     PDG *functionPDG,
-                                    LoopTransformationsManager *ltm) {
+                                    LoopTransformationsManager *ltm,
+                                    bool enableLoopAwareDependenceAnalysis) {
 
   /*
    * Get the dominators.
@@ -442,13 +445,15 @@ LoopDependenceInfo *Noelle::getLoop(BasicBlock *header,
   /*
    * Fetch the loop content.
    */
-  auto ldi = this->getLoopDependenceInfoForLoop(header,
-                                                functionPDG,
-                                                DS,
-                                                techniquesToDisable,
-                                                ltm->getChunkSize(),
-                                                ltm->getMaximumNumberOfCores(),
-                                                ltm->getOptimizationsEnabled());
+  auto ldi =
+      this->getLoopDependenceInfoForLoop(header,
+                                         functionPDG,
+                                         DS,
+                                         techniquesToDisable,
+                                         ltm->getChunkSize(),
+                                         ltm->getMaximumNumberOfCores(),
+                                         ltm->getOptimizationsEnabled(),
+                                         enableLoopAwareDependenceAnalysis);
 
   return ldi;
 }
@@ -776,7 +781,8 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
               this->techniquesToDisable[currentLoopIndex],
               this->DOALLChunkSize[currentLoopIndex],
               maximumNumberOfCoresForTheParallelization,
-              {});
+              {},
+              this->loopAwareDependenceAnalysis);
         }
         allLoops->push_back(ldi);
       }
@@ -1156,7 +1162,8 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
     uint32_t techniquesToDisable,
     uint32_t DOALLChunkSize,
     uint32_t maxCores,
-    std::unordered_set<LoopDependenceInfoOptimization> optimizations) {
+    std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+    bool enableLoopAwareDependenceAnalysis) {
 
   /*
    * Fetch the function
@@ -1180,15 +1187,17 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
   /*
    * Compute the LoopDependenceInfo
    */
-  auto ldi = this->getLoopDependenceInfoForLoop(newLoopNode,
-                                                llvmLoop,
-                                                functionPDG,
-                                                DS,
-                                                &SE,
-                                                techniquesToDisable,
-                                                DOALLChunkSize,
-                                                maxCores,
-                                                optimizations);
+  auto ldi =
+      this->getLoopDependenceInfoForLoop(newLoopNode,
+                                         llvmLoop,
+                                         functionPDG,
+                                         DS,
+                                         &SE,
+                                         techniquesToDisable,
+                                         DOALLChunkSize,
+                                         maxCores,
+                                         optimizations,
+                                         enableLoopAwareDependenceAnalysis);
 
   return ldi;
 }
@@ -1302,7 +1311,8 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
     uint32_t techniquesToDisableForLoop,
     uint32_t DOALLChunkSizeForLoop,
     uint32_t maxCores,
-    std::unordered_set<LoopDependenceInfoOptimization> optimizations) {
+    std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+    bool enableLoopAwareDependenceAnalysis) {
 
   /*
    * Allocate the LDI.
@@ -1315,7 +1325,7 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
                                     *SE,
                                     maxCores,
                                     optimizations,
-                                    this->loopAwareDependenceAnalysis,
+                                    enableLoopAwareDependenceAnalysis,
                                     DOALLChunkSizeForLoop);
 
   /*

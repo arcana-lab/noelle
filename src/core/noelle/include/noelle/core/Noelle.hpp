@@ -153,7 +153,8 @@ public:
 
   LoopDependenceInfo *getLoop(BasicBlock *header,
                               PDG *functionPDG,
-                              LoopTransformationsManager *ltm);
+                              LoopTransformationsManager *ltm,
+                              bool enableLoopAwareDependenceAnalysis = true);
 
   uint32_t getNumberOfProgramLoops(void);
 
@@ -262,7 +263,8 @@ private:
       uint32_t techniquesToDisable,
       uint32_t DOALLChunkSize,
       uint32_t maxCores,
-      std::unordered_set<LoopDependenceInfoOptimization> optimizations);
+      std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+      bool enableLoopAwareDependenceAnalysis);
 
   LoopDependenceInfo *getLoopDependenceInfoForLoop(
       LoopTree *loopNode,
@@ -273,7 +275,8 @@ private:
       uint32_t techniquesToDisable,
       uint32_t DOALLChunkSize,
       uint32_t maxCores,
-      std::unordered_set<LoopDependenceInfoOptimization> optimizations);
+      std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+      bool enableLoopAwareDependenceAnalysis);
 
   bool isLoopHot(LoopStructure *loopStructure, double minimumHotness);
   bool isFunctionHot(Function *function, double minimumHotness);

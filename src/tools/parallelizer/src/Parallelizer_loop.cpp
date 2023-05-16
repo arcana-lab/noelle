@@ -139,37 +139,15 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
 
     auto function = helix.getTaskFunction();
     auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
-    auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
 
-    if (par.getVerbosity() >= Verbosity::Maximal) {
-      errs() << "HELIX:  Constructing task dependence graph\n";
-    }
-
+    errs() << "HELIX:  Constructing task dependence graph\n";
     auto taskFunctionDG =
         helix.constructTaskInternalDependenceGraphFromOriginalLoopDG(LDI);
-
-    if (par.getVerbosity() >= Verbosity::Maximal) {
-      errs() << "HELIX:  Constructing task loop dependence info\n";
-    }
-
-    auto DS = par.getDominators(function);
-    auto l = LI.getLoopsInPreorder()[0];
-    auto newLoops = par.getLoopStructures(function, 0);
-    auto newForest = par.organizeLoopsInTheirNestingForest(*newLoops);
-    auto newLoopNode = newForest->getInnermostLoopThatContains(l->getHeader());
-    assert(newLoopNode != nullptr);
+    errs() << "HELIX:  Constructing task loop dependence info\n";
     auto lto = LDI->getLoopTransformationsManager();
-    auto newLDI = new LoopDependenceInfo(
-        par.getCompilationOptionsManager(),
-        taskFunctionDG,
-        newLoopNode,
-        l,
-        *DS,
-        SE,
-        par.getCompilationOptionsManager()->getMaximumNumberOfCores(),
-        lto->getOptimizationsEnabled(),
-        false,
-        lto->getChunkSize());
+    auto l = LI.getLoopsInPreorder()[0];
+    auto headerClone = l->getHeader();
+    auto newLDI = par.getLoop(headerClone, taskFunctionDG, lto, false);
     codeModified = helix.apply(newLDI, h);
     usedTechnique = &helix;
 
