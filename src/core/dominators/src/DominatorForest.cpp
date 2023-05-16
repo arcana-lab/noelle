@@ -231,6 +231,22 @@ bool DominatorForest::dominates(BasicBlock *B1, BasicBlock *B2) const {
   return this->dominates(nodeB1, nodeB2);
 }
 
+bool DominatorForest::strictlyDominates(Instruction *I, Instruction *J) const {
+  if (I == J) {
+    return false;
+  }
+
+  return this->dominates(I, J);
+}
+
+bool DominatorForest::strictlyDominates(BasicBlock *B1, BasicBlock *B2) const {
+  if (B1 == B2) {
+    return false;
+  }
+
+  return this->dominates(B1, B2);
+}
+
 bool DominatorForest::dominates(DominatorNode *node1,
                                 DominatorNode *node2) const {
   std::queue<DominatorNode *> worklist;
@@ -239,11 +255,13 @@ bool DominatorForest::dominates(DominatorNode *node1,
     auto node = worklist.front();
     worklist.pop();
 
-    if (node == node2)
+    if (node == node2) {
       return true;
+    }
     for (auto child : node->children)
       worklist.push(child);
   }
+
   return false;
 }
 
@@ -277,6 +295,38 @@ std::set<Instruction *> DominatorForest::getDominatorsOf(
   }
 
   return r;
+}
+
+std::set<BasicBlock *> DominatorForest::getDescendants(BasicBlock *bb) const {
+  std::set<BasicBlock *> ds;
+
+  /*
+   * Fetch the node that represents @bb.
+   */
+  auto bbNode = this->getNode(bb);
+  assert(bbNode != nullptr);
+
+  this->addDescendants(bbNode, ds);
+
+  return ds;
+}
+
+void DominatorForest::addDescendants(DominatorNode *n,
+                                     std::set<BasicBlock *> &ds) const {
+
+  /*
+   * Add itself.
+   */
+  ds.insert(n->getBlock());
+
+  /*
+   * Iterate over children.
+   */
+  for (auto child : n->getChildren()) {
+    this->addDescendants(child, ds);
+  }
+
+  return;
 }
 
 std::set<Instruction *> DominatorForest::

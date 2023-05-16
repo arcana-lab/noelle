@@ -38,10 +38,18 @@ public:
       std::unordered_map<BasicBlock *, BasicBlock *> &bbCloneMap);
 
   DominatorNode *getNode(BasicBlock *B) const;
+
   bool dominates(Instruction *I, Instruction *J) const;
   bool dominates(BasicBlock *B1, BasicBlock *B2) const;
   bool dominates(DominatorNode *node1, DominatorNode *node2) const;
+
+  bool strictlyDominates(BasicBlock *B1, BasicBlock *B2) const;
+  bool strictlyDominates(Instruction *I, Instruction *J) const;
+
+  std::set<BasicBlock *> getDescendants(BasicBlock *bb) const;
+
   std::set<DominatorNode *> dominates(DominatorNode *node) const;
+
   BasicBlock *findNearestCommonDominator(BasicBlock *B1, BasicBlock *B2) const;
   DominatorNode *findNearestCommonDominator(DominatorNode *node1,
                                             DominatorNode *node2) const;
@@ -68,6 +76,7 @@ private:
                                         std::set<BasicBlock *> &bbSubset);
   template <typename NodeType>
   void cloneNodes(std::set<NodeType *> &nodes);
+  void addDescendants(DominatorNode *n, std::set<BasicBlock *> &ds) const;
 };
 
 } // namespace llvm::noelle
