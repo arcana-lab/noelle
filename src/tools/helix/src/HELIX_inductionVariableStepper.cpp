@@ -106,7 +106,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
 
   /*
    * Determine start value of the IV for the task
-   * core_start: original_start + original_step_size * core_id
+   *   core_start: original_start + original_step_size * core_id
    */
   for (auto ivInfo : ivInfos) {
     auto startOfIV = fetchClone(ivInfo->getStartValue());
@@ -125,7 +125,8 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
 
   /*
    * Determine additional step size to account for n cores each executing the
-   * task jump_step_size: original_step_size * (num_cores - 1)
+   * task.
+   *   jump_step_size: original_step_size * (num_cores - 1)
    */
   for (auto ivInfo : ivInfos) {
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
@@ -503,8 +504,6 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     this->lastIterationExecutionDuplicateMap.insert(
         std::make_pair(originalProducer, phi));
   }
-
-  return;
 }
 
 } // namespace llvm::noelle

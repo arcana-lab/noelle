@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -127,12 +127,6 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments(
       singleMappingSCC = taskSCC;
     }
 
-    // if (singleMappingSCC == nullptr) {
-    //   originalSCC->print(errs() << "Original SCC:\n");
-    //   anyClonedInstInLoop->print(errs() << "Any cloned INST: "); errs() <<
-    //   "\n";
-    // }
-
     assert(singleMappingSCC != nullptr);
     taskToOriginalFunctionSCCMap.insert(
         std::make_pair(singleMappingSCC, originalSCC));
@@ -212,7 +206,8 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments(
       }
 
       /*
-       * Only sequential SCC can generate a sequential segment.
+       * Only SCC that has to execute sequentially can generate a sequential
+       * segment.
        */
       if (isa<LoopCarriedUnknownSCC>(sccInfo)
           || isa<UnknownClosedFormSCC>(sccInfo)) {

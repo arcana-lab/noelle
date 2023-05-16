@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -77,8 +77,9 @@ SequentialSegment::SequentialSegment(Noelle &noelle,
    * they only execute once
    */
   for (auto B : loopStructure->getBasicBlocks()) {
-    if (succ_size(B) != 0)
+    if (succ_size(B) != 0) {
       continue;
+    }
     auto instructionThatReturnsFromFunction = B->getTerminator();
     this->exits.insert(instructionThatReturnsFromFunction);
   }
@@ -136,32 +137,36 @@ void SequentialSegment::determineEntryAndExitFrontier(
   auto beforeInstructionMap = this->computeBeforeInstructionMap(LDI, dfr);
 
   /*
-   * Instructions from which no other instruction in the SS can reach them are
-   * before the entry frontier
+   * Instructions from which no other instructions in the SS can reach them are
+   * before the entry frontier.
    */
   auto checkIfBeforeEntryFrontier = [&](Instruction *inst) -> bool {
     auto &beforeInstructions = beforeInstructionMap.at(inst);
     for (auto beforeI : beforeInstructions) {
-      if (beforeI == inst)
+      if (beforeI == inst) {
         continue;
-      if (ssInstructions.find(beforeI) != ssInstructions.end())
+      }
+      if (ssInstructions.find(beforeI) != ssInstructions.end()) {
         return false;
+      }
     }
     return true;
   };
 
   /*
-   * Instructions from which no other instruction in the SS can be reached are
-   * after the exit frontier
+   * Instructions from which no other instructions in the SS can be executed
+   * after while being in the same iteration belong to the exit frontier.
    */
   auto checkIfAfterExitFrontier = [&](Instruction *inst) -> bool {
     auto &afterInstructions = dfr->OUT(inst);
     for (auto afterV : afterInstructions) {
       auto afterI = cast<Instruction>(afterV);
-      if (inst == afterI)
+      if (inst == afterI) {
         continue;
-      if (ssInstructions.find(afterI) != ssInstructions.end())
+      }
+      if (ssInstructions.find(afterI) != ssInstructions.end()) {
         return false;
+      }
     }
     return true;
   };
@@ -194,9 +199,9 @@ void SequentialSegment::determineEntryAndExitFrontier(
 
   /*
    * Traverse all SS instructions and their predecessors in search for entries
-   * to form a frontier We consider an instruction an entry if 1) the
-   * instruction is NOT in a subloop 2) no SS instruction can reach it within
-   * the given loop iteration 3) no other entry dominates this entry
+   * to form a frontier. We consider an instruction an entry if 1) the
+   * instruction is NOT in a subloop 2) no SS instructions can execute before it
+   * within a given loop iteration 3) no other entry dominates this entry
    */
   std::queue<Instruction *> predecessorTraversal;
   std::unordered_set<Instruction *> predecessorVisited;
@@ -210,8 +215,9 @@ void SequentialSegment::determineEntryAndExitFrontier(
     /*
      * Ensure we do not re-visit a node; that would be a waste of time
      */
-    if (predecessorVisited.find(potentialEntryI) != predecessorVisited.end())
+    if (predecessorVisited.find(potentialEntryI) != predecessorVisited.end()) {
       continue;
+    }
     predecessorVisited.insert(potentialEntryI);
 
     /*
@@ -219,9 +225,14 @@ void SequentialSegment::determineEntryAndExitFrontier(
      * predecessors
      */
     auto nestedMostLoopOfI = LDI->getNestedMostLoopStructure(potentialEntryI);
-    if (true && nestedMostLoopOfI == rootLoop
-        && checkIfBeforeEntryFrontier(potentialEntryI)
-        && !isDominatedByOtherEntry(potentialEntryI)) {
+    if ((nestedMostLoopOfI == rootLoop)                 // 1)
+        && checkIfBeforeEntryFrontier(potentialEntryI)  // 2)
+        && !isDominatedByOtherEntry(potentialEntryI)) { // 3)
+
+      /*
+       * We found an entry to the frontier.
+       * There is no need to go further up on the CFG through its predecessors.
+       */
       auto nonInterferingEntryPoint =
           getFrontierInstructionThatDoesNotSplitPHIs(potentialEntryI);
       this->entries.insert(nonInterferingEntryPoint);
@@ -230,8 +241,8 @@ void SequentialSegment::determineEntryAndExitFrontier(
 
     /*
      * Proceed along all predecessors to ensure a complete frontier is found
-     * If there is a previous instruction, add that to the queue
-     * Else, add all predecessor basic block's terminators
+     * If there is a previous instruction, then add that to the queue
+     * Otherwise, add all predecessor basic block's terminators
      */
     auto prevInst = potentialEntryI->getPrevNonDebugInstruction();
     if (prevInst) {
@@ -246,11 +257,11 @@ void SequentialSegment::determineEntryAndExitFrontier(
   }
 
   /*
-   * Traverse all SS instructions and their successors in search for exits to
-   * form a frontier We consider an instruction an exit if 1) the instruction is
-   * NOT in a subloop 2) no SS instruction can be reached from it within the
-   * given loop iteration 3) no other exit can be reached from this exit within
-   * the given loop iteration
+   * Traverse all SS instructions and their successors in search for exits of
+   * the sequential segment. We consider an instruction an exit if 1) the
+   * instruction is NOT in a subloop 2) no SS instructions can be reached from
+   * it within a given loop iteration 3) no other exit can be reached from this
+   * exit within the given loop iteration
    */
   std::queue<Instruction *> successorTraversal;
   std::unordered_set<Instruction *> successorVisited;
@@ -264,17 +275,18 @@ void SequentialSegment::determineEntryAndExitFrontier(
     /*
      * Ensure we do not re-visit a node; that would be a waste of time
      */
-    if (successorVisited.find(potentialExitI) != successorVisited.end())
+    if (successorVisited.find(potentialExitI) != successorVisited.end()) {
       continue;
+    }
     successorVisited.insert(potentialExitI);
 
     /*
      * Check if this is a valid exit. If so, do not proceed along its successors
      */
     auto nestedMostLoopOfI = LDI->getNestedMostLoopStructure(potentialExitI);
-    if (true && nestedMostLoopOfI == rootLoop
-        && checkIfAfterExitFrontier(potentialExitI)
-        && !isReachableFromOtherExit(potentialExitI)) {
+    if ((nestedMostLoopOfI == rootLoop)                 // 1)
+        && checkIfAfterExitFrontier(potentialExitI)     // 2)
+        && !isReachableFromOtherExit(potentialExitI)) { // 3)
       auto nonInterferingExitPoint =
           getFrontierInstructionThatDoesNotSplitPHIs(potentialExitI);
       this->exits.insert(nonInterferingExitPoint);
@@ -313,8 +325,9 @@ void SequentialSegment::determineEntryAndExitFrontier(
    * All basic blocks in the loop must be considered to ensure the frontier is
    * fully encompassing
    *
-   * First, find all instructions in the set of un-reachables. Only one
-   * instruction per basic block is needed to represent this set sufficiently
+   * First, find all instructions in the set of un-reachables.
+   * Only one instruction per basic block is needed to represent this set
+   * sufficiently
    */
   std::unordered_set<Instruction *> instructionsUnreachableToAndFromSS;
   for (auto B : rootLoop->getBasicBlocks()) {
@@ -323,7 +336,7 @@ void SequentialSegment::determineEntryAndExitFrontier(
     // The condition ensuring I is not a member of SS is in case the SS only has
     // 1 instruction, which then causes checkIfBeforeEntryFrontier and
     // checkIfAfterExitFrontier to return true
-    if (true && (ssInstructions.find(I) == ssInstructions.end())
+    if ((ssInstructions.find(I) == ssInstructions.end())
         && checkIfBeforeEntryFrontier(I) && checkIfAfterExitFrontier(I)) {
       instructionsUnreachableToAndFromSS.insert(I);
     }
@@ -334,7 +347,8 @@ void SequentialSegment::determineEntryAndExitFrontier(
    * entries/exits
    */
   for (auto I : instructionsUnreachableToAndFromSS) {
-    auto nonInterferingPoint = getFrontierInstructionThatDoesNotSplitPHIs(I);
+    auto nonInterferingPoint =
+        this->getFrontierInstructionThatDoesNotSplitPHIs(I);
     if (!isDominatedByOtherEntry(nonInterferingPoint)) {
       this->entries.insert(nonInterferingPoint);
     }
@@ -342,8 +356,6 @@ void SequentialSegment::determineEntryAndExitFrontier(
       this->exits.insert(nonInterferingPoint);
     }
   }
-
-  return;
 }
 
 /*
@@ -353,7 +365,7 @@ void SequentialSegment::determineEntryAndExitFrontier(
  */
 Instruction *SequentialSegment::getFrontierInstructionThatDoesNotSplitPHIs(
     Instruction *originalBarrierInst) {
-  return (false || isa<PHINode>(originalBarrierInst)
+  return (isa<PHINode>(originalBarrierInst)
           || isa<DbgInfoIntrinsic>(originalBarrierInst)
           || originalBarrierInst->isLifetimeStartOrEnd())
              ? originalBarrierInst->getParent()->getFirstNonPHIOrDbgOrLifetime()
@@ -361,10 +373,9 @@ Instruction *SequentialSegment::getFrontierInstructionThatDoesNotSplitPHIs(
 }
 
 /*
- * For each instruction I in the loop, derive the set of instructions J that
- * could have been executed before I. This is accomplished by considering each
- * instruction in the OUT reachable set of I as instructions that could execute
- * before J.
+ * For each instruction I in the loop, derive the set of instructions that could
+ * have been executed before I. This is accomplished by considering each
+ * instruction J in OUT[I] and recording that I can execute before J.
  */
 std::unordered_map<Instruction *, std::unordered_set<Instruction *>>
 SequentialSegment::computeBeforeInstructionMap(LoopDependenceInfo *LDI,
@@ -395,16 +406,19 @@ SequentialSegment::computeBeforeInstructionMap(LoopDependenceInfo *LDI,
       auto &afterInstructions = dfr->OUT(&I);
 
       /*
-       * Use the reachable instruction-information to compute the output.
+       * Consider each instruction J that is reachable from I.
+       * Record that I can execute before J.
        */
-      for (auto afterV : afterInstructions) {
-        auto afterI = cast<Instruction>(afterV);
-        if (&I == afterI)
+      for (auto reachableFromI : afterInstructions) {
+        auto J = cast<Instruction>(reachableFromI);
+        if (&I == J) {
           continue;
-        if (!loopStructure->isIncluded(afterI))
+        }
+        if (!loopStructure->isIncluded(J)) {
           continue;
+        }
 
-        beforeInstructionMap.at(afterI).insert(&I);
+        beforeInstructionMap[J].insert(&I);
       }
     }
   }

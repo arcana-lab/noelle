@@ -57,28 +57,30 @@ bool HELIX::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   }
 
   /*
-   * If a task has not been defined, create such a task from the
-   * loop dependence info of the original function's loop
-   * Otherwise, add synchronization to the already defined task
-   * using the loop dependence info for that task
+   * Create the HELIX task from the original loop without synchronizations
+   * between its dynamic instances.
    */
-  if (this->tasks.size() == 0) {
-    this->createParallelizableTask(LDI, h);
-    return true;
-  }
+  auto helixTask = this->createParallelizableTask(LDI, h);
 
   /*
-   * A task has been defined already.
-   * Add synchronizations into it.
+   * Add synchronizations into the HELIX task code.
    */
-  assert(this->tasks.size() == 1);
-  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
-  auto modified = this->synchronizeTask(LDI, h, helixTask);
+  auto taskFunctionDG =
+      this->constructTaskInternalDependenceGraphFromOriginalLoopDG(LDI);
+  auto header = LDI->getLoopStructure()->getHeader();
+  auto headerClone = helixTask->getCloneOfOriginalBasicBlock(header);
+  assert(headerClone != nullptr);
+  auto newLDI = this->noelle.getLoop(headerClone,
+                                     taskFunctionDG,
+                                     LDI->getLoopTransformationsManager(),
+                                     false);
+  auto modified = this->synchronizeTask(newLDI, h, helixTask);
 
   return modified;
 }
 
-void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
+HELIXTask *HELIX::createParallelizableTask(LoopDependenceInfo *LDI,
+                                           Heuristics *h) {
 
   /*
    * Check if we have the APIs available.
@@ -305,6 +307,8 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
    * Delete reachability results
    */
   delete reachabilityDFR;
+
+  return helixTask;
 }
 
 bool HELIX::synchronizeTask(LoopDependenceInfo *LDI,

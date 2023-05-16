@@ -136,19 +136,6 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
      * Apply HELIX
      */
     codeModified = helix.apply(LDI, h);
-
-    auto function = helix.getTaskFunction();
-    auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
-
-    errs() << "HELIX:  Constructing task dependence graph\n";
-    auto taskFunctionDG =
-        helix.constructTaskInternalDependenceGraphFromOriginalLoopDG(LDI);
-    errs() << "HELIX:  Constructing task loop dependence info\n";
-    auto lto = LDI->getLoopTransformationsManager();
-    auto l = LI.getLoopsInPreorder()[0];
-    auto headerClone = l->getHeader();
-    auto newLDI = par.getLoop(headerClone, taskFunctionDG, lto, false);
-    codeModified = helix.apply(newLDI, h);
     usedTechnique = &helix;
 
   } else if (par.isTransformationEnabled(DSWP_ID)

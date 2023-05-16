@@ -69,7 +69,8 @@ public:
   virtual ~HELIX();
 
 protected:
-  virtual void createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h);
+  virtual HELIXTask *createParallelizableTask(LoopDependenceInfo *LDI,
+                                              Heuristics *h);
 
   virtual bool synchronizeTask(LoopDependenceInfo *LDI,
                                Heuristics *h,

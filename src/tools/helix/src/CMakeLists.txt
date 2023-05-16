@@ -9,12 +9,12 @@ set(Srcs
   HELIX_spiller.cpp
   HELIX_scheduler.cpp
   HELIX_inliner.cpp
-  InductionVariableStepper.cpp
-  SequentialSegments.cpp
-  SequentialSegment.cpp
+  HELIX_dependences.cpp
+  HELIX_inductionVariableStepper.cpp
+  HELIX_sequentialSegments.cpp
+  HELIX_sequentialSegment.cpp
   HELIX_linker.cpp
   HELIXTask.cpp
-  HELIXTaskInternalDependenceGraph.cpp
 )
 
 # Compilation flags

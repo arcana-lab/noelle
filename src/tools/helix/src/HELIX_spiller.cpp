@@ -176,8 +176,6 @@ void HELIX::spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
                                            spilled,
                                            envPtr);
   }
-
-  return;
 }
 
 void HELIX::createLoadsAndStoresToSpilledLCD(
