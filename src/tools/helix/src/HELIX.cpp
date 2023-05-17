@@ -73,6 +73,10 @@ std::string HELIX::getName(void) const {
   return "HELIX";
 }
 
+Transformation HELIX::getParallelizationID(void) const {
+  return Transformation::HELIX_ID;
+}
+
 HELIX::~HELIX() {
   return;
 }

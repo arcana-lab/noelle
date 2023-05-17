@@ -65,6 +65,8 @@ public:
 
   virtual std::string getName(void) const = 0;
 
+  virtual Transformation getParallelizationID(void) const = 0;
+
   /*
    * Destructor.
    */

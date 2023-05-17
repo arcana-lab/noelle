@@ -104,8 +104,10 @@ HELIXTask *HELIX::createParallelizableTask(LoopDependenceInfo *LDI,
   auto sccManager = LDI->getSCCManager();
 
   /*
-   * NOTE: Keep around the original loops' LoopDependenceInfo for later phases
-   * //TODO: we need to specify why this is necessary
+   * Keep around the original loops' LoopDependenceInfo.
+   * This is necessary because a new LDI will be generated after spilling
+   * loop-carried variables and we will need to map original SCCs to the new
+   * SCCs of the new LDI.
    */
   this->originalLDI = LDI;
 

@@ -72,18 +72,10 @@ bool Parallelizer::runOnModule(Module &M) {
 void Parallelizer::getAnalysisUsage(AnalysisUsage &AU) const {
 
   /*
-   * Analyses.
-   */
-  AU.addRequired<LoopInfoWrapperPass>();
-  AU.addRequired<ScalarEvolutionWrapperPass>();
-
-  /*
    * Noelle.
    */
   AU.addRequired<Noelle>();
   AU.addRequired<HeuristicsPass>();
-
-  return;
 }
 
 } // namespace llvm::noelle

@@ -69,4 +69,8 @@ std::string DOALL::getName(void) const {
   return "DOALL";
 }
 
+Transformation DOALL::getParallelizationID(void) const {
+  return Transformation::DOALL_ID;
+}
+
 } // namespace llvm::noelle

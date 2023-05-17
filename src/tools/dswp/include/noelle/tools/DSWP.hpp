@@ -54,6 +54,8 @@ public:
 
   std::string getName(void) const override;
 
+  Transformation getParallelizationID(void) const override;
+
 protected:
   BasicBlock *getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
       LoopDependenceInfo *LDI,

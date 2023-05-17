@@ -66,6 +66,8 @@ public:
 
   std::string getName(void) const override;
 
+  Transformation getParallelizationID(void) const override;
+
   virtual ~HELIX();
 
 protected:

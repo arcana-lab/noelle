@@ -412,4 +412,8 @@ std::string DSWP::getName(void) const {
   return "DSWP";
 }
 
+Transformation DSWP::getParallelizationID(void) const {
+  return Transformation::DSWP_ID;
+}
+
 } // namespace llvm::noelle

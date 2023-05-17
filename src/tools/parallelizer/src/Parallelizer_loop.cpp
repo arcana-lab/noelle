@@ -40,6 +40,9 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
   DSWP dswp{ par, this->forceParallelization, !this->forceNoSCCPartition };
   DOALL doall{ par };
   HELIX helix{ par, this->forceParallelization };
+  std::vector<ParallelizationTechnique *> parallelizationTechniques{ &doall,
+                                                                     &helix,
+                                                                     &dswp };
 
   /*
    * Fetch the profiles.
@@ -118,35 +121,29 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
   auto codeModified = false;
   auto ltm = LDI->getLoopTransformationsManager();
   ParallelizationTechnique *usedTechnique = nullptr;
-  if (par.isTransformationEnabled(DOALL_ID)
-      && ltm->isTransformationEnabled(DOALL_ID)
-      && doall.canBeAppliedToLoop(LDI, h)) {
+  for (auto parallelizationTechnique : parallelizationTechniques) {
 
     /*
-     * Apply DOALL.
+     * Fetch the information about the current parallelization technique.
      */
-    codeModified = doall.apply(LDI, h);
-    usedTechnique = &doall;
-
-  } else if (par.isTransformationEnabled(HELIX_ID)
-             && ltm->isTransformationEnabled(HELIX_ID)
-             && helix.canBeAppliedToLoop(LDI, h)) {
+    auto parID = parallelizationTechnique->getParallelizationID();
 
     /*
-     * Apply HELIX
+     * Check if the current parallelization technique is applicable to the
+     * current loop.
      */
-    codeModified = helix.apply(LDI, h);
-    usedTechnique = &helix;
+    if (par.isTransformationEnabled(parID)
+        && ltm->isTransformationEnabled(parID)
+        && parallelizationTechnique->canBeAppliedToLoop(LDI, h)) {
 
-  } else if (par.isTransformationEnabled(DSWP_ID)
-             && ltm->isTransformationEnabled(DSWP_ID)
-             && dswp.canBeAppliedToLoop(LDI, h)) {
-
-    /*
-     * Apply DSWP.
-     */
-    codeModified = dswp.apply(LDI, h);
-    usedTechnique = &dswp;
+      /*
+       * Parallelize the current loop with the current parallelization
+       * technique.
+       */
+      codeModified = parallelizationTechnique->apply(LDI, h);
+      usedTechnique = parallelizationTechnique;
+      break;
+    }
   }
 
   /*
