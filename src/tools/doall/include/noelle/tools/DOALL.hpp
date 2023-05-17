@@ -72,11 +72,6 @@ protected:
   void addJumpToLoop(LoopDependenceInfo *LDI, Task *t);
 
   /*
-   * Helpers
-   */
-  Value *fetchClone(Value *original) const;
-
-  /*
    * Interface
    */
   BasicBlock *getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(

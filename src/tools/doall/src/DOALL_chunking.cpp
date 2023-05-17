@@ -76,10 +76,10 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
    * until N-1 (for the last task instance).
    */
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
-    auto startOfIV = this->fetchClone(ivInfo->getStartValue());
+    auto startOfIV = this->fetchCloneInTask(task, ivInfo->getStartValue());
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
     auto loopEntryPHI = ivInfo->getLoopEntryPHI();
-    auto ivPHI = cast<PHINode>(this->fetchClone(loopEntryPHI));
+    auto ivPHI = cast<PHINode>(this->fetchCloneInTask(task, loopEntryPHI));
 
     auto nthCoreOffset = IVUtility::scaleInductionVariableStep(
         preheaderClone,
@@ -104,7 +104,8 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
    */
   for (auto ivInfo : allIVInfo->getInductionVariables(*loopSummary)) {
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
-    auto cloneLoopEntryPHI = this->fetchClone(ivInfo->getLoopEntryPHI());
+    auto cloneLoopEntryPHI =
+        this->fetchCloneInTask(task, ivInfo->getLoopEntryPHI());
     assert(cloneLoopEntryPHI != nullptr);
     auto ivPHI = cast<PHINode>(cloneLoopEntryPHI);
     auto onesValueForChunking = ConstantInt::get(chunkCounterType, 1);
@@ -276,7 +277,8 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
    * instructions) to the preheader.
    */
   auto exitConditionValue =
-      this->fetchClone(loopGoverningIVAttr->getExitConditionValue());
+      this->fetchCloneInTask(task,
+                             loopGoverningIVAttr->getExitConditionValue());
   assert(exitConditionValue != nullptr);
   if (auto exitConditionInst = dyn_cast<Instruction>(exitConditionValue)) {
     auto &derivation = ivUtility.getConditionValueDerivation();
@@ -514,7 +516,8 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
      * logic
      */
     if (headerPHICloneAndProducerPairs.size() > 0) {
-      auto startValue = this->fetchClone(loopGoverningIV->getStartValue());
+      auto startValue =
+          this->fetchCloneInTask(task, loopGoverningIV->getStartValue());
 
       /*
        * Piece together the condition for all the SelectInst:
@@ -675,7 +678,8 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
       prevIterationValue);
   preheaderBuilder.Insert(clonedExitCmpInst);
 
-  auto startValue = this->fetchClone(loopGoverningIV->getStartValue());
+  auto startValue =
+      this->fetchCloneInTask(task, loopGoverningIV->getStartValue());
   assert(startValue != nullptr);
   auto isNotFirstIteration =
       preheaderBuilder.CreateICmpNE(offsetStartValue, startValue);

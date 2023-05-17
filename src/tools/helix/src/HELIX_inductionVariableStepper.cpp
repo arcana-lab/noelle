@@ -49,22 +49,6 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
   auto entryTerminator = task->getEntry()->getTerminator();
   IRBuilder<> entryBuilder(entryTerminator);
 
-  // TODO: Refactor this and DOALL's implementation of it into
-  // ParallelizationTechnique
-  auto fetchClone = [&](Value *original) -> Value * {
-    if (isa<ConstantData>(original))
-      return original;
-
-    auto liveInClone = task->getCloneOfOriginalLiveIn(original);
-    if (liveInClone)
-      return liveInClone;
-
-    assert(isa<Instruction>(original));
-    auto originalI = cast<Instruction>(original);
-    assert(task->isAnOriginalInstruction(originalI));
-    return task->getCloneOfOriginalInstruction(originalI);
-  };
-
   /*
    * There are situations where the SCC containing an IV is not deemed fully
    * clonable, so we spill those IVs. Skip those when re-wiring the step size of
@@ -109,10 +93,10 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
    *   core_start: original_start + original_step_size * core_id
    */
   for (auto ivInfo : ivInfos) {
-    auto startOfIV = fetchClone(ivInfo->getStartValue());
+    auto startOfIV = this->fetchCloneInTask(task, ivInfo->getStartValue());
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
     auto originalIVPHI = ivInfo->getLoopEntryPHI();
-    auto ivPHI = cast<PHINode>(fetchClone(originalIVPHI));
+    auto ivPHI = cast<PHINode>(this->fetchCloneInTask(task, originalIVPHI));
 
     auto offsetStartValue =
         IVUtility::computeInductionVariableValueForIteration(preheaderClone,
@@ -131,7 +115,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
   for (auto ivInfo : ivInfos) {
     auto stepOfIV = clonedStepSizeMap.at(ivInfo);
     auto originalIVPHI = ivInfo->getLoopEntryPHI();
-    auto ivPHI = cast<PHINode>(fetchClone(originalIVPHI));
+    auto ivPHI = cast<PHINode>(this->fetchCloneInTask(task, originalIVPHI));
 
     auto numCoresMinusOne = entryBuilder.CreateSub(
         task->numCoresArg,

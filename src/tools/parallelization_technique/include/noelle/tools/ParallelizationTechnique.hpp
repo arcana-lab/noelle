@@ -194,6 +194,8 @@ protected:
 
   virtual void makePRVGsReentrant(void);
 
+  Value *fetchCloneInTask(Task *t, Value *original);
+
   /*
    * Fields
    */

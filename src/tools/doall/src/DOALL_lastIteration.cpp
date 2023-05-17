@@ -94,7 +94,8 @@ BasicBlock *DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
      * Step 2: find the value of the loop governing IV that was used to do the
      * last loop-condition check (whether to run the next iteration or not).
      */
-    auto loopGoverningIVLastValue = cast<Instruction>(this->fetchClone(
+    auto loopGoverningIVLastValue = cast<Instruction>(this->fetchCloneInTask(
+        task,
         loopGoverningIVAttr->getValueToCompareAgainstExitConditionValue()));
     assert(loopGoverningIVLastValue != nullptr);
     auto loopGoverningIVLastValueBB = loopGoverningIVLastValue->getParent();

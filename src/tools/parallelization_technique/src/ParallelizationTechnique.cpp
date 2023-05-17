@@ -1787,6 +1787,32 @@ void ParallelizationTechnique::makePRVGsReentrant(void) {
   return;
 }
 
+Value *ParallelizationTechnique::fetchCloneInTask(Task *t, Value *original) {
+
+  /*
+   * Is it a constant?
+   */
+  if (isa<ConstantData>(original)) {
+    return original;
+  }
+
+  /*
+   * Is it a live-in?
+   */
+  if (t->isAnOriginalLiveIn(original)) {
+    return t->getCloneOfOriginalLiveIn(original);
+  }
+
+  /*
+   * This is a normal instruction.
+   */
+  assert(isa<Instruction>(original));
+  auto iClone = t->getCloneOfOriginalInstruction(cast<Instruction>(original));
+  assert(iClone != nullptr);
+
+  return iClone;
+}
+
 BasicBlock *ParallelizationTechnique::getParLoopEntryPoint(void) const {
   return this->entryPointOfParallelizedLoop;
 }

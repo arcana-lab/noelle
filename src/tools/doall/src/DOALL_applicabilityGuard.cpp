@@ -57,7 +57,7 @@ bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
     }
     if (auto callInst = dyn_cast<CallInst>(prevInst)) {
       auto callee = callInst->getCalledFunction();
-      if (true && (callee != nullptr) && (callee->getName() == "exit")) {
+      if ((callee != nullptr) && (callee->getName() == "exit")) {
         continue;
       }
     }
@@ -127,8 +127,6 @@ bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
            * Print the SCC.
            */
           scc->printMinimal(errs(), "DOALL:     ");
-          // DGPrinter::writeGraph<SCC, Value>("not-doall-loop-scc-" +
-          // std::to_string(LDI->getID()) + ".dot", scc);
 
           /*
            * Print the loop-carried dependences between instructions of the SCC.
