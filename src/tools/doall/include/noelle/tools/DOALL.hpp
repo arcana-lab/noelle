@@ -69,8 +69,6 @@ protected:
    */
   void rewireLoopToIterateChunks(LoopDependenceInfo *LDI);
 
-  void addJumpToLoop(LoopDependenceInfo *LDI, Task *t);
-
   /*
    * Interface
    */
