@@ -25,9 +25,11 @@
 #include "noelle/core/SCCDAGAttrs.hpp"
 
 using namespace std;
+#define USE_NIKHIL_WS 1
 
 namespace llvm::noelle {
 
+#if !USE_NIKHIL_WS
 class HELIXTask : public Task {
 public:
   HELIXTask(FunctionType *taskSignature, Module &M);
@@ -55,5 +57,37 @@ public:
   std::set<CallInst *> waits;
   std::set<CallInst *> signals;
 };
+#endif
 
+#if USE_NIKHIL_WS
+class HELIXTask : public Task {
+public:
+  HELIXTask(FunctionType *taskSignature, Module &M);
+
+  /*
+   * Task arguments
+   */
+  Value *coreArg;
+  Value *numCoresArg;
+  Value *ssPastArrayArg;
+  Value *ssFutureArrayArg;
+  Value *loopCarriedArrayArg;
+  Value *loopIsOverFlagArg;
+  Value *numSSArg;
+  Value *numSSArraysArg;
+
+  /*
+   * Clone of original IV loop, new outer loop
+   */
+  GenericSCC *originalIVAttrs;
+  PHINode *originalIVClone;
+  PHINode *outermostLoopIV;
+
+  /*
+   * Synchronization calls (waits, signals)
+   */
+  std::set<CallInst *> waits;
+  std::set<CallInst *> signals;
+};
+#endif
 } // namespace llvm::noelle

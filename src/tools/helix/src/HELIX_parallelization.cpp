@@ -90,6 +90,13 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
     abort();
   }
 
+  if (!this->NIKHILwaitSSCall || !this->NIKHILsignalSSCall) {
+    errs()
+        << this->prefixString
+        << "ERROR = sync functions NIKHIL_wait, NIKHIL_signal were not both found.\n";
+    abort();
+  }
+
   /*
    * Fetch the header.
    */
@@ -141,6 +148,7 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
   auto int64 = tm->getIntegerType(64);
   auto ptrType = tm->getVoidPointerType();
   auto voidType = tm->getVoidType();
+#if !USE_NIKHIL_WS
   auto funcArgTypes = ArrayRef<Type *>({ ptrType,
                                          ptrType,
                                          ptrType,
@@ -148,6 +156,19 @@ void HELIX::createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h) {
                                          int64,
                                          int64,
                                          PointerType::getUnqual(int64) });
+#endif
+
+#if USE_NIKHIL_WS
+  auto funcArgTypes = ArrayRef<Type *>({ ptrType,
+                                         ptrType,
+                                         ptrType,
+                                         ptrType,
+                                         int64,
+                                         int64,
+                                         PointerType::getUnqual(int64),
+                                         int64,
+                                         int64 });
+#endif
   auto taskSignature = FunctionType::get(voidType, funcArgTypes, false);
 
   /*

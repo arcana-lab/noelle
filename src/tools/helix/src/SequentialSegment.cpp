@@ -82,6 +82,7 @@ SequentialSegment::SequentialSegment(Noelle &noelle,
     auto instructionThatReturnsFromFunction = B->getTerminator();
     this->exits.insert(instructionThatReturnsFromFunction);
   }
+  this->removeWaitsWhenCommutative(LDI);
 
   assert(
       this->entries.size() > 0
@@ -465,6 +466,50 @@ DataFlowResult *HELIX::computeReachabilityFromInstructions(
 iterator_range<std::unordered_set<SCC *>::iterator> SequentialSegment::getSCCs(
     void) {
   return make_range(sccs->sccs.begin(), sccs->sccs.end());
+}
+
+bool SequentialSegment::hasOnlyCommutativeSCCs(LoopDependenceInfo *LDI) {
+  auto sccManager = LDI->getSCCManager();
+  for (auto scc : sccs->sccs) {
+    auto sccAttrs = sccManager->getSCCAttrs(scc);
+    if (!isa<LoopCarriedSCC>(sccAttrs)) {
+      continue;
+    }
+    auto lcSCC = dyn_cast<LoopCarriedSCC>(sccAttrs);
+    if (!lcSCC->isCommutative()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+Instruction *SequentialSegment::getTrueExitInsertion(Instruction *exit) {
+  auto block = exit->getParent();
+  auto terminator = block->getTerminator();
+  auto exitBranch = dyn_cast<BranchInst>(exit);
+  if (exitBranch && !(exitBranch->isUnconditional())) {
+    return NULL;
+  } else if (terminator == exit) {
+    return terminator;
+  } else {
+    return exit->getNextNode();
+  }
+}
+
+void SequentialSegment::removeWaitsWhenCommutative(LoopDependenceInfo *LDI) {
+  errs() << "NIKHIL CHECKING WHETHER THIS SS IS COMMUTATIVE\n";
+  if (!this->hasOnlyCommutativeSCCs(LDI)) {
+    return;
+  }
+  errs() << "HELIX: This SS has all SCCs commutative\n";
+  for (auto exit : this->exits) {
+    auto trueInsertion = getTrueExitInsertion(exit);
+    if (trueInsertion
+        && this->entries.find(trueInsertion) != this->entries.end()) {
+      errs()
+          << "Deleting consecutive wait/signals at" << *trueInsertion << '\n';
+    }
+  }
 }
 
 std::unordered_set<Instruction *> SequentialSegment::getInstructions(void) {

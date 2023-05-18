@@ -1,5 +1,7 @@
 #include <stdint.h>
 
+#define NIKHIL_WAIT_SIGNAL 1
+
 typedef struct {
   int32_t numberOfThreadsUsed;
   int64_t unusedVariableToPreventOptIfStructHasOnlyOneVariable;
@@ -30,6 +32,15 @@ extern DispatcherInfo NOELLE_DSWPDispatcher(void *env,
 
 extern void HELIX_wait(void *);
 extern void HELIX_signal(void *);
+
+extern void NIKHIL_wait(void *coreArray,
+                        int64_t numSS,
+                        int64_t numSSArrays,
+                        int64_t step,
+                        int64_t coreID);
+
+extern void NIKHIL_signal(void *sequentialSegment);
+
 extern DispatcherInfo NOELLE_HELIX_dispatcher_criticalSections(
     void (*parallelizedLoop)(void *,
                              void *,
@@ -37,7 +48,13 @@ extern DispatcherInfo NOELLE_HELIX_dispatcher_criticalSections(
                              void *,
                              int64_t,
                              int64_t,
-                             uint64_t *),
+                             uint64_t *
+#if NIKHIL_WAIT_SIGNAL
+                             ,
+                             int64_t,
+                             int64_t
+#endif
+                             ),
     void *env,
     void *loopCarriedArray,
     int64_t numCores,
@@ -50,7 +67,13 @@ extern DispatcherInfo NOELLE_HELIX_dispatcher_sequentialSegments(
                              void *,
                              int64_t,
                              int64_t,
-                             uint64_t *),
+                             uint64_t *
+#if NIKHIL_WAIT_SIGNAL
+                             ,
+                             int64_t,
+                             int64_t
+#endif
+                             ),
     void *env,
     void *loopCarriedArray,
     int64_t numCores,
@@ -76,6 +99,9 @@ void SIMONE_CAMPANONI_IS_GOING_TO_REMOVE_THIS_FUNCTION(void) {
   NOELLE_HELIX_dispatcher_sequentialSegments(0, 0, 0, 0, 0);
   HELIX_wait(0);
   HELIX_signal(0);
+
+  NIKHIL_wait(0, 0, 0, 0, 0);
+  NIKHIL_signal(0);
 
   int s;
   rand_r(&s);

@@ -38,6 +38,11 @@ HELIXTask::HELIXTask(FunctionType *taskSignature, Module &M)
   this->numCoresArg = (Value *)&*(argIter++);
   this->loopIsOverFlagArg = (Value *)&*(argIter++);
 
+#if USE_NIKHIL_WS
+  this->numSSArg = (Value *)&*(argIter++);
+  this->numSSArraysArg = (Value *)&*(argIter++);
+#endif
+
   /*
    * Set the task index.
    */

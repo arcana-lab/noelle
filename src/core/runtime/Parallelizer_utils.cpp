@@ -31,6 +31,7 @@
 using namespace MARC;
 
 #define CACHE_LINE_SIZE 64
+#define NIKHIL_WAIT_SIGNAL 1
 
 #ifdef DSWP_STATS
 static int64_t numberOfPushes8 = 0;
@@ -137,7 +138,13 @@ DispatcherInfo NOELLE_HELIX_dispatcher_sequentialSegments(
                              void *,
                              int64_t,
                              int64_t,
-                             uint64_t *),
+                             uint64_t *
+#if NIKHIL_WAIT_SIGNAL
+                             ,
+                             int64_t,
+                             int64_t
+#endif
+                             ),
     void *env,
     void *loopCarriedArray,
     int64_t numCores,
@@ -150,7 +157,13 @@ DispatcherInfo NOELLE_HELIX_dispatcher_criticalSections(
                              void *,
                              int64_t,
                              int64_t,
-                             uint64_t *),
+                             uint64_t *
+#if NIKHIL_WAIT_SIGNAL
+                             ,
+                             int64_t,
+                             int64_t
+#endif
+                             ),
     void *env,
     void *loopCarriedArray,
     int64_t numCores,
@@ -458,7 +471,13 @@ typedef struct {
                            void *,
                            int64_t,
                            int64_t,
-                           uint64_t *);
+                           uint64_t *
+#if NIKHIL_WAIT_SIGNAL
+                           ,
+                           int64_t,
+                           int64_t
+#endif
+  );
   void *env;
   void *loopCarriedArray;
   void *ssArrayPast;
@@ -466,6 +485,10 @@ typedef struct {
   uint64_t coreID;
   uint64_t numCores;
   uint64_t *loopIsOverFlag;
+#if NIKHIL_WAIT_SIGNAL
+  uint64_t numSS;
+  uint64_t numSSArrays;
+#endif
   pthread_spinlock_t endLock;
 } NOELLE_HELIX_args_t;
 
@@ -485,7 +508,13 @@ static void NOELLE_HELIXTrampoline(void *args) {
                                HELIX_args->ssArrayFuture,
                                HELIX_args->coreID,
                                HELIX_args->numCores,
-                               HELIX_args->loopIsOverFlag);
+                               HELIX_args->loopIsOverFlag
+#if NIKHIL_WAIT_SIGNAL
+                               ,
+                               HELIX_args->numSS,
+                               HELIX_args->numSSArrays
+#endif
+  );
 
   pthread_spin_unlock(&(HELIX_args->endLock));
   return;
@@ -527,7 +556,13 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
                              void *,
                              int64_t,
                              int64_t,
-                             uint64_t *),
+                             uint64_t *
+#if NIKHIL_WAIT_SIGNAL
+                             ,
+                             int64_t,
+                             int64_t
+#endif
+                             ),
     void *env,
     void *loopCarriedArray,
     int64_t maxNumberOfCores,
@@ -567,9 +602,11 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
    * We need numCores - 1 arrays.
    */
   auto numOfSSArrays = numCores;
+#if !NIKHIL_WAIT_SIGNAL
   if (!LIO) {
     numOfSSArrays = 1;
   }
+#endif
   void *ssArrays = nullptr;
   auto ssSize = CACHE_LINE_SIZE;
   auto ssArraySize = ssSize * numOfsequentialSegments;
@@ -585,6 +622,7 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
       abort();
     }
 
+#if !NIKHIL_WAIT_SIGNAL
     /*
      * Initialize the sequential segment arrays.
      */
@@ -619,6 +657,31 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
         }
       }
     }
+#endif
+
+#if NIKHIL_WAIT_SIGNAL
+    /*
+     * Initialize the sequential segment arrays.
+     */
+    for (auto i = 0; i < numOfSSArrays; i++) {
+      /*
+       * Fetch the current sequential segment array.
+       */
+      auto ssArray = (void *)(((uint64_t)ssArrays) + (i * ssArraySize));
+
+      /*
+       * Initialize the counters.
+       */
+      for (auto counterID = 0; counterID < numOfsequentialSegments;
+           counterID++) {
+        /*
+         * Fetch the pointer to the current lock.
+         */
+        auto counter = (uint64_t *)(((uint64_t)ssArray) + (counterID * ssSize));
+        *counter = 0;
+      }
+    }
+#endif
   }
 
   /*
@@ -642,12 +705,21 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
     auto pastID = i % numOfSSArrays;
     auto futureID = (i + 1) % numOfSSArrays;
 
-    /*
-     * Fetch the sequential segment array for the current thread.
-     */
+/*
+ * Fetch the sequential segment array for the current thread.
+ */
+#if !NIKHIL_WAIT_SIGNAL
     auto ssArrayPast = (void *)(((uint64_t)ssArrays) + (pastID * ssArraySize));
     auto ssArrayFuture =
         (void *)(((uint64_t)ssArrays) + (futureID * ssArraySize));
+#endif
+
+#if NIKHIL_WAIT_SIGNAL
+    auto ssArrayPast = (void *)((uint64_t)ssArrays);
+    auto ssArrayFuture =
+        (void *)(((uint64_t)ssArrays) + (pastID * ssArraySize));
+#endif
+
 #ifdef RUNTIME_PRINT
     pthread_spin_lock(&printLock);
     auto pastDelta = (int *)ssArrayPast - (int *)ssArrays;
@@ -676,6 +748,10 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
     argsPerCore->coreID = i;
     argsPerCore->numCores = numCores;
     argsPerCore->loopIsOverFlag = &loopIsOverFlag;
+#if NIKHIL_WAIT_SIGNAL
+    argsPerCore->numSS = numOfsequentialSegments;
+    argsPerCore->numSSArrays = numOfSSArrays;
+#endif
     pthread_spin_init(&(argsPerCore->endLock), PTHREAD_PROCESS_PRIVATE);
     pthread_spin_lock(&(argsPerCore->endLock));
 
@@ -715,17 +791,36 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
   /*
    * Run a task.
    */
+
+#if !NIKHIL_WAIT_SIGNAL
   auto pastID = (numCores - 1) % numOfSSArrays;
   auto futureID = 0;
   auto ssArrayPast = (void *)(((uint64_t)ssArrays) + (pastID * ssArraySize));
   auto ssArrayFuture = ssArrays;
+#endif
+
+#if NIKHIL_WAIT_SIGNAL
+  auto pastID = 0;
+  auto futureID = (numCores - 1) % numOfSSArrays;
+  auto ssArrayPast = (void *)((uint64_t)ssArrays);
+  auto ssArrayFuture =
+      (void *)(((uint64_t)ssArrays) + (futureID * ssArraySize));
+#endif
+
   parallelizedLoop(env,
                    loopCarriedArray,
                    ssArrayPast,
                    ssArrayFuture,
                    numCores - 1,
                    numCores,
-                   &loopIsOverFlag);
+                   &loopIsOverFlag
+#if NIKHIL_WAIT_SIGNAL
+                   ,
+                   numOfsequentialSegments,
+                   numOfSSArrays
+#endif
+  );
+  std::atomic_thread_fence(std::memory_order_seq_cst);
 
   /*
    * Wait for the remaining HELIX tasks.
@@ -772,7 +867,13 @@ DispatcherInfo NOELLE_HELIX_dispatcher_sequentialSegments(
                              void *,
                              int64_t,
                              int64_t,
-                             uint64_t *),
+                             uint64_t *
+#if NIKHIL_WAIT_SIGNAL
+                             ,
+                             int64_t,
+                             int64_t
+#endif
+                             ),
     void *env,
     void *loopCarriedArray,
     int64_t numCores,
@@ -792,7 +893,13 @@ DispatcherInfo NOELLE_HELIX_dispatcher_criticalSections(
                              void *,
                              int64_t,
                              int64_t,
-                             uint64_t *),
+                             uint64_t *
+#if NIKHIL_WAIT_SIGNAL
+                             ,
+                             int64_t,
+                             int64_t
+#endif
+                             ),
     void *env,
     void *loopCarriedArray,
     int64_t numCores,
@@ -803,6 +910,39 @@ DispatcherInfo NOELLE_HELIX_dispatcher_criticalSections(
                                  numCores,
                                  numOfsequentialSegments,
                                  false);
+}
+
+void NIKHIL_wait(void *coreArray,
+                 int64_t numSS,
+                 int64_t numSSArrays,
+                 int64_t step,
+                 int64_t coreID) {
+  /*
+   * Fetch the address of the core array
+   */
+  std::atomic_thread_fence(std::memory_order_seq_cst);
+  auto cores = (int64_t)coreArray;
+
+  /*
+   * Wait until it is guaranteed that no core has yet to execute a previous
+   * iteration.
+   */
+  volatile int64_t *thisCoreEntry =
+      (int64_t *)(cores + (numSS * coreID * step));
+  int64_t iterationToExecute = *thisCoreEntry + 1;
+  for (int i = 0; i < numSSArrays; i++) {
+    if (i == coreID) {
+      iterationToExecute--;
+      continue;
+    }
+
+    volatile int64_t *coreEntry =
+        (volatile int64_t *)(cores + (numSS * i * step));
+    while (*coreEntry < iterationToExecute)
+      ;
+  }
+  std::atomic_thread_fence(std::memory_order_seq_cst);
+  return;
 }
 
 void HELIX_wait(void *sequentialSegment) {
@@ -832,6 +972,14 @@ void HELIX_wait(void *sequentialSegment) {
   pthread_spin_unlock(&printLock);
 #endif
 
+  return;
+}
+
+void NIKHIL_signal(void *sequentialSegment) {
+  std::atomic_thread_fence(std::memory_order_seq_cst);
+  auto ss = (volatile int64_t *)sequentialSegment;
+  (*ss)++;
+  std::atomic_thread_fence(std::memory_order_seq_cst);
   return;
 }
 
