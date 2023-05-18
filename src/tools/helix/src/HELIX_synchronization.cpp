@@ -45,20 +45,10 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
   auto loopHeader = loopStructure->getHeader();
 
   /*
-   * Fetch the loop function.
+   * Fetch the types we need.
    */
-  auto loopFunction = loopStructure->getFunction();
-  auto &cxt = loopFunction->getContext();
-  auto int64 = IntegerType::get(cxt, 64);
-
-  /*
-   * HACK: Fetch the first sequential segment instructions that can be entered
-   * This is necessary because we do not re-order instructions not dependent on
-   * each other to ensure sequential segments do not overlap
-   */
-  DominatorTree DT(*loopFunction);
-  PostDominatorTree PDT(*loopFunction);
-  DominatorSummary DS(DT, PDT);
+  auto tm = this->noelle.getTypesManager();
+  auto int64 = tm->getIntegerType(64);
 
   /*
    * Optimization: If the preamble SCC is not part of a sequential segment,
@@ -109,6 +99,8 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
   /*
    * Define the code that inject wait instructions.
    */
+  auto loopFunction = loopStructure->getFunction();
+  auto &cxt = loopFunction->getContext();
   auto injectWait = [&](SequentialSegment *ss,
                         Instruction *justAfterEntry) -> void {
     /*
@@ -337,7 +329,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
     ss->forEachExit([&exits](Instruction *justBeforeExit) -> void {
       auto block = justBeforeExit->getParent();
       auto terminator = block->getTerminator();
-      if (false || (terminator != justBeforeExit)
+      if ((terminator != justBeforeExit)
           || (terminator->getNumSuccessors() == 1)) {
         exits.insert(justBeforeExit);
         return;
@@ -373,8 +365,6 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
       }
     }
   }
-
-  return;
 }
 
 Value *HELIX::getPointerOfSequentialSegment(HELIXTask *helixTask,
@@ -453,8 +443,6 @@ void HELIX::computeAndCachePointerOfPastSequentialSegment(HELIXTask *helixTask,
    * Cache the pointer.
    */
   this->ssPastPtrs.push_back(ptr);
-
-  return;
 }
 
 void HELIX::computeAndCachePointerOfFutureSequentialSegment(
@@ -472,8 +460,6 @@ void HELIX::computeAndCachePointerOfFutureSequentialSegment(
    * Cache the pointer.
    */
   this->ssFuturePtrs.push_back(ptr);
-
-  return;
 }
 
 } // namespace llvm::noelle

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/IVStepperUtility.hpp"
 #include "noelle/tools/ParallelizationTechnique.hpp"
+#include "noelle/tools/DOALLTask.hpp"
 #include "HeuristicsPass.hpp"
 
 namespace llvm::noelle {
@@ -67,7 +68,7 @@ protected:
   /*
    * DOALL specific generation
    */
-  void rewireLoopToIterateChunks(LoopDependenceInfo *LDI);
+  void rewireLoopToIterateChunks(LoopDependenceInfo *LDI, DOALLTask *task);
 
   /*
    * Interface

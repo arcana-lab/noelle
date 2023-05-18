@@ -27,13 +27,8 @@
 
 namespace llvm::noelle {
 
-void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI) {
-
-  /*
-   * Fetch the task.
-   */
-  auto task = (DOALLTask *)tasks[0];
-  assert(task != nullptr);
+void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI,
+                                      DOALLTask *task) {
 
   /*
    * Fetch loop and IV information.

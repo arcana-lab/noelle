@@ -210,7 +210,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Perform the iteration-chunking optimization
    */
-  this->rewireLoopToIterateChunks(LDI);
+  this->rewireLoopToIterateChunks(LDI, doallTask);
   if (this->verbose >= Verbosity::Maximal) {
     errs() << "DOALL:  Rewired induction variables and reducible variables\n";
   }
