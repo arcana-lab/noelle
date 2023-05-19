@@ -82,10 +82,15 @@ SequentialSegment::SequentialSegment(Noelle &noelle,
     auto instructionThatReturnsFromFunction = B->getTerminator();
     this->exits.insert(instructionThatReturnsFromFunction);
   }
-  this->removeWaitsWhenCommutative(LDI);
+  /*
+   * With the new wait signal semantics, we can remove the waits for all
+   * consecutive wait/signal pairs. These waits do not protect data.
+   * Otherwise, we can only remove the waits when all SCCs are commutative.
+   */
+  this->removeEmptyWaits(LDI);
 
   assert(
-      this->entries.size() > 0
+      this->entries.size() >= 0
       && "The data flow analysis did not identify any per-iteration entry to the sequential segment!\n");
   assert(
       this->exits.size() > 0
@@ -496,11 +501,7 @@ Instruction *SequentialSegment::getTrueExitInsertion(Instruction *exit) {
   }
 }
 
-void SequentialSegment::removeWaitsWhenCommutative(LoopDependenceInfo *LDI) {
-  errs() << "NIKHIL CHECKING WHETHER THIS SS IS COMMUTATIVE\n";
-  if (!this->hasOnlyCommutativeSCCs(LDI)) {
-    return;
-  }
+void SequentialSegment::removeEmptyWaits(LoopDependenceInfo *LDI) {
   errs() << "HELIX: This SS has all SCCs commutative\n";
   for (auto exit : this->exits) {
     auto trueInsertion = getTrueExitInsertion(exit);
@@ -508,8 +509,10 @@ void SequentialSegment::removeWaitsWhenCommutative(LoopDependenceInfo *LDI) {
         && this->entries.find(trueInsertion) != this->entries.end()) {
       errs()
           << "Deleting consecutive wait/signals at" << *trueInsertion << '\n';
+      this->entries.erase(trueInsertion);
     }
   }
+  errs() << "NIKHIL FINISHED REMOVING EMPTY WAITS\n";
 }
 
 std::unordered_set<Instruction *> SequentialSegment::getInstructions(void) {

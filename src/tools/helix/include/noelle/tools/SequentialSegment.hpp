@@ -86,7 +86,7 @@ private:
 
   bool hasOnlyCommutativeSCCs(LoopDependenceInfo *LDI);
   Instruction *getTrueExitInsertion(Instruction *exit);
-  void removeWaitsWhenCommutative(LoopDependenceInfo *LDI);
+  void removeEmptyWaits(LoopDependenceInfo *LDI);
 };
 
 } // namespace llvm::noelle
