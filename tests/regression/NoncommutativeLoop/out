@@ -1,0 +1,1096 @@
+clang++ -I../../include/threadpool/include -emit-llvm -O1 -Xclang -disable-llvm-passes -c test.cpp -o test.bc
+opt -O0 test.bc -o test.bc
+clang++ -O3 -c -emit-llvm test.bc -o baseline.bc
+clang++ -O3 baseline.bc -o baseline
+noelle-prof-coverage test.bc baseline_with_runtime_prof -lm -lstdc++ -lpthread
+./baseline_with_runtime_prof `cat input.txt` 
+num_args = 3
+array = -2127080362
+mv default.profraw pre_profiles.profraw
+noelle-meta-prof-embed pre_profiles.profraw test.bc -o baseline_pre.bc
+opt -pgo-test-profile-file=/tmp/tmp.Ot7zdJRS5w -block-freq -pgo-instr-use test.bc -o baseline_pre.bc
+noelle-pre baseline_pre.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main 
+opt --strip-debug --strip-debug-declare baseline_pre.bc -o baseline_pre.bc
+noelle-deadcode baseline_pre.bc baseline_pre.bc
+NOELLE: DeadFunctions: Start
+noelle-fixedpoint baseline_pre.bc baseline_pre.bc "noelle-load" -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DeadFunction.so -noelle-dfe
+NOELLE: FixedPoint: Start
+NOELLE: FixedPoint:   Loader: noelle-load
+NOELLE: FixedPoint:   Options: -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DeadFunction.so -noelle-dfe
+NOELLE: FixedPoint:   Input: baseline_pre.bc
+NOELLE: FixedPoint:   Output: baseline_pre.bc
+NOELLE: FixedPoint:   Temporary input: /tmp/tmp.bpVV0SNaVG (.ll version is /tmp/tmp.cwt8jFoAE1)
+NOELLE: FixedPoint:   Temporary output: /tmp/tmp.AZNAUv0TCp (.ll version is /tmp/tmp.9AhRHaCrHO)
+NOELLE: FixedPoint:   Normalize the code
+noelle-norm /tmp/tmp.bpVV0SNaVG -o /tmp/tmp.AZNAUv0TCp
+opt -basicaa -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -mem2reg -simplifycfg-sink-common=false -break-constgeps -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa -indvars --functionattrs --rpo-functionattrs /tmp/tmp.bpVV0SNaVG -o /tmp/tmp.AZNAUv0TCp
+noelle-meta-loop-embed /tmp/tmp.AZNAUv0TCp -o /tmp/tmp.AZNAUv0TCp
+noelle-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopMetadata.so -LoopMetadata /tmp/tmp.AZNAUv0TCp -o /tmp/tmp.AZNAUv0TCp
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopMetadata.so -LoopMetadata /tmp/tmp.AZNAUv0TCp -o /tmp/tmp.AZNAUv0TCp
+NOELLE: FixedPoint:   Run until a fixed point is reached
+NOELLE: FixedPoint:     Invocation 0
+noelle-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DeadFunction.so -noelle-dfe /tmp/tmp.bpVV0SNaVG -o /tmp/tmp.AZNAUv0TCp
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DeadFunction.so -noelle-dfe /tmp/tmp.bpVV0SNaVG -o /tmp/tmp.AZNAUv0TCp
+DeadFunctionEliminator: Start
+DeadFunctionEliminator:   Inline functions that are invoked only by one call instruction and that do not escape into memory
+DeadFunctionEliminator:   Get the islands
+DeadFunctionEliminator:   Identify the islands reachable from the entry points
+DeadFunctionEliminator:     Island
+DeadFunctionEliminator:       main
+DeadFunctionEliminator:       malloc
+DeadFunctionEliminator:       printf
+DeadFunctionEliminator:       atoi
+DeadFunctionEliminator:       free
+DeadFunctionEliminator:       strtol
+DeadFunctionEliminator:       sqrt
+DeadFunctionEliminator:   Identify the functions that can be deleted
+DeadFunctionEliminator: Exit
+Noelle:  Function "main"
+Noelle:     Loop "  %exitcond = icmp ne i64 %.01, 50000000" (9.740260e+01%)
+Noelle:  Function "atoi"
+Noelle:  Function "main"
+Noelle:     Loop "  %exitcond = icmp ne i64 %.01, 50000000" (9.740260e+01%)
+Noelle:  Function "atoi"
+NOELLE: FixedPoint: Exit
+NOELLE: DeadFunctions: Exit
+noelle-simplification baseline_pre.bc -o baseline_pre.bc
+opt -basicaa -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -mem2reg -tbaa -early-cse-memssa -licm -simplifycfg -simplifycfg-sink-common=false -instcombine -tailcallelim -loop-simplify -lcssa -licm -loop-unswitch -globalopt -instcombine -ipsccp -dce -gvn -dse -adce -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars -break-constgeps -lowerswitch -sroa -mergereturn --break-crit-edges -loop-simplify -lcssa --functionattrs --rpo-functionattrs baseline_pre.bc -o baseline_pre.bc
+noelle-io baseline_pre.bc
+noelle-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InputOutput.so -inputoutput baseline_pre.bc -o baseline_pre.bc
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InputOutput.so -inputoutput baseline_pre.bc -o baseline_pre.bc
+noelle-inline baseline_pre.bc "-noelle-inliner-verbose=1 -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main"
+NOELLE: Inliner: Start
+noelle-fixedpoint baseline_pre.bc baseline_pre.bc "noelle-parallel-load" -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Inliner.so -inliner -noelle-inliner-verbose=1 -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main
+NOELLE: FixedPoint: Start
+NOELLE: FixedPoint:   Loader: noelle-parallel-load
+NOELLE: FixedPoint:   Options: -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Inliner.so -inliner -noelle-inliner-verbose=1 -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main
+NOELLE: FixedPoint:   Input: baseline_pre.bc
+NOELLE: FixedPoint:   Output: baseline_pre.bc
+NOELLE: FixedPoint:   Temporary input: /tmp/tmp.lOHxO92yjN (.ll version is /tmp/tmp.lmR4BH1u0j)
+NOELLE: FixedPoint:   Temporary output: /tmp/tmp.wn6LqTg9w7 (.ll version is /tmp/tmp.Bs0aUwH5zZ)
+NOELLE: FixedPoint:   Normalize the code
+noelle-norm /tmp/tmp.lOHxO92yjN -o /tmp/tmp.wn6LqTg9w7
+opt -basicaa -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -mem2reg -simplifycfg-sink-common=false -break-constgeps -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa -indvars --functionattrs --rpo-functionattrs /tmp/tmp.lOHxO92yjN -o /tmp/tmp.wn6LqTg9w7
+noelle-meta-loop-embed /tmp/tmp.wn6LqTg9w7 -o /tmp/tmp.wn6LqTg9w7
+noelle-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopMetadata.so -LoopMetadata /tmp/tmp.wn6LqTg9w7 -o /tmp/tmp.wn6LqTg9w7
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopMetadata.so -LoopMetadata /tmp/tmp.wn6LqTg9w7 -o /tmp/tmp.wn6LqTg9w7
+NOELLE: FixedPoint:   Run until a fixed point is reached
+NOELLE: FixedPoint:     Invocation 0
+noelle-parallel-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Inliner.so -inliner -noelle-inliner-verbose=1 -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main /tmp/tmp.lOHxO92yjN -o /tmp/tmp.wn6LqTg9w7
+noelle-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Heuristics.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ParallelizationTechnique.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DSWP.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DOALL.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HELIX.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Inliner.so -inliner -noelle-inliner-verbose=1 -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main /tmp/tmp.lOHxO92yjN -o /tmp/tmp.wn6LqTg9w7
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Heuristics.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ParallelizationTechnique.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DSWP.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DOALL.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HELIX.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Inliner.so -inliner -noelle-inliner-verbose=1 -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main /tmp/tmp.lOHxO92yjN -o /tmp/tmp.wn6LqTg9w7
+Inliner: Start
+Inliner:   Number of program instructions = 45
+Inliner:   Profiles are available and will be used
+MemoryCloningAnalysis: Start
+MemoryCloningAnalysis: Exit
+DOALL: WARNING: function NOELLE_DOALLDispatcher couldn't be found. DOALL is disabled
+Inliner:   No remaining calls need to be inlined due to loop-carried data dependences
+Inliner:   No remaining hoists
+Inliner: Exit
+Noelle:  Function "main"
+Noelle:     Loop "  %exitcond = icmp eq i64 %.01, 50000000" (9.642857e+01%)
+Noelle:  Function "atoi"
+Noelle:  Function "main"
+Noelle:     Loop "  %exitcond = icmp eq i64 %.01, 50000000" (9.642857e+01%)
+Noelle:  Function "atoi"
+NOELLE: FixedPoint: Exit
+NOELLE: Inliner: Exit
+noelle-simplification baseline_pre.bc -o baseline_pre.bc
+opt -basicaa -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -mem2reg -tbaa -early-cse-memssa -licm -simplifycfg -simplifycfg-sink-common=false -instcombine -tailcallelim -loop-simplify -lcssa -licm -loop-unswitch -globalopt -instcombine -ipsccp -dce -gvn -dse -adce -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars -break-constgeps -lowerswitch -sroa -mergereturn --break-crit-edges -loop-simplify -lcssa --functionattrs --rpo-functionattrs baseline_pre.bc -o baseline_pre.bc
+noelle-deadcode baseline_pre.bc baseline_pre.bc
+NOELLE: DeadFunctions: Start
+noelle-fixedpoint baseline_pre.bc baseline_pre.bc "noelle-load" -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DeadFunction.so -noelle-dfe
+NOELLE: FixedPoint: Start
+NOELLE: FixedPoint:   Loader: noelle-load
+NOELLE: FixedPoint:   Options: -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DeadFunction.so -noelle-dfe
+NOELLE: FixedPoint:   Input: baseline_pre.bc
+NOELLE: FixedPoint:   Output: baseline_pre.bc
+NOELLE: FixedPoint:   Temporary input: /tmp/tmp.vw7BFWiG8m (.ll version is /tmp/tmp.ytZslRqFka)
+NOELLE: FixedPoint:   Temporary output: /tmp/tmp.DqKWUmHY5J (.ll version is /tmp/tmp.mZ28hqs1u4)
+NOELLE: FixedPoint:   Normalize the code
+noelle-norm /tmp/tmp.vw7BFWiG8m -o /tmp/tmp.DqKWUmHY5J
+opt -basicaa -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -mem2reg -simplifycfg-sink-common=false -break-constgeps -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa -indvars --functionattrs --rpo-functionattrs /tmp/tmp.vw7BFWiG8m -o /tmp/tmp.DqKWUmHY5J
+noelle-meta-loop-embed /tmp/tmp.DqKWUmHY5J -o /tmp/tmp.DqKWUmHY5J
+noelle-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopMetadata.so -LoopMetadata /tmp/tmp.DqKWUmHY5J -o /tmp/tmp.DqKWUmHY5J
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopMetadata.so -LoopMetadata /tmp/tmp.DqKWUmHY5J -o /tmp/tmp.DqKWUmHY5J
+NOELLE: FixedPoint:   Run until a fixed point is reached
+NOELLE: FixedPoint:     Invocation 0
+noelle-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DeadFunction.so -noelle-dfe /tmp/tmp.vw7BFWiG8m -o /tmp/tmp.DqKWUmHY5J
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DeadFunction.so -noelle-dfe /tmp/tmp.vw7BFWiG8m -o /tmp/tmp.DqKWUmHY5J
+DeadFunctionEliminator: Start
+DeadFunctionEliminator:   Inline functions that are invoked only by one call instruction and that do not escape into memory
+DeadFunctionEliminator:   Get the islands
+DeadFunctionEliminator:   Identify the islands reachable from the entry points
+DeadFunctionEliminator:     Island
+DeadFunctionEliminator:       main
+DeadFunctionEliminator:       malloc
+DeadFunctionEliminator:       printf
+DeadFunctionEliminator:       atoi
+DeadFunctionEliminator:       sqrt
+DeadFunctionEliminator:       free
+DeadFunctionEliminator:       strtol
+DeadFunctionEliminator:   Identify the functions that can be deleted
+DeadFunctionEliminator: Exit
+Noelle:  Function "main"
+Noelle:     Loop "  %exitcond = icmp eq i64 %.01, 50000000" (9.642857e+01%)
+Noelle:  Function "atoi"
+Noelle:  Function "main"
+Noelle:     Loop "  %exitcond = icmp eq i64 %.01, 50000000" (9.642857e+01%)
+Noelle:  Function "atoi"
+NOELLE: FixedPoint: Exit
+NOELLE: DeadFunctions: Exit
+noelle-simplification baseline_pre.bc -o baseline_pre.bc
+opt -basicaa -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -mem2reg -tbaa -early-cse-memssa -licm -simplifycfg -simplifycfg-sink-common=false -instcombine -tailcallelim -loop-simplify -lcssa -licm -loop-unswitch -globalopt -instcombine -ipsccp -dce -gvn -dse -adce -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars -break-constgeps -lowerswitch -sroa -mergereturn --break-crit-edges -loop-simplify -lcssa --functionattrs --rpo-functionattrs baseline_pre.bc -o baseline_pre.bc
+noelle-enable baseline_pre.bc baseline_pre.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main
+NOELLE: Enablers: Start
+noelle-fixedpoint baseline_pre.bc baseline_pre.bc "noelle-parallel-load" -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDistribution.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopWhilify.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopInvariantCodeMotion.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/SCEVSimplification.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Enablers.so -enablers -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main
+NOELLE: FixedPoint: Start
+NOELLE: FixedPoint:   Loader: noelle-parallel-load
+NOELLE: FixedPoint:   Options: -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDistribution.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopWhilify.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopInvariantCodeMotion.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/SCEVSimplification.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Enablers.so -enablers -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main
+NOELLE: FixedPoint:   Input: baseline_pre.bc
+NOELLE: FixedPoint:   Output: baseline_pre.bc
+NOELLE: FixedPoint:   Temporary input: /tmp/tmp.0f2G4V8qX4 (.ll version is /tmp/tmp.THJaSwg5WF)
+NOELLE: FixedPoint:   Temporary output: /tmp/tmp.ui3TSSAx2j (.ll version is /tmp/tmp.qXK8IJJJYW)
+NOELLE: FixedPoint:   Normalize the code
+noelle-norm /tmp/tmp.0f2G4V8qX4 -o /tmp/tmp.ui3TSSAx2j
+opt -basicaa -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -mem2reg -simplifycfg-sink-common=false -break-constgeps -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa -indvars --functionattrs --rpo-functionattrs /tmp/tmp.0f2G4V8qX4 -o /tmp/tmp.ui3TSSAx2j
+noelle-meta-loop-embed /tmp/tmp.ui3TSSAx2j -o /tmp/tmp.ui3TSSAx2j
+noelle-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopMetadata.so -LoopMetadata /tmp/tmp.ui3TSSAx2j -o /tmp/tmp.ui3TSSAx2j
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopMetadata.so -LoopMetadata /tmp/tmp.ui3TSSAx2j -o /tmp/tmp.ui3TSSAx2j
+NOELLE: FixedPoint:   Run until a fixed point is reached
+NOELLE: FixedPoint:     Invocation 0
+noelle-parallel-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDistribution.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopWhilify.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopInvariantCodeMotion.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/SCEVSimplification.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Enablers.so -enablers -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main /tmp/tmp.0f2G4V8qX4 -o /tmp/tmp.ui3TSSAx2j
+noelle-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Heuristics.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ParallelizationTechnique.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DSWP.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DOALL.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HELIX.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDistribution.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopWhilify.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopInvariantCodeMotion.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/SCEVSimplification.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Enablers.so -enablers -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main /tmp/tmp.0f2G4V8qX4 -o /tmp/tmp.ui3TSSAx2j
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Heuristics.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ParallelizationTechnique.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DSWP.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DOALL.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HELIX.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDistribution.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopWhilify.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopInvariantCodeMotion.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/SCEVSimplification.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Enablers.so -enablers -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main /tmp/tmp.0f2G4V8qX4 -o /tmp/tmp.ui3TSSAx2j
+EnablersManager: Start
+Noelle: Filter out cold code
+Noelle:  Function "main"
+Noelle:     Loop "  %exitcond = icmp eq i64 %.01, 50000000" (9.642857e+01%)
+Noelle:  Function "atoi"
+EnablersManager:   Try to improve all 1 loops, one at a time
+EnablersManager:   Loop:
+EnablersManager:     Function = "main"
+EnablersManager:     Entry instruction =   %exitcond = icmp eq i64 %.01, 50000000
+MemoryCloningAnalysis: Start
+MemoryCloningAnalysis: Exit
+EnablersManager:     Try to apply loop distribution
+EnablersManager:     Try to devirtualize indirect calls
+EnablersManager:     Try to whilify loops
+EnablersManager:     Try to extract invariants out of loops
+LICM: Start
+LICM:   Loop "  %exitcond = icmp eq i64 %.01, 50000000"
+LICM:     Invariant = "  %11 = load i8*, i8** %8, align 8, !tbaa !36
+LICM:       Checking dependences
+LICM:       The instruction can be hoisted
+LICM:     Invariant = "  %12 = tail call i32 @atoi(i8* %11) #5
+LICM:       The instruction might generate unwanted side-effects if it does not execute at least once per loop invocation
+LICM:     Invariant = "  %13 = sitofp i32 %12 to double
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %12 = tail call i32 @atoi(i8* %11) #5
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %12 = tail call i32 @atoi(i8* %11) #5
+LICM:     Invariant = "  %14 = tail call double @sqrt(double %13) #4
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %13 = sitofp i32 %12 to double
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %13 = sitofp i32 %12 to double
+LICM:     Invariant = "  %15 = fadd double %14, %13
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %13 = sitofp i32 %12 to double
+LICM:         Dependent instruction = "  %14 = tail call double @sqrt(double %13) #4
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %13 = sitofp i32 %12 to double
+LICM:         %14 = tail call double @sqrt(double %13) #4
+LICM:     Invariant = "  %16 = tail call double @sqrt(double %15) #4
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %15 = fadd double %14, %13
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %15 = fadd double %14, %13
+LICM:     Invariant = "  %17 = fadd double %15, %16
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %15 = fadd double %14, %13
+LICM:         Dependent instruction = "  %16 = tail call double @sqrt(double %15) #4
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %15 = fadd double %14, %13
+LICM:         %16 = tail call double @sqrt(double %15) #4
+LICM:     Invariant = "  %18 = tail call double @sqrt(double %17) #4
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %17 = fadd double %15, %16
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %17 = fadd double %15, %16
+LICM:     Invariant = "  %19 = fadd double %17, %18
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %17 = fadd double %15, %16
+LICM:         Dependent instruction = "  %18 = tail call double @sqrt(double %17) #4
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %17 = fadd double %15, %16
+LICM:         %18 = tail call double @sqrt(double %17) #4
+LICM:     Invariant = "  %20 = tail call double @sqrt(double %19) #4
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %19 = fadd double %17, %18
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %19 = fadd double %17, %18
+LICM:     Invariant = "  %21 = fadd double %19, %20
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %19 = fadd double %17, %18
+LICM:         Dependent instruction = "  %20 = tail call double @sqrt(double %19) #4
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %19 = fadd double %17, %18
+LICM:         %20 = tail call double @sqrt(double %19) #4
+LICM:     Invariant = "  %22 = tail call double @sqrt(double %21) #4
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %21 = fadd double %19, %20
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %21 = fadd double %19, %20
+LICM:     Invariant = "  %23 = fadd double %21, %22
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %21 = fadd double %19, %20
+LICM:         Dependent instruction = "  %22 = tail call double @sqrt(double %21) #4
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %21 = fadd double %19, %20
+LICM:         %22 = tail call double @sqrt(double %21) #4
+LICM:     Invariant = "  %24 = fcmp olt double %23, 4.200000e+01
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %23 = fadd double %21, %22
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %23 = fadd double %21, %22
+LICM:     Check invariants that can be hoisted conditionally
+LICM:       Check the invariants
+LICM:         Invariant   %23 = fadd double %21, %22
+LICM:           It can be hoisted
+LICM:         Invariant   %21 = fadd double %19, %20
+LICM:           It can be hoisted
+LICM:         Invariant   %15 = fadd double %14, %13
+LICM:           It can be hoisted
+LICM:         Invariant   %17 = fadd double %15, %16
+LICM:           It can be hoisted
+LICM:         Invariant   %19 = fadd double %17, %18
+LICM:           It can be hoisted
+LICM:         Invariant   %13 = sitofp i32 %12 to double
+LICM:           It cannot be hoisted
+LICM:             Remove   %13 = sitofp i32 %12 to double as well as it was conditioned to this one
+LICM:       Check the invariants
+LICM:         Invariant   %16 = tail call double @sqrt(double %15) #4
+LICM:           It cannot be hoisted
+LICM:             Remove   %16 = tail call double @sqrt(double %15) #4 as well as it was conditioned to this one
+LICM:       Check the invariants
+LICM:         Invariant   %18 = tail call double @sqrt(double %17) #4
+LICM:           It cannot be hoisted
+LICM:             Remove   %18 = tail call double @sqrt(double %17) #4 as well as it was conditioned to this one
+LICM:       Check the invariants
+LICM:         Invariant   %20 = tail call double @sqrt(double %19) #4
+LICM:           It cannot be hoisted
+LICM:             Remove   %20 = tail call double @sqrt(double %19) #4 as well as it was conditioned to this one
+LICM:       Check the invariants
+LICM:         Invariant   %22 = tail call double @sqrt(double %21) #4
+LICM:           It cannot be hoisted
+LICM:             Remove   %22 = tail call double @sqrt(double %21) #4 as well as it was conditioned to this one
+LICM:       Check the invariants
+LICM:         Invariant   %24 = fcmp olt double %23, 4.200000e+01
+LICM:           It cannot be hoisted
+LICM:       Check the invariants
+LICM:   The loop has been modified
+LICM: Exit
+EnablersManager:       Loop invariants have been extracted
+EnablersManager: Exit
+Noelle:  Function "main"
+Noelle:     Loop "  %exitcond = icmp eq i64 %.01, 50000000" (9.642857e+01%)
+Noelle:  Function "atoi"
+Noelle:  Function "main"
+Noelle:     Loop "  %exitcond = icmp eq i64 %.01, 50000000" (9.629630e+01%)
+Noelle:  Function "atoi"
+NOELLE: FixedPoint:       There are 0 different instructions and -1 different loop instructions
+NOELLE: FixedPoint:       Normalize the code
+noelle-norm /tmp/tmp.ui3TSSAx2j -o /tmp/tmp.ui3TSSAx2j
+opt -basicaa -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -mem2reg -simplifycfg-sink-common=false -break-constgeps -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa -indvars --functionattrs --rpo-functionattrs /tmp/tmp.ui3TSSAx2j -o /tmp/tmp.ui3TSSAx2j
+noelle-meta-loop-embed /tmp/tmp.ui3TSSAx2j -o /tmp/tmp.ui3TSSAx2j
+noelle-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopMetadata.so -LoopMetadata /tmp/tmp.ui3TSSAx2j -o /tmp/tmp.ui3TSSAx2j
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopMetadata.so -LoopMetadata /tmp/tmp.ui3TSSAx2j -o /tmp/tmp.ui3TSSAx2j
+NOELLE: FixedPoint:     Invocation 1
+noelle-parallel-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDistribution.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopWhilify.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopInvariantCodeMotion.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/SCEVSimplification.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Enablers.so -enablers -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main /tmp/tmp.0f2G4V8qX4 -o /tmp/tmp.ui3TSSAx2j
+noelle-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Heuristics.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ParallelizationTechnique.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DSWP.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DOALL.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HELIX.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDistribution.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopWhilify.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopInvariantCodeMotion.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/SCEVSimplification.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Enablers.so -enablers -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main /tmp/tmp.0f2G4V8qX4 -o /tmp/tmp.ui3TSSAx2j
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Heuristics.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ParallelizationTechnique.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DSWP.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DOALL.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HELIX.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDistribution.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopWhilify.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopInvariantCodeMotion.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/SCEVSimplification.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Enablers.so -enablers -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main /tmp/tmp.0f2G4V8qX4 -o /tmp/tmp.ui3TSSAx2j
+EnablersManager: Start
+Noelle: Filter out cold code
+Noelle:  Function "main"
+Noelle:     Loop "  %exitcond = icmp eq i64 %.01, 50000000" (9.629630e+01%)
+Noelle:  Function "atoi"
+EnablersManager:   Try to improve all 1 loops, one at a time
+EnablersManager:   Loop:
+EnablersManager:     Function = "main"
+EnablersManager:     Entry instruction =   %exitcond = icmp eq i64 %.01, 50000000
+MemoryCloningAnalysis: Start
+MemoryCloningAnalysis: Exit
+EnablersManager:     Try to apply loop distribution
+EnablersManager:     Try to devirtualize indirect calls
+EnablersManager:     Try to whilify loops
+EnablersManager:     Try to extract invariants out of loops
+LICM: Start
+LICM:   Loop "  %exitcond = icmp eq i64 %.01, 50000000"
+LICM:     Invariant = "  %12 = tail call i32 @atoi(i8* %9) #5
+LICM:       The instruction might generate unwanted side-effects if it does not execute at least once per loop invocation
+LICM:     Invariant = "  %13 = sitofp i32 %12 to double
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %12 = tail call i32 @atoi(i8* %9) #5
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %12 = tail call i32 @atoi(i8* %9) #5
+LICM:     Invariant = "  %14 = tail call double @sqrt(double %13) #4
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %13 = sitofp i32 %12 to double
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %13 = sitofp i32 %12 to double
+LICM:     Invariant = "  %15 = fadd double %14, %13
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %13 = sitofp i32 %12 to double
+LICM:         Dependent instruction = "  %14 = tail call double @sqrt(double %13) #4
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %13 = sitofp i32 %12 to double
+LICM:         %14 = tail call double @sqrt(double %13) #4
+LICM:     Invariant = "  %16 = tail call double @sqrt(double %15) #4
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %15 = fadd double %14, %13
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %15 = fadd double %14, %13
+LICM:     Invariant = "  %17 = fadd double %15, %16
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %15 = fadd double %14, %13
+LICM:         Dependent instruction = "  %16 = tail call double @sqrt(double %15) #4
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %15 = fadd double %14, %13
+LICM:         %16 = tail call double @sqrt(double %15) #4
+LICM:     Invariant = "  %18 = tail call double @sqrt(double %17) #4
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %17 = fadd double %15, %16
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %17 = fadd double %15, %16
+LICM:     Invariant = "  %19 = fadd double %17, %18
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %17 = fadd double %15, %16
+LICM:         Dependent instruction = "  %18 = tail call double @sqrt(double %17) #4
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %17 = fadd double %15, %16
+LICM:         %18 = tail call double @sqrt(double %17) #4
+LICM:     Invariant = "  %20 = tail call double @sqrt(double %19) #4
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %19 = fadd double %17, %18
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %19 = fadd double %17, %18
+LICM:     Invariant = "  %21 = fadd double %19, %20
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %19 = fadd double %17, %18
+LICM:         Dependent instruction = "  %20 = tail call double @sqrt(double %19) #4
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %19 = fadd double %17, %18
+LICM:         %20 = tail call double @sqrt(double %19) #4
+LICM:     Invariant = "  %22 = tail call double @sqrt(double %21) #4
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %21 = fadd double %19, %20
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %21 = fadd double %19, %20
+LICM:     Invariant = "  %23 = fadd double %21, %22
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %21 = fadd double %19, %20
+LICM:         Dependent instruction = "  %22 = tail call double @sqrt(double %21) #4
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %21 = fadd double %19, %20
+LICM:         %22 = tail call double @sqrt(double %21) #4
+LICM:     Invariant = "  %24 = fcmp olt double %23, 4.200000e+01
+LICM:       Checking dependences
+LICM:         Dependent instruction = "  %23 = fadd double %21, %22
+LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:
+LICM:         %23 = fadd double %21, %22
+LICM:     Check invariants that can be hoisted conditionally
+LICM:       Check the invariants
+LICM:         Invariant   %23 = fadd double %21, %22
+LICM:           It can be hoisted
+LICM:         Invariant   %21 = fadd double %19, %20
+LICM:           It can be hoisted
+LICM:         Invariant   %15 = fadd double %14, %13
+LICM:           It can be hoisted
+LICM:         Invariant   %17 = fadd double %15, %16
+LICM:           It can be hoisted
+LICM:         Invariant   %19 = fadd double %17, %18
+LICM:           It can be hoisted
+LICM:         Invariant   %13 = sitofp i32 %12 to double
+LICM:           It cannot be hoisted
+LICM:             Remove   %13 = sitofp i32 %12 to double as well as it was conditioned to this one
+LICM:       Check the invariants
+LICM:         Invariant   %16 = tail call double @sqrt(double %15) #4
+LICM:           It cannot be hoisted
+LICM:             Remove   %16 = tail call double @sqrt(double %15) #4 as well as it was conditioned to this one
+LICM:       Check the invariants
+LICM:         Invariant   %18 = tail call double @sqrt(double %17) #4
+LICM:           It cannot be hoisted
+LICM:             Remove   %18 = tail call double @sqrt(double %17) #4 as well as it was conditioned to this one
+LICM:       Check the invariants
+LICM:         Invariant   %20 = tail call double @sqrt(double %19) #4
+LICM:           It cannot be hoisted
+LICM:             Remove   %20 = tail call double @sqrt(double %19) #4 as well as it was conditioned to this one
+LICM:       Check the invariants
+LICM:         Invariant   %22 = tail call double @sqrt(double %21) #4
+LICM:           It cannot be hoisted
+LICM:             Remove   %22 = tail call double @sqrt(double %21) #4 as well as it was conditioned to this one
+LICM:       Check the invariants
+LICM:         Invariant   %24 = fcmp olt double %23, 4.200000e+01
+LICM:           It cannot be hoisted
+LICM:       Check the invariants
+LICM:   The loop has been modified
+LICM: Exit
+EnablersManager:       Loop invariants have been extracted
+EnablersManager: Exit
+Noelle:  Function "main"
+Noelle:     Loop "  %exitcond = icmp eq i64 %.01, 50000000" (9.629630e+01%)
+Noelle:  Function "atoi"
+Noelle:  Function "main"
+Noelle:     Loop "  %exitcond = icmp eq i64 %.01, 50000000" (9.629630e+01%)
+Noelle:  Function "atoi"
+NOELLE: FixedPoint: Exit
+NOELLE: Enablers: Exit
+noelle-simplification baseline_pre.bc -o baseline_pre.bc
+opt -basicaa -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -mem2reg -tbaa -early-cse-memssa -licm -simplifycfg -simplifycfg-sink-common=false -instcombine -tailcallelim -loop-simplify -lcssa -licm -loop-unswitch -globalopt -instcombine -ipsccp -dce -gvn -dse -adce -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars -break-constgeps -lowerswitch -sroa -mergereturn --break-crit-edges -loop-simplify -lcssa --functionattrs --rpo-functionattrs baseline_pre.bc -o baseline_pre.bc
+noelle-meta-clean baseline_pre.bc baseline_pre.bc
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CleanMetadata.so -CleanMetadata -clean-loop-metadata=true -clean-prof-metadata=true -clean-pdg-metadata=true baseline_pre.bc -o baseline_pre.bc
+noelle/core/Clean Loop Metadata
+noelle/core/Clean PDG Metadata
+noelle/core/Clean profiler metadata
+opt --strip-named-metadata baseline_pre.bc -o baseline_pre.bc
+noelle-prof-coverage baseline_pre.bc baseline_pre_prof -lm -lstdc++ -lpthread
+./baseline_pre_prof `cat input.txt` 
+num_args = 3
+array = -2127080362
+noelle-meta-prof-embed default.profraw baseline_pre.bc -o baseline_with_metadata.bc
+opt -pgo-test-profile-file=/tmp/tmp.nepTCNdeQv -block-freq -pgo-instr-use baseline_pre.bc -o baseline_with_metadata.bc
+noelle-meta-pdg-embed baseline_with_metadata.bc -o baseline_with_metadata.bc
+noelle-load -PDGAnalysis -noelle-pdg-verbose=3 -noelle-pdg-embed baseline_with_metadata.bc -o baseline_with_metadata.bc
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -PDGAnalysis -noelle-pdg-verbose=3 -noelle-pdg-embed baseline_with_metadata.bc -o baseline_with_metadata.bc
+PDGAnalysis: Construct PDG from Analysis
+Embed PDG as metadata
+clang++ "-DDEBUG" -I../../include/threadpool/include -std=c++14 -emit-llvm -O3 -c Parallelizer_utils.cpp -o Parallelizer_utils.bc
+noelle-parallelizer baseline_with_metadata.bc -o test_parallelized.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main -alloc-aa-verbose=1 -noelle-parallelizer-force
+noelle-meta-loop-embed baseline_with_metadata.bc -o afterLoopMetadata.bc
+noelle-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopMetadata.so -LoopMetadata baseline_with_metadata.bc -o afterLoopMetadata.bc
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopMetadata.so -LoopMetadata baseline_with_metadata.bc -o afterLoopMetadata.bc
+noelle-parallelization-planner afterLoopMetadata.bc -o baseline_with_parallel_plan.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main -alloc-aa-verbose=1 -noelle-parallelizer-force
+noelle-parallel-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Planner.so -planner afterLoopMetadata.bc -o baseline_with_parallel_plan.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main -alloc-aa-verbose=1 -noelle-parallelizer-force
+noelle-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Heuristics.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ParallelizationTechnique.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DSWP.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DOALL.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HELIX.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Planner.so -planner afterLoopMetadata.bc -o baseline_with_parallel_plan.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main -alloc-aa-verbose=1 -noelle-parallelizer-force
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Heuristics.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ParallelizationTechnique.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DSWP.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DOALL.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HELIX.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Planner.so -planner afterLoopMetadata.bc -o baseline_with_parallel_plan.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main -alloc-aa-verbose=1 -noelle-parallelizer-force
+AllocAA at "runOnModule"
+AllocAA:  GV value is a primitive integer array: 0, @.str = private unnamed_addr constant [15 x i8] c"num_args = %d\0A\00", align 1
+AllocAA:  GV value is a primitive integer array: 0, @.str.1 = private unnamed_addr constant [12 x i8] c"array = %d\0A\00", align 1
+AllocAA:  value is a primitive integer array: 0,   %4 = bitcast i8* %3 to i32*, !noelle.pdg.inst.id !92
+AllocAA:  value is a primitive integer array: 0,   %3 = tail call noalias i8* @malloc(i64 16) #4, !noelle.pdg.inst.id !34
+Planner: Start
+Planner:  Fetching the program loops
+Noelle: Filter out cold code
+Noelle:  Function "main"
+Noelle:     Loop "  %exitcond = icmp eq i64 %.01, 50000000, !noelle.pdg.inst.id !104" (9.629630e+01%)
+Noelle:  Function "atoi"
+Planner:    There are 1 loops in the program we are going to consider
+MemoryCloningAnalysis: Start
+MemoryCloningAnalysis: Exit
+MemoryCloningAnalysis: Start
+MemoryCloningAnalysis: Exit
+Planner: LoopSelector: Start
+Planner: LoopSelector:   Order of loops and their maximum savings
+Planner: LoopSelector:    Loop 0
+Planner: LoopSelector:      Function: "main"
+Planner: LoopSelector:      Loop nesting level: 1
+Planner: LoopSelector:      "  %exitcond = icmp eq i64 %.01, 50000000, !noelle.pdg.inst.id !104"
+Planner: LoopSelector:      Coverage: 9.629630e+01%
+Planner: LoopSelector:      Whole-program savings = 7.777778e+01%
+Planner: LoopSelector:      Loop savings = 8.076923e+01%
+Planner: LoopSelector: End
+Planner:   Maximum time saved = 7.777778e+01% (1048771083)
+Planner:   Maximum time saved with DOALL only = 0.000000e+00% (0)
+Planner: Exit
+NOELLE_APIs.c:107:3: warning: implicit declaration of function 'rand_r' is invalid in C99 [-Wimplicit-function-declaration]
+  rand_r(&s);
+  ^
+1 warning generated.
+noelle-rm-function -function-name=SIMONE_CAMPANONI_IS_GOING_TO_REMOVE_THIS_FUNCTION code_with_prototypes.bc -o code_to_parallelize.bc
+NOELLE: DeadFunctions: Start
+noelle-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/RemoveFunction.so -noelle-rm-function -function-name=SIMONE_CAMPANONI_IS_GOING_TO_REMOVE_THIS_FUNCTION code_with_prototypes.bc -o code_to_parallelize.bc
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/RemoveFunction.so -noelle-rm-function -function-name=SIMONE_CAMPANONI_IS_GOING_TO_REMOVE_THIS_FUNCTION code_with_prototypes.bc -o code_to_parallelize.bc
+RemoveFunction: Start
+RemoveFunction:   Check if function "SIMONE_CAMPANONI_IS_GOING_TO_REMOVE_THIS_FUNCTION" exists
+RemoveFunction:     The function exists
+RemoveFunction:   Remove the function
+RemoveFunction: Exit
+NOELLE: DeadFunctions: Exit
+noelle-parallelizer-loop code_to_parallelize.bc -o parallelized_unoptimized.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main -alloc-aa-verbose=1 -noelle-parallelizer-force
+noelle-parallel-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Parallelizer.so -parallelizer code_to_parallelize.bc -o parallelized_unoptimized.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main -alloc-aa-verbose=1 -noelle-parallelizer-force
+noelle-load -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Heuristics.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ParallelizationTechnique.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DSWP.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DOALL.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HELIX.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Parallelizer.so -parallelizer code_to_parallelize.bc -o parallelized_unoptimized.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main -alloc-aa-verbose=1 -noelle-parallelizer-force
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSvf.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libCudd.so -stat=false -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libSCAFUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/libMemoryAnalysisModules.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AllocAA.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/AliasAnalysisEngine.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TalkDown.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CallGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDG.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/PDGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MemoryCloningAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Architecture.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/BasicUtilities.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/TypesManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/GlobalsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/FunctionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ConstantsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Linker.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Dominators.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Task.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DataFlow.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HotProfiler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopStructure.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopEnvironment.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Forest.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Invariants.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/InductionVariables.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopCarriedDependencies.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGAttributes.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopSCCDAGNormalizer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopContent.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopNestingGraph.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Scheduler.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/OutlinerPass.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/MetadataManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopUnroll.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGAnalysis.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CFGTransformer.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CompilationOptionsManager.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Noelle.so -disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa -basic-loop-aa -scev-loop-aa -auto-restrict-aa -intrinsic-aa -global-malloc-aa -pure-fun-aa -semi-local-fun-aa -phi-maze-aa -no-capture-global-aa -no-capture-src-aa -type-aa -no-escape-fields-aa -acyclic-aa -disjoint-fields-aa -field-malloc-aa -loop-variant-allocation-aa -std-in-out-err-aa -array-of-structures-aa -kill-flow-aa -callsite-depth-combinator-aa -unique-access-paths-aa -llvm-aa-results -scalar-evolution -loops -domtree -postdomtree -noellescaf -noellesvf -load /home/nsk4506/noelle_better_helix_syncs/install/lib/LoopDependenceAnalyses.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Heuristics.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/ParallelizationTechnique.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DSWP.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/DOALL.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/HELIX.so -load /home/nsk4506/noelle_better_helix_syncs/install/lib/Parallelizer.so -parallelizer code_to_parallelize.bc -o parallelized_unoptimized.bc -noelle-pdg-verbose=1 -noelle-verbose=2 -noelle-min-hot=0 -noelle-inliner-avoid-hoist-to-main -alloc-aa-verbose=1 -noelle-parallelizer-force
+AllocAA at "runOnModule"
+AllocAA:  GV value is a primitive integer array: 0, @.str = private unnamed_addr constant [15 x i8] c"num_args = %d\0A\00", align 1
+AllocAA:  GV value is a primitive integer array: 0, @.str.1 = private unnamed_addr constant [12 x i8] c"array = %d\0A\00", align 1
+AllocAA:  value is a primitive integer array: 0,   %4 = bitcast i8* %3 to i32*, !noelle.pdg.inst.id !94
+AllocAA:  value is a primitive integer array: 0,   %3 = tail call noalias i8* @malloc(i64 16) #5, !noelle.pdg.inst.id !36
+Parallelizer: Start
+Parallelizer:  Analyzing the module code_to_parallelize.bc
+Parallelizer:  Fetching the program loops
+Noelle: Filter out cold code
+Noelle:  Function "main"
+Noelle:     Loop "  %exitcond = icmp eq i64 %.01, 50000000, !noelle.pdg.inst.id !106" (9.629630e+01%)
+Noelle:  Function "atoi"
+Parallelizer:    There are 1 loops in the program that are enabled from the options used
+MemoryCloningAnalysis: Start
+MemoryCloningAnalysis: Exit
+MemoryCloningAnalysis: Start
+MemoryCloningAnalysis: Exit
+Parallelizer:    There are 1 loops that the planner has selected
+Parallelizer:    We are going to try to parallelize all of them
+Parallelizer: parallelizerLoop: Start
+Parallelizer: parallelizerLoop:   Function = "main"
+Parallelizer: parallelizerLoop:   Loop 0 = "  %exitcond = icmp eq i64 %.01, 50000000, !noelle.pdg.inst.id !106"
+Parallelizer: parallelizerLoop:   Nesting level = 1
+Parallelizer: parallelizerLoop:   Number of threads to extract = 28
+Parallelizer: parallelizerLoop:   Coverage = 9.629630e+01%
+Parallelizer: parallelizerLoop:   Environment: live-in and live-out values
+Parallelizer: parallelizerLoop:   Environment:   Live-in 0 =   %4 = bitcast i8* %3 to i32*, !noelle.pdg.inst.id !94
+Parallelizer: parallelizerLoop:   Environment:   Live-in 1 =   %9 = load i8*, i8** %8, align 8, !tbaa !102, !noelle.pdg.inst.id !51
+DOALL: Checking if the loop is DOALL
+DOALL:   We found an SCC of the loop that is non clonable and non commutative
+DOALL:     Internal nodes: 5
+DOALL:     	  %28 = load i32, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !53
+DOALL:     	  %29 = add nsw i32 %28, 91, !noelle.pdg.inst.id !127
+DOALL:     	  %30 = sdiv i32 %29, 10, !noelle.pdg.inst.id !128
+DOALL:     	  %31 = add nsw i32 %28, %30, !noelle.pdg.inst.id !129
+DOALL:     	  store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55
+DOALL:     External nodes: 2
+DOALL:     	  br i1 %24, label %.LeafBlock_crit_edge, label %25, !prof !122, !noelle.pdg.inst.id !123
+DOALL:     	  %27 = getelementptr inbounds i32, i32* %4, i64 %26, !noelle.pdg.inst.id !126
+DOALL:     Edges: 15
+DOALL:     Loop-carried data dependences
+DOALL:         store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55 --->   store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55 via memory
+DOALL:         store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55 --->   %28 = load i32, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !53 via memory
+HELIX:   Loop has 5 basic blocks:
+
+LeafBlock:                                        ; preds = %.LeafBlock_crit_edge, %25
+  %32 = add nuw nsw i64 %.01, 1, !noelle.pdg.inst.id !131
+  br label %10, !noelle.pdg.inst.id !132
+
+
+.LeafBlock_crit_edge:                             ; preds = %11
+  br label %LeafBlock, !noelle.pdg.inst.id !124
+
+
+25:                                               ; preds = %11
+  %26 = and i64 %.01, 3, !noelle.pdg.inst.id !125
+  %27 = getelementptr inbounds i32, i32* %4, i64 %26, !noelle.pdg.inst.id !126
+  %28 = load i32, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !53
+  %29 = add nsw i32 %28, 91, !noelle.pdg.inst.id !127
+  %30 = sdiv i32 %29, 10, !noelle.pdg.inst.id !128
+  %31 = add nsw i32 %28, %30, !noelle.pdg.inst.id !129
+  store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55
+  br label %LeafBlock, !noelle.pdg.inst.id !130
+
+
+10:                                               ; preds = %LeafBlock, %2
+  %.01 = phi i64 [ 0, %2 ], [ %32, %LeafBlock ], !noelle.pdg.inst.id !105
+  %exitcond = icmp eq i64 %.01, 50000000, !noelle.pdg.inst.id !106
+  br i1 %exitcond, label %33, label %11, !prof !107, !noelle.loop.id !108, !noelle.pdg.inst.id !109, !noelle.parallelizer.looporder !108
+
+
+11:                                               ; preds = %10
+  %12 = tail call i32 @atoi(i8* %9) #6, !noelle.pdg.inst.id !37
+  %13 = sitofp i32 %12 to double, !noelle.pdg.inst.id !110
+  %14 = tail call double @sqrt(double %13) #5, !noelle.pdg.inst.id !111
+  %15 = fadd double %14, %13, !noelle.pdg.inst.id !112
+  %16 = tail call double @sqrt(double %15) #5, !noelle.pdg.inst.id !113
+  %17 = fadd double %15, %16, !noelle.pdg.inst.id !114
+  %18 = tail call double @sqrt(double %17) #5, !noelle.pdg.inst.id !115
+  %19 = fadd double %17, %18, !noelle.pdg.inst.id !116
+  %20 = tail call double @sqrt(double %19) #5, !noelle.pdg.inst.id !117
+  %21 = fadd double %19, %20, !noelle.pdg.inst.id !118
+  %22 = tail call double @sqrt(double %21) #5, !noelle.pdg.inst.id !119
+  %23 = fadd double %21, %22, !noelle.pdg.inst.id !120
+  %24 = fcmp olt double %23, 4.200000e+01, !noelle.pdg.inst.id !121
+  br i1 %24, label %.LeafBlock_crit_edge, label %25, !prof !122, !noelle.pdg.inst.id !123
+
+HELIX:   There are 1 SCCs that have loop-carried dependences that cannot be broken
+HELIX:     SCC:
+HELIX:       Loop-carried dependences
+HELIX:           store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55 --->   store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55 via memory
+HELIX:           store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55 --->   %28 = load i32, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !53 via memory
+HELIX:       Nodes within the SCC: 5
+HELIX:       	  %28 = load i32, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !53
+HELIX:       	  %29 = add nsw i32 %28, 91, !noelle.pdg.inst.id !127
+HELIX:       	  %30 = sdiv i32 %29, 10, !noelle.pdg.inst.id !128
+HELIX:       	  %31 = add nsw i32 %28, %30, !noelle.pdg.inst.id !129
+HELIX:       	  store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55
+HELIX:       Nodes outside the SCC and connected with at least one node within the SCC: 2
+HELIX:       	  br i1 %24, label %.LeafBlock_crit_edge, label %25, !prof !122, !noelle.pdg.inst.id !123
+HELIX:       	  %27 = getelementptr inbounds i32, i32* %4, i64 %26, !noelle.pdg.inst.id !126
+HELIX:       Edges: 15
+HELIX:         From:	  br i1 %24, label %.LeafBlock_crit_edge, label %25, !prof !122, !noelle.pdg.inst.id !123
+HELIX:         To:	  %28 = load i32, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !53
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  br i1 %24, label %.LeafBlock_crit_edge, label %25, !prof !122, !noelle.pdg.inst.id !123
+HELIX:         To:	  %29 = add nsw i32 %28, 91, !noelle.pdg.inst.id !127
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  br i1 %24, label %.LeafBlock_crit_edge, label %25, !prof !122, !noelle.pdg.inst.id !123
+HELIX:         To:	  %30 = sdiv i32 %29, 10, !noelle.pdg.inst.id !128
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  br i1 %24, label %.LeafBlock_crit_edge, label %25, !prof !122, !noelle.pdg.inst.id !123
+HELIX:         To:	  %31 = add nsw i32 %28, %30, !noelle.pdg.inst.id !129
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  br i1 %24, label %.LeafBlock_crit_edge, label %25, !prof !122, !noelle.pdg.inst.id !123
+HELIX:         To:	  store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  %27 = getelementptr inbounds i32, i32* %4, i64 %26, !noelle.pdg.inst.id !126
+HELIX:         To:	  %28 = load i32, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !53
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  %27 = getelementptr inbounds i32, i32* %4, i64 %26, !noelle.pdg.inst.id !126
+HELIX:         To:	  store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  %28 = load i32, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !53
+HELIX:         To:	  %29 = add nsw i32 %28, 91, !noelle.pdg.inst.id !127
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  %28 = load i32, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !53
+HELIX:         To:	  %31 = add nsw i32 %28, %30, !noelle.pdg.inst.id !129
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  %28 = load i32, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !53
+HELIX:         To:	  store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55
+HELIX:         Attributes: Data WAR (may) from memory 
+
+HELIX:         From:	  %29 = add nsw i32 %28, 91, !noelle.pdg.inst.id !127
+HELIX:         To:	  %30 = sdiv i32 %29, 10, !noelle.pdg.inst.id !128
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  %30 = sdiv i32 %29, 10, !noelle.pdg.inst.id !128
+HELIX:         To:	  %31 = add nsw i32 %28, %30, !noelle.pdg.inst.id !129
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  %31 = add nsw i32 %28, %30, !noelle.pdg.inst.id !129
+HELIX:         To:	  store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55
+HELIX:         To:	  %28 = load i32, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !53
+HELIX:         Attributes: Loop-carried Data RAW (may) from memory 
+
+HELIX:         From:	  store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55
+HELIX:         To:	  store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55
+HELIX:         Attributes: Loop-carried Data WAW (may) from memory 
+
+HELIX:   Next are all loop-carried dependences of the loop
+HELIX:       br i1 %exitcond, label %33, label %11, !prof !107, !noelle.loop.id !108, !noelle.pdg.inst.id !109, !noelle.parallelizer.looporder !108 --->   %exitcond = icmp eq i64 %.01, 50000000, !noelle.pdg.inst.id !106 control
+HELIX:       br i1 %exitcond, label %33, label %11, !prof !107, !noelle.loop.id !108, !noelle.pdg.inst.id !109, !noelle.parallelizer.looporder !108 --->   %.01 = phi i64 [ 0, %2 ], [ %32, %LeafBlock ], !noelle.pdg.inst.id !105 control
+HELIX:       br i1 %exitcond, label %33, label %11, !prof !107, !noelle.loop.id !108, !noelle.pdg.inst.id !109, !noelle.parallelizer.looporder !108 --->   br i1 %exitcond, label %33, label %11, !prof !107, !noelle.loop.id !108, !noelle.pdg.inst.id !109, !noelle.parallelizer.looporder !108 control
+HELIX:       store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55 --->   %28 = load i32, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !53 via memory
+HELIX:       store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55 --->   store i32 %31, i32* %27, align 4, !tbaa !95, !noelle.pdg.inst.id !55 via memory
+HELIX:       %32 = add nuw nsw i64 %.01, 1, !noelle.pdg.inst.id !131 --->   %.01 = phi i64 [ 0, %2 ], [ %32, %LeafBlock ], !noelle.pdg.inst.id !105 via variable
+HELIX: Start the parallelization
+HELIX:   Initialize the environment of the loop
+HELIX:   Cloning loop in task
+GenerateCodeToLoadLiveInVariables: Start
+GenerateCodeToLoadLiveInVariables:   Environment ID = 0
+GenerateCodeToLoadLiveInVariables:     Pointer =   %11 = bitcast i64* %10 to i32**
+GenerateCodeToLoadLiveInVariables:   Environment ID = 1
+GenerateCodeToLoadLiveInVariables:     Pointer =   %13 = bitcast i64* %12 to i8**
+GenerateCodeToLoadLiveInVariables: Exit
+HELIX:   Check if we need to spill variables because they are part of loop carried data dependencies
+HELIX:   Adjusting loop IVs
+HELIX:  Constructing task dependence graph
+HELIX:  Constructing task loop dependence info
+MemoryCloningAnalysis: Start
+MemoryCloningAnalysis: Exit
+MemoryCloningAnalysis: Start
+MemoryCloningAnalysis: Exit
+HELIX:   Loop has 5 basic blocks:
+
+21:                                               ; preds = %24, %25
+  %22 = add nuw nsw i64 %33, 1, !noelle.pdg.inst.id !30
+  %23 = add i64 %22, %18
+  br label %32, !noelle.pdg.inst.id !31
+
+
+25:                                               ; preds = %35
+  %26 = and i64 %33, 3, !noelle.pdg.inst.id !33
+  %27 = getelementptr inbounds i32, i32* %noelle_environment_variable_0, i64 %26, !noelle.pdg.inst.id !34
+  %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39
+  %29 = add nsw i32 %28, 91, !noelle.pdg.inst.id !40
+  %30 = sdiv i32 %29, 10, !noelle.pdg.inst.id !41
+  %31 = add nsw i32 %28, %30, !noelle.pdg.inst.id !42
+  store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43
+  br label %21, !noelle.pdg.inst.id !44
+
+
+32:                                               ; preds = %9, %21
+  %33 = phi i64 [ %16, %9 ], [ %23, %21 ], !noelle.pdg.inst.id !45
+  %34 = icmp sge i64 %33, 50000000, !noelle.pdg.inst.id !46
+  br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48
+
+
+24:                                               ; preds = %35
+  br label %21, !noelle.pdg.inst.id !32
+
+
+35:                                               ; preds = %32
+  %36 = tail call i32 @atoi(i8* %noelle_environment_variable_1) #5, !noelle.pdg.inst.id !50
+  %37 = sitofp i32 %36 to double, !noelle.pdg.inst.id !51
+  %38 = tail call double @sqrt(double %37) #6, !noelle.pdg.inst.id !52
+  %39 = fadd double %38, %37, !noelle.pdg.inst.id !53
+  %40 = tail call double @sqrt(double %39) #6, !noelle.pdg.inst.id !54
+  %41 = fadd double %39, %40, !noelle.pdg.inst.id !55
+  %42 = tail call double @sqrt(double %41) #6, !noelle.pdg.inst.id !56
+  %43 = fadd double %41, %42, !noelle.pdg.inst.id !57
+  %44 = tail call double @sqrt(double %43) #6, !noelle.pdg.inst.id !58
+  %45 = fadd double %43, %44, !noelle.pdg.inst.id !59
+  %46 = tail call double @sqrt(double %45) #6, !noelle.pdg.inst.id !60
+  %47 = fadd double %45, %46, !noelle.pdg.inst.id !61
+  %48 = fcmp olt double %47, 4.200000e+01, !noelle.pdg.inst.id !62
+  br i1 %48, label %24, label %25, !prof !63, !noelle.pdg.inst.id !64
+
+HELIX:   There are 2 SCCs that have loop-carried dependences that cannot be broken
+HELIX:     SCC:
+HELIX:       Loop-carried dependences
+HELIX:           %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39 --->   store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43 via memory
+HELIX:           store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43 --->   store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43 via memory
+HELIX:           store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43 --->   %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39 via memory
+HELIX:       Nodes within the SCC: 5
+HELIX:       	  %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39
+HELIX:       	  %29 = add nsw i32 %28, 91, !noelle.pdg.inst.id !40
+HELIX:       	  %30 = sdiv i32 %29, 10, !noelle.pdg.inst.id !41
+HELIX:       	  %31 = add nsw i32 %28, %30, !noelle.pdg.inst.id !42
+HELIX:       	  store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43
+HELIX:       Nodes outside the SCC and connected with at least one node within the SCC: 2
+HELIX:       	  %27 = getelementptr inbounds i32, i32* %noelle_environment_variable_0, i64 %26, !noelle.pdg.inst.id !34
+HELIX:       	  br i1 %48, label %24, label %25, !prof !63, !noelle.pdg.inst.id !64
+HELIX:       Edges: 15
+HELIX:         From:	  %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39
+HELIX:         To:	  %29 = add nsw i32 %28, 91, !noelle.pdg.inst.id !40
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39
+HELIX:         To:	  %31 = add nsw i32 %28, %30, !noelle.pdg.inst.id !42
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39
+HELIX:         To:	  store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43
+HELIX:         Attributes: Loop-carried Data WAR (may) from memory 
+
+HELIX:         From:	  %29 = add nsw i32 %28, 91, !noelle.pdg.inst.id !40
+HELIX:         To:	  %30 = sdiv i32 %29, 10, !noelle.pdg.inst.id !41
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  %30 = sdiv i32 %29, 10, !noelle.pdg.inst.id !41
+HELIX:         To:	  %31 = add nsw i32 %28, %30, !noelle.pdg.inst.id !42
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  %31 = add nsw i32 %28, %30, !noelle.pdg.inst.id !42
+HELIX:         To:	  store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43
+HELIX:         To:	  %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39
+HELIX:         Attributes: Loop-carried Data RAW (may) from memory 
+
+HELIX:         From:	  store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43
+HELIX:         To:	  store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43
+HELIX:         Attributes: Loop-carried Data WAW (may) from memory 
+
+HELIX:         From:	  %27 = getelementptr inbounds i32, i32* %noelle_environment_variable_0, i64 %26, !noelle.pdg.inst.id !34
+HELIX:         To:	  %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  %27 = getelementptr inbounds i32, i32* %noelle_environment_variable_0, i64 %26, !noelle.pdg.inst.id !34
+HELIX:         To:	  store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  br i1 %48, label %24, label %25, !prof !63, !noelle.pdg.inst.id !64
+HELIX:         To:	  %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  br i1 %48, label %24, label %25, !prof !63, !noelle.pdg.inst.id !64
+HELIX:         To:	  %29 = add nsw i32 %28, 91, !noelle.pdg.inst.id !40
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  br i1 %48, label %24, label %25, !prof !63, !noelle.pdg.inst.id !64
+HELIX:         To:	  %30 = sdiv i32 %29, 10, !noelle.pdg.inst.id !41
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  br i1 %48, label %24, label %25, !prof !63, !noelle.pdg.inst.id !64
+HELIX:         To:	  %31 = add nsw i32 %28, %30, !noelle.pdg.inst.id !42
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  br i1 %48, label %24, label %25, !prof !63, !noelle.pdg.inst.id !64
+HELIX:         To:	  store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43
+HELIX:         Attributes: Control 
+
+HELIX:     SCC:
+HELIX:       Loop-carried dependences
+HELIX:           br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48 --->   %34 = icmp sge i64 %33, 50000000, !noelle.pdg.inst.id !46 control
+HELIX:           br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48 --->   %33 = phi i64 [ %16, %9 ], [ %23, %21 ], !noelle.pdg.inst.id !45 control
+HELIX:           br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48 --->   br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48 control
+HELIX:           %23 = add i64 %22, %18 --->   %33 = phi i64 [ %16, %9 ], [ %23, %21 ], !noelle.pdg.inst.id !45 via variable
+HELIX:       Nodes within the SCC: 5
+HELIX:       	  %33 = phi i64 [ %16, %9 ], [ %23, %21 ], !noelle.pdg.inst.id !45
+HELIX:       	  %34 = icmp sge i64 %33, 50000000, !noelle.pdg.inst.id !46
+HELIX:       	  br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48
+HELIX:       	  %22 = add nuw nsw i64 %33, 1, !noelle.pdg.inst.id !30
+HELIX:       	  %23 = add i64 %22, %18
+HELIX:       Nodes outside the SCC and connected with at least one node within the SCC: 16
+HELIX:       	  %26 = and i64 %33, 3, !noelle.pdg.inst.id !33
+HELIX:       	  %36 = tail call i32 @atoi(i8* %noelle_environment_variable_1) #5, !noelle.pdg.inst.id !50
+HELIX:       	  %37 = sitofp i32 %36 to double, !noelle.pdg.inst.id !51
+HELIX:       	  %38 = tail call double @sqrt(double %37) #6, !noelle.pdg.inst.id !52
+HELIX:       	  %39 = fadd double %38, %37, !noelle.pdg.inst.id !53
+HELIX:       	  %40 = tail call double @sqrt(double %39) #6, !noelle.pdg.inst.id !54
+HELIX:       	  br i1 %48, label %24, label %25, !prof !63, !noelle.pdg.inst.id !64
+HELIX:       	  br label %32, !noelle.pdg.inst.id !31
+HELIX:       	  %41 = fadd double %39, %40, !noelle.pdg.inst.id !55
+HELIX:       	  %42 = tail call double @sqrt(double %41) #6, !noelle.pdg.inst.id !56
+HELIX:       	  %43 = fadd double %41, %42, !noelle.pdg.inst.id !57
+HELIX:       	  %44 = tail call double @sqrt(double %43) #6, !noelle.pdg.inst.id !58
+HELIX:       	  %45 = fadd double %43, %44, !noelle.pdg.inst.id !59
+HELIX:       	  %46 = tail call double @sqrt(double %45) #6, !noelle.pdg.inst.id !60
+HELIX:       	  %47 = fadd double %45, %46, !noelle.pdg.inst.id !61
+HELIX:       	  %48 = fcmp olt double %47, 4.200000e+01, !noelle.pdg.inst.id !62
+HELIX:       Edges: 26
+HELIX:         From:	  %33 = phi i64 [ %16, %9 ], [ %23, %21 ], !noelle.pdg.inst.id !45
+HELIX:         To:	  %26 = and i64 %33, 3, !noelle.pdg.inst.id !33
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  %33 = phi i64 [ %16, %9 ], [ %23, %21 ], !noelle.pdg.inst.id !45
+HELIX:         To:	  %34 = icmp sge i64 %33, 50000000, !noelle.pdg.inst.id !46
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  %33 = phi i64 [ %16, %9 ], [ %23, %21 ], !noelle.pdg.inst.id !45
+HELIX:         To:	  %22 = add nuw nsw i64 %33, 1, !noelle.pdg.inst.id !30
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  %34 = icmp sge i64 %33, 50000000, !noelle.pdg.inst.id !46
+HELIX:         To:	  br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48
+HELIX:         Attributes: Data RAW (must)
+
+HELIX:         From:	  br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48
+HELIX:         To:	  %33 = phi i64 [ %16, %9 ], [ %23, %21 ], !noelle.pdg.inst.id !45
+HELIX:         Attributes: Loop-carried Control 
+
+HELIX:         From:	  br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48
+HELIX:         To:	  %34 = icmp sge i64 %33, 50000000, !noelle.pdg.inst.id !46
+HELIX:         Attributes: Loop-carried Control 
+
+HELIX:         From:	  br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48
+HELIX:         To:	  br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48
+HELIX:         Attributes: Loop-carried Control 
+
+HELIX:         From:	  br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48
+HELIX:         To:	  %36 = tail call i32 @atoi(i8* %noelle_environment_variable_1) #5, !noelle.pdg.inst.id !50
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48
+HELIX:         To:	  %37 = sitofp i32 %36 to double, !noelle.pdg.inst.id !51
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48
+HELIX:         To:	  %38 = tail call double @sqrt(double %37) #6, !noelle.pdg.inst.id !52
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48
+HELIX:         To:	  %39 = fadd double %38, %37, !noelle.pdg.inst.id !53
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48
+HELIX:         To:	  %40 = tail call double @sqrt(double %39) #6, !noelle.pdg.inst.id !54
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48
+HELIX:         To:	  %22 = add nuw nsw i64 %33, 1, !noelle.pdg.inst.id !30
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48
+HELIX:         To:	  br i1 %48, label %24, label %25, !prof !63, !noelle.pdg.inst.id !64
+HELIX:         Attributes: Control 
+
+HELIX:         From:	  br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48
+HELIX:         To:	  br label %32, !noelle.pdg.inst.id !31
+HELIX:         Attributes: Control 
+
+HELIX:         ....
+HELIX:   Next are all loop-carried dependences of the loop
+HELIX:       %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39 --->   store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43 via memory
+HELIX:       br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48 --->   %33 = phi i64 [ %16, %9 ], [ %23, %21 ], !noelle.pdg.inst.id !45 control
+HELIX:       br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48 --->   %34 = icmp sge i64 %33, 50000000, !noelle.pdg.inst.id !46 control
+HELIX:       br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48 --->   br i1 %34, label %check_if_last_iteration_is_missing, label %35, !prof !47, !noelle.loop.id !48, !noelle.pdg.inst.id !49, !noelle.parallelizer.looporder !48 control
+HELIX:       store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43 --->   %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39 via memory
+HELIX:       store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43 --->   store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43 via memory
+HELIX:       %23 = add i64 %22, %18 --->   %33 = phi i64 [ %16, %9 ], [ %23, %21 ], !noelle.pdg.inst.id !45 via variable
+ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences: Start
+ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences:  Initial number of partitions: 21
+ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences: Exit
+HELIX:     Sequential segment 0
+HELIX:       SCCs included in the current sequential segment
+HELIX:         Type = 16
+HELIX:         Loop-carried data dependences
+HELIX:             %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39 ->   store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43
+HELIX:             store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43 ->   store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43
+HELIX:             store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43 ->   %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39
+HELIX:         Instructions that belong to the SS
+HELIX:             store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43
+HELIX:             %31 = add nsw i32 %28, %30, !noelle.pdg.inst.id !42
+HELIX:             %30 = sdiv i32 %29, 10, !noelle.pdg.inst.id !41
+HELIX:             %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39
+HELIX:             %29 = add nsw i32 %28, 91, !noelle.pdg.inst.id !40
+HELIX: This SS has all SCCs commutative
+Deleting consecutive wait/signals at  br label %21, !noelle.pdg.inst.id !32
+HELIX:   Identifying sequential segments
+ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences: Start
+ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences:  Initial number of partitions: 21
+ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences: Exit
+HELIX:     Sequential segment 0
+HELIX:       SCCs included in the current sequential segment
+HELIX:         Type = 16
+HELIX:         Loop-carried data dependences
+HELIX:             %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39 ->   store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43
+HELIX:             store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43 ->   store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43
+HELIX:             store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43 ->   %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39
+HELIX:         Instructions that belong to the SS
+HELIX:             store i32 %31, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !43
+HELIX:             %31 = add nsw i32 %28, %30, !noelle.pdg.inst.id !42
+HELIX:             %30 = sdiv i32 %29, 10, !noelle.pdg.inst.id !41
+HELIX:             %28 = load i32, i32* %27, align 4, !tbaa !35, !noelle.pdg.inst.id !39
+HELIX:             %29 = add nsw i32 %28, 91, !noelle.pdg.inst.id !40
+HELIX: This SS has all SCCs commutative
+Deleting consecutive wait/signals at  br label %21, !noelle.pdg.inst.id !32
+HELIX:  Synchronizing sequential segments
+HELIX:  Storing live out variables and exit block index
+HELIX:  Linking task function
+HELIX:  Task code:
+
+define void @noelle_task_0(i8*, i8*, i8*, i8*, i64, i64, i64*, i64, i64) {
+  %10 = alloca i64
+  %noelle.environment_variable.pointer = bitcast i8* %0 to [16 x i64]*
+  %11 = getelementptr inbounds [16 x i64], [16 x i64]* %noelle.environment_variable.pointer, i64 0, i64 0
+  %12 = bitcast i64* %11 to i32**
+  %noelle_environment_variable_0 = load i32*, i32** %12
+  %13 = getelementptr inbounds [16 x i64], [16 x i64]* %noelle.environment_variable.pointer, i64 0, i64 8
+  %14 = bitcast i64* %13 to i8**
+  %noelle_environment_variable_1 = load i8*, i8** %14
+  %15 = bitcast i8* %1 to [0 x i64]*
+  %16 = mul i64 1, %4
+  %17 = add i64 0, %16
+  %18 = sub i64 %5, 1
+  %19 = mul i64 1, %18
+  %20 = ptrtoint i8* %2 to i64
+  %21 = add i64 0, %20
+  %22 = inttoptr i64 %21 to i8*
+  %23 = ptrtoint i8* %3 to i64
+  %24 = add i64 0, %23
+  %25 = inttoptr i64 %24 to i8*
+  br label %39
+
+26:                                               ; preds = %SS0-entry
+  ret void
+
+27:                                               ; preds = %check_if_last_iteration_is_missing, %SS0-entry1
+  %28 = load i64, i64* %10
+  %29 = icmp eq i64 %28, 0
+  br i1 %29, label %SS0-wait, label %SS0-entry
+
+30:                                               ; preds = %33, %SS0-entry3
+  %31 = add nuw nsw i64 %40, 1, !noelle.pdg.inst.id !30
+  %32 = add i64 %31, %19
+  br label %39, !noelle.pdg.inst.id !31
+
+33:                                               ; preds = %42
+  call void @NIKHIL_signal(i8* %25)
+  br label %30, !noelle.pdg.inst.id !32
+
+34:                                               ; preds = %42
+  %35 = and i64 %40, 3, !noelle.pdg.inst.id !33
+  %36 = getelementptr inbounds i32, i32* %noelle_environment_variable_0, i64 %35, !noelle.pdg.inst.id !34
+  %37 = load i64, i64* %10
+  %38 = icmp eq i64 %37, 0
+  br i1 %38, label %SS0-wait4, label %SS0-entry3
+
+39:                                               ; preds = %9, %30
+  %40 = phi i64 [ %17, %9 ], [ %32, %30 ], !noelle.pdg.inst.id !35
+  store i64 0, i64* %10
+  %41 = icmp sge i64 %40, 50000000, !noelle.pdg.inst.id !36
+  br i1 %41, label %check_if_last_iteration_is_missing, label %42, !prof !37, !noelle.loop.id !38, !noelle.pdg.inst.id !39, !noelle.parallelizer.looporder !38
+
+42:                                               ; preds = %39
+  %43 = tail call i32 @atoi(i8* %noelle_environment_variable_1) #5, !noelle.pdg.inst.id !40
+  %44 = sitofp i32 %43 to double, !noelle.pdg.inst.id !41
+  %45 = tail call double @sqrt(double %44) #6, !noelle.pdg.inst.id !42
+  %46 = fadd double %45, %44, !noelle.pdg.inst.id !43
+  %47 = tail call double @sqrt(double %46) #6, !noelle.pdg.inst.id !44
+  %48 = fadd double %46, %47, !noelle.pdg.inst.id !45
+  %49 = tail call double @sqrt(double %48) #6, !noelle.pdg.inst.id !46
+  %50 = fadd double %48, %49, !noelle.pdg.inst.id !47
+  %51 = tail call double @sqrt(double %50) #6, !noelle.pdg.inst.id !48
+  %52 = fadd double %50, %51, !noelle.pdg.inst.id !49
+  %53 = tail call double @sqrt(double %52) #6, !noelle.pdg.inst.id !50
+  %54 = fadd double %52, %53, !noelle.pdg.inst.id !51
+  %55 = fcmp olt double %54, 4.200000e+01, !noelle.pdg.inst.id !52
+  br i1 %55, label %33, label %34, !prof !53, !noelle.pdg.inst.id !54
+
+check_if_last_iteration_is_missing:               ; preds = %39
+  %56 = sub i64 %40, 1
+  %57 = icmp sge i64 %56, 50000000, !noelle.pdg.inst.id !36
+  br i1 %57, label %27, label %last_iteration
+
+last_iteration:                                   ; preds = %check_if_last_iteration_is_missing
+  %58 = load i64, i64* %10
+  %59 = icmp eq i64 %58, 0
+  br i1 %59, label %SS0-wait2, label %SS0-entry1
+
+SS0-entry:                                        ; preds = %27, %SS0-wait
+  call void @NIKHIL_signal(i8* %25)
+  br label %26
+
+SS0-wait:                                         ; preds = %27
+  call void @NIKHIL_wait(i8* %22, i64 %7, i64 %8, i64 64, i64 %4)
+  store i64 1, i64* %10
+  br label %SS0-entry
+
+SS0-entry1:                                       ; preds = %last_iteration, %SS0-wait2
+  br label %27
+
+SS0-wait2:                                        ; preds = %last_iteration
+  call void @NIKHIL_wait(i8* %22, i64 %7, i64 %8, i64 64, i64 %4)
+  store i64 1, i64* %10
+  br label %SS0-entry1
+
+SS0-entry3:                                       ; preds = %34, %SS0-wait4
+  %60 = load i32, i32* %36, align 4, !tbaa !55, !noelle.pdg.inst.id !59
+  %61 = add nsw i32 %60, 91, !noelle.pdg.inst.id !60
+  %62 = sdiv i32 %61, 10, !noelle.pdg.inst.id !61
+  %63 = add nsw i32 %60, %62, !noelle.pdg.inst.id !62
+  store i32 %63, i32* %36, align 4, !tbaa !55, !noelle.pdg.inst.id !63
+  call void @NIKHIL_signal(i8* %25)
+  br label %30, !noelle.pdg.inst.id !64
+
+SS0-wait4:                                        ; preds = %34
+  call void @NIKHIL_wait(i8* %22, i64 %7, i64 %8, i64 64, i64 %4)
+  store i64 1, i64* %10
+  br label %SS0-entry3
+}
+
+Parallelizer: parallelizerLoop:   Link the parallelize loop
+Parallelizer: parallelizerLoop:   The loop has been parallelized with HELIX
+Parallelizer: parallelizerLoop: Exit
+Parallelizer:    Keep track of basic blocks being modified by the parallelization
+Parallelizer: Exit
+noelle-meta-clean parallelized_unoptimized.bc parallelized_unoptimized.bc
+opt -load /home/nsk4506/noelle_better_helix_syncs/install/lib/CleanMetadata.so -CleanMetadata -clean-loop-metadata=true -clean-prof-metadata=true -clean-pdg-metadata=true parallelized_unoptimized.bc -o parallelized_unoptimized.bc
+noelle/core/Clean Loop Metadata
+noelle/core/Clean PDG Metadata
+noelle/core/Clean profiler metadata
+opt --strip-named-metadata parallelized_unoptimized.bc -o parallelized_unoptimized.bc
+clang -O3 -c -emit-llvm parallelized_unoptimized.bc -o test_parallelized.bc
+clang -O3 -c -emit-llvm test_parallelized.bc -o test_parallelized.bc
+clang++ -std=c++14 -pthreads -O3 test_parallelized.bc -lm -lstdc++ -lpthread -o parallelized

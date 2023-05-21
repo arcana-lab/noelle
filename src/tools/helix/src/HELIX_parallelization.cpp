@@ -92,6 +92,13 @@ HELIXTask *HELIX::createParallelizableTask(LoopDependenceInfo *LDI,
     abort();
   }
 
+  if (!this->NIKHILwaitSSCall || !this->NIKHILsignalSSCall) {
+    errs()
+        << this->prefixString
+        << "ERROR = sync functions NIKHIL_wait, NIKHIL_signal were not both found.\n";
+    abort();
+  }
+
   /*
    * Fetch the header.
    */
@@ -149,6 +156,8 @@ HELIXTask *HELIX::createParallelizableTask(LoopDependenceInfo *LDI,
                                          ptrType,
                                          ptrType,
                                          ptrType,
+                                         int64,
+                                         int64,
                                          int64,
                                          int64,
                                          PointerType::getUnqual(int64) });

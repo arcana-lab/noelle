@@ -83,9 +83,15 @@ SequentialSegment::SequentialSegment(Noelle &noelle,
     auto instructionThatReturnsFromFunction = B->getTerminator();
     this->exits.insert(instructionThatReturnsFromFunction);
   }
+  /*
+   * With the new wait signal semantics, we can remove the waits for all
+   * consecutive wait/signal pairs. These waits do not protect data.
+   * Otherwise, we can only remove the waits when all SCCs are commutative.
+   */
+  this->removeEmptyWaits(LDI);
 
   assert(
-      this->entries.size() > 0
+      this->entries.size() >= 0
       && "The data flow analysis did not identify any per-iteration entry to the sequential segment!\n");
   assert(
       this->exits.size() > 0
@@ -479,6 +485,47 @@ DataFlowResult *HELIX::computeReachabilityFromInstructions(
 iterator_range<std::unordered_set<SCC *>::iterator> SequentialSegment::getSCCs(
     void) {
   return make_range(sccs->sccs.begin(), sccs->sccs.end());
+}
+
+bool SequentialSegment::hasOnlyCommutativeSCCs(LoopDependenceInfo *LDI) {
+  auto sccManager = LDI->getSCCManager();
+  for (auto scc : sccs->sccs) {
+    auto sccAttrs = sccManager->getSCCAttrs(scc);
+    if (!isa<LoopCarriedSCC>(sccAttrs)) {
+      continue;
+    }
+    auto lcSCC = dyn_cast<LoopCarriedSCC>(sccAttrs);
+    if (!lcSCC->isCommutative()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+Instruction *SequentialSegment::getTrueExitInsertion(Instruction *exit) {
+  auto block = exit->getParent();
+  auto terminator = block->getTerminator();
+  auto exitBranch = dyn_cast<BranchInst>(exit);
+  if (exitBranch && !(exitBranch->isUnconditional())) {
+    return NULL;
+  } else if (terminator == exit) {
+    return terminator;
+  } else {
+    return exit->getNextNode();
+  }
+}
+
+void SequentialSegment::removeEmptyWaits(LoopDependenceInfo *LDI) {
+  for (auto exit : this->exits) {
+    auto trueInsertion = getTrueExitInsertion(exit);
+    if (trueInsertion
+        && this->entries.find(trueInsertion) != this->entries.end()) {
+      errs()
+          << "Deleting consecutive wait/signals at" << *trueInsertion << '\n';
+      this->entries.erase(trueInsertion);
+    }
+  }
+  errs() << "NIKHIL FINISHED REMOVING EMPTY WAITS\n";
 }
 
 std::unordered_set<Instruction *> SequentialSegment::getInstructions(void) {
