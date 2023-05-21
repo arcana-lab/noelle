@@ -32,6 +32,8 @@ public:
 
   Constant *getIntegerConstant(int64_t constantValue, uint32_t bitwidth) const;
 
+  Constant *getIntegerConstant(int64_t constantValue, Type *integerType) const;
+
 private:
   Module &program;
   TypesManager *tm;
