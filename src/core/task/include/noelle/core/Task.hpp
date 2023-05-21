@@ -123,6 +123,11 @@ public:
   void tagBasicBlockAsLastBlock(BasicBlock *b);
 
   /*
+   * Data
+   */
+  AllocaInst *newStackVariable(Type *typeOfVariable);
+
+  /*
    * Body
    */
   Function *getTaskBody(void) const;

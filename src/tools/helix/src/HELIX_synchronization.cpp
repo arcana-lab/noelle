@@ -51,6 +51,13 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
   auto int64 = tm->getIntegerType(64);
 
   /*
+   * Fetch the constants we need.
+   */
+  auto cm = this->noelle.getConstantsManager();
+  auto const0 = cm->getIntegerConstant(0, int64);
+  auto const1 = cm->getIntegerConstant(1, int64);
+
+  /*
    * Optimization: If the preamble SCC is not part of a sequential segment,
    * then determining whether the loop exited does not need to be synchronized
    */
@@ -74,7 +81,6 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
    * Allocate space to track sequential segment entry state
    */
   std::vector<Value *> ssStates{};
-  IRBuilder<> entryBuilder(helixTask->getEntry()->getTerminator());
   for (auto ss : *sss) {
     this->computeAndCachePointerOfPastSequentialSegment(helixTask, ss->getID());
     this->computeAndCachePointerOfFutureSequentialSegment(helixTask,
@@ -90,9 +96,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
      * wait instruction of the current sequential segment has already been
      * executed in the current iteration for the current thread.
      */
-    auto ssStateAlloca = entryBuilder.CreateAlloca(int64);
-    ssStateAlloca->moveBefore(
-        helixTask->getEntry()->getFirstNonPHIOrDbgOrLifetime());
+    auto ssStateAlloca = helixTask->newStackVariable(int64);
     ssStates.push_back(ssStateAlloca);
   }
 
@@ -149,7 +153,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
                                            helixTask);
 
     auto ssState = ssStates.at(ss->getID());
-    ssWaitBuilder.CreateStore(ConstantInt::get(int64, 1), ssState);
+    ssWaitBuilder.CreateStore(const1, ssState);
     ssWaitBuilder.CreateBr(ssEntryBB);
 
     /*
@@ -160,9 +164,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
      */
     IRBuilder<> beforeEntryBuilder(beforeEntryBB);
     auto ssStateLoad = beforeEntryBuilder.CreateLoad(ssState);
-    auto needToWait =
-        beforeEntryBuilder.CreateICmpEQ(ssStateLoad,
-                                        ConstantInt::get(int64, 0));
+    auto needToWait = beforeEntryBuilder.CreateICmpEQ(ssStateLoad, const0);
     beforeEntryBuilder.CreateCondBr(needToWait, ssWaitBB, ssEntryBB);
 
     /*
@@ -209,8 +211,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
    */
   auto injectExitFlagSet = [&](Instruction *exitInstruction) -> void {
     IRBuilder<> setFlagBuilder(exitInstruction);
-    setFlagBuilder.CreateStore(ConstantInt::get(int64, 1),
-                               helixTask->loopIsOverFlagArg);
+    setFlagBuilder.CreateStore(const1, helixTask->loopIsOverFlagArg);
   };
 
   /*
@@ -275,8 +276,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
 
     IRBuilder<> checkFlagBuilder(beforeCheckBB);
     auto flagValue = checkFlagBuilder.CreateLoad(helixTask->loopIsOverFlagArg);
-    auto isFlagSet =
-        checkFlagBuilder.CreateICmpEQ(ConstantInt::get(int64, 1), flagValue);
+    auto isFlagSet = checkFlagBuilder.CreateICmpEQ(const1, flagValue);
     checkFlagBuilder.CreateCondBr(isFlagSet, failedCheckBB, afterCheckBB);
 
     IRBuilder<> failedCheckBuilder(failedCheckBB);
@@ -298,8 +298,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
      */
     auto firstLoopInst = loopHeader->getFirstNonPHIOrDbgOrLifetime();
     IRBuilder<> headerBuilder(firstLoopInst);
-    headerBuilder.CreateStore(ConstantInt::get(int64, 0),
-                              ssStates.at(ss->getID()));
+    headerBuilder.CreateStore(const0, ssStates.at(ss->getID()));
 
     /*
      * Inject waits.

@@ -203,11 +203,6 @@ void HELIX::createLoadsAndStoresToSpilledLCD(
                                  spill,
                                  spillEnvPtr);
 
-  // helixTask->getTaskBody()->print(errs() << "Task before:\n"); errs() <<
-  // "\n"; for (auto store : spill->environmentStores) {
-  // store->getParent()->print(errs() << "Store block: "); errs() << "\n";
-  // }
-
   /*
    * Define a frontier across the loop extending out from users of the spill
    * This frontier will determine where to insert any needed loads

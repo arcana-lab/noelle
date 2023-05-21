@@ -40,7 +40,18 @@ Constant *ConstantsManager::getIntegerConstant(int64_t constantValue,
   /*
    * Fetch the constant
    */
-  auto c = ConstantInt::get(t, constantValue);
+  auto c = this->getIntegerConstant(constantValue, t);
+
+  return c;
+}
+
+Constant *ConstantsManager::getIntegerConstant(int64_t constantValue,
+                                               Type *integerType) const {
+
+  /*
+   * Fetch the constant
+   */
+  auto c = ConstantInt::get(integerType, constantValue);
 
   return c;
 }

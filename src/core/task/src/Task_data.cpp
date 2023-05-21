@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 - 2022  Simone Campanoni
+ * Copyright 2022 - 2023  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,24 +19,26 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
-
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/TypesManager.hpp"
+#include "noelle/core/Task.hpp"
 
 namespace llvm::noelle {
 
-class ConstantsManager {
-public:
-  ConstantsManager(Module &m, TypesManager *tm);
+AllocaInst *Task::newStackVariable(Type *typeOfVariable) {
 
-  Constant *getIntegerConstant(int64_t constantValue, uint32_t bitwidth) const;
+  /*
+   * Define the builder.
+   */
+  auto entryBB = this->getEntry();
+  auto t = entryBB->getTerminator();
+  IRBuilder<> entryBuilder(t);
 
-  Constant *getIntegerConstant(int64_t constantValue, Type *integerType) const;
+  /*
+   * Allocate a new stack location
+   */
+  auto newStackVariable = entryBuilder.CreateAlloca(typeOfVariable);
+  newStackVariable->moveBefore(entryBB->getFirstNonPHIOrDbgOrLifetime());
 
-private:
-  Module &program;
-  TypesManager *tm;
-};
+  return newStackVariable;
+}
 
 } // namespace llvm::noelle
