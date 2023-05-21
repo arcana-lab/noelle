@@ -137,7 +137,7 @@ protected:
 
   virtual CallInst *injectNikhilWaitCall(IRBuilder<> &builder,
                                          uint32_t ssID,
-                                         ConstantInt *cachelineSize,
+                                         Constant *cachelineSize,
                                          HELIXTask *task);
 
   virtual CallInst *injectNikhilSignalCall(IRBuilder<> &builder, uint32_t ssID);

@@ -424,7 +424,7 @@ CallInst *HELIX::injectWaitCall(IRBuilder<> &builder, uint32_t ssID) {
 
 CallInst *HELIX::injectNikhilWaitCall(IRBuilder<> &builder,
                                       uint32_t ssID,
-                                      ConstantInt *cachelineSize,
+                                      Constant *cachelineSize,
                                       HELIXTask *task) {
   auto ptr = this->ssPastPtrs.at(ssID);
   auto wait = builder.CreateCall(this->NIKHILwaitSSCall,
