@@ -1,7 +1,5 @@
 #include <stdint.h>
 
-#define NIKHIL_WAIT_SIGNAL 1
-
 typedef struct {
   int32_t numberOfThreadsUsed;
   int64_t unusedVariableToPreventOptIfStructHasOnlyOneVariable;
@@ -48,13 +46,9 @@ extern DispatcherInfo NOELLE_HELIX_dispatcher_criticalSections(
                              void *,
                              int64_t,
                              int64_t,
-                             uint64_t *
-#if NIKHIL_WAIT_SIGNAL
-                             ,
                              int64_t,
-                             int64_t
-#endif
-                             ),
+                             int64_t,
+                             uint64_t *),
     void *env,
     void *loopCarriedArray,
     int64_t numCores,
@@ -67,13 +61,9 @@ extern DispatcherInfo NOELLE_HELIX_dispatcher_sequentialSegments(
                              void *,
                              int64_t,
                              int64_t,
-                             uint64_t *
-#if NIKHIL_WAIT_SIGNAL
-                             ,
                              int64_t,
-                             int64_t
-#endif
-                             ),
+                             int64_t,
+                             uint64_t *),
     void *env,
     void *loopCarriedArray,
     int64_t numCores,

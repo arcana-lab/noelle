@@ -149,19 +149,12 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
     auto ssWaitBB =
         BasicBlock::Create(cxt, ssWaitBBName, helixTask->getTaskBody());
     IRBuilder<> ssWaitBuilder(ssWaitBB);
-
-#if !USE_NIKHIL_WS
-    auto wait = this->injectWaitCall(ssWaitBuilder, ss->getID());
-#endif
-
-#if USE_NIKHIL_WS
     auto cachelineSize =
         ConstantInt::get(int64, Architecture::getCacheLineBytes());
     auto wait = this->injectNikhilWaitCall(ssWaitBuilder,
                                            ss->getID(),
                                            cachelineSize,
                                            helixTask);
-#endif
 
     auto ssState = ssStates.at(ss->getID());
     ssWaitBuilder.CreateStore(ConstantInt::get(int64, 1), ssState);
@@ -204,15 +197,8 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
                                      ? terminator
                                      : justBeforeExit->getNextNode();
       IRBuilder<> beforeExitBuilder(insertPoint);
-#if !USE_NIKHIL_WS
-      auto signal = this->injectSignalCall(beforeExitBuilder, ss->getID());
-#endif
-
-#if USE_NIKHIL_WS
       auto signal =
           this->injectNikhilSignalCall(beforeExitBuilder, ss->getID());
-#endif
-
       helixTask->signals.insert(cast<CallInst>(signal));
       return;
     }
@@ -220,14 +206,8 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
     for (auto successorBlock : successors(block)) {
       IRBuilder<> beforeExitBuilder(
           successorBlock->getFirstNonPHIOrDbgOrLifetime());
-#if !USE_NIKHIL_WS
-      auto signal = this->injectSignalCall(beforeExitBuilder, ss->getID());
-#endif
-
-#if USE_NIKHIL_WS
       auto signal =
           this->injectNikhilSignalCall(beforeExitBuilder, ss->getID());
-#endif
       helixTask->signals.insert(cast<CallInst>(signal));
     }
   };

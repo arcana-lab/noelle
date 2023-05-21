@@ -502,7 +502,6 @@ Instruction *SequentialSegment::getTrueExitInsertion(Instruction *exit) {
 }
 
 void SequentialSegment::removeEmptyWaits(LoopDependenceInfo *LDI) {
-  errs() << "HELIX: This SS has all SCCs commutative\n";
   for (auto exit : this->exits) {
     auto trueInsertion = getTrueExitInsertion(exit);
     if (trueInsertion
