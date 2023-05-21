@@ -1,6 +1,7 @@
 # Sources
 set(Srcs 
   Task.cpp
+  Task_data.cpp
   Task_dataflow.cpp
 )
 
