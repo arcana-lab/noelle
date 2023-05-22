@@ -50,8 +50,7 @@ HELIX::HELIX(Noelle &n, bool forceParallelization)
   assert(this->taskDispatcherCS != nullptr);
   this->waitSSCall = program->getFunction("HELIX_wait");
   this->signalSSCall = program->getFunction("HELIX_signal");
-  this->NIKHILwaitSSCall = program->getFunction("NIKHIL_wait");
-  this->NIKHILsignalSSCall = program->getFunction("NIKHIL_signal");
+
   return;
 }
 
