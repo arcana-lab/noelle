@@ -135,13 +135,6 @@ protected:
 
   virtual CallInst *injectSignalCall(IRBuilder<> &builder, uint32_t ssID);
 
-  virtual CallInst *injectNikhilWaitCall(IRBuilder<> &builder,
-                                         uint32_t ssID,
-                                         Constant *cachelineSize,
-                                         HELIXTask *task);
-
-  virtual CallInst *injectNikhilSignalCall(IRBuilder<> &builder, uint32_t ssID);
-
   virtual void computeAndCachePointerOfPastSequentialSegment(
       HELIXTask *helixTask,
       uint32_t ssID);
@@ -167,7 +160,6 @@ protected:
    * Fields
    */
   Function *waitSSCall, *signalSSCall;
-  Function *NIKHILwaitSSCall, *NIKHILsignalSSCall;
   LoopDependenceInfo *originalLDI;
   LoopEnvironmentBuilder *loopCarriedLoopEnvironmentBuilder;
   std::unordered_set<SpilledLoopCarriedDependency *> spills;

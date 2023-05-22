@@ -30,22 +30,11 @@ extern DispatcherInfo NOELLE_DSWPDispatcher(void *env,
 
 extern void HELIX_wait(void *);
 extern void HELIX_signal(void *);
-
-extern void NIKHIL_wait(void *coreArray,
-                        int64_t numSS,
-                        int64_t numSSArrays,
-                        int64_t step,
-                        int64_t coreID);
-
-extern void NIKHIL_signal(void *sequentialSegment);
-
 extern DispatcherInfo NOELLE_HELIX_dispatcher_criticalSections(
     void (*parallelizedLoop)(void *,
                              void *,
                              void *,
                              void *,
-                             int64_t,
-                             int64_t,
                              int64_t,
                              int64_t,
                              uint64_t *),
@@ -59,8 +48,6 @@ extern DispatcherInfo NOELLE_HELIX_dispatcher_sequentialSegments(
                              void *,
                              void *,
                              void *,
-                             int64_t,
-                             int64_t,
                              int64_t,
                              int64_t,
                              uint64_t *),
@@ -89,9 +76,6 @@ void SIMONE_CAMPANONI_IS_GOING_TO_REMOVE_THIS_FUNCTION(void) {
   NOELLE_HELIX_dispatcher_sequentialSegments(0, 0, 0, 0, 0);
   HELIX_wait(0);
   HELIX_signal(0);
-
-  NIKHIL_wait(0, 0, 0, 0, 0);
-  NIKHIL_signal(0);
 
   int s;
   rand_r(&s);
