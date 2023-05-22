@@ -36,8 +36,6 @@ HELIXTask::HELIXTask(FunctionType *taskSignature, Module &M)
   this->ssFutureArrayArg = (Value *)&*(argIter++);
   this->coreArg = (Value *)&*(argIter++);
   this->numCoresArg = (Value *)&*(argIter++);
-  this->numSSArg = (Value *)&*(argIter++);
-  this->numSSArraysArg = (Value *)&*(argIter++);
   this->loopIsOverFlagArg = (Value *)&*(argIter++);
 
   /*

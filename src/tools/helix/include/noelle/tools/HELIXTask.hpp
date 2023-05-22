@@ -25,6 +25,7 @@
 #include "noelle/core/SCCDAGAttrs.hpp"
 
 using namespace std;
+
 namespace llvm::noelle {
 
 class HELIXTask : public Task {
@@ -39,8 +40,6 @@ public:
   Value *ssPastArrayArg;
   Value *ssFutureArrayArg;
   Value *loopCarriedArrayArg;
-  Value *numSSArg;
-  Value *numSSArraysArg;
   Value *loopIsOverFlagArg;
 
   /*
@@ -56,4 +55,5 @@ public:
   std::set<CallInst *> waits;
   std::set<CallInst *> signals;
 };
+
 } // namespace llvm::noelle
