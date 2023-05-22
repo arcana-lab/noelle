@@ -49,6 +49,37 @@ protected:
                  LoopStructure *loop,
                  const std::set<DGEdge<Value> *> &loopCarriedDependences,
                  bool commutative);
+
+  /* helper function to tell if SCC is commutatitive */
+  bool isLoadStoreCommutative(SCC *scc);
+
+  bool loadStoreNoDependence(
+      SCC *scc,
+      LoadInst *load1,
+      LoadInst *load2,
+      std::map<llvm::LoadInst *, std::set<llvm::StoreInst *>>
+          &loadToFollowingStore);
+
+  bool LoadToStoreTrace(
+      SCC *scc,       /* input scc */
+      Value *curval,  /* changed for every recursion */
+      LoadInst *load, /* input */
+      std::map<LoadInst *, Instruction::BinaryOps>
+          &loadToFollowingOp, /* output contains load to bin ops followed. used
+                                 to tell if SCC is commutative when there's
+                                 multiple loads*/
+      std::map<LoadInst *, std::set<llvm::StoreInst *>>
+          &loadToFollowingStore /* output contains load to store followed */
+  );
+
+  bool isSCCInternalEdge(SCC *scc, Value *from, Value *to);
+
+  bool binOpsCommCompatible(Instruction::BinaryOps op1,
+                            Instruction::BinaryOps op2);
+
+  const static std::map<Instruction::BinaryOps,
+                        std::set<Instruction::BinaryOps>>
+      compatibleBinOps;
 };
 
 } // namespace llvm::noelle

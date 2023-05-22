@@ -145,7 +145,13 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
     auto ssWaitBB =
         BasicBlock::Create(cxt, ssWaitBBName, helixTask->getTaskBody());
     IRBuilder<> ssWaitBuilder(ssWaitBB);
-    auto wait = this->injectWaitCall(ssWaitBuilder, ss->getID());
+    auto cachelineSize =
+        ConstantInt::get(int64, Architecture::getCacheLineBytes());
+    auto wait = this->injectNikhilWaitCall(ssWaitBuilder,
+                                           ss->getID(),
+                                           cachelineSize,
+                                           helixTask);
+
     auto ssState = ssStates.at(ss->getID());
     ssWaitBuilder.CreateStore(const1, ssState);
     ssWaitBuilder.CreateBr(ssEntryBB);
@@ -185,7 +191,8 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
                                      ? terminator
                                      : justBeforeExit->getNextNode();
       IRBuilder<> beforeExitBuilder(insertPoint);
-      auto signal = this->injectSignalCall(beforeExitBuilder, ss->getID());
+      auto signal =
+          this->injectNikhilSignalCall(beforeExitBuilder, ss->getID());
       helixTask->signals.insert(cast<CallInst>(signal));
       return;
     }
@@ -193,7 +200,8 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
     for (auto successorBlock : successors(block)) {
       IRBuilder<> beforeExitBuilder(
           successorBlock->getFirstNonPHIOrDbgOrLifetime());
-      auto signal = this->injectSignalCall(beforeExitBuilder, ss->getID());
+      auto signal =
+          this->injectNikhilSignalCall(beforeExitBuilder, ss->getID());
       helixTask->signals.insert(cast<CallInst>(signal));
     }
   };
@@ -413,6 +421,20 @@ CallInst *HELIX::injectWaitCall(IRBuilder<> &builder, uint32_t ssID) {
   return wait;
 }
 
+CallInst *HELIX::injectNikhilWaitCall(IRBuilder<> &builder,
+                                      uint32_t ssID,
+                                      Constant *cachelineSize,
+                                      HELIXTask *task) {
+  auto ptr = this->ssPastPtrs.at(ssID);
+  auto wait = builder.CreateCall(this->NIKHILwaitSSCall,
+                                 { ptr,
+                                   task->numSSArg,
+                                   task->numSSArraysArg,
+                                   cachelineSize,
+                                   task->coreArg });
+  return wait;
+}
+
 CallInst *HELIX::injectSignalCall(IRBuilder<> &builder, uint32_t ssID) {
 
   /*
@@ -425,6 +447,12 @@ CallInst *HELIX::injectSignalCall(IRBuilder<> &builder, uint32_t ssID) {
    */
   auto signal = builder.CreateCall(this->signalSSCall, { ptr });
 
+  return signal;
+}
+
+CallInst *HELIX::injectNikhilSignalCall(IRBuilder<> &builder, uint32_t ssID) {
+  auto ptr = this->ssFuturePtrs.at(ssID);
+  auto signal = builder.CreateCall(this->NIKHILsignalSSCall, { ptr });
   return signal;
 }
 

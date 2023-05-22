@@ -83,6 +83,10 @@ private:
       LoopStructure *loopContainingSSInstructions,
       DataFlowResult *dfr,
       std::unordered_set<Instruction *> &ssInstructions);
+
+  bool hasOnlyCommutativeSCCs(LoopDependenceInfo *LDI);
+  Instruction *getTrueExitInsertion(Instruction *exit);
+  void removeEmptyWaits(LoopDependenceInfo *LDI);
 };
 
 } // namespace llvm::noelle
