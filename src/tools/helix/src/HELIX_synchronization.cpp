@@ -413,23 +413,6 @@ CallInst *HELIX::injectWaitCall(IRBuilder<> &builder, uint32_t ssID) {
   return wait;
 }
 
-<<<<<<< HEAD
-=======
-CallInst *HELIX::injectNikhilWaitCall(IRBuilder<> &builder,
-                                      uint32_t ssID,
-                                      ConstantInt *cachelineSize,
-                                      HELIXTask *task) {
-  auto ptr = this->ssPastPtrs.at(ssID);
-  auto wait = builder.CreateCall(this->NIKHILwaitSSCall,
-                                 { ptr,
-                                   task->numSSArg,
-                                   task->numSSArraysArg,
-                                   cachelineSize,
-                                   task->coreArg });
-  return wait;
-}
-
->>>>>>> parent of 112bb6f8 (minor changes)
 CallInst *HELIX::injectSignalCall(IRBuilder<> &builder, uint32_t ssID) {
 
   /*
