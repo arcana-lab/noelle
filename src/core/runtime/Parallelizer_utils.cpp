@@ -25,7 +25,7 @@
  * OPTIONS
  */
 //#define RUNTIME_PROFILE
-//#define RUNTIME_PRINT
+#define RUNTIME_PRINT
 //#define DSWP_STATS
 
 using namespace MARC;

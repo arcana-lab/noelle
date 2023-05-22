@@ -135,6 +135,16 @@ protected:
 
   virtual CallInst *injectSignalCall(IRBuilder<> &builder, uint32_t ssID);
 
+<<<<<<< HEAD
+=======
+  virtual CallInst *injectNikhilWaitCall(IRBuilder<> &builder,
+                                         uint32_t ssID,
+                                         ConstantInt *cachelineSize,
+                                         HELIXTask *task);
+
+  virtual CallInst *injectNikhilSignalCall(IRBuilder<> &builder, uint32_t ssID);
+
+>>>>>>> parent of 112bb6f8 (minor changes)
   virtual void computeAndCachePointerOfPastSequentialSegment(
       HELIXTask *helixTask,
       uint32_t ssID);
