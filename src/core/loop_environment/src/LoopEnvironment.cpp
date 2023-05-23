@@ -251,18 +251,30 @@ iterator_range<std::vector<Value *>::iterator> LoopEnvironment::getProducers(
 }
 
 iterator_range<std::set<int>::iterator> LoopEnvironment::getEnvIDsOfLiveInVars(
-    void) {
+    void) const {
   return make_range(liveInIDs.begin(), liveInIDs.end());
 }
 
 iterator_range<std::set<int>::iterator> LoopEnvironment::getEnvIDsOfLiveOutVars(
-    void) {
+    void) const {
   return make_range(liveOutIDs.begin(), liveOutIDs.end());
 }
 
 Value *LoopEnvironment::getProducer(uint64_t id) const {
   assert(id < this->envProducers.size());
   return envProducers[id];
+}
+
+uint64_t LoopEnvironment::getNumberOfLiveIns(void) const {
+  auto liveIns = this->getEnvIDsOfLiveInVars();
+  auto numberOfLiveIns = std::distance(liveIns.begin(), liveIns.end());
+  return numberOfLiveIns;
+}
+
+uint64_t LoopEnvironment::getNumberOfLiveOuts(void) const {
+  auto liveOuts = this->getEnvIDsOfLiveInVars();
+  auto numberOfLiveOuts = std::distance(liveOuts.begin(), liveOuts.end());
+  return numberOfLiveOuts;
 }
 
 } // namespace llvm::noelle
