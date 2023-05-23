@@ -269,6 +269,13 @@ BasicBlock *Task::cloneAndAddBasicBlock(
   return cloneBB;
 }
 
+void Task::cloneAndAddBasicBlocks(const std::unordered_set<BasicBlock *> &bbs) {
+  auto filter = [](Instruction *i) -> bool { return true; };
+  this->cloneAndAddBasicBlocks(bbs, filter);
+
+  return;
+}
+
 void Task::cloneAndAddBasicBlocks(
     const std::unordered_set<BasicBlock *> &bbs,
     std::function<bool(Instruction *origInst)> filter) {

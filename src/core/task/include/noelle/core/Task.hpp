@@ -106,6 +106,8 @@ public:
       BasicBlock *original,
       std::function<bool(Instruction *origInst)> filter);
 
+  void cloneAndAddBasicBlocks(const std::unordered_set<BasicBlock *> &bbs);
+
   void cloneAndAddBasicBlocks(
       const std::unordered_set<BasicBlock *> &bbs,
       std::function<bool(Instruction *origInst)> filter);
