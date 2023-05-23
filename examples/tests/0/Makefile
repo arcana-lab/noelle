@@ -32,7 +32,11 @@ test_opt.bc: test_with_metadata.bc
 	noelle-load -load ~/CAT/lib/CAT.so -CAT $< -o $@
 	llvm-dis $@
 
-test_opt: test_opt.bc
+test_opt_optimized.bc: test_opt.bc
+	opt -O3 $^ -o $@
+	llvm-dis $@
+
+test_opt: test_opt_optimized.bc
 	clang $< -O3 -march=native -o $@
 
 clean:
