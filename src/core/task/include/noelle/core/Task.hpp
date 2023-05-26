@@ -124,6 +124,10 @@ public:
 
   void tagBasicBlockAsLastBlock(BasicBlock *b);
 
+  BasicBlock *newBasicBlock(void);
+
+  BasicBlock *newBasicBlock(const std::string &name);
+
   /*
    * Data
    */
