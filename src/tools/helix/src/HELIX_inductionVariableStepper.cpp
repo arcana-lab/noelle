@@ -300,14 +300,9 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
     firstBodyInst = cloneI;
   }
 
-  auto taskFunction = task->getTaskBody();
-  auto &cxt = taskFunction->getContext();
   auto checkForLastExecutionBlock =
-      BasicBlock::Create(cxt,
-                         "check_if_last_iteration_is_missing",
-                         taskFunction);
-  this->lastIterationExecutionBlock =
-      BasicBlock::Create(cxt, "last_iteration", taskFunction);
+      task->newBasicBlock("check_if_last_iteration_is_missing");
+  this->lastIterationExecutionBlock = task->newBasicBlock("last_iteration");
   IRBuilder<> lastIterationExecutionBuilder(this->lastIterationExecutionBlock);
 
   /*

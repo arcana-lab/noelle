@@ -103,8 +103,6 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
   /*
    * Define the code that inject wait instructions.
    */
-  auto loopFunction = loopStructure->getFunction();
-  auto &cxt = loopFunction->getContext();
   auto injectWait = [&](SequentialSegment *ss,
                         Instruction *justAfterEntry) -> void {
     /*
@@ -113,8 +111,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
      */
     auto beforeEntryBB = justAfterEntry->getParent();
     auto ssEntryBBName = "SS" + std::to_string(ss->getID()) + "-entry";
-    auto ssEntryBB =
-        BasicBlock::Create(cxt, ssEntryBBName, helixTask->getTaskBody());
+    auto ssEntryBB = helixTask->newBasicBlock(ssEntryBBName);
     IRBuilder<> ssEntryBuilder(ssEntryBB);
     auto afterEntry = justAfterEntry;
     while (afterEntry) {
@@ -142,8 +139,7 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
      * current iteration.
      */
     auto ssWaitBBName = "SS" + std::to_string(ss->getID()) + "-wait";
-    auto ssWaitBB =
-        BasicBlock::Create(cxt, ssWaitBBName, helixTask->getTaskBody());
+    auto ssWaitBB = helixTask->newBasicBlock(ssWaitBBName);
     IRBuilder<> ssWaitBuilder(ssWaitBB);
     auto wait = this->injectWaitCall(ssWaitBuilder, ss->getID());
     auto ssState = ssStates.at(ss->getID());
@@ -241,11 +237,8 @@ void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
    */
   auto injectExitFlagCheck = [&](Instruction *justAfterEntry) -> void {
     auto beforeCheckBB = justAfterEntry->getParent();
-    auto afterCheckBB =
-        BasicBlock::Create(cxt, "SS-passed-checkexit", loopFunction);
-    auto failedCheckBB =
-        BasicBlock::Create(cxt, "SS-failed-checkexit", loopFunction);
-
+    auto afterCheckBB = helixTask->newBasicBlock("SS-passed-checkexit");
+    auto failedCheckBB = helixTask->newBasicBlock("SS-failed-checkexit");
     IRBuilder<> afterCheckBuilder(afterCheckBB);
     auto afterEntry = justAfterEntry;
     while (afterEntry) {
