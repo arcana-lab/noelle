@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
-void myF(int num, int* ctr, char * class, double *xcr) {
+void myF(int num, int *ctr, char *class, double *xcr) {
   *ctr = 1;
   for (int i = 0; i < 5; i++) {
     if (*class == 'U') {
@@ -19,16 +18,16 @@ void myF(int num, int* ctr, char * class, double *xcr) {
 
 int main(int argc, char *argv[]) {
 
-  int* ctr = (int*) malloc(sizeof(int));
+  int *ctr = (int *)calloc(1, sizeof(int));
 
   double arr[5];
 
   *ctr = 1;
   int num = atoll(argv[1]);
   for (int i = 0; i < 5; i++) {
-    arr[i] = atof(argv[i+2]);
+    arr[i] = atof(argv[i + 2]);
   }
-  char * class = (char*) malloc(sizeof(char));
+  char *class = (char *)calloc(1, sizeof(char));
 
   myF(num, ctr, class, arr);
 
@@ -39,7 +38,6 @@ int main(int argc, char *argv[]) {
   } else {
     printf("Also, quite strange\n");
   }
-
 
   free(ctr);
   return 0;

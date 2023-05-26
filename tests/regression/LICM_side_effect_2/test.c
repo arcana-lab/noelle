@@ -30,7 +30,7 @@ void myF(int num,
 
 int main(int argc, char *argv[]) {
 
-  int *ctr = (int *)malloc(sizeof(int));
+  int *ctr = (int *)calloc(1, sizeof(int));
 
   double arr[5];
 
@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   for (int i = 0; i < 5; i++) {
     arr[i] = atof(argv[i + 2]);
   }
-  char *class = (char *)malloc(sizeof(char));
+  char *class = (char *)calloc(1, sizeof(char));
 
   if (argc > 1000) {
     myF(num, ctr, class, arr, myG2);
