@@ -35,6 +35,10 @@ bool InputOutput::runOnModule(Module &M) {
     getcF->setName("fgets_unlocked");
   }
 
+  if (auto getcF = M.getFunction("fputc")) {
+    getcF->setName("fputc_unlocked");
+  }
+
   if (auto getcF = M.getFunction("getc")) {
     getcF->setName("getc_unlocked");
   }
