@@ -27,6 +27,10 @@ namespace llvm::noelle {
 InputOutput::InputOutput() : ModulePass{ ID } {}
 
 bool InputOutput::runOnModule(Module &M) {
+  if (auto getcF = M.getFunction("fgetc")) {
+    getcF->setName("fgetc_unlocked");
+  }
+
   if (auto getcF = M.getFunction("getc")) {
     getcF->setName("getc_unlocked");
   }
