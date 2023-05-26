@@ -19,6 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
 #include "InputOutput.hpp"
 
 #include "noelle/core/Noelle.hpp"
@@ -26,9 +27,8 @@
 namespace llvm::noelle {
 
 std::unordered_map<std::string, std::string> stdioUnlockedFunctionMapping = {
-  { "fgetc", "fgetc_unlocked" },
-  { "fgets", "fgets_unlocked" },
-  { "fputc", "fputc_unlocked" },
+  { "fgetc", "fgetc_unlocked" }, { "fgets", "fgets_unlocked" },
+  { "fputc", "fputc_unlocked" }, { "fputs", "fputs_unlocked" },
   { "getc", "getc_unlocked" },
 };
 
