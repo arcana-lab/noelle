@@ -33,6 +33,7 @@ std::unordered_map<std::string, std::string> stdioUnlockedFunctionMapping = {
   { "fscanf", "fscanf_unlocked" },   { "getc", "getc_unlocked" },
   { "getchar", "getchar_unlocked" }, { "putc", "putc_unlocked" },
   { "putchar", "putchar_unlocked" }, { "printf", "printf_unlocked" },
+  { "scanf", "scanf_unlocked" },
 };
 
 InputOutput::InputOutput() : ModulePass{ ID } {}
