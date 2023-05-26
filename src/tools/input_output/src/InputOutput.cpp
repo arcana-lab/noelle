@@ -27,10 +27,8 @@
 namespace llvm::noelle {
 
 std::unordered_map<std::string, std::string> stdioUnlockedFunctionMapping = {
-  { "clearerr", "clearerr_unlocked" },
-
-  { "feof", "feof_unlocked" },
-
+  { "clearerr", "clearerr_unlocked" }, { "fclose", "fclose_unlocked" },
+  { "feof", "feof_unlocked" },         { "ferror", "ferror_unlocked" },
   { "fflush", "fflush_unlocked" },     { "fgetc", "fgetc_unlocked" },
   { "fgets", "fgets_unlocked" },       { "fputc", "fputc_unlocked" },
   { "fputs", "fputs_unlocked" },       { "fread", "fread_unlocked" },
