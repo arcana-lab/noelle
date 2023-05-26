@@ -19,28 +19,26 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/Noelle.hpp"
 #include "InputOutput.hpp"
 
+#include "noelle/core/Noelle.hpp"
+
 namespace llvm::noelle {
+
+std::unordered_map<std::string, std::string> stdioUnlockedFunctionMapping = {
+  { "fgetc", "fgetc_unlocked" },
+  { "fgets", "fgets_unlocked" },
+  { "fputc", "fputc_unlocked" },
+  { "getc", "getc_unlocked" },
+};
 
 InputOutput::InputOutput() : ModulePass{ ID } {}
 
 bool InputOutput::runOnModule(Module &M) {
-  if (auto getcF = M.getFunction("fgetc")) {
-    getcF->setName("fgetc_unlocked");
-  }
-
-  if (auto getcF = M.getFunction("fgets")) {
-    getcF->setName("fgets_unlocked");
-  }
-
-  if (auto getcF = M.getFunction("fputc")) {
-    getcF->setName("fputc_unlocked");
-  }
-
-  if (auto getcF = M.getFunction("getc")) {
-    getcF->setName("getc_unlocked");
+  for (auto [ioWithLock, ioWithoutLock] : stdioUnlockedFunctionMapping) {
+    if (auto getcF = M.getFunction(ioWithLock)) {
+      getcF->setName(ioWithoutLock);
+    }
   }
 
   return false;

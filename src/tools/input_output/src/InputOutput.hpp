@@ -41,6 +41,7 @@ public:
   void getAnalysisUsage(AnalysisUsage &AU) const override;
 
 private:
+  std::unordered_map<std::string, std::string> stdioUnlockedFunctionMapping;
 };
 
 } // namespace llvm::noelle
