@@ -27,11 +27,11 @@
 namespace llvm::noelle {
 
 std::unordered_map<std::string, std::string> stdioUnlockedFunctionMapping = {
-  { "fgetc", "fgetc_unlocked" },    { "fgets", "fgets_unlocked" },
-  { "fputc", "fputc_unlocked" },    { "fputs", "fputs_unlocked" },
-  { "fread", "fread_unlocked" },    { "fprintf", "fprintf_unlocked" },
-  { "fscanf", "fscanf_unlocked" },  { "getc", "getc_unlocked" },
-  { "getchar", "getchar_unlocked" }
+  { "fgetc", "fgetc_unlocked" },     { "fgets", "fgets_unlocked" },
+  { "fputc", "fputc_unlocked" },     { "fputs", "fputs_unlocked" },
+  { "fread", "fread_unlocked" },     { "fprintf", "fprintf_unlocked" },
+  { "fscanf", "fscanf_unlocked" },   { "getc", "getc_unlocked" },
+  { "getchar", "getchar_unlocked" }, { "putc", "putc_unlocked" },
 };
 
 InputOutput::InputOutput() : ModulePass{ ID } {}
