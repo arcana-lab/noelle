@@ -27,17 +27,17 @@
 namespace llvm::noelle {
 
 std::unordered_map<std::string, std::string> stdioUnlockedFunctionMapping = {
-  { "fclose", "fclose_unlocked" },     { "fflush", "fflush_unlocked" },
-  { "fgetc", "fgetc_unlocked" },       { "fgets", "fgets_unlocked" },
-  { "fputc", "fputc_unlocked" },       { "fputs", "fputs_unlocked" },
-  { "fread", "fread_unlocked" },       { "fprintf", "fprintf_unlocked" },
-  { "fscanf", "fscanf_unlocked" },     { "getc", "getc_unlocked" },
-  { "getchar", "getchar_unlocked" },   { "putc", "putc_unlocked" },
-  { "putchar", "putchar_unlocked" },   { "printf", "printf_unlocked" },
-  { "scanf", "scanf_unlocked" },       { "ungetc", "ungetc_unlocked" },
-  { "vfprintf", "vfprintf_unlocked" }, { "vfscanf", "vfscanf_unlocked" },
-  { "vprintf", "vprintf_unlocked" },   { "vscanf", "vscanf_unlocked" },
-  { "fwrite", "fwrite_unlocked" },
+  { "clearerr", "clearerr_unlocked" }, { "fclose", "fclose_unlocked" },
+  { "fflush", "fflush_unlocked" },     { "fgetc", "fgetc_unlocked" },
+  { "fgets", "fgets_unlocked" },       { "fputc", "fputc_unlocked" },
+  { "fputs", "fputs_unlocked" },       { "fread", "fread_unlocked" },
+  { "fprintf", "fprintf_unlocked" },   { "fscanf", "fscanf_unlocked" },
+  { "getc", "getc_unlocked" },         { "getchar", "getchar_unlocked" },
+  { "putc", "putc_unlocked" },         { "putchar", "putchar_unlocked" },
+  { "printf", "printf_unlocked" },     { "scanf", "scanf_unlocked" },
+  { "ungetc", "ungetc_unlocked" },     { "vfprintf", "vfprintf_unlocked" },
+  { "vfscanf", "vfscanf_unlocked" },   { "vprintf", "vprintf_unlocked" },
+  { "vscanf", "vscanf_unlocked" },     { "fwrite", "fwrite_unlocked" },
 };
 
 InputOutput::InputOutput() : ModulePass{ ID } {}
