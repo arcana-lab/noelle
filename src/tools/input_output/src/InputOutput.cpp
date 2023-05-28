@@ -78,9 +78,9 @@ std::unordered_map<std::string, std::string> stdioUnlockedFunctionMapping = {
 InputOutput::InputOutput() : ModulePass{ ID } {}
 
 bool InputOutput::runOnModule(Module &M) {
-  for (auto [ioWithLock, ioWithoutLock] : stdioUnlockedFunctionMapping) {
-    if (auto getcF = M.getFunction(ioWithLock)) {
-      getcF->setName(ioWithoutLock);
+  for (auto [io, ioUnlocked] : stdioUnlockedFunctionMapping) {
+    if (auto F = M.getFunction(io)) {
+      F->setName(ioUnlocked);
     }
   }
 
