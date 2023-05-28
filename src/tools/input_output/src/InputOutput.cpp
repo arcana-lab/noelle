@@ -27,18 +27,52 @@
 namespace llvm::noelle {
 
 std::unordered_map<std::string, std::string> stdioUnlockedFunctionMapping = {
-  { "clearerr", "clearerr_unlocked" }, { "fclose", "fclose_unlocked" },
-  { "feof", "feof_unlocked" },         { "ferror", "ferror_unlocked" },
-  { "fflush", "fflush_unlocked" },     { "fgetc", "fgetc_unlocked" },
-  { "fgets", "fgets_unlocked" },       { "fputc", "fputc_unlocked" },
-  { "fputs", "fputs_unlocked" },       { "fread", "fread_unlocked" },
-  { "fprintf", "fprintf_unlocked" },   { "fscanf", "fscanf_unlocked" },
-  { "getc", "getc_unlocked" },         { "getchar", "getchar_unlocked" },
-  { "putc", "putc_unlocked" },         { "putchar", "putchar_unlocked" },
-  { "printf", "printf_unlocked" },     { "scanf", "scanf_unlocked" },
-  { "ungetc", "ungetc_unlocked" },     { "vfprintf", "vfprintf_unlocked" },
-  { "vfscanf", "vfscanf_unlocked" },   { "vprintf", "vprintf_unlocked" },
-  { "vscanf", "vscanf_unlocked" },     { "fwrite", "fwrite_unlocked" },
+  { "getc",
+    "getc_unlocked" }, // https://pubs.opengroup.org/onlinepubs/9699919799/functions/getc_unlocked.html
+  { "getchar",
+    "getchar_unlocked" }, // https://pubs.opengroup.org/onlinepubs/9699919799/functions/getchar_unlocked.html
+  { "putc",
+    "putc_unlocked" }, // https://pubs.opengroup.org/onlinepubs/9699919799/functions/putc_unlocked.html
+  { "putchar",
+    "putchar_unlocked" }, // https://pubs.opengroup.org/onlinepubs/9699919799/functions/putchar_unlocked.html
+  { "clearerr",
+    "clearerr_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-clearerr-unlocked-1.html
+  { "feof",
+    "feof_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-feof-unlocked-1.html
+  { "ferror",
+    "ferror_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-ferror-unlocked-1.html
+  { "fflush",
+    "fflush_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-fflush-unlocked-1.html
+  { "fgetc",
+    "fgetc_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-fgetc-unlocked-1.html
+  { "fgets",
+    "fgets_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-fgets-unlocked-1.html
+  { "fileno",
+    "fileno_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-fileno-unlocked-1.html
+  { "fputc",
+    "fputc_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-fputc-unlocked-1.html
+  { "fputs",
+    "fputs_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-fputs-unlocked-1.html
+  { "fread",
+    "fread_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-fread-unlocked-1.html
+  { "fwrite",
+    "fwrite_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-fwrite-unlocked-1.html
+  { "fgetwc",
+    "fgetwc_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-fgetwc-unlocked-1.html
+  { "fgetws",
+    "fgetws_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-fgetws-unlocked-1.html
+  { "fputwc",
+    "fputwc_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-fputwc-unlocked-1.html
+  { "fputws",
+    "fputws_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-fputws-unlocked-1.html
+  { "getwc",
+    "getwc_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-getwc-unlocked-1.html
+  { "getwchar",
+    "getwchar_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-getwchar-unlocked-1.html
+  { "putwc",
+    "putwc_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-putwc-unlocked-1.html
+  { "putwchar",
+    "putwchar_unlocked" }, // https://refspecs.linuxbase.org/LSB_5.0.0/LSB-Core-generic/LSB-Core-generic/baselib-putwchar-unlocked-1.html
 };
 
 InputOutput::InputOutput() : ModulePass{ ID } {}
