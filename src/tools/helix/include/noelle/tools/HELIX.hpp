@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -33,11 +33,10 @@
 #include "noelle/tools/ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "noelle/tools/SequentialSegment.hpp"
 #include "noelle/tools/HELIXTask.hpp"
+#include "noelle/tools/SpilledLoopCarriedDependence.hpp"
 #include "HeuristicsPass.hpp"
 
 namespace llvm::noelle {
-
-class SpilledLoopCarriedDependency;
 
 class HELIX
   : public ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences {
@@ -89,27 +88,27 @@ protected:
       LoopDependenceInfo *LDI,
       DataFlowResult *reachabilityDFR,
       std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-      SpilledLoopCarriedDependency *spill,
+      SpilledLoopCarriedDependence *spill,
       Value *spillEnvPtr);
 
   void insertStoresToSpilledLCD(
       LoopDependenceInfo *LDI,
       std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-      SpilledLoopCarriedDependency *spill,
+      SpilledLoopCarriedDependence *spill,
       Value *spillEnvPtr);
 
   void defineFrontierForLoadsToSpilledLCD(
       LoopDependenceInfo *LDI,
       DataFlowResult *reachabilityDFR,
       std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-      SpilledLoopCarriedDependency *spill,
+      SpilledLoopCarriedDependence *spill,
       DominatorSummary *originalLoopDS,
       std::unordered_set<BasicBlock *> &originalFrontierBlocks);
 
   void replaceUsesOfSpilledPHIWithLoads(
       LoopDependenceInfo *LDI,
       std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-      SpilledLoopCarriedDependency *spill,
+      SpilledLoopCarriedDependence *spill,
       Value *spillEnvPtr,
       DominatorSummary *originalLoopDS,
       std::unordered_set<BasicBlock *> &originalFrontierBlocks);
@@ -162,7 +161,7 @@ protected:
   Function *waitSSCall, *signalSSCall;
   LoopDependenceInfo *originalLDI;
   LoopEnvironmentBuilder *loopCarriedLoopEnvironmentBuilder;
-  std::unordered_set<SpilledLoopCarriedDependency *> spills;
+  std::unordered_set<SpilledLoopCarriedDependence *> spills;
   std::unordered_map<Instruction *, Instruction *>
       lastIterationExecutionDuplicateMap;
   BasicBlock *lastIterationExecutionBlock;
@@ -179,15 +178,6 @@ private:
   std::string prefixString;
   std::vector<Value *> ssPastPtrs;
   std::vector<Value *> ssFuturePtrs;
-};
-
-class SpilledLoopCarriedDependency {
-public:
-  PHINode *originalLoopCarriedPHI;
-  PHINode *loopCarriedPHI;
-  Value *clonedInitialValue;
-  std::unordered_set<LoadInst *> environmentLoads;
-  std::unordered_set<StoreInst *> environmentStores;
 };
 
 } // namespace llvm::noelle

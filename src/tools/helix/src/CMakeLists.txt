@@ -15,6 +15,7 @@ set(Srcs
   HELIX_sequentialSegment.cpp
   HELIX_linker.cpp
   HELIXTask.cpp
+  SpilledLoopCarriedDependence.cpp
 )
 
 # Compilation flags

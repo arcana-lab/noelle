@@ -95,7 +95,8 @@ void HELIX::spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
   IRBuilder<> entryBuilder(entryBlockTerminator);
 
   /*
-   * Register a new environment builder and the single HELIX task
+   * Create a new environment builder to pass the non-reducable PHIs, which will
+   * spill to the stack of the caller of the HELIX task.
    */
   this->loopCarriedLoopEnvironmentBuilder =
       new LoopEnvironmentBuilder(this->noelle.getProgram()->getContext(),
@@ -152,10 +153,8 @@ void HELIX::spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
   for (auto phiI = 0; phiI < clonedLoopCarriedPHIs.size(); phiI++) {
     auto originalPHI = originalLoopCarriedPHIs[phiI];
     auto clonePHI = clonedLoopCarriedPHIs[phiI];
-    auto spilled = new SpilledLoopCarriedDependency();
+    auto spilled = new SpilledLoopCarriedDependence(originalPHI, clonePHI);
     this->spills.insert(spilled);
-    spilled->originalLoopCarriedPHI = originalPHI;
-    spilled->loopCarriedPHI = clonePHI;
 
     /*
      * Track the initial value of this spilled variable
@@ -182,7 +181,7 @@ void HELIX::createLoadsAndStoresToSpilledLCD(
     LoopDependenceInfo *LDI,
     DataFlowResult *reachabilityDFR,
     std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-    SpilledLoopCarriedDependency *spill,
+    SpilledLoopCarriedDependence *spill,
     Value *spillEnvPtr) {
 
   /*
@@ -229,7 +228,7 @@ void HELIX::createLoadsAndStoresToSpilledLCD(
 void HELIX::insertStoresToSpilledLCD(
     LoopDependenceInfo *LDI,
     std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-    SpilledLoopCarriedDependency *spill,
+    SpilledLoopCarriedDependence *spill,
     Value *spillEnvPtr) {
 
   auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
@@ -242,9 +241,9 @@ void HELIX::insertStoresToSpilledLCD(
   /*
    * Store loop carried values of the PHI into the environment
    */
-  for (auto inInd = 0; inInd < spill->loopCarriedPHI->getNumIncomingValues();
+  for (auto inInd = 0; inInd < spill->getClone()->getNumIncomingValues();
        ++inInd) {
-    auto incomingBB = spill->loopCarriedPHI->getIncomingBlock(inInd);
+    auto incomingBB = spill->getClone()->getIncomingBlock(inInd);
     if (incomingBB == preHeaderClone) {
       continue;
     }
@@ -254,7 +253,7 @@ void HELIX::insertStoresToSpilledLCD(
      * If it s an instruction computed within the loop, insert the store at that
      * point Otherwise, insert at the incoming block's entry
      */
-    auto incomingV = spill->loopCarriedPHI->getIncomingValue(inInd);
+    auto incomingV = spill->getClone()->getIncomingValue(inInd);
     Instruction *insertPoint = incomingBB->getTerminator();
     if (auto incomingI = dyn_cast<Instruction>(incomingV)) {
       auto blockOfIncomingI = incomingI->getParent();
@@ -277,7 +276,7 @@ void HELIX::defineFrontierForLoadsToSpilledLCD(
     LoopDependenceInfo *LDI,
     DataFlowResult *reachabilityDFR,
     std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-    SpilledLoopCarriedDependency *spill,
+    SpilledLoopCarriedDependence *spill,
     DominatorSummary *originalLoopDS,
     std::unordered_set<BasicBlock *> &originalFrontierBlocks) {
   auto loopStructure = LDI->getLoopStructure();
@@ -364,7 +363,7 @@ void HELIX::defineFrontierForLoadsToSpilledLCD(
    * Traverse dominators of users of the spilled PHI until a block is found that
    * will not be invalidated by spill stores
    */
-  for (auto user : spill->loopCarriedPHI->users()) {
+  for (auto user : spill->getClone()->users()) {
     auto userInst = cast<Instruction>(user);
     auto cloneUserBlock = userInst->getParent();
     auto originalUserBlock = cloneToOriginalBlockMap.at(cloneUserBlock);
@@ -424,7 +423,7 @@ void HELIX::defineFrontierForLoadsToSpilledLCD(
 void HELIX::replaceUsesOfSpilledPHIWithLoads(
     LoopDependenceInfo *LDI,
     std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-    SpilledLoopCarriedDependency *spill,
+    SpilledLoopCarriedDependence *spill,
     Value *spillEnvPtr,
     DominatorSummary *originalLoopDS,
     std::unordered_set<BasicBlock *> &originalFrontierBlocks) {
@@ -436,8 +435,8 @@ void HELIX::replaceUsesOfSpilledPHIWithLoads(
    * Insert a load in each frontier block, placed before any user/store in that
    * block
    */
-  std::unordered_set<User *> spillUsers{ spill->loopCarriedPHI->user_begin(),
-                                         spill->loopCarriedPHI->user_end() };
+  std::unordered_set<User *> spillUsers{ spill->getClone()->user_begin(),
+                                         spill->getClone()->user_end() };
   for (auto originalBlock : originalFrontierBlocks) {
     auto cloneBlock = helixTask->getCloneOfOriginalBasicBlock(originalBlock);
 
@@ -472,7 +471,7 @@ void HELIX::replaceUsesOfSpilledPHIWithLoads(
       auto originalUserBlock = cloneToOriginalBlockMap.at(cloneUserBlock);
       if (!originalLoopDS->DT.dominates(originalBlock, originalUserBlock))
         continue;
-      user->replaceUsesOfWith(spill->loopCarriedPHI, spillLoad);
+      user->replaceUsesOfWith(spill->getClone(), spillLoad);
     }
 
     /*
@@ -481,17 +480,16 @@ void HELIX::replaceUsesOfSpilledPHIWithLoads(
     for (auto originalExit : loopStructure->getLoopExitBasicBlocks()) {
       if (!originalLoopDS->DT.dominates(originalBlock, originalExit))
         continue;
-      helixTask->addLiveOut(spill->originalLoopCarriedPHI, spillLoad);
+      helixTask->addLiveOut(spill->getOriginal(), spillLoad);
     }
   }
 
   /*
    * Ensure no uses of the spilled PHI exist anymore. Then erase the value
    */
-  assert(spill->loopCarriedPHI->user_begin()
-         == spill->loopCarriedPHI->user_end());
-  spill->loopCarriedPHI->eraseFromParent();
-  helixTask->removeOriginalInstruction(spill->originalLoopCarriedPHI);
+  assert(spill->getClone()->user_begin() == spill->getClone()->user_end());
+  spill->getClone()->eraseFromParent();
+  helixTask->removeOriginalInstruction(spill->getOriginal());
 
   /*
    * Ensure all live out blocks have an available load

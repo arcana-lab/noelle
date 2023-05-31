@@ -53,8 +53,7 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments(
   auto sccManager = LDI->getSCCManager();
   auto taskSCCDAG = sccManager->getSCCDAG();
   for (auto spill : this->spills) {
-    auto originalSpillSCC =
-        originalSCCDAG->sccOfValue(spill->originalLoopCarriedPHI);
+    auto originalSpillSCC = originalSCCDAG->sccOfValue(spill->getOriginal());
     auto clonedInstructionInLoop = *spill->environmentStores.begin();
     auto clonedSpillSCC = taskSCCDAG->sccOfValue(clonedInstructionInLoop);
     assert(originalSpillSCC && clonedSpillSCC);
