@@ -19,10 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
-#include "InputOutput.hpp"
-
 #include "noelle/core/Noelle.hpp"
+#include "InputOutput.hpp"
 
 namespace llvm::noelle {
 
