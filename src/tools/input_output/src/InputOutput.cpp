@@ -26,7 +26,7 @@
 
 namespace llvm::noelle {
 
-std::unordered_map<std::string, std::string> stdioUnlockedFunctionMapping = {
+std::unordered_map<std::string, std::string> InputOutput::stdioUnlockedFunctionMapping = {
   { "getc",
     "getc_unlocked" }, // https://pubs.opengroup.org/onlinepubs/9699919799/functions/getc_unlocked.html
   { "getchar",
