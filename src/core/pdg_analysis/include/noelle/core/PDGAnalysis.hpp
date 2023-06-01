@@ -21,6 +21,7 @@
  */
 #pragma once
 
+#include "noelle/core/MayPointToAnalysis.hpp"
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"
 #include "noelle/core/AllocAA.hpp"
@@ -129,6 +130,8 @@ private:
                               LLVMContext &,
                               unordered_map<Value *, MDNode *> &);
 
+  void trimRemovableEdgesOfPrint(PDG *pdg, Function &F);
+
   void trimDGUsingCustomAliasAnalysis(PDG *pdg);
 
   PDG *constructPDGFromAnalysis(Module &M);
@@ -201,6 +204,9 @@ private:
   bool edgeIsAlongNonMemoryWritingFunctions(DGEdge<Value> *edge);
 
   bool isInIndependentRegion(Instruction *, Instruction *);
+
+  bool edgeIsRemovableDependenceOfPrint(DGEdge<Value> *edge,
+                                        PointToSummary *ptSum);
 
   bool canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge);
 

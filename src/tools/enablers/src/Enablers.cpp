@@ -309,4 +309,18 @@ bool EnablersManager::applyDevirtualizer(LoopDependenceInfo *LDI,
   return modified;
 }
 
+bool EnablersManager::applyGlobalToStack(Noelle &par, LoopTransformer &lt) {
+  auto mainF = par.getFunctionsManager()->getEntryFunction();
+  auto M = mainF->getParent();
+  auto mayPointToAnalysis = MayPointToAnalysis(mainF);
+  auto loopForest = par.getProgramLoopsNestingForest();
+
+  auto modified = false;
+  for (auto &G : M->globals()) {
+    modified |= lt.moveGlobalToStack(&G, loopForest, mayPointToAnalysis);
+  }
+
+  return modified;
+}
+
 } // namespace llvm::noelle

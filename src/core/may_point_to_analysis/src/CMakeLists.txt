@@ -1,16 +1,14 @@
 # Sources
 set(Srcs 
-  Variable.cpp
-  LoopCarriedCycle.cpp
-  LoopCarriedVariable.cpp
-  LoopCarriedDependencies.cpp
+  MayPointToAnalysis.cpp
+  MayPointToAnalysisUtils.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "LoopCarriedDependencies")
+set(PassName "MayPointToAnalysis")
 
 # configure LLVM 
 find_package(LLVM 9 REQUIRED CONFIG)
@@ -25,26 +23,12 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
-  ../../basic_utilities/include 
-  ../../dominators/include 
-  ../../transformations/include
-  ../../callgraph/include
-  ../../dataflow/include
-  ../../architecture/include 
-  ../../alloc_aa/include 
-  ../../pdg/include 
-  ../../dg/include
-  ../../hotprofiler/include 
-  ../../loop_structure/include 
-  ../../loop_environment/include 
+  ../../basic_utilities/include
   ../../loop_forest/include
-  ../../talkdown/include
-  ../../loop_invariants/include
-  ../../loop_induction_variables/include
-  ../../may_point_to_analysis/include
+  ../../loop_structure/include 
+  ../../dominators/include 
   ../include
   ./
-  ${CMAKE_INSTALL_PREFIX}/include
   )
 
 # Declare the LLVM pass to compile

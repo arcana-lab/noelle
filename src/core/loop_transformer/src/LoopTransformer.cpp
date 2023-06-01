@@ -166,4 +166,64 @@ bool LoopTransformer::splitLoop(LoopDependenceInfo *loop,
   return modified;
 }
 
+bool LoopTransformer::moveGlobalToStack(
+    GlobalVariable *globalVar,
+    LoopForest *loopForest,
+    MayPointToAnalysis &mayPointToAnalysis) {
+  /*
+   * Make sure the MayPointToAnalysis is for the entry function.
+   */
+  auto currentF = mayPointToAnalysis.getFunctionSummary()->F;
+  auto mainF = mayPointToAnalysis.getFunctionSummary()->M->getFunction("main");
+  assert(currentF == mainF);
+
+  /*
+   * If the global variable can't be safely cloned to stack, do nothing.
+   */
+  if (!mayPointToAnalysis.canBeClonedToStack(globalVar, loopForest)) {
+    return false;
+  }
+
+  /*
+   * If no instruction uses the global variable, do nothing.
+   */
+  std::unordered_set<Instruction *> instsToReplace;
+  auto instInMainF = [&](Instruction *inst) -> bool {
+    return inst->getParent()->getParent() == mainF;
+  };
+
+  for (auto user : globalVar->users()) {
+    if (auto inst = dyn_cast<Instruction>(user)) {
+      if (instInMainF(inst)) {
+        instsToReplace.insert(inst);
+      }
+    }
+  }
+
+  if (instsToReplace.empty()) {
+    return false;
+  }
+
+  /*
+   * Replace all uses of the global variable in the entry function with an
+   * alloca instruction. The alloca instruction is placed at the beginning of
+   * the entry block and is initialized with the global variable's initializer.
+   */
+  auto &entryBlock = mainF->getEntryBlock();
+  IRBuilder<> entryBuilder(entryBlock.getFirstNonPHI());
+  Type *globalVarType = globalVar->getValueType();
+  AllocaInst *allocaInst =
+      entryBuilder.CreateAlloca(globalVarType, nullptr, "");
+  if (globalVar->hasInitializer()) {
+    auto init = globalVar->getInitializer();
+    entryBuilder.CreateStore(init, allocaInst);
+  }
+
+  for (auto inst : instsToReplace) {
+    inst->replaceUsesOfWith(globalVar, allocaInst);
+  }
+
+  return true;
+}
+
 } // namespace llvm::noelle

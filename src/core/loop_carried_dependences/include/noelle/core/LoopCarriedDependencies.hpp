@@ -27,6 +27,7 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/LoopForest.hpp"
+#include "noelle/core/MayPointToAnalysis.hpp"
 
 namespace llvm::noelle {
 
@@ -53,6 +54,13 @@ private:
   static bool canBasicBlockReachHeaderBeforeOther(const LoopStructure &LS,
                                                   BasicBlock *I,
                                                   BasicBlock *J);
+
+  static bool canLoopCarriedDependenceRemovedByMemoryOverwriting(
+      LoopTree *loopNode,
+      const DominatorSummary &DS,
+      DGEdge<Value> *edge,
+      PointToSummary *ptSum,
+      PDG &dgForLoops);
 };
 
 } // namespace llvm::noelle

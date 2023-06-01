@@ -45,6 +45,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../alias_analysis_engine/include
   ../../compilation_options_manager/include
   ../../loop_dependence_analyses/include
+  ../../may_point_to_analysis/include
 	../include
 )
 

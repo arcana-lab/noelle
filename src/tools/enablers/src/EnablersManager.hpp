@@ -71,6 +71,8 @@ private:
   bool applyDevirtualizer(LoopDependenceInfo *LDI,
                           Noelle &par,
                           LoopTransformer &lt);
+
+  bool applyGlobalToStack(Noelle &par, LoopTransformer &lt);
 };
 
 } // namespace llvm::noelle
