@@ -20,6 +20,8 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/LoopCarriedDependencies.hpp"
+#include "noelle/core/MayPointToAnalysis.hpp"
+#include "noelle/core/MayPointToAnalysisUtils.hpp"
 
 namespace llvm::noelle {
 
@@ -44,6 +46,32 @@ void LoopCarriedDependencies::setLoopCarriedDependencies(
       continue;
     }
     edge->setLoopCarried(true);
+  }
+
+  auto loopFunction = loopNode->getLoop()->getFunction();
+  auto mayPointToAnalysis = new MayPointToAnalysis(loopFunction);
+  auto ptSum = mayPointToAnalysis->getPointToSummary();
+
+  std::unordered_set<DGEdge<Value> *> spuriousLoopCarriedEdges;
+  for (auto edge : dgForLoops.getEdges()) {
+    if (canLoopCarriedDependenceRemovedByMemoryOverwriting(loopNode,
+                                                           DS,
+                                                           edge,
+                                                           ptSum,
+                                                           dgForLoops)) {
+      spuriousLoopCarriedEdges.insert(edge);
+    }
+  }
+
+  errs()
+      << "LoopCarriedDependences: Removing spurious loop-carried edges for loop"
+      << *loopNode->getLoop()->getEntryInstruction() << "\n";
+  for (auto edge : spuriousLoopCarriedEdges) {
+    auto producer = edge->getOutgoingT();
+    auto consumer = edge->getIncomingT();
+    errs() << "LoopCarriedDependences: Removing spurious loop-carried edge: "
+           << *producer << " ---> " << *consumer << "\n";
+    edge->setLoopCarried(false);
   }
 
   return;
@@ -341,6 +369,197 @@ bool LoopCarriedDependencies::canBasicBlockReachHeaderBeforeOther(
    * The header was never reached
    */
   assert(isJReached);
+  return false;
+}
+
+bool LoopCarriedDependencies::
+    canLoopCarriedDependenceRemovedByMemoryOverwriting(
+        LoopTree *loopNode,
+        const DominatorSummary &DS,
+        DGEdge<Value> *edge,
+        PointToSummary *ptSum,
+        PDG &dgForLoops) {
+
+  /*
+   * Focus on Loop-carried RAW Memory Dependence
+   */
+  if (!(edge->isLoopCarriedDependence() && edge->isMemoryDependence()
+        && edge->isRAWDependence())) {
+    return false;
+  }
+
+  /*
+   * If we could not identify the producer and the consumer,
+   * then we choose not to remove loop-carried property.
+   */
+  auto producerI = cast<Instruction>(edge->getOutgoingT());
+  auto consumerI = cast<Instruction>(edge->getIncomingT());
+  if (!producerI || !consumerI) {
+    return false;
+  }
+  auto producerLoop = loopNode->getInnermostLoopThatContains(producerI);
+  auto consumerLoop = loopNode->getInnermostLoopThatContains(consumerI);
+  if (!producerLoop || !consumerLoop) {
+    return false;
+  }
+
+  /*
+   * Use May-point-to-analysis to ensure that the producer and the consumer
+   * access exactly the same memory location.
+   */
+  auto getAccessedMemoryObjects = [&](Instruction *i) -> MemoryObjects {
+    if (auto loadInst = dyn_cast<LoadInst>(i)) {
+      auto pointToGraph = ptSum->instIN.at(loadInst);
+      return ptSum->pointees(pointToGraph, loadInst->getPointerOperand());
+    } else if (auto storeInst = dyn_cast<StoreInst>(i)) {
+      auto pointToGraph = ptSum->instIN.at(storeInst);
+      return ptSum->pointees(pointToGraph, storeInst->getPointerOperand());
+    } else {
+      return MemoryObjects();
+    }
+  };
+
+  auto producerMemoryObjects = getAccessedMemoryObjects(producerI);
+  auto consumerMemoryObjects = getAccessedMemoryObjects(consumerI);
+  auto memoObjsMustAccessedByBoth =
+      intersect(producerMemoryObjects, consumerMemoryObjects);
+  auto memoObjsMayAccessedByBoth =
+      unite(producerMemoryObjects, consumerMemoryObjects);
+  if (!(memoObjsMustAccessedByBoth.size() == 1
+        && memoObjsMayAccessedByBoth.size() == 1)) {
+    return false;
+  }
+
+  auto allocaInst =
+      dyn_cast<AllocaInst>((*memoObjsMustAccessedByBoth.begin())->source);
+  if (!allocaInst) {
+    return false;
+  }
+
+  /*
+   * For now, we just focus on how to detect the memory overwriting for array
+   */
+  if (allocaInst->getAllocatedType()->isArrayTy()) {
+    LLVMContext &C = allocaInst->getContext();
+    auto arrayType = dyn_cast<ArrayType>(allocaInst->getAllocatedType());
+    auto arraySize =
+        ConstantInt::get(Type::getInt32Ty(C), arrayType->getNumElements());
+
+    for (auto child : loopNode->getChildren()) {
+      /*
+       * To fully overwrite an array in each iteration,
+       * the overwriting happens in a sub-loop, and each entry of the array
+       * should be overwritten. Therefore we have some requirements about (1).
+       * how we could access each entry (2). whether the data written to each
+       * entry is "good" (3). whether the overwriting has impact
+       */
+      auto subLoop = child->getLoop();
+      auto subLoopHeader = subLoop->getHeader();
+
+      /*
+       * (1). To access each entry, the sub-loop should have one Induction
+       * Variable with 4 properties: I. The IV of the sub-loop starts from 0
+       */
+      ConstantInt *zero = ConstantInt::get(Type::getInt32Ty(C), 0);
+      PHINode *arrayIndex = [&]() {
+        for (auto &phi : subLoopHeader->phis()) {
+          return &phi;
+        }
+      }();
+      if (!arrayIndex || arrayIndex->getNumIncomingValues() != 2
+          || !isa<ConstantInt>(arrayIndex->getIncomingValue(0))
+          || dyn_cast<ConstantInt>(arrayIndex->getIncomingValue(0))
+                     ->getZExtValue()
+                 != 0) {
+        continue;
+      }
+
+      /*
+       * II. The IV of the sub-loop is incremented by 1 in each iteration
+       */
+      AddOperator *addOneEachStep =
+          dyn_cast<AddOperator>(arrayIndex->getIncomingValue(1));
+      if (!addOneEachStep || (addOneEachStep->getOperand(0) != arrayIndex)
+          || !isa<ConstantInt>(addOneEachStep->getOperand(1))
+          || dyn_cast<ConstantInt>(addOneEachStep->getOperand(1))
+                     ->getZExtValue()
+                 != 1) {
+        continue;
+      }
+
+      /*
+       * III. The IV of the sub-loop ends at the size of the array
+       */
+      ICmpInst *arraySizeEnd;
+      if (auto cbr = dyn_cast<BranchInst>(subLoopHeader->getTerminator())) {
+        if (auto condition = dyn_cast<ICmpInst>(cbr->getCondition())) {
+          if (condition->getOperand(0) == arrayIndex
+              && condition->getOperand(1) == arraySize
+              && condition->getPredicate() == ICmpInst::ICMP_EQ) {
+            arraySizeEnd = condition;
+          }
+        }
+      }
+      if (!arraySizeEnd) {
+        continue;
+      }
+
+      /*
+       * IV. Each entry should be written in one iteration of the sub-loop
+       */
+      std::unordered_set<StoreInst *> overwrites;
+      for (auto inst : subLoop->getInstructions()) {
+        if (auto storeInst = dyn_cast<StoreInst>(inst)) {
+          overwrites.insert(storeInst);
+        }
+      }
+      if (overwrites.size() != 1) {
+        continue;
+      }
+      auto overwrite = *overwrites.begin();
+      if (!isa<GetElementPtrInst>(overwrite->getPointerOperand())) {
+        continue;
+      }
+      auto gep = dyn_cast<GetElementPtrInst>(overwrite->getPointerOperand());
+      if (gep->getNumOperands() != 3 || gep->getOperand(0) != allocaInst
+          || gep->getOperand(2) != arrayIndex) {
+        continue;
+      }
+
+      /*
+       * (2). To ensure the data written to each entry is "good",
+       * we need to ensure that the data has no loop-carried dependence.
+       * which means after the overwriting, each entry of the array has no
+       * loop-carried dependence. therefore the array itself has no loop-carried
+       * dependence.
+       */
+      auto overwriteValueHasNoLoopCarriedDependence = true;
+      for (auto edge : dgForLoops.getEdges()) {
+        auto producer = edge->getOutgoingT();
+        auto consumer = edge->getIncomingT();
+        auto overwriteValue = overwrite->getValueOperand();
+        if (edge->isLoopCarriedDependence() && consumer == overwriteValue) {
+          overwriteValueHasNoLoopCarriedDependence = false;
+          break;
+        }
+      }
+      if (!overwriteValueHasNoLoopCarriedDependence) {
+        continue;
+      }
+
+      /*
+       * (3). To ensure the overwriting has impact,
+       * the overwriting must dominate the consumer (in this case, the reader).
+       * otherwise, we cannot ensure the reader will read the data written by
+       * the overwriting, and the loop-carried RAW memory dependence stils holds
+       * conservatively.
+       */
+      if (DS.DT.dominates(subLoopHeader->getTerminator(), consumerI)) {
+        return true;
+      }
+    }
+  }
+
   return false;
 }
 

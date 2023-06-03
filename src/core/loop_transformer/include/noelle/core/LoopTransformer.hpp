@@ -26,6 +26,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/MayPointToAnalysis.hpp"
 
 namespace llvm::noelle {
 
@@ -47,6 +48,10 @@ public:
                  std::set<SCC *> const &SCCsToPullOut,
                  std::set<Instruction *> &instructionsRemoved,
                  std::set<Instruction *> &instructionsAdded);
+
+  bool moveGlobalToStack(GlobalVariable *globalVar,
+                         LoopForest *LoopForest,
+                         MayPointToAnalysis &mayPointToAnalysis);
 
   virtual ~LoopTransformer();
 

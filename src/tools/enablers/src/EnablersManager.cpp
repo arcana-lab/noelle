@@ -91,6 +91,26 @@ bool EnablersManager::runOnModule(Module &M) {
    */
   auto modified = false;
   std::unordered_map<Function *, bool> modifiedFunctions;
+
+  /*
+   * Try to move global variables to the stack.
+   * This optimization currently focuses only on loops in the entry function.
+   * Also, this optimization relies on MayPointToAnalysis, which is
+   * intraprocedural. Therefore, we need to run this optimization with function
+   * granularity instead of loop granularity.
+   */
+  /*
+   * Apply loop distribution.
+   */
+  if (noelle.isTransformationEnabled(Transformation::GLOBAL_TO_STACK_ID)) {
+    auto mainF = noelle.getFunctionsManager()->getEntryFunction();
+    modifiedFunctions[mainF] |= applyGlobalToStack(noelle, loopTransformer);
+    modified |= modifiedFunctions[mainF];
+    if (modified) {
+      return true;
+    }
+  }
+
   for (auto tree : sortedTrees) {
 
     /*

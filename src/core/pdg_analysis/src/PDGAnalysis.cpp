@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "noelle/core/MayPointToAnalysis.hpp"
+#include "noelle/core/MayPointToAnalysisUtils.hpp"
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"
 #include "noelle/core/PDGPrinter.hpp"
@@ -479,6 +481,57 @@ MDNode *PDGAnalysis::getSubEdgesMetadata(
   return MDTuple::get(C, subEdgesVec);
 }
 
+void PDGAnalysis::trimRemovableEdgesOfPrint(PDG *pdg, Function &F) {
+  /*
+   * Currently we focus on main function.
+   * This is because edgeIsRemovableDependenceOfPrint() relies on
+   * PointToSummary, which is very expensive.
+   */
+  if (F.getName() != "main") {
+    return;
+  }
+
+  std::set<Value *> functionNodes;
+  std::set<DGEdge<Value> *> functionEdges;
+  std::set<DGEdge<Value> *> removeEdges;
+  auto mayPointToAnalysis = new MayPointToAnalysis(&F);
+  auto funcSum = mayPointToAnalysis->getFunctionSummary();
+  auto ptSum = mayPointToAnalysis->getPointToSummary();
+  /*
+   * Collect the edges in current function that can be safely removed.
+   */
+  for (auto &arg : F.args()) {
+    functionNodes.insert(&arg);
+  }
+  for (auto &B : F) {
+    for (auto &I : B) {
+      functionNodes.insert(&I);
+    }
+  }
+
+  for (auto edge : pdg->getEdges()) {
+    auto producer = edge->getOutgoingT();
+    auto consumer = edge->getIncomingT();
+    if (functionNodes.count(producer) == 0
+        && functionNodes.count(consumer) == 0) {
+      continue;
+    }
+    functionEdges.insert(edge);
+  }
+
+  for (auto edge : functionEdges) {
+    if (edgeIsRemovableDependenceOfPrint(edge, ptSum)) {
+      removeEdges.insert(edge);
+    }
+  }
+
+  for (auto edge : removeEdges) {
+    pdg->removeEdge(edge);
+  }
+
+  return;
+}
+
 void PDGAnalysis::trimDGUsingCustomAliasAnalysis(PDG *pdg) {
 
   /*
@@ -598,6 +651,8 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction(PDG *pdg, Function &F) {
     }
   }
 
+  trimRemovableEdgesOfPrint(pdg, F);
+
   /*
    * Free the memory.
    */
@@ -647,6 +702,123 @@ void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
   }
 
   return;
+}
+
+bool PDGAnalysis::edgeIsRemovableDependenceOfPrint(DGEdge<Value> *edge,
+                                                   PointToSummary *ptSum) {
+  /*
+   * The data or memory dependence edge includes a print library function.
+   * (1). A print library function can not be the producer of a dependence,
+   * (2). unless the consumer is also a print library function.
+   * Note: a print library function can be the consumer of a dependence,
+   */
+
+  auto producer = edge->getOutgoingT();
+  auto consumer = edge->getIncomingT();
+  auto producerFunc = dyn_cast<CallBase>(producer);
+  auto consumerFunc = dyn_cast<CallBase>(consumer);
+  auto isPrintLib = [](CallBase *printFunc) -> bool {
+    std::unordered_set<std::string> printLibFunctions = { "printf",
+                                                          "puts",
+                                                          "putc",
+                                                          "putchar" };
+    return printLibFunctions.count(printFunc->getCalledFunction()->getName())
+           > 0;
+  };
+
+  auto getMemoryObjectsMayReadByPrint =
+      [&](CallBase *printFunc) -> MemoryObjects {
+    MemoryObjects result;
+    auto pointToGraph = ptSum->instIN.at(printFunc);
+    for (auto &arg : printFunc->arg_operands()) {
+      auto operand = strip(printFunc->getArgOperand(arg.getOperandNo()));
+      if (pointToGraph.count(ptSum->getVariable(operand)) == 0
+          && isa<GetElementPtrInst>(operand)) {
+        operand = dyn_cast<GetElementPtrInst>(operand)->getOperand(0);
+      }
+      auto memObjsMayReadByPrint = ptSum->pointees(pointToGraph, operand);
+    }
+    return result;
+  };
+
+  /*
+   * The producer is a print library function,
+   * Check if the consumer is a load or store instruction.
+   */
+  if (producerFunc && isPrintLib(producerFunc)) {
+
+    if (isa<LoadInst>(consumer)) {
+      /*
+       * producer is a print library function, consumer is a load instruction.
+       * no dependence between them.
+       */
+      return true;
+    } else if (isa<StoreInst>(consumer)) {
+      /*
+       * producer is a print library function, consumer is a store instruction.
+       * check if they may access the same memory object.
+       */
+      auto storeInst = dyn_cast<StoreInst>(consumer);
+      MemoryObjects memObjsMayReadByProducer =
+          getMemoryObjectsMayReadByPrint(producerFunc);
+      auto pointer = strip(storeInst->getPointerOperand());
+      MemoryObjects memObjsMayTouchByConsumer =
+          ptSum->pointees(ptSum->instIN.at(storeInst), pointer);
+      if (intersect(memObjsMayReadByProducer, memObjsMayTouchByConsumer)
+              .empty()) {
+        return true;
+      }
+      return false;
+    }
+  }
+
+  /*
+   * The consumer is a print library function,
+   * Check if the producer is a load or store instruction.
+   */
+  if (consumerFunc && isPrintLib(consumerFunc)) {
+    if (isa<LoadInst>(producer)) {
+      /*
+       * consumer is a print library function, producer is a load instruction.
+       * check if the load instruction is the argument of the print function.
+       */
+      auto loadInst = dyn_cast<LoadInst>(producer);
+      for (auto &arg : consumerFunc->arg_operands()) {
+        if (strip(consumerFunc->getArgOperand(arg.getOperandNo()))
+            == loadInst) {
+
+          edge->setLoopCarried(false);
+          edge->setMemMustType(false, true, DG_DATA_RAW);
+
+          return false;
+        }
+      }
+      return true;
+    } else if (isa<StoreInst>(producer)) {
+      /*
+       * consumer is a print library function, producer is a store instruction.
+       * check if they may access the same memory object.
+       */
+      auto storeInst = dyn_cast<StoreInst>(producer);
+      MemoryObjects memObjsMayReadByConsumer =
+          getMemoryObjectsMayReadByPrint(consumerFunc);
+      auto pointer = strip(storeInst->getPointerOperand());
+      MemoryObjects memObjsMayTouchByProducer =
+          ptSum->pointees(ptSum->instIN.at(storeInst), pointer);
+      if (intersect(memObjsMayReadByConsumer, memObjsMayTouchByProducer)
+              .empty()) {
+        return true;
+      }
+
+      return false;
+    }
+  }
+
+  /*
+   * The producer is not a print library function,
+   * hence the dependence is not a removable dependence of print
+   */
+  return false;
 }
 
 bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge) {
@@ -703,12 +875,15 @@ bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge) {
 
   /*
    * The call invokes a library function.
-   *
    * Check it invokes a known library function.
+   *
+   * Update: this logic is no more necessary since
+   * edgeIsRemovableDependenceOfPrint() introduced.
    */
-  if (callee->getName().compare("printf") != 0) {
-    return false;
-  }
+
+  // if (callee->getName().compare("printf") != 0) {
+  //   return false;
+  // }
 
   /*
    * Exploit are knowledge of library calls to identify the set of pointers that
