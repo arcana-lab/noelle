@@ -36,8 +36,11 @@ public:
    * Methods
    */
   InputOutput();
+
   bool doInitialization(Module &M) override;
+
   bool runOnModule(Module &M) override;
+
   void getAnalysisUsage(AnalysisUsage &AU) const override;
 
 private:
