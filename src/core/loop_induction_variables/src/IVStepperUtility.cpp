@@ -32,7 +32,8 @@ PHINode *IVUtility::createChunkPHI(BasicBlock *preheaderB,
 
   std::vector<BasicBlock *> headerPreds(pred_begin(headerB), pred_end(headerB));
   IRBuilder<> headerBuilder(headerB->getFirstNonPHIOrDbgOrLifetime());
-  auto chunkPHI = headerBuilder.CreatePHI(chunkPHIType, headerPreds.size());
+  auto chunkPHI =
+      headerBuilder.CreatePHI(chunkPHIType, headerPreds.size(), "chunkPHI");
   auto zeroValueForChunking = ConstantInt::get(chunkPHIType, 0);
   auto onesValueForChunking = ConstantInt::get(chunkPHIType, 1);
 
@@ -42,12 +43,14 @@ PHINode *IVUtility::createChunkPHI(BasicBlock *preheaderB,
     if (preheaderB == B) {
       chunkPHI->addIncoming(zeroValueForChunking, B);
     } else {
-      auto chunkIncrement =
-          latchBuilder.CreateAdd(chunkPHI, onesValueForChunking);
+      auto chunkIncrement = latchBuilder.CreateAdd(chunkPHI,
+                                                   onesValueForChunking,
+                                                   "chunkIncrement");
       auto isChunkCompleted =
           latchBuilder.CreateICmp(CmpInst::Predicate::ICMP_EQ,
                                   chunkIncrement,
-                                  chunkSize);
+                                  chunkSize,
+                                  "isChunkCompleted");
       auto chunkWrap = latchBuilder.CreateSelect(isChunkCompleted,
                                                  zeroValueForChunking,
                                                  chunkIncrement,
@@ -154,11 +157,13 @@ Value *IVUtility::scaleInductionVariableStep(BasicBlock *insertBlock,
   if (ivType->isFloatingPointTy()) {
     stepXscale = insertBuilder.CreateFMul(
         stepSize,
-        insertBuilder.CreateSIToFP(scale, stepSize->getType()));
+        insertBuilder.CreateSIToFP(scale, stepSize->getType()),
+        "stepXscale");
   } else {
     stepXscale = insertBuilder.CreateMul(
         stepSize,
-        insertBuilder.CreateZExtOrTrunc(scale, stepSize->getType()));
+        insertBuilder.CreateZExtOrTrunc(scale, stepSize->getType()),
+        "stepXscale");
   }
 
   return stepXscale;
