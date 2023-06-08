@@ -116,7 +116,8 @@ protected:
   std::vector<SequentialSegment *> identifySequentialSegments(
       LoopDependenceInfo *originalLDI,
       LoopDependenceInfo *LDI,
-      DataFlowResult *reachabilityDFR);
+      DataFlowResult *reachabilityDFR,
+      HELIXTask *helixTask);
 
   void squeezeSequentialSegments(LoopDependenceInfo *LDI,
                                  std::vector<SequentialSegment *> *sss,

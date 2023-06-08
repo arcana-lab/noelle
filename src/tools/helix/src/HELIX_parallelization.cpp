@@ -333,8 +333,10 @@ bool HELIX::synchronizeTask(LoopDependenceInfo *LDI,
    * entry and exit frontiers for identified sequential segments until AFTER
    * squeezing.
    */
-  auto sequentialSegments =
-      this->identifySequentialSegments(this->originalLDI, LDI, reachabilityDFR);
+  auto sequentialSegments = this->identifySequentialSegments(this->originalLDI,
+                                                             LDI,
+                                                             reachabilityDFR,
+                                                             helixTask);
   this->squeezeSequentialSegments(LDI, &sequentialSegments, reachabilityDFR);
 
   /*
@@ -353,8 +355,10 @@ bool HELIX::synchronizeTask(LoopDependenceInfo *LDI,
     errs() << this->prefixString << "  Identifying sequential segments\n";
   }
   reachabilityDFR = this->computeReachabilityFromInstructions(LDI);
-  sequentialSegments =
-      this->identifySequentialSegments(this->originalLDI, LDI, reachabilityDFR);
+  sequentialSegments = this->identifySequentialSegments(this->originalLDI,
+                                                        LDI,
+                                                        reachabilityDFR,
+                                                        helixTask);
 
   /*
    * Schedule the sequential segments to overlap parallel and sequential

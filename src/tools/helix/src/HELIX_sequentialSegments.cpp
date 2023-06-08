@@ -30,12 +30,8 @@ namespace llvm::noelle {
 std::vector<SequentialSegment *> HELIX::identifySequentialSegments(
     LoopDependenceInfo *originalLDI,
     LoopDependenceInfo *LDI,
-    DataFlowResult *reachabilityDFR) {
-
-  /*
-   * Fetch the task.
-   */
-  auto helixTask = static_cast<HELIXTask *>(this->tasks[0]);
+    DataFlowResult *reachabilityDFR,
+    HELIXTask *helixTask) {
 
   /*
    * Map from old to new SCCs (for use in determining what SCC can be left out
@@ -178,13 +174,6 @@ std::vector<SequentialSegment *> HELIX::identifySequentialSegments(
           != taskToOriginalFunctionSCCMap.end()) {
         sccToAnalyze = taskToOriginalFunctionSCCMap.at(scc);
         sccInfo = originalSCCManager->getSCCAttrs(sccToAnalyze);
-      }
-
-      /*
-       * Do not synchronize induction variables
-       */
-      if (isa<InductionVariableSCC>(sccInfo)) {
-        continue;
       }
 
       /*
