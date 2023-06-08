@@ -27,6 +27,7 @@
 #include "noelle/core/Queue.hpp"
 #include "noelle/core/LoopForest.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/MayPointToAnalysis.hpp"
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
 #include "noelle/core/HotProfiler.hpp"
@@ -192,6 +193,8 @@ public:
   PDG *getProgramDependenceGraph(void);
 
   PDG *getFunctionDependenceGraph(Function *f);
+
+  MayPointToAnalysis getMayPointToAnalysis(Function *f) const;
 
   DataFlowAnalysis getDataFlowAnalyses(void) const;
 

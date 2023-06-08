@@ -28,6 +28,9 @@ performance: download
 performance_autotuner: download
 	./scripts/test_performance_autotuner.sh ;
 
+quick_test: download
+	./scripts/quick_test.sh ;
+
 unit:
 	cd unit ; make ;
 
