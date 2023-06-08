@@ -37,6 +37,11 @@ DOALLTask::DOALLTask(FunctionType *taskSignature, Module &M)
 
   this->instanceIndexV = taskInstanceID;
 
+  this->envArg->setName("env");
+  this->taskInstanceID->setName("taskInstanceID");
+  this->numTaskInstances->setName("numTaskInstances");
+  this->chunkSizeArg->setName("chunkSize");
+
   return;
 }
 
