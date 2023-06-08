@@ -88,8 +88,6 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
   if (this->verbose >= Verbosity::Minimal) {
     errs()
         << "ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences: Start\n";
-    // DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-to-partition-" +
-    // std::to_string(LDI->getID()) + ".dot", sccdag);
   }
 
   /*
