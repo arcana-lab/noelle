@@ -511,7 +511,7 @@ PointToGraph MayPointToAnalysis::FS(Instruction *inst, PointToSummary *ptSum) {
 };
 
 PointToSummary *MayPointToAnalysis::getPointToSummary() {
-  errs() << "Enter PointToSummary for function"
+  errs() << "Enter PointToSummary for function: "
          << funcSum->F->getFunction().getName() << "\n";
 
   if (ptSum) {
@@ -718,7 +718,6 @@ LiveMemorySummary *MayPointToAnalysis::getLiveMemorySummary() {
     return result;
   }();
 
-  ptSum->eraseDummyObjects();
   return memSum;
 }
 
