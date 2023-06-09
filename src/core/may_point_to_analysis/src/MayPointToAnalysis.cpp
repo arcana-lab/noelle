@@ -23,6 +23,7 @@
 #include "noelle/core/MayPointToAnalysis.hpp"
 #include "noelle/core/MayPointToAnalysisUtils.hpp"
 #include "llvm/IR/Instruction.h"
+#include "llvm/IR/IntrinsicInst.h"
 #include "llvm/Support/raw_ostream.h"
 #include <unordered_set>
 
@@ -45,7 +46,7 @@ const unordered_set<string> READ_ONLY_LIB_FUNCTIONS = {
   "strlen", "strncmp", "strtod", "strtol", "strtoll"
 };
 
-const unordered_set<string> READ_ONLY_LIB_FUNCTIONS_WITHSUFFIX =
+const unordered_set<string> READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX =
     []() -> unordered_set<string> {
   unordered_set<string> result;
   for (auto fname : READ_ONLY_LIB_FUNCTIONS) {
@@ -98,7 +99,9 @@ FunctionSummary::FunctionSummary(Function *F) {
           reallocInsts.insert(callInst);
         } else if (fname == FREE) {
           freeInsts.insert(callInst);
-        } else if (READ_ONLY_LIB_FUNCTIONS_WITHSUFFIX.count(fname) == 0) {
+        } else if ((!callInst->isLifetimeStartOrEnd())
+                   && (!isa<MemCpyInst>(callInst))
+                   && (READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX.count(fname) == 0)) {
           unknownFuntctionCalls.insert(callInst);
         }
       } else if (isa<ReturnInst>(inst)) {
@@ -464,7 +467,7 @@ PointToGraph MayPointToAnalysis::FS(Instruction *inst, PointToSummary *ptSum) {
       }
     } else if (callInst->isLifetimeStartOrEnd()) {
       // do nothing
-    } else if (READ_ONLY_LIB_FUNCTIONS_WITHSUFFIX.count(
+    } else if (READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX.count(
                    getCalledFuncName(callInst))
                > 0) {
       // do nothing
@@ -657,10 +660,21 @@ PointToSummary *MayPointToAnalysis::getPointToSummary() {
   return ptSum;
 }
 
+/*
+ * 1. Compute @malloc() or @calloc() insts that could be transformed to
+ * allocaInst.
+ * 2. Compute @free() insts that could be removed becase
+ *    if @malloc() is transformed to allocaInst, the corresponding @free() can
+ * be removed.
+ */
 LiveMemorySummary *MayPointToAnalysis::getLiveMemorySummary() {
 
   auto ptSum = getPointToSummary();
 
+  /*
+   * Only fixed size @malloc(), such as %1 = tail call i8* @malloc(i64 8), can
+   * be transformed to allocaInst. Otherwise, it may cause stack overflow.
+   */
   MemoryObjects allocable = [&]() -> MemoryObjects {
     MemoryObjects fixedSized;
     auto heapAllocInsts = funcSum->mallocInsts;
@@ -687,15 +701,36 @@ LiveMemorySummary *MayPointToAnalysis::getLiveMemorySummary() {
   allocable = minus(allocable, ptSum->escaped);
   allocable = minus(allocable, ptSum->ambiguous);
 
-  auto [removable, unknownWhetherFreed] =
+  auto [removable, notAllocable] =
       [&]() -> pair<unordered_set<CallInst *>, MemoryObjects> {
-    MemoryObjects unknownWhetherFreed;
+    /*
+     * We have:
+     * %1 = call i8* @malloc(i64 8), %1 -> M1 (M1 is the memory object allocated
+     * by malloc) %2 = call i8* @malloc(i64 8), %2 -> M2 (M2 is the memory
+     * object allocated by malloc)
+     *
+     * Assume M1 is allocable, M2 escapes and therefore is not allocable,
+     * and we have a free instruction %7 = call i8* @free(i8* %6), %6 may point
+     * to M1 or M2.
+     *
+     * In this case:
+     * 1. M2 is not allocable because it escapes, it remains a @malloc().
+     * 2. To maintain the original semantics, we cannot remove %7, because it
+     * may free M2.
+     * 3. Since %7 may also free M1, we transform %1 to allocaInst since that
+     * may cause segfault.
+     *
+     * Therefore, for any free inst: %7 = call i8* @free(i8* %6)
+     * if any memory object pointed by %6 is not allocable,
+     * then all memory objects pointed by %6 are not allocable.
+     */
+    MemoryObjects notAllocable;
     for (auto freeInst : funcSum->freeInsts) {
       auto ptr = freeInst->getArgOperand(0);
       auto mayBeFreed = ptSum->getPointees(ptSum->instIN.at(freeInst), ptr);
       for (auto memObj : mayBeFreed) {
         if (allocable.count(memObj) == 0) {
-          unknownWhetherFreed = unite(unknownWhetherFreed, mayBeFreed);
+          notAllocable = unite(notAllocable, mayBeFreed);
         }
       }
     }
@@ -705,19 +740,17 @@ LiveMemorySummary *MayPointToAnalysis::getLiveMemorySummary() {
       auto ptr = freeInst->getArgOperand(0);
       auto mayBeFreed = ptSum->getPointees(ptSum->instIN.at(freeInst), ptr);
       for (auto memObj : mayBeFreed) {
-        if (unknownWhetherFreed.count(memObj) > 0) {
+        if (notAllocable.count(memObj) > 0) {
           removable.erase(freeInst);
         }
       }
     }
 
-    return make_pair(removable, unknownWhetherFreed);
+    return make_pair(removable, notAllocable);
   }();
 
-  allocable = minus(allocable, unknownWhetherFreed);
+  allocable = minus(allocable, notAllocable);
 
-  // Remove free instructions of optimized memory objects
-  // Also check if the memory object is fixed sized
   LiveMemorySummary *memSum = new LiveMemorySummary();
   memSum->removable = removable;
   memSum->allocable = [&]() {
@@ -740,7 +773,7 @@ FunctionSummary *MayPointToAnalysis::getFunctionSummary() {
 bool MayPointToAnalysis::canBeClonedToStack(GlobalVariable *globalVar,
                                             LoopForest *loopForest) {
   /*
-   * We only clone global variables to stakc for main function.
+   * We only clone global variables to stack for main function.
    */
   auto currentF = funcSum->F;
   auto mainF = funcSum->M->getFunction("main");
