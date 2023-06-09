@@ -71,6 +71,10 @@ private:
   bool applyDevirtualizer(LoopDependenceInfo *LDI,
                           Noelle &par,
                           LoopTransformer &lt);
+
+  bool applyHeapToStack(Noelle &par, MayPointToAnalysis &mayPointToAnalysis);
+
+  bool applyGlobalToStack(Noelle &par, MayPointToAnalysis &mayPointToAnalysis);
 };
 
 } // namespace llvm::noelle

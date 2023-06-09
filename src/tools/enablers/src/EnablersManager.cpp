@@ -45,6 +45,37 @@ bool EnablersManager::runOnModule(Module &M) {
   auto &noelle = getAnalysis<Noelle>();
 
   /*
+   * Apply the enablers.
+   */
+  auto modified = false;
+
+  auto fm = noelle.getFunctionsManager();
+  auto mainF = fm->getEntryFunction();
+  auto mayPointToAnalysis = noelle.getMayPointToAnalysis(mainF);
+
+  errs()
+      << "EnablersManager: Try to transform @malloc() or @calloc() to allocaInst.\n";
+  auto h2s = this->applyHeapToStack(noelle, mayPointToAnalysis);
+  modified |= h2s;
+  if (h2s) {
+    errs()
+        << "EnablersManager: @malloc() or @calloc() transformed to allocaInst. Exit\n";
+  }
+
+  errs()
+      << "EnablersManager: Try to transform global variables to allocaInst.\n";
+  auto g2s = this->applyGlobalToStack(noelle, mayPointToAnalysis);
+  modified |= g2s;
+  if (g2s) {
+    errs()
+        << "EnablersManager: global variables transformed to allocaInst. Exit\n";
+  }
+
+  if (modified) {
+    return true;
+  }
+
+  /*
    * Create the enablers.
    */
   auto &loopTransformer = noelle.getLoopTransformer();
@@ -89,7 +120,6 @@ bool EnablersManager::runOnModule(Module &M) {
   /*
    * Transform the loops selected.
    */
-  auto modified = false;
   std::unordered_map<Function *, bool> modifiedFunctions;
   for (auto tree : sortedTrees) {
 

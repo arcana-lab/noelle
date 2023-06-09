@@ -30,20 +30,30 @@ using namespace std;
 
 namespace llvm::noelle {
 
-const std::string MALLOC = "malloc";
-const std::string CALLOC = "calloc";
-const std::string REALLOC = "realloc";
-const std::string FREE = "free";
+const string MALLOC = "malloc";
+const string CALLOC = "calloc";
+const string REALLOC = "realloc";
+const string FREE = "free";
 
-const std::unordered_set<std::string> MEMORY_FUNCTIONS = { MALLOC,
-                                                           CALLOC,
-                                                           REALLOC,
-                                                           FREE };
-const std::unordered_set<std::string> READ_ONLY_LIB_FUNCTIONS = {
-  "printf", "fprintf", "atoi",   "atol", "atoll",   "atof",
-  "strtol", "strtoll", "strtod", "puts", "putchar", "fputc",
-  "fputs",  "sqrt",    "rand",   "putc", "strncmp", "strlen"
+const unordered_set<string> MEMORY_FUNCTIONS = { MALLOC,
+                                                 CALLOC,
+                                                 REALLOC,
+                                                 FREE };
+const unordered_set<string> READ_ONLY_LIB_FUNCTIONS = {
+  "atoi",   "atof",    "atol",   "atoll",  "fprintf", "fputc", "fputs",
+  "putc",   "putchar", "printf", "puts",   "rand",    "scanf", "sqrt",
+  "strlen", "strncmp", "strtod", "strtol", "strtoll"
 };
+
+const unordered_set<string> READ_ONLY_LIB_FUNCTIONS_WITHSUFFIX =
+    []() -> unordered_set<string> {
+  unordered_set<string> result;
+  for (auto fname : READ_ONLY_LIB_FUNCTIONS) {
+    result.insert(fname);
+    result.insert(fname + "_unlocked");
+  }
+  return result;
+}();
 
 Pointer::Pointer(Value *source) {
   this->source = source;
@@ -88,7 +98,7 @@ FunctionSummary::FunctionSummary(Function *F) {
           reallocInsts.insert(callInst);
         } else if (fname == FREE) {
           freeInsts.insert(callInst);
-        } else if (READ_ONLY_LIB_FUNCTIONS.count(fname) == 0) {
+        } else if (READ_ONLY_LIB_FUNCTIONS_WITHSUFFIX.count(fname) == 0) {
           unknownFuntctionCalls.insert(callInst);
         }
       } else if (isa<ReturnInst>(inst)) {
@@ -454,7 +464,9 @@ PointToGraph MayPointToAnalysis::FS(Instruction *inst, PointToSummary *ptSum) {
       }
     } else if (callInst->isLifetimeStartOrEnd()) {
       // do nothing
-    } else if (READ_ONLY_LIB_FUNCTIONS.count(getCalledFuncName(callInst)) > 0) {
+    } else if (READ_ONLY_LIB_FUNCTIONS_WITHSUFFIX.count(
+                   getCalledFuncName(callInst))
+               > 0) {
       // do nothing
     } else if (isa<MemCpyInst>(callInst)) {
       /*
@@ -750,6 +762,10 @@ bool MayPointToAnalysis::canBeClonedToStack(GlobalVariable *globalVar,
   getPointToSummary();
   auto globalMemObj = ptSum->getMemoryObject(globalVar);
   if (funcSum->unknownFuntctionCalls.size() > 0) {
+    errs() << "UnknownFunctionCalls:\n";
+    for (auto callInst : funcSum->unknownFuntctionCalls) {
+      errs() << "\t" << *callInst << "\n";
+    }
     return false;
   }
 
@@ -765,10 +781,11 @@ bool MayPointToAnalysis::canBeClonedToStack(GlobalVariable *globalVar,
     if (loopFunction != mainF) {
       continue;
     }
+
     for (auto inst : loop->getInstructions()) {
       if (auto storeInst = dyn_cast<StoreInst>(inst)) {
         auto IN = ptSum->instIN.at(storeInst);
-        auto ptr = strip(storeInst->getPointerOperand());
+        auto ptr = storeInst->getPointerOperand();
         auto mayBeStored = ptSum->getPointees(IN, ptr);
         auto globalMemObj = ptSum->getMemoryObject(globalVar);
         if (mayBeStored.count(globalMemObj) > 0) {
