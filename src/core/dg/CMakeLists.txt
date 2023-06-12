@@ -13,6 +13,7 @@ install(
   FILES
   include/noelle/core/Assumptions.hpp
   include/noelle/core/DGBase.hpp
+  include/noelle/core/DGNode.hpp
   include/noelle/core/DGGraphTraits.hpp
   include/noelle/core/SubCFGs.hpp
   DESTINATION 

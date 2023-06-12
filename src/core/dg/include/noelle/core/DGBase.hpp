@@ -21,22 +21,12 @@
  */
 #pragma once
 
-#include "llvm/IR/Instructions.h"
-#include "llvm/Support/raw_ostream.h"
-#include <climits>
-#include <queue>
-#include <set>
-#include <optional>
-
+#include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Assumptions.hpp"
+#include "noelle/core/DGNode.hpp"
 
 namespace llvm::noelle {
 
-/*
- * Program Dependence Graph Node and Edge
- */
-template <class T>
-class DGNode;
 template <class T, class SubT>
 class DGEdgeBase;
 template <class T>
@@ -225,88 +215,6 @@ protected:
   std::map<T *, DGNode<T> *> internalNodeMap;
   std::map<T *, DGNode<T> *> externalNodeMap;
   std::shared_ptr<DepIdReverseMap_t> depLookupMap = nullptr;
-};
-
-template <class T>
-class DGNode {
-public:
-  typedef typename std::vector<DGNode<T> *>::iterator nodes_iterator;
-  typedef typename std::unordered_set<DGEdge<T> *>::iterator edges_iterator;
-  typedef typename std::unordered_set<DGEdge<T> *>::const_iterator
-      edges_const_iterator;
-
-  edges_iterator begin_outgoing_edges() {
-    return outgoingEdges.begin();
-  }
-  edges_iterator end_outgoing_edges() {
-    return outgoingEdges.end();
-  }
-  edges_const_iterator begin_outgoing_edges() const {
-    return outgoingEdges.begin();
-  }
-  edges_const_iterator end_outgoing_edges() const {
-    return outgoingEdges.end();
-  }
-
-  edges_iterator begin_incoming_edges() {
-    return incomingEdges.begin();
-  }
-  edges_iterator end_incoming_edges() {
-    return incomingEdges.end();
-  }
-  edges_const_iterator begin_incoming_edges() const {
-    return incomingEdges.begin();
-  }
-  edges_const_iterator end_incoming_edges() const {
-    return incomingEdges.end();
-  }
-
-  std::unordered_set<DGEdge<T> *> getAllConnectedEdges() {
-    std::unordered_set<DGEdge<T> *> allConnectedEdges{ outgoingEdges.begin(),
-                                                       outgoingEdges.end() };
-    allConnectedEdges.insert(incomingEdges.begin(), incomingEdges.end());
-    return allConnectedEdges;
-  }
-
-  inline iterator_range<edges_iterator> getOutgoingEdges() {
-    return make_range(outgoingEdges.begin(), outgoingEdges.end());
-  }
-  inline iterator_range<edges_iterator> getIncomingEdges() {
-    return make_range(incomingEdges.begin(), incomingEdges.end());
-  }
-
-  T *getT() const {
-    return theT;
-  }
-
-  unsigned numConnectedEdges() {
-    return outgoingEdges.size() + incomingEdges.size();
-  }
-  unsigned numOutgoingEdges() {
-    return outgoingEdges.size();
-  }
-  unsigned numIncomingEdges() {
-    return incomingEdges.size();
-  }
-
-  void addIncomingEdge(DGEdge<T> *edge);
-  void addOutgoingEdge(DGEdge<T> *edge);
-  void removeConnectedEdge(DGEdge<T> *edge);
-  void removeConnectedNode(DGNode<T> *node);
-
-  std::string toString();
-  raw_ostream &print(raw_ostream &stream);
-
-protected:
-  DGNode(int32_t id) : ID{ id }, theT(nullptr) {}
-  DGNode(int32_t id, T *node) : ID{ id }, theT(node) {}
-
-  int32_t ID;
-  T *theT;
-  std::unordered_set<DGEdge<T> *> outgoingEdges;
-  std::unordered_set<DGEdge<T> *> incomingEdges;
-
-  friend class DG<T>;
 };
 
 template <class T>
