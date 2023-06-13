@@ -52,6 +52,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../compilation_options_manager/include
   ../../functions_manager/include
   ../../globals_manager/include
+  ../../may_point_to_analysis/include
   ${CMAKE_INSTALL_PREFIX}/include
   )
 
