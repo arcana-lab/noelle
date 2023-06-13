@@ -53,12 +53,6 @@ void PDGAnalysis::releaseMemory() {
     delete this->programDependenceGraph;
   this->programDependenceGraph = nullptr;
 
-  for (auto functionFDGPair : this->functionToFDGMap) {
-    auto fdg = functionFDGPair.second;
-    delete fdg;
-  }
-  this->functionToFDGMap.clear();
-
   return;
 }
 
@@ -88,65 +82,6 @@ void PDGAnalysis::printFunctionReachabilityResult() {
   }
 
   return;
-}
-
-PDG *PDGAnalysis::getFunctionPDG(Function &F) {
-
-  /*
-   * If the module PDG has been built, take the subset related to the input
-   * function Else, construct the function DG from scratch (or from metadata)
-   */
-  PDG *pdg = nullptr;
-  if (this->programDependenceGraph) {
-
-    /*
-     * Check and get/update the function cache
-     */
-    if (this->functionToFDGMap.find(&F) == this->functionToFDGMap.end()) {
-      pdg = this->programDependenceGraph->createFunctionSubgraph(F);
-      for (auto edge : pdg->getEdges()) {
-        assert(!edge->isLoopCarriedDependence() && "Flag was already set");
-      }
-      this->functionToFDGMap.insert(std::make_pair(&F, pdg));
-    } else {
-      pdg = this->functionToFDGMap.at(&F);
-      for (auto edge : pdg->getEdges()) {
-        assert(!edge->isLoopCarriedDependence() && "Flag was already set");
-      }
-    }
-
-  } else {
-
-    /*
-     * Check and get/update the function cache
-     */
-    if (this->functionToFDGMap.find(&F) == this->functionToFDGMap.end()) {
-
-      /*
-       * Determine whether metadata can be used to construct the graph
-       */
-      if (this->hasPDGAsMetadata(*this->M)) {
-        pdg = constructFunctionDGFromMetadata(F);
-        for (auto edge : pdg->getEdges()) {
-          assert(!edge->isLoopCarriedDependence() && "Flag was already set");
-        }
-      } else {
-        pdg = constructFunctionDGFromAnalysis(F);
-        for (auto edge : pdg->getEdges()) {
-          assert(!edge->isLoopCarriedDependence() && "Flag was already set");
-        }
-      }
-      this->functionToFDGMap.insert(std::make_pair(&F, pdg));
-
-    } else {
-      pdg = this->functionToFDGMap.at(&F);
-      for (auto edge : pdg->getEdges()) {
-        assert(!edge->isLoopCarriedDependence() && "Flag was already set");
-      }
-    }
-  }
-
-  return pdg;
 }
 
 PDG *PDGAnalysis::getPDG(void) {
@@ -1052,14 +987,9 @@ bool PDGAnalysis::isTheLibraryFunctionThreadSafe(Function *libraryFunction) {
 }
 
 PDGAnalysis::~PDGAnalysis() {
-  if (this->programDependenceGraph)
+  if (this->programDependenceGraph){
     delete this->programDependenceGraph;
-
-  for (auto functionFDGPair : this->functionToFDGMap) {
-    auto fdg = functionFDGPair.second;
-    delete fdg;
   }
-  this->functionToFDGMap.clear();
 }
 
 // http://www.cplusplus.com/reference/clibrary/ and

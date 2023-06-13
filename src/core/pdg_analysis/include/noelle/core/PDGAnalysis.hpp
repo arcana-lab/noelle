@@ -50,8 +50,6 @@ public:
 
   bool runOnModule(Module &M) override;
 
-  PDG *getFunctionPDG(Function &F);
-
   PDG *getPDG(void);
 
   noelle::CallGraph *getProgramCallGraph(void);
@@ -65,7 +63,6 @@ public:
 private:
   Module *M;
   PDG *programDependenceGraph;
-  std::unordered_map<Function *, PDG *> functionToFDGMap;
   AllocAA *allocAA;
   TalkDown *talkdown;
   DataFlowAnalysis dfa;
