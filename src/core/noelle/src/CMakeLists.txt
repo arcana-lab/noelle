@@ -40,6 +40,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_forest/include
   ../../loop_nesting_graph/include
   ../../callgraph/include
+  ../../dg/include
   ../../pdg/include
   ../../pdg_analysis/include
   ../../scheduler/include

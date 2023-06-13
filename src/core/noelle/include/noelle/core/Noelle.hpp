@@ -191,8 +191,6 @@ public:
 
   PDG *getProgramDependenceGraph(void);
 
-  PDG *getFunctionDependenceGraph(Function *f);
-
   DataFlowAnalysis getDataFlowAnalyses(void) const;
 
   CFGAnalysis getCFGAnalysis(void) const;
@@ -251,6 +249,8 @@ private:
   MetadataManager *mm;
   Linker *linker;
   std::set<AliasAnalysisEngine *> aaEngines;
+
+  PDG *getFunctionDependenceGraph(Function *f);
 
   uint32_t fetchTheNextValue(std::stringstream &stream);
 
