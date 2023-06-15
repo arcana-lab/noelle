@@ -40,12 +40,7 @@ void PDGAnalysis::iterateInstForStore(PDG *pdg,
      * Check stores.
      */
     if (auto otherStore = dyn_cast<StoreInst>(I)) {
-      this->addEdgeFromMemoryAlias<StoreInst, StoreInst>(pdg,
-                                                         F,
-                                                         AA,
-                                                         store,
-                                                         otherStore,
-                                                         DG_DATA_WAW);
+      this->addEdgeFromMemoryAlias(pdg, F, AA, store, otherStore, DG_DATA_WAW);
       continue;
     }
 
@@ -53,12 +48,7 @@ void PDGAnalysis::iterateInstForStore(PDG *pdg,
      * Check loads.
      */
     if (auto load = dyn_cast<LoadInst>(I)) {
-      this->addEdgeFromMemoryAlias<StoreInst, LoadInst>(pdg,
-                                                        F,
-                                                        AA,
-                                                        store,
-                                                        load,
-                                                        DG_DATA_RAW);
+      this->addEdgeFromMemoryAlias(pdg, F, AA, store, load, DG_DATA_RAW);
       continue;
     }
 
@@ -89,12 +79,7 @@ void PDGAnalysis::iterateInstForLoad(PDG *pdg,
      * Check stores.
      */
     if (auto store = dyn_cast<StoreInst>(I)) {
-      this->addEdgeFromMemoryAlias<LoadInst, StoreInst>(pdg,
-                                                        F,
-                                                        AA,
-                                                        load,
-                                                        store,
-                                                        DG_DATA_WAR);
+      this->addEdgeFromMemoryAlias(pdg, F, AA, load, store, DG_DATA_WAR);
       continue;
     }
 
@@ -351,7 +336,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                             CallBase *call,
                                             LoadInst *load,
                                             bool addEdgeFromCall) {
-  BitVector bv(3, false);
+  BitVector bv{ 3, false };
 
   /*
    * We cannot have memory dependences from a call to a deallocator (e.g.,
@@ -439,13 +424,13 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                             CallBase *call,
                                             CallBase *otherCall,
                                             bool isCallReachableFromOtherCall) {
-  BitVector bv(3, false);
-  BitVector rbv(3, false);
+  BitVector bv{ 3, false };
+  BitVector rbv{ 3, false };
 
   /*
    * There is no dependence between allocators
    */
-  if (true && Utils::isAllocator(call) && Utils::isAllocator(otherCall)
+  if (Utils::isAllocator(call) && Utils::isAllocator(otherCall)
       && (!Utils::isReallocator(call)) && (!Utils::isReallocator(otherCall))) {
     return;
   }
@@ -467,7 +452,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
   if (Utils::isDeallocator(otherCall)) {
     deallocatorCall = otherCall;
   }
-  if (true && (allocatorCall != nullptr) && (deallocatorCall != nullptr)) {
+  if ((allocatorCall != nullptr) && (deallocatorCall != nullptr)) {
 
     /*
      * The call instructions are one allocator and one deallocator.
@@ -840,58 +825,32 @@ bool PDGAnalysis::isSafeToQueryModRefOfSVF(CallBase *call, BitVector &bv) {
   return true;
 }
 
-template <class InstI, class InstJ>
 void PDGAnalysis::addEdgeFromMemoryAlias(
     PDG *pdg,
     Function &F,
     AAResults &AA,
-    InstI *instI,
-    InstJ *instJ,
+    Value *instI,
+    Value *instJ,
     DataDependenceType dataDependenceType) {
-  auto must = false;
 
   /*
-   * Query the LLVM alias analyses.
+   * Query all alias analyses that work at the program scope.
    */
-  switch (AA.alias(MemoryLocation::get(instI), MemoryLocation::get(instJ))) {
+  auto aaResult = this->doTheyAlias(pdg, F, AA, instI, instJ);
+
+  /*
+   * Translate the alias analysis result to dependences.
+   */
+  auto must = false;
+  switch (aaResult) {
     case NoAlias:
       return;
     case PartialAlias:
     case MayAlias:
       break;
     case MustAlias:
-      pdg->addEdge(instI, instJ)
-          ->setMemMustType(true, true, dataDependenceType);
+      must = true;
       return;
-  }
-
-  /*
-   * Check other alias analyses
-   *
-   * Check if SVF is enabled.
-   */
-  if (this->disableSVF) {
-
-    /*
-     * SVF is disabled.
-     */
-
-  } else {
-
-    /*
-     * SVF is enabled, so let's use it.
-     */
-    switch (NoelleSVFIntegration::alias(MemoryLocation::get(instI),
-                                        MemoryLocation::get(instJ))) {
-      case NoAlias:
-        return;
-      case PartialAlias:
-      case MayAlias:
-        break;
-      case MustAlias:
-        must = true;
-        break;
-    }
   }
 
   /*
@@ -909,9 +868,29 @@ AliasResult PDGAnalysis::doTheyAlias(PDG *pdg,
                                      Value *instJ) {
 
   /*
+   * Check if the parameters have memory locations.
+   */
+  auto haveMemoryLocations = false;
+  auto instIAsInst = dyn_cast<Instruction>(instI);
+  auto instJAsInst = dyn_cast<Instruction>(instJ);
+  if ((instIAsInst != nullptr) && (instJAsInst != nullptr)) {
+    if (MemoryLocation::getOrNone(instIAsInst)
+        && MemoryLocation::getOrNone(instJAsInst)) {
+      haveMemoryLocations = true;
+    }
+  }
+
+  /*
    * Query the LLVM alias analyses.
    */
-  switch (AA.alias(instI, instJ)) {
+  AliasResult aaResult;
+  if (haveMemoryLocations) {
+    aaResult = AA.alias(MemoryLocation::get(instIAsInst),
+                        MemoryLocation::get(instJAsInst));
+  } else {
+    aaResult = AA.alias(instI, instJ);
+  }
+  switch (aaResult) {
     case NoAlias:
       return NoAlias;
     case PartialAlias:
@@ -937,7 +916,15 @@ AliasResult PDGAnalysis::doTheyAlias(PDG *pdg,
     /*
      * SVF is enabled, so let's use it.
      */
-    switch (NoelleSVFIntegration::alias(instI, instJ)) {
+    AliasResult SVFAAResult;
+    if (haveMemoryLocations) {
+      SVFAAResult =
+          NoelleSVFIntegration::alias(MemoryLocation::get(instIAsInst),
+                                      MemoryLocation::get(instJAsInst));
+    } else {
+      SVFAAResult = NoelleSVFIntegration::alias(instI, instJ);
+    }
+    switch (SVFAAResult) {
       case NoAlias:
         return NoAlias;
       case PartialAlias:

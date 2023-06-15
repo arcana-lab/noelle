@@ -152,12 +152,11 @@ private:
                           DataFlowResult *,
                           CallBase *);
 
-  template <class InstI, class InstJ>
   void addEdgeFromMemoryAlias(PDG *,
                               Function &,
                               AAResults &,
-                              InstI *,
-                              InstJ *,
+                              Value *,
+                              Value *,
                               DataDependenceType);
   void addEdgeFromFunctionModRef(PDG *,
                                  Function &,
