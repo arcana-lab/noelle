@@ -68,15 +68,14 @@ public:
 
   Module *M;
   Function *F;
-  std::unordered_set<llvm::CallBase *> mallocInsts;
-  std::unordered_set<llvm::CallBase *> callocInsts;
-  std::unordered_set<llvm::CallBase *> reallocInsts;
-  std::unordered_set<llvm::CallBase *> freeInsts;
-  std::unordered_set<llvm::CallBase *> unknownFuntctionCalls;
-  std::unordered_set<llvm::AllocaInst *> allocaInsts;
-  std::unordered_set<llvm::ReturnInst *> retInsts;
-  std::unordered_set<llvm::LoadInst *> loadInsts;
-  std::unordered_set<llvm::StoreInst *> storeInsts;
+
+  uint64_t basicBlockCount = 0;
+  std::unordered_set<CallBase *> mallocInsts;
+  std::unordered_set<CallBase *> callocInsts;
+  std::unordered_set<CallBase *> reallocInsts;
+  std::unordered_set<CallBase *> freeInsts;
+  std::unordered_set<CallBase *> unknownFuntctionCalls;
+  std::unordered_set<AllocaInst *> allocaInsts;
 };
 
 /*

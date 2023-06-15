@@ -29,6 +29,8 @@ bool PrivatizerManager::applyHeapToStack(
   auto fm = noelle.getFunctionsManager();
   auto funcSum = mayPointToAnalysis.getFunctionSummary();
   if (funcSum->mallocInsts.empty() && funcSum->callocInsts.empty()) {
+    errs() << "PrivatizerManager: @malloc or @calloc not invoked in function "
+           << funcSum->F->getName() << "\n";
     return false;
   }
 
@@ -135,7 +137,8 @@ bool PrivatizerManager::applyGlobalToStack(
       inst->replaceUsesOfWith(globalVar, allocaInst);
     }
 
-    errs() << "PrivatizerManager: Replace global variable " << *globalVar
+    errs() << "PrivatizerManager: Replace global variable "
+           << globalVar->getName() << "\n"
            << "                   with allocaInst: " << *allocaInst << "\n";
     return true;
   };

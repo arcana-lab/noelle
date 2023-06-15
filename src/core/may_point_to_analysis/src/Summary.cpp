@@ -53,37 +53,30 @@ PointNodeType MemoryObject::getType(void) {
 FunctionSummary::FunctionSummary(Function *F) {
   this->F = F;
   this->M = F->getParent();
+  this->basicBlockCount = 0;
 
   for (auto &bb : *F) {
+    this->basicBlockCount++;
     for (auto &inst : bb) {
       if (isa<AllocaInst>(inst)) {
         auto allocaInst = dyn_cast<AllocaInst>(&inst);
-        allocaInsts.insert(allocaInst);
+        this->allocaInsts.insert(allocaInst);
       } else if (isa<CallBase>(inst)) {
         auto callInst = dyn_cast<CallBase>(&inst);
         auto fname = getCalledFuncName(callInst);
         if (fname == MALLOC) {
-          mallocInsts.insert(callInst);
+          this->mallocInsts.insert(callInst);
         } else if (fname == CALLOC) {
-          callocInsts.insert(callInst);
+          this->callocInsts.insert(callInst);
         } else if (fname == REALLOC) {
-          reallocInsts.insert(callInst);
+          this->reallocInsts.insert(callInst);
         } else if (fname == FREE) {
-          freeInsts.insert(callInst);
+          this->freeInsts.insert(callInst);
         } else if ((!isLifetimeIntrinsic(callInst))
                    && (!isa<MemCpyInst>(callInst))
                    && (READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX.count(fname) == 0)) {
-          unknownFuntctionCalls.insert(callInst);
+          this->unknownFuntctionCalls.insert(callInst);
         }
-      } else if (isa<ReturnInst>(inst)) {
-        auto retInst = dyn_cast<ReturnInst>(&inst);
-        retInsts.insert(retInst);
-      } else if (isa<LoadInst>(inst)) {
-        auto loadInst = dyn_cast<LoadInst>(&inst);
-        loadInsts.insert(loadInst);
-      } else if (isa<StoreInst>(inst)) {
-        auto storeInst = dyn_cast<StoreInst>(&inst);
-        storeInsts.insert(storeInst);
       }
     }
   }

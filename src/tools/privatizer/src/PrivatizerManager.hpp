@@ -40,6 +40,8 @@ public:
 private:
   bool enablePrivatizer;
 
+  uint64_t basicBlockNumberThreshold = 100;
+
   bool applyHeapToStack(Noelle &noelle, MayPointToAnalysis &mayPointToAnalysis);
 
   bool applyGlobalToStack(Noelle &noelle,

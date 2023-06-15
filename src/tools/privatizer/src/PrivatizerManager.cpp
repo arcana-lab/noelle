@@ -49,6 +49,13 @@ bool PrivatizerManager::runOnModule(Module &M) {
   auto fm = noelle.getFunctionsManager();
   auto mainF = fm->getEntryFunction();
   auto mayPointToAnalysis = noelle.getMayPointToAnalysis(mainF);
+  auto funcSum = mayPointToAnalysis.getFunctionSummary();
+
+  if (funcSum->basicBlockCount > basicBlockNumberThreshold) {
+    errs() << prefix << "Too many basic blocks in function " << mainF->getName()
+           << ", skip privatization.\n";
+    return false;
+  }
 
   errs()
       << prefix << "Try to transform @malloc() or @calloc() to allocaInst.\n";
