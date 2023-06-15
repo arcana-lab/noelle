@@ -444,11 +444,9 @@ PointToSummary *MayPointToAnalysis::getPointToSummary() {
 }
 
 /*
- * 1. Compute @malloc() or @calloc() insts that could be transformed to
- * allocaInst.
- * 2. Compute @free() insts that could be removed becase
- *    if @malloc() is transformed to allocaInst, the corresponding @free() can
- * be removed.
+ * Compute @malloc() or @calloc() insts that could be transformed to allocaInst.
+ * Compute @free() insts that could be removed becase if @malloc() is
+ * transformed to allocaInst, the corresponding @free() must be removed.
  */
 LiveMemorySummary *MayPointToAnalysis::getLiveMemorySummary() {
 
@@ -490,19 +488,18 @@ LiveMemorySummary *MayPointToAnalysis::getLiveMemorySummary() {
     /*
      * We have:
      * %1 = call i8* @malloc(i64 8), %1 -> M1 (M1 is the memory object allocated
-     * by malloc) %2 = call i8* @malloc(i64 8), %2 -> M2 (M2 is the memory
-     * object allocated by malloc)
+     * by @malloc) and %2 = call i8* @malloc(i64 8), %2 -> M2 (M2 is the memory
+     * object allocated by @malloc)
      *
-     * Assume M1 is allocable, M2 escapes and therefore is not allocable,
-     * and we have a free instruction %7 = call i8* @free(i8* %6), %6 may point
-     * to M1 or M2.
+     * Assume M1 is can be transformed to allocaInst, M2 escapes and therefore
+     * cannot be transformed to allocaInst, and we have a free instruction
+     * %7 = call i8* @free(i8* %6), where %6 may point to M1 or M2.
      *
      * In this case:
-     * 1. M2 is not allocable because it escapes, it remains a @malloc().
-     * 2. To maintain the original semantics, we cannot remove %7, because it
-     * may free M2.
-     * 3. Since %7 may also free M1, we transform %1 to allocaInst since that
-     * may cause segfault.
+     * M2 is not allocable because it escapes, it remains a @malloc().
+     * To maintain the original semantics, we cannot remove %7, because it
+     * may free M2. Since %7 may also free M1, we cannot transform %1 to
+     * allocaInst since that may cause segfault.
      *
      * Therefore, for any free inst: %7 = call i8* @free(i8* %6)
      * if any memory object pointed by %6 is not allocable,
