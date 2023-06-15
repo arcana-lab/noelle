@@ -89,12 +89,12 @@ void PDGAnalysis::iterateInstForLoad(PDG *pdg,
      * Check stores.
      */
     if (auto store = dyn_cast<StoreInst>(I)) {
-      addEdgeFromMemoryAlias<LoadInst, StoreInst>(pdg,
-                                                  F,
-                                                  AA,
-                                                  load,
-                                                  store,
-                                                  DG_DATA_WAR);
+      this->addEdgeFromMemoryAlias<LoadInst, StoreInst>(pdg,
+                                                        F,
+                                                        AA,
+                                                        load,
+                                                        store,
+                                                        DG_DATA_WAR);
       continue;
     }
 
@@ -105,7 +105,7 @@ void PDGAnalysis::iterateInstForLoad(PDG *pdg,
       if (!Utils::isActualCode(call)) {
         continue;
       }
-      addEdgeFromFunctionModRef(pdg, F, AA, call, load, false);
+      this->addEdgeFromFunctionModRef(pdg, F, AA, call, load, false);
       continue;
     }
   }
@@ -222,7 +222,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                             CallBase *call,
                                             StoreInst *store,
                                             bool addEdgeFromCall) {
-  BitVector bv(3, false);
+  BitVector bv{ 3, false };
   auto makeRefEdge = false, makeModEdge = false;
 
   /*
