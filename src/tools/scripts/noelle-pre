@@ -86,7 +86,7 @@ eval $cmdToExecute ;
 
 # Run the privatizer
 if test "$enablePrivatizer" == "1" ; then
-  cmdToExecute="noelle-privatizer $notOptions $notOptions $options"
+  cmdToExecute="noelle-privatizer $notOptions $options"
   echo $cmdToExecute ;
   eval $cmdToExecute ;
 fi

@@ -61,6 +61,12 @@ FunctionSummary::FunctionSummary(Function *F) {
       if (isa<AllocaInst>(inst)) {
         auto allocaInst = dyn_cast<AllocaInst>(&inst);
         this->allocaInsts.insert(allocaInst);
+      } else if (isa<LoadInst>(inst)) {
+        auto loadInst = dyn_cast<LoadInst>(&inst);
+        this->loadInsts.insert(loadInst);
+      } else if (isa<StoreInst>(inst)) {
+        auto storeInst = dyn_cast<StoreInst>(&inst);
+        this->storeInsts.insert(storeInst);
       } else if (isa<CallBase>(inst)) {
         auto callInst = dyn_cast<CallBase>(&inst);
         auto fname = getCalledFuncName(callInst);

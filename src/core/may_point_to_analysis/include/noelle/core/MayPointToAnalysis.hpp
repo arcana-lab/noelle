@@ -76,6 +76,8 @@ public:
   std::unordered_set<CallBase *> freeInsts;
   std::unordered_set<CallBase *> unknownFuntctionCalls;
   std::unordered_set<AllocaInst *> allocaInsts;
+  std::unordered_set<LoadInst *> loadInsts;
+  std::unordered_set<StoreInst *> storeInsts;
 };
 
 /*

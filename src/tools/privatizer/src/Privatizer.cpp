@@ -128,9 +128,18 @@ bool PrivatizerManager::applyGlobalToStack(
     Type *globalVarType = globalVar->getValueType();
     AllocaInst *allocaInst =
         entryBuilder.CreateAlloca(globalVarType, nullptr, "");
+
     if (globalVar->hasInitializer()) {
-      auto init = globalVar->getInitializer();
-      entryBuilder.CreateStore(init, allocaInst);
+      auto initializer = globalVar->getInitializer();
+      if (isa<ConstantAggregateZero>(initializer)
+          && globalVarType->isArrayTy()) {
+        auto typesManager = noelle.getTypesManager();
+        auto sizeInByte = typesManager->getSizeOfType(globalVarType);
+        auto zeroVal = ConstantInt::get(Type::getInt8Ty(M->getContext()), 0);
+        entryBuilder.CreateMemSet(allocaInst, zeroVal, sizeInByte, 1);
+      } else {
+        entryBuilder.CreateStore(initializer, allocaInst);
+      }
     }
 
     for (auto inst : instsToReplace) {
@@ -194,15 +203,13 @@ bool PrivatizerManager::canBeClonedToStack(
    * cloning contributes nothing to parallelization, do not clone it.
    */
   unordered_set<Instruction *> instsWriteGlobalVar;
-  for (auto &inst : instructions(*currentF)) {
-    if (auto storeInst = dyn_cast<StoreInst>(&inst)) {
-      auto IN = ptSum->instIN.at(storeInst);
-      auto ptr = storeInst->getPointerOperand();
-      auto mayBeStored = ptSum->getPointees(IN, ptr);
-      auto globalMemObj = ptSum->getMemoryObject(globalVar);
-      if (mayBeStored.count(globalMemObj) > 0) {
-        instsWriteGlobalVar.insert(storeInst);
-      }
+  for (auto storeInst : funcSum->storeInsts) {
+    auto IN = ptSum->instIN.at(storeInst);
+    auto ptr = storeInst->getPointerOperand();
+    auto mayBeStored = ptSum->getPointees(IN, ptr);
+    auto globalMemObj = ptSum->getMemoryObject(globalVar);
+    if (mayBeStored.count(globalMemObj) > 0) {
+      instsWriteGlobalVar.insert(storeInst);
     }
   }
 
