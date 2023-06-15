@@ -21,9 +21,7 @@
  */
 #include "EnablersManager.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
-#include "noelle/core/MayPointToAnalysisUtils.hpp"
 #include "noelle/tools/DOALL.hpp"
-#include "llvm/Support/raw_ostream.h"
 
 namespace llvm::noelle {
 
