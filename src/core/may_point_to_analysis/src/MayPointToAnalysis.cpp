@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020 Angelo Matni, Simone Campanoni
+ * Copyright 2023 Xiao Chen
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,248 +21,25 @@
  */
 
 #include "noelle/core/MayPointToAnalysis.hpp"
-#include "noelle/core/MayPointToAnalysisUtils.hpp"
-#include "llvm/IR/Instruction.h"
-#include "llvm/IR/IntrinsicInst.h"
-#include "llvm/Support/raw_ostream.h"
+#include "MayPointToAnalysisUtils.hpp"
 #include <unordered_set>
 
 using namespace std;
 
 namespace llvm::noelle {
 
-const string MALLOC = "malloc";
-const string CALLOC = "calloc";
-const string REALLOC = "realloc";
-const string FREE = "free";
-
-const unordered_set<string> MEMORY_FUNCTIONS = { MALLOC,
-                                                 CALLOC,
-                                                 REALLOC,
-                                                 FREE };
-const unordered_set<string> READ_ONLY_LIB_FUNCTIONS = {
-  "atoi",   "atof",    "atol",   "atoll",  "fprintf", "fputc", "fputs",
-  "putc",   "putchar", "printf", "puts",   "rand",    "scanf", "sqrt",
-  "strlen", "strncmp", "strtod", "strtol", "strtoll"
-};
-
-const unordered_set<string> READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX =
-    []() -> unordered_set<string> {
-  unordered_set<string> result;
-  for (auto fname : READ_ONLY_LIB_FUNCTIONS) {
-    result.insert(fname);
-    result.insert(fname + "_unlocked");
-  }
-  return result;
-}();
-
-Pointer::Pointer(Value *source) {
-  this->source = source;
-}
-
-Value *Pointer::getSource() {
-  return source;
-}
-
-Variable::Variable(Value *source) : Pointer(source) {}
-
-PointNodeType Variable::getType() {
-  return PointNodeType::VARIABLE;
-}
-
-MemoryObject::MemoryObject(Value *source, bool prev) : Pointer(source) {
-  this->prevLoopAllocated = prev;
-};
-
-PointNodeType MemoryObject::getType() {
-  return PointNodeType::MEMORY_OBJECT;
-}
-
-FunctionSummary::FunctionSummary(Function *F) {
-  this->F = F;
-  this->M = F->getParent();
-
-  for (auto &bb : *F) {
-    basicBlocks.insert(&bb);
-    for (auto &inst : bb) {
-      if (isa<AllocaInst>(inst)) {
-        auto allocaInst = dyn_cast<AllocaInst>(&inst);
-        allocaInsts.insert(allocaInst);
-      } else if (isa<CallInst>(inst)) {
-        auto callInst = dyn_cast<CallInst>(&inst);
-        auto fname = getCalledFuncName(callInst);
-        if (fname == MALLOC) {
-          mallocInsts.insert(callInst);
-        } else if (fname == CALLOC) {
-          callocInsts.insert(callInst);
-        } else if (fname == REALLOC) {
-          reallocInsts.insert(callInst);
-        } else if (fname == FREE) {
-          freeInsts.insert(callInst);
-        } else if ((!callInst->isLifetimeStartOrEnd())
-                   && (!isa<MemCpyInst>(callInst))
-                   && (READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX.count(fname) == 0)) {
-          unknownFuntctionCalls.insert(callInst);
-        }
-      } else if (isa<ReturnInst>(inst)) {
-        auto retInst = dyn_cast<ReturnInst>(&inst);
-        retInsts.insert(retInst);
-      } else if (isa<LoadInst>(inst)) {
-        auto loadInst = dyn_cast<LoadInst>(&inst);
-        loadInsts.insert(loadInst);
-      } else if (isa<StoreInst>(inst)) {
-        auto storeInst = dyn_cast<StoreInst>(&inst);
-        storeInsts.insert(storeInst);
-      }
-    }
-  }
-}
-
-PointToSummary::PointToSummary(FunctionSummary *funcSum) {
-  M = funcSum->M;
-
-  for (auto &G : M->globals()) {
-    auto globalVar = new Variable(&G);
-    auto globalMemObj = new MemoryObject(&G);
-    variables[&G] = globalVar;
-    memoryObjects[&G] = globalMemObj;
-    globalMemoryObjects.insert(globalMemObj);
-  }
-
-  for (auto bb : funcSum->basicBlocks) {
-    bbIN[bb] = PointToGraph();
-    bbOUT[bb] = PointToGraph();
-
-    for (auto &inst : *bb) {
-      instIN[&inst] = PointToGraph();
-      instOUT[&inst] = PointToGraph();
-    }
-  }
-
-  for (auto inst : funcSum->mallocInsts) {
-    auto heapVar = new Variable(inst);
-    auto heapMemObj = new MemoryObject(inst);
-    variables[inst] = heapVar;
-    memoryObjects[inst] = heapMemObj;
-  }
-
-  for (auto inst : funcSum->callocInsts) {
-    auto heapVar = new Variable(inst);
-    auto heapMemObj = new MemoryObject(inst);
-    variables[inst] = heapVar;
-    memoryObjects[inst] = heapMemObj;
-  }
-
-  for (auto inst : funcSum->allocaInsts) {
-    auto stackVar = new Variable(inst);
-    auto stackMemObj = new MemoryObject(inst);
-    variables[inst] = stackVar;
-    memoryObjects[inst] = stackMemObj;
-  }
-
-  for (auto &arg : funcSum->F->args()) {
-    variables[&arg] = new Variable(&arg);
-  }
-
-  nonLocalMemoryObject = new MemoryObject(nullptr);
-}
-
-void PointToSummary::eraseDummyObjects() {
-  for (auto &[_, variable] : variables) {
-    free(variable);
-  }
-  for (auto &[_, memoryObject] : memoryObjects) {
-    free(memoryObject);
-  }
-  for (auto &[_, memObjPrev] : prevLoopAllocated) {
-    free(memObjPrev);
-  }
-  free(nonLocalMemoryObject);
-}
-
-/*
- * Returns the set of memory objects that the pointer may point to.
- * The pointer can be a variable or a memory object
- */
-MemoryObjects PointToSummary::getPointees(PointToGraph &ptGraph,
-                                          Pointer *pointer) {
-  return (ptGraph.count(pointer) > 0) ? ptGraph[pointer] : MemoryObjects();
-}
-
-/*
- * Returns the set of memory objects that the pointer may point to.
- * Here the pointer is an instruction or global variable, but cannot be a memory
- * object. To get the getPointees of a memory object, the user must explicitly
- * create the memory object and use `getPointees(PointToGraph &ptGraph, Pointer
- * *ptr)`.
- */
-MemoryObjects PointToSummary::getPointees(PointToGraph &ptGraph,
-                                          Value *pointer) {
-  return getPointees(ptGraph, getVariable(pointer));
-}
-
-MemoryObjects PointToSummary::reachableMemoryObjects(PointToGraph &ptGraph,
-                                                     Pointer *pointer) {
-  MemoryObjects reachable;
-  unordered_set<Pointer *> worklist;
-  worklist.insert(pointer);
-  while (!worklist.empty()) {
-    auto ptr = *worklist.begin();
-    worklist.erase(ptr);
-    for (auto pte : getPointees(ptGraph, ptr)) {
-      if (reachable.count(pte) == 0) {
-        reachable.insert(pte);
-        worklist.insert(pte);
-      }
-    }
-  }
-  return reachable;
-};
-
-MemoryObject *PointToSummary::mustPointToMemory(PointToGraph &ptGraph,
-                                                Pointer *pointer) {
-  auto ptes = getPointees(ptGraph, pointer);
-  if (ptes.size() == 0 || ptes.size() > 1) {
-    return nullptr;
-  }
-  auto memoryObject = dyn_cast<MemoryObject>(*ptes.begin());
-  for (auto &[_, memObjPrev] : prevLoopAllocated) {
-    if (memoryObject == memObjPrev) {
-      return nullptr;
-    }
-  }
-  return memoryObject;
-}
-
-Variable *PointToSummary::getVariable(Value *source) {
-  auto strippedValue = isa<Instruction>(source) ? strip(source) : source;
-  if (variables.count(strippedValue) == 0) {
-    variables[strippedValue] = new Variable(strippedValue);
-  }
-  return variables[strippedValue];
-}
-
-MemoryObject *PointToSummary::getMemoryObject(Value *source) {
-  auto strippedValue = isa<Instruction>(source) ? strip(source) : source;
-  if (memoryObjects.count(strippedValue) == 0) {
-    memoryObjects[strippedValue] = new MemoryObject(strippedValue);
-  }
-  return memoryObjects[strippedValue];
-}
-
 MayPointToAnalysis::MayPointToAnalysis(Function *F) {
-  this->funcSum = new FunctionSummary(F);
-  this->ptSum = nullptr;
+  this->functionSummary = new FunctionSummary(F);
+  this->pointToSummary = nullptr;
 }
 
 MayPointToAnalysis::~MayPointToAnalysis() {
-  if (funcSum != nullptr) {
-    delete funcSum;
+  if (functionSummary != nullptr) {
+    delete functionSummary;
   }
 
-  if (ptSum != nullptr) {
-    ptSum->eraseDummyObjects();
-    delete ptSum;
+  if (pointToSummary != nullptr) {
+    delete pointToSummary;
   }
 }
 
@@ -278,6 +55,7 @@ PointToGraph MayPointToAnalysis::mergeAllPredOut(BasicBlock *bb,
 }
 
 PointToGraph MayPointToAnalysis::FS(Instruction *inst, PointToSummary *ptSum) {
+  auto funcSum = this->functionSummary;
   PointToGraph IN = ptSum->instIN.at(inst);
   PointToGraph GEN, KILL;
 
@@ -419,8 +197,8 @@ PointToGraph MayPointToAnalysis::FS(Instruction *inst, PointToSummary *ptSum) {
     auto gepVar = ptSum->getVariable(gep);
     auto ptr = ptSum->getVariable(gep->getOperand(0));
     setptGraph(gepVar, ptSum->getPointees(IN, ptr));
-  } else if (isa<CallInst>(inst)) {
-    auto callInst = dyn_cast<CallInst>(inst);
+  } else if (isa<CallBase>(inst)) {
+    auto callInst = dyn_cast<CallBase>(inst);
     auto fname = getCalledFuncName(callInst);
     if (funcSum->mallocInsts.count(callInst) > 0
         || funcSum->callocInsts.count(callInst) > 0) {
@@ -465,7 +243,7 @@ PointToGraph MayPointToAnalysis::FS(Instruction *inst, PointToSummary *ptSum) {
           }
         }
       }
-    } else if (callInst->isLifetimeStartOrEnd()) {
+    } else if (isLifetimeIntrinsic(callInst)) {
       // do nothing
     } else if (READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX.count(
                    getCalledFuncName(callInst))
@@ -527,13 +305,14 @@ PointToGraph MayPointToAnalysis::FS(Instruction *inst, PointToSummary *ptSum) {
 
 PointToSummary *MayPointToAnalysis::getPointToSummary() {
   errs() << "Enter PointToSummary for function: "
-         << funcSum->F->getFunction().getName() << "\n";
+         << functionSummary->F->getFunction().getName() << "\n";
 
-  if (ptSum) {
-    return ptSum;
+  if (pointToSummary) {
+    return pointToSummary;
   }
 
-  ptSum = new PointToSummary(funcSum);
+  auto funcSum = functionSummary;
+  auto ptSum = new PointToSummary(funcSum);
 
   auto entryBB = &funcSum->F->getEntryBlock();
 
@@ -600,15 +379,17 @@ PointToSummary *MayPointToAnalysis::getPointToSummary() {
           assert(globalVar != nullptr);
           auto globalVarType = globalVar->getValueType();
 
-          if (globalVarType->isArrayTy()) {
-            if (auto constantArray =
-                    dyn_cast<ConstantArray>(globalVar->getInitializer())) {
-              for (auto &element : constantArray->operands()) {
-                if (auto gep = dyn_cast<GEPOperator>(element)) {
-                  auto gepVar = gep->getPointerOperand();
-                  auto gepVarMemObj = ptSum->getMemoryObject(gepVar);
-                  entryIN[globalMemObj] = { gepVarMemObj };
-                }
+          if (!(globalVarType->isArrayTy() && globalVar->hasInitializer())) {
+            continue;
+          }
+
+          if (auto constantArray =
+                  dyn_cast<ConstantArray>(globalVar->getInitializer())) {
+            for (auto &element : constantArray->operands()) {
+              if (auto gep = dyn_cast<GEPOperator>(element)) {
+                auto gepVar = gep->getPointerOperand();
+                auto gepVarMemObj = ptSum->getMemoryObject(gepVar);
+                entryIN[globalMemObj] = { gepVarMemObj };
               }
             }
           }
@@ -657,6 +438,8 @@ PointToSummary *MayPointToAnalysis::getPointToSummary() {
 
   errs() << "Exit PointToSummary for function"
          << funcSum->F->getFunction().getName() << "\n";
+
+  pointToSummary = ptSum;
   return ptSum;
 }
 
@@ -669,6 +452,7 @@ PointToSummary *MayPointToAnalysis::getPointToSummary() {
  */
 LiveMemorySummary *MayPointToAnalysis::getLiveMemorySummary() {
 
+  auto funcSum = functionSummary;
   auto ptSum = getPointToSummary();
 
   /*
@@ -702,7 +486,7 @@ LiveMemorySummary *MayPointToAnalysis::getLiveMemorySummary() {
   allocable = minus(allocable, ptSum->ambiguous);
 
   auto [removable, notAllocable] =
-      [&]() -> pair<unordered_set<CallInst *>, MemoryObjects> {
+      [&]() -> pair<unordered_set<CallBase *>, MemoryObjects> {
     /*
      * We have:
      * %1 = call i8* @malloc(i64 8), %1 -> M1 (M1 is the memory object allocated
@@ -735,7 +519,7 @@ LiveMemorySummary *MayPointToAnalysis::getLiveMemorySummary() {
       }
     }
 
-    unordered_set<CallInst *> removable = funcSum->freeInsts;
+    unordered_set<CallBase *> removable = funcSum->freeInsts;
     for (auto freeInst : funcSum->freeInsts) {
       auto ptr = freeInst->getArgOperand(0);
       auto mayBeFreed = ptSum->getPointees(ptSum->instIN.at(freeInst), ptr);
@@ -754,9 +538,9 @@ LiveMemorySummary *MayPointToAnalysis::getLiveMemorySummary() {
   LiveMemorySummary *memSum = new LiveMemorySummary();
   memSum->removable = removable;
   memSum->allocable = [&]() {
-    unordered_set<CallInst *> result;
+    unordered_set<CallBase *> result;
     for (auto memObj : allocable) {
-      auto heapAllocInst = dyn_cast<CallInst>(memObj->getSource());
+      auto heapAllocInst = dyn_cast<CallBase>(memObj->getSource());
       assert(heapAllocInst);
       result.insert(heapAllocInst);
     }
@@ -767,75 +551,7 @@ LiveMemorySummary *MayPointToAnalysis::getLiveMemorySummary() {
 }
 
 FunctionSummary *MayPointToAnalysis::getFunctionSummary() {
-  return this->funcSum;
-}
-
-bool MayPointToAnalysis::canBeClonedToStack(GlobalVariable *globalVar,
-                                            LoopForest *loopForest) {
-  /*
-   * We only clone global variables to stack for main function.
-   */
-  auto currentF = funcSum->F;
-  auto mainF = funcSum->M->getFunction("main");
-  if (currentF != mainF) {
-    errs() << "Function " << currentF->getName()
-           << " is not main function, do not clone global variable "
-           << globalVar->getName() << " to stack.\n";
-    return false;
-  }
-
-  /*
-   * Global variable shall not be accessed in another function.
-   * If accessed, do not clone it.
-   *
-   * If some function @F() is called in current function,
-   * we will conservatively assume the global
-   * memory object is modified and choose not to clone it.
-   */
-  getPointToSummary();
-  auto globalMemObj = ptSum->getMemoryObject(globalVar);
-  if (funcSum->unknownFuntctionCalls.size() > 0) {
-    errs() << "UnknownFunctionCalls:\n";
-    for (auto callInst : funcSum->unknownFuntctionCalls) {
-      errs() << "\t" << *callInst << "\n";
-    }
-    return false;
-  }
-
-  /*
-   * If global variable is never written in a loop,
-   * which means the global variable is read-only or never used in a loop,
-   * cloning contributes nothing to parallelization, do not clone it.
-   */
-  unordered_set<LoopStructure *> loopsUsingGlobalVar;
-  for (auto tree : loopForest->getTrees()) {
-    auto loop = tree->getLoop();
-    auto loopFunction = loop->getFunction();
-    if (loopFunction != mainF) {
-      continue;
-    }
-
-    for (auto inst : loop->getInstructions()) {
-      if (auto storeInst = dyn_cast<StoreInst>(inst)) {
-        auto IN = ptSum->instIN.at(storeInst);
-        auto ptr = storeInst->getPointerOperand();
-        auto mayBeStored = ptSum->getPointees(IN, ptr);
-        auto globalMemObj = ptSum->getMemoryObject(globalVar);
-        if (mayBeStored.count(globalMemObj) > 0) {
-          loopsUsingGlobalVar.insert(loop);
-        }
-      }
-    }
-  }
-  if (loopsUsingGlobalVar.empty()) {
-    errs() << "Global variable " << globalVar->getName()
-           << " is never written in a loop, do not clone it.\n";
-    return false;
-  }
-
-  errs() << "Global variable " << globalVar->getName()
-         << " can be cloned to stack.\n";
-  return true;
+  return this->functionSummary;
 }
 
 }; // namespace llvm::noelle

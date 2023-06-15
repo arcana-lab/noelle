@@ -1,7 +1,5 @@
-
-#include "noelle/core/MayPointToAnalysisUtils.hpp"
-#include "llvm/IR/Instruction.h"
-#include "llvm/Support/Casting.h"
+#include "noelle/core/MayPointToAnalysis.hpp"
+#include "MayPointToAnalysisUtils.hpp"
 
 #include <unordered_set>
 #include <unordered_map>
@@ -41,7 +39,7 @@ MemoryObjects replace(const MemoryObjects &memObjSet,
   return result;
 }
 
-string getCalledFuncName(llvm::CallInst *callInst) {
+string getCalledFuncName(CallBase *callInst) {
   auto calledFunc = callInst->getCalledFunction();
   if (!calledFunc)
     return "";
@@ -60,6 +58,14 @@ PointToGraph minus(const PointToGraph &lhs, const PointToGraph &rhs) {
     result.erase(pair.first);
   }
   return result;
+}
+
+bool isLifetimeIntrinsic(CallBase *callInst) {
+  auto intrinsic = dyn_cast<IntrinsicInst>(callInst);
+  if (!intrinsic) {
+    return false;
+  }
+  return intrinsic->isLifetimeStartOrEnd();
 }
 
 } // namespace llvm::noelle

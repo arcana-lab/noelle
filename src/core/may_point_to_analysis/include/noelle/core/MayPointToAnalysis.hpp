@@ -1,8 +1,6 @@
 #pragma once
 
 #include "noelle/core/Utils.hpp"
-#include "noelle/core/LoopForest.hpp"
-#include "llvm/IR/GlobalVariable.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -70,12 +68,11 @@ public:
 
   Module *M;
   Function *F;
-  std::unordered_set<llvm::BasicBlock *> basicBlocks;
-  std::unordered_set<llvm::CallInst *> mallocInsts;
-  std::unordered_set<llvm::CallInst *> callocInsts;
-  std::unordered_set<llvm::CallInst *> reallocInsts;
-  std::unordered_set<llvm::CallInst *> freeInsts;
-  std::unordered_set<llvm::CallInst *> unknownFuntctionCalls;
+  std::unordered_set<llvm::CallBase *> mallocInsts;
+  std::unordered_set<llvm::CallBase *> callocInsts;
+  std::unordered_set<llvm::CallBase *> reallocInsts;
+  std::unordered_set<llvm::CallBase *> freeInsts;
+  std::unordered_set<llvm::CallBase *> unknownFuntctionCalls;
   std::unordered_set<llvm::AllocaInst *> allocaInsts;
   std::unordered_set<llvm::ReturnInst *> retInsts;
   std::unordered_set<llvm::LoadInst *> loadInsts;
@@ -90,6 +87,7 @@ public:
 class PointToSummary {
 public:
   PointToSummary(FunctionSummary *funSum);
+  ~PointToSummary();
 
   MemoryObjects getPointees(PointToGraph &ptGraph, Pointer *pointer);
   MemoryObjects getPointees(PointToGraph &ptGraph, Value *pointer);
@@ -97,7 +95,6 @@ public:
   MemoryObjects reachableMemoryObjects(PointToGraph &ptGraph, Pointer *pointer);
   Variable *getVariable(Value *source);
   MemoryObject *getMemoryObject(Value *source);
-  void eraseDummyObjects();
 
   Module *M;
   std::unordered_map<Instruction *, PointToGraph> instIN;
@@ -165,8 +162,8 @@ private:
 
 class LiveMemorySummary {
 public:
-  std::unordered_set<CallInst *> allocable;
-  std::unordered_set<CallInst *> removable;
+  std::unordered_set<CallBase *> allocable;
+  std::unordered_set<CallBase *> removable;
 };
 
 class MayPointToAnalysis {
@@ -175,14 +172,15 @@ public:
   FunctionSummary *getFunctionSummary();
   PointToSummary *getPointToSummary();
   LiveMemorySummary *getLiveMemorySummary();
-  bool canBeClonedToStack(GlobalVariable *globalVar, LoopForest *forest);
   ~MayPointToAnalysis();
 
 private:
-  FunctionSummary *funcSum;
-  PointToSummary *ptSum;
+  FunctionSummary *functionSummary;
+  PointToSummary *pointToSummary;
   PointToGraph mergeAllPredOut(BasicBlock *bb, PointToSummary *ptSum);
   PointToGraph FS(Instruction *inst, PointToSummary *ptSum);
 };
+
+std::string getCalledFuncName(CallBase *callInst);
 
 } // namespace llvm::noelle

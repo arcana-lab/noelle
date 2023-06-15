@@ -2,6 +2,7 @@
 set(Srcs 
   MayPointToAnalysis.cpp
   MayPointToAnalysisUtils.cpp
+  Summary.cpp
 )
 
 # Compilation flags
