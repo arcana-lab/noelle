@@ -98,10 +98,6 @@ PDG::PDG(std::vector<Value *> &values) {
   return;
 }
 
-PDG::PDG() {
-  return;
-}
-
 void PDG::addNodesOf(Function &F) {
   for (auto &arg : F.args()) {
     addNode(cast<Value>(&arg), /*inclusion=*/true);

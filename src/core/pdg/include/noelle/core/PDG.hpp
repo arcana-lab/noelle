@@ -55,11 +55,7 @@ public:
    */
   PDG(std::vector<Value *> &values);
 
-  /*
-   * Constructor:
-   * Empty graph.
-   */
-  PDG();
+  PDG() = delete;
 
   /*
    * Return the number of instructions included in the PDG.

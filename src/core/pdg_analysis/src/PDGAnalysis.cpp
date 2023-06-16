@@ -190,19 +190,6 @@ PDG *PDGAnalysis::constructPDGFromAnalysis(Module &M) {
   return pdg;
 }
 
-PDG *PDGAnalysis::constructFunctionDGFromAnalysis(Function &F) {
-  if (verbose >= PDGVerbosity::Maximal) {
-    errs() << "PDGAnalysis: Construct function DG from Analysis\n";
-  }
-
-  auto pdg = new PDG(F);
-  constructEdgesFromUseDefs(pdg);
-  constructEdgesFromAliasesForFunction(pdg, F);
-  constructEdgesFromControlForFunction(pdg, F);
-
-  return pdg;
-}
-
 PDG *PDGAnalysis::constructPDGFromMetadata(Module &M) {
   if (verbose >= PDGVerbosity::Maximal) {
     errs() << "PDGAnalysis: Construct PDG from Metadata\n";
@@ -224,22 +211,6 @@ PDG *PDGAnalysis::constructPDGFromMetadata(Module &M) {
 
   constructEdgesFromUseDefs(pdg);
   constructEdgesFromControl(pdg, M);
-
-  return pdg;
-}
-
-PDG *PDGAnalysis::constructFunctionDGFromMetadata(Function &F) {
-  if (verbose >= PDGVerbosity::Maximal) {
-    errs() << "PDGAnalysis: Construct function DG from Metadata\n";
-  }
-
-  auto pdg = new PDG(F);
-  std::unordered_map<MDNode *, Value *> IDNodeMap;
-  constructNodesFromMetadata(pdg, F, IDNodeMap);
-  constructEdgesFromMetadata(pdg, F, IDNodeMap);
-
-  constructEdgesFromUseDefs(pdg);
-  constructEdgesFromControlForFunction(pdg, F);
 
   return pdg;
 }
@@ -350,68 +321,6 @@ DGEdge<Value> *PDGAnalysis::constructEdgeFromMetadata(
   }
 
   return edge;
-}
-
-MDNode *PDGAnalysis::getEdgeMetadata(
-    DGEdge<Value> *edge,
-    LLVMContext &C,
-    unordered_map<Value *, MDNode *> &nodeIDMap) {
-  assert(edge != nullptr);
-  Metadata *edgeM[] = {
-    nodeIDMap[edge->getOutgoingT()],
-    nodeIDMap[edge->getIncomingT()],
-    MDNode::get(
-        C,
-        MDString::get(C, edge->isMemoryDependence() ? "true" : "false")),
-    MDNode::get(C,
-                MDString::get(C, edge->isMustDependence() ? "true" : "false")),
-    MDNode::get(C, MDString::get(C, edge->dataDepToString())),
-    MDNode::get(
-        C,
-        MDString::get(C, edge->isControlDependence() ? "true" : "false")),
-    MDNode::get(
-        C,
-        MDString::get(C, edge->isLoopCarriedDependence() ? "true" : "false")),
-    MDNode::get(
-        C,
-        MDString::get(C, edge->isRemovableDependence() ? "true" : "false")),
-    getSubEdgesMetadata(edge, C, nodeIDMap)
-  };
-
-  return MDNode::get(C, edgeM);
-}
-
-MDNode *PDGAnalysis::getSubEdgesMetadata(
-    DGEdge<Value> *edge,
-    LLVMContext &C,
-    unordered_map<Value *, MDNode *> &nodeIDMap) {
-  vector<Metadata *> subEdgesVec;
-
-  for (auto &subEdge : edge->getSubEdges()) {
-    Metadata *subEdgeM[] = {
-      nodeIDMap[subEdge->getOutgoingT()],
-      nodeIDMap[subEdge->getIncomingT()],
-      MDNode::get(
-          C,
-          MDString::get(C, edge->isMemoryDependence() ? "true" : "false")),
-      MDNode::get(
-          C,
-          MDString::get(C, edge->isMustDependence() ? "true" : "false")),
-      MDNode::get(C, MDString::get(C, edge->dataDepToString())),
-      MDNode::get(
-          C,
-          MDString::get(C, edge->isControlDependence() ? "true" : "false")),
-      MDNode::get(
-          C,
-          MDString::get(C, edge->isLoopCarriedDependence() ? "true" : "false")),
-      MDNode::get(
-          C,
-          MDString::get(C, edge->isRemovableDependence() ? "true" : "false")),
-    };
-    subEdgesVec.push_back(MDNode::get(C, subEdgeM));
-  }
-
-  return MDTuple::get(C, subEdgesVec);
 }
 
 void PDGAnalysis::trimDGUsingCustomAliasAnalysis(PDG *pdg) {
@@ -745,32 +654,6 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency(DGEdge<Value> *edge) {
   return !loopCarried;
 }
 
-bool PDGAnalysis::isBackedgeOfLoadStoreIntoSameOffsetOfArray(
-    DGEdge<Value> *edge,
-    LoadInst *load,
-    StoreInst *store) {
-  auto access1 = allocAA->getPrimitiveArrayAccess(load);
-  auto access2 = allocAA->getPrimitiveArrayAccess(store);
-
-  auto gep1 = access1.second;
-  auto gep2 = access2.second;
-  if (!gep1 || !gep2)
-    return false;
-  if (!allocAA->areIdenticalGEPAccessesInSameLoop(gep1, gep2))
-    return false;
-  ;
-  if (!allocAA->areGEPIndicesConstantOrIV(gep1))
-    return false;
-
-  auto outgoingI = (Instruction *)(edge->getOutgoingT());
-  auto incomingI = (Instruction *)(edge->getIncomingT());
-  if (canPrecedeInCurrentIteration(outgoingI, incomingI)) {
-    return false;
-  }
-
-  return true;
-}
-
 bool PDGAnalysis::isBackedgeIntoSameGlobal(DGEdge<Value> *edge) {
   auto access1 = allocAA->getPrimitiveArrayAccess(edge->getOutgoingT());
   auto access2 = allocAA->getPrimitiveArrayAccess(edge->getIncomingT());
@@ -987,7 +870,7 @@ bool PDGAnalysis::isTheLibraryFunctionThreadSafe(Function *libraryFunction) {
 }
 
 PDGAnalysis::~PDGAnalysis() {
-  if (this->programDependenceGraph){
+  if (this->programDependenceGraph) {
     delete this->programDependenceGraph;
   }
 }

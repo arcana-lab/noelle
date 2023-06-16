@@ -101,7 +101,6 @@ private:
   bool hasPDGAsMetadata(Module &);
 
   PDG *constructPDGFromMetadata(Module &);
-  PDG *constructFunctionDGFromMetadata(Function &);
   void constructNodesFromMetadata(PDG *,
                                   Function &,
                                   unordered_map<MDNode *, Value *> &);
@@ -129,7 +128,6 @@ private:
   void trimDGUsingCustomAliasAnalysis(PDG *pdg);
 
   PDG *constructPDGFromAnalysis(Module &M);
-  PDG *constructFunctionDGFromAnalysis(Function &F);
   void constructEdgesFromUseDefs(PDG *pdg);
   void constructEdgesFromAliases(PDG *pdg, Module &M);
   void constructEdgesFromControl(PDG *pdg, Module &M);
@@ -186,9 +184,6 @@ private:
                           Value *instJ);
 
   bool edgeIsNotLoopCarriedMemoryDependency(DGEdge<Value> *edge);
-  bool isBackedgeOfLoadStoreIntoSameOffsetOfArray(DGEdge<Value> *edge,
-                                                  LoadInst *load,
-                                                  StoreInst *store);
   bool isBackedgeIntoSameGlobal(DGEdge<Value> *edge);
   bool isMemoryAccessIntoDifferentArrays(DGEdge<Value> *edge);
 
