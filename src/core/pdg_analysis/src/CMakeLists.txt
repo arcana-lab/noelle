@@ -2,11 +2,13 @@
 set(Srcs 
   Pass.cpp
   PDGAnalysis.cpp
-  PDGAnalysis_embedder.cpp
+  PDGAnalysis_metadata.cpp
+  PDGAnalysis_metadata_embedder.cpp
   PDGAnalysis_controlDependences.cpp
   PDGAnalysis_compare.cpp
   PDGAnalysis_memory.cpp
   PDGAnalysis_callGraph.cpp
+  PDGAnalysis_library.cpp
   AnalysisPass.cpp
   IntegrationWithSVF.cpp
 )

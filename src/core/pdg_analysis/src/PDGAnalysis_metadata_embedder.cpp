@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Yian Su, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -130,68 +130,6 @@ void PDGAnalysis::embedEdgesAsMetadata(
   }
 
   return;
-}
-
-MDNode *PDGAnalysis::getEdgeMetadata(
-    DGEdge<Value> *edge,
-    LLVMContext &C,
-    unordered_map<Value *, MDNode *> &nodeIDMap) {
-  assert(edge != nullptr);
-  Metadata *edgeM[] = {
-    nodeIDMap[edge->getOutgoingT()],
-    nodeIDMap[edge->getIncomingT()],
-    MDNode::get(
-        C,
-        MDString::get(C, edge->isMemoryDependence() ? "true" : "false")),
-    MDNode::get(C,
-                MDString::get(C, edge->isMustDependence() ? "true" : "false")),
-    MDNode::get(C, MDString::get(C, edge->dataDepToString())),
-    MDNode::get(
-        C,
-        MDString::get(C, edge->isControlDependence() ? "true" : "false")),
-    MDNode::get(
-        C,
-        MDString::get(C, edge->isLoopCarriedDependence() ? "true" : "false")),
-    MDNode::get(
-        C,
-        MDString::get(C, edge->isRemovableDependence() ? "true" : "false")),
-    getSubEdgesMetadata(edge, C, nodeIDMap)
-  };
-
-  return MDNode::get(C, edgeM);
-}
-
-MDNode *PDGAnalysis::getSubEdgesMetadata(
-    DGEdge<Value> *edge,
-    LLVMContext &C,
-    unordered_map<Value *, MDNode *> &nodeIDMap) {
-  vector<Metadata *> subEdgesVec;
-
-  for (auto &subEdge : edge->getSubEdges()) {
-    Metadata *subEdgeM[] = {
-      nodeIDMap[subEdge->getOutgoingT()],
-      nodeIDMap[subEdge->getIncomingT()],
-      MDNode::get(
-          C,
-          MDString::get(C, edge->isMemoryDependence() ? "true" : "false")),
-      MDNode::get(
-          C,
-          MDString::get(C, edge->isMustDependence() ? "true" : "false")),
-      MDNode::get(C, MDString::get(C, edge->dataDepToString())),
-      MDNode::get(
-          C,
-          MDString::get(C, edge->isControlDependence() ? "true" : "false")),
-      MDNode::get(
-          C,
-          MDString::get(C, edge->isLoopCarriedDependence() ? "true" : "false")),
-      MDNode::get(
-          C,
-          MDString::get(C, edge->isRemovableDependence() ? "true" : "false")),
-    };
-    subEdgesVec.push_back(MDNode::get(C, subEdgeM));
-  }
-
-  return MDTuple::get(C, subEdgesVec);
 }
 
 } // namespace llvm::noelle

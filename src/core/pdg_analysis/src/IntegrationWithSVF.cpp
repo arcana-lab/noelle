@@ -39,6 +39,10 @@
 
 namespace llvm::noelle {
 
+void PDGAnalysis::initializeSVF(Module &M) {
+  return;
+}
+
 #ifdef ENABLE_SVF
 static WPAPass *wpa = nullptr;
 static MemSSA *mssa = nullptr;
