@@ -84,7 +84,8 @@ bool IVAttrTestSuite::runOnModule(Module &M) {
   this->LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
   this->SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
 
-  this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
+  auto pdg = getAnalysis<PDGAnalysis>().getPDG();
+  this->fdg = pdg->createFunctionSubgraph(*mainFunction);
   auto topLoop = LI->getLoopsInPreorder()[0];
   auto loopDG = fdg->createLoopsSubgraph(topLoop);
   this->sccdag = new SCCDAG(loopDG);

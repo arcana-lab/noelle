@@ -115,7 +115,8 @@ bool SCCDAGAttrTestSuite::runOnModule(Module &M) {
   auto loopNode =
       forest->getInnermostLoopThatContains(&*topLoop->getHeader()->begin());
 
-  this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
+  auto pdg = getAnalysis<PDGAnalysis>().getPDG();
+  this->fdg = pdg->createFunctionSubgraph(*mainFunction);
   this->ldi =
       new LoopDependenceInfo(this->noelle->getCompilationOptionsManager(),
                              fdg,

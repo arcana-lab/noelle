@@ -1,12 +1,23 @@
 /*
  * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, and to permit persons to whom the Software is furnished to do
+ so, subject to the following conditions:
 
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ * The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "DGTestSuite.hpp"
 
@@ -14,16 +25,26 @@ using namespace llvm;
 
 // Register pass to "opt"
 char DGTestSuite::ID = 0;
-static RegisterPass<DGTestSuite> X("UnitTester", "Dependence Graph Unit Tester");
+static RegisterPass<DGTestSuite> X("UnitTester",
+                                   "Dependence Graph Unit Tester");
 
 // Register pass to "clang"
-static DGTestSuite * _PassMaker = NULL;
+static DGTestSuite *_PassMaker = NULL;
 static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new DGTestSuite());}}); // ** for -Ox
-static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new DGTestSuite());}});// ** for -O0
+                                        [](const PassManagerBuilder &,
+                                           legacy::PassManagerBase &PM) {
+                                          if (!_PassMaker) {
+                                            PM.add(_PassMaker =
+                                                       new DGTestSuite());
+                                          }
+                                        }); // ** for -Ox
+static RegisterStandardPasses _RegPass2(
+    PassManagerBuilder::EP_EnabledOnOptLevel0,
+    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
+      if (!_PassMaker) {
+        PM.add(_PassMaker = new DGTestSuite());
+      }
+    }); // ** for -O0
 
 const char *DGTestSuite::tests[] = {
   "pdg nodes",
@@ -47,25 +68,27 @@ TestFunction DGTestSuite::testFns[] = {
   DGTestSuite::sccdagExternalNodesOfOutermostLoop
 };
 
-bool DGTestSuite::doInitialization (Module &M) {
+bool DGTestSuite::doInitialization(Module &M) {
   errs() << "DGTestSuite: Initialize\n";
   const int numTests = sizeof(tests) / sizeof(tests[0]);
-  this->suite = new TestSuite("DGTestSuite", tests, testFns, numTests, "test.txt");
+  this->suite =
+      new TestSuite("DGTestSuite", tests, testFns, numTests, "test.txt");
   this->M = &M;
   return false;
 }
 
-void DGTestSuite::getAnalysisUsage (AnalysisUsage &AU) const {
+void DGTestSuite::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<PDGAnalysis>();
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<CallGraphWrapperPass>();
 }
 
-bool DGTestSuite::runOnModule (Module &M) {
+bool DGTestSuite::runOnModule(Module &M) {
   errs() << "DGTestSuite: Start\n";
 
   this->mainF = M.getFunction("main");
-  this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainF);
+  auto pdg = getAnalysis<PDGAnalysis>().getPDG();
+  this->fdg = pdg->createFunctionSubgraph(*mainF);
   auto &LI = getAnalysis<LoopInfoWrapperPass>(*mainF).getLoopInfo();
   auto loopDG = fdg->createLoopsSubgraph(LI.getLoopsInPreorder()[0]);
   this->sccdagOutermostLoop = new SCCDAG(loopDG);
@@ -82,7 +105,8 @@ bool DGTestSuite::runOnModule (Module &M) {
 }
 
 // Produce expected Values; don't actually expose checkTest
-Values DGTestSuite::pdgHasAllValuesInProgram (ModulePass &pass, TestSuite &suite) {
+Values DGTestSuite::pdgHasAllValuesInProgram(ModulePass &pass,
+                                             TestSuite &suite) {
   DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
   Values valueNames;
   for (auto node : dgPass.fdg->getNodes()) {
@@ -91,24 +115,26 @@ Values DGTestSuite::pdgHasAllValuesInProgram (ModulePass &pass, TestSuite &suite
   return valueNames;
 }
 
-Values DGTestSuite::pdgHasAllDGEdgesInProgram (ModulePass &pass, TestSuite &suite) {
+Values DGTestSuite::pdgHasAllDGEdgesInProgram(ModulePass &pass,
+                                              TestSuite &suite) {
   DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
   Values valueNames;
   for (auto edge : dgPass.fdg->getEdges()) {
     std::string outName = suite.valueToString(edge->getOutgoingT());
     std::string inName = suite.valueToString(edge->getIncomingT());
-    std::string type = edge->isControlDependence() ? "control" : (
-      edge->isMemoryDependence() ? "memory" : "data"
-    );
+    std::string type = edge->isControlDependence()
+                           ? "control"
+                           : (edge->isMemoryDependence() ? "memory" : "data");
     std::string delim = suite.orderedValueDelimiter;
     valueNames.insert(outName + delim + inName + delim + type);
   }
   return valueNames;
 }
 
-Values DGTestSuite::ldgHasOnlyValuesOfLoop (ModulePass &pass, TestSuite &suite) {
+Values DGTestSuite::ldgHasOnlyValuesOfLoop(ModulePass &pass, TestSuite &suite) {
   DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
-  auto &LI = dgPass.getAnalysis<LoopInfoWrapperPass>(*dgPass.mainF).getLoopInfo();
+  auto &LI =
+      dgPass.getAnalysis<LoopInfoWrapperPass>(*dgPass.mainF).getLoopInfo();
   auto l = LI.getLoopsInPreorder()[0];
   auto ldi = dgPass.fdg->createLoopsSubgraph(l);
   Values valueNames;
@@ -119,7 +145,8 @@ Values DGTestSuite::ldgHasOnlyValuesOfLoop (ModulePass &pass, TestSuite &suite) 
   return valueNames;
 }
 
-Values DGTestSuite::pdgIdentifiesRootValues (ModulePass &pass, TestSuite &suite) {
+Values DGTestSuite::pdgIdentifiesRootValues(ModulePass &pass,
+                                            TestSuite &suite) {
   DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
   Values valueNames;
   for (auto node : dgPass.fdg->getTopLevelNodes()) {
@@ -128,7 +155,8 @@ Values DGTestSuite::pdgIdentifiesRootValues (ModulePass &pass, TestSuite &suite)
   return valueNames;
 }
 
-Values DGTestSuite::pdgIdentifiesLeafValues (ModulePass &pass, TestSuite &suite) {
+Values DGTestSuite::pdgIdentifiesLeafValues(ModulePass &pass,
+                                            TestSuite &suite) {
   DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
   Values valueNames;
   for (auto node : dgPass.fdg->getLeafNodes()) {
@@ -137,7 +165,8 @@ Values DGTestSuite::pdgIdentifiesLeafValues (ModulePass &pass, TestSuite &suite)
   return valueNames;
 }
 
-Values DGTestSuite::pdgIdentifiesDisconnectedValueSets (ModulePass &pass, TestSuite &suite) {
+Values DGTestSuite::pdgIdentifiesDisconnectedValueSets(ModulePass &pass,
+                                                       TestSuite &suite) {
   DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
   Values valueSetNames;
   auto disjointSets = dgPass.fdg->getDisconnectedSubgraphs();
@@ -155,7 +184,8 @@ Values DGTestSuite::pdgIdentifiesDisconnectedValueSets (ModulePass &pass, TestSu
   return valueSetNames;
 }
 
-Values DGTestSuite::sccdagInternalNodesOfOutermostLoop (ModulePass &pass, TestSuite &suite) {
+Values DGTestSuite::sccdagInternalNodesOfOutermostLoop(ModulePass &pass,
+                                                       TestSuite &suite) {
   DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
   Values valueNames;
   std::set<SCC *> internalSCCs;
@@ -165,7 +195,8 @@ Values DGTestSuite::sccdagInternalNodesOfOutermostLoop (ModulePass &pass, TestSu
   return dgPass.getSCCValues(internalSCCs);
 }
 
-Values DGTestSuite::sccdagExternalNodesOfOutermostLoop (ModulePass &pass, TestSuite &suite) {
+Values DGTestSuite::sccdagExternalNodesOfOutermostLoop(ModulePass &pass,
+                                                       TestSuite &suite) {
   DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
   std::set<SCC *> externalSCCs;
   for (auto nodePair : dgPass.sccdagOutermostLoop->externalNodePairs()) {
@@ -179,11 +210,13 @@ Values DGTestSuite::getSCCValues(std::set<SCC *> sccs) {
   for (auto scc : sccs) {
     std::vector<Value *> values(scc->numInternalNodes());
     int i = 0;
-    for (auto nodePair : scc->internalNodePairs()) values[i++] = nodePair.first;
+    for (auto nodePair : scc->internalNodePairs())
+      values[i++] = nodePair.first;
 
     std::string valuesDelimited = suite->valueToString(values[0]);
     for (i = 1; i < values.size(); ++i) {
-      valuesDelimited += suite->unorderedValueDelimiter + suite->valueToString(values[i]);
+      valuesDelimited +=
+          suite->unorderedValueDelimiter + suite->valueToString(values[i]);
     }
     sccStrings.insert(valuesDelimited);
   }

@@ -75,7 +75,8 @@ bool LICMTestSuite::runOnModule(Module &M) {
 
   this->mainF = M.getFunction("main");
   auto &noelle = getAnalysis<Noelle>();
-  this->fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainF);
+  auto pdg = getAnalysis<PDGAnalysis>().getPDG();
+  this->fdg = pdg->createFunctionSubgraph(*mainF);
   auto &LI = getAnalysis<LoopInfoWrapperPass>(*mainF).getLoopInfo();
   auto &DT = getAnalysis<DominatorTreeWrapperPass>(*mainF).getDomTree();
   auto &PDT =

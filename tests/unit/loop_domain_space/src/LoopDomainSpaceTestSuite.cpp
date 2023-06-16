@@ -177,7 +177,8 @@ void LoopDomainSpaceTestSuite::computeAnalysisWithoutSCEVSimplification(void) {
   auto LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
   auto SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
   getAnalysis<PDGAnalysis>().releaseMemory();
-  auto fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
+  auto pdg = getAnalysis<PDGAnalysis>().getPDG();
+  auto fdg = pdg->createFunctionSubgraph(*mainFunction);
   auto topLoop = LI->getLoopsInPreorder()[0];
   auto loopDG = fdg->createLoopsSubgraph(topLoop);
   SCCDAG loopSCCDAG(loopDG);
@@ -231,7 +232,8 @@ void LoopDomainSpaceTestSuite::computeAnalysisWithSCEVSimplification(void) {
   auto LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
   auto SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
   getAnalysis<PDGAnalysis>().releaseMemory();
-  auto fdg = getAnalysis<PDGAnalysis>().getFunctionPDG(*mainFunction);
+  auto pdg = getAnalysis<PDGAnalysis>().getPDG();
+  auto fdg = pdg->createFunctionSubgraph(*mainFunction);
   Loop *topLoop = LI->getLoopsInPreorder()[0];
   auto loopDG = fdg->createLoopsSubgraph(topLoop);
   SCCDAG loopSCCDAG(loopDG);
