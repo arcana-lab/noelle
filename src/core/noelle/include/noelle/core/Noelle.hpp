@@ -50,13 +50,6 @@ enum class Verbosity { Disabled, Minimal, Maximal };
 class Noelle : public ModulePass {
 public:
   /*
-   * Fields.
-   */
-  static char ID;
-  IntegerType *int1, *int8, *int16, *int32, *int64;
-  Queue queues;
-
-  /*
    * Methods.
    */
   Noelle();
@@ -225,6 +218,12 @@ public:
   bool verifyCode(void) const;
 
   ~Noelle();
+
+  /*
+   * Fields.
+   */
+  static char ID;
+  Queue queues;
 
 private:
   Verbosity verbose;

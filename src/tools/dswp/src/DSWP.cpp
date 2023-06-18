@@ -195,6 +195,12 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   }
 
   /*
+   * Fetch the managers.
+   */
+  auto cm = this->noelle.getConstantsManager();
+  auto tm = this->noelle.getTypesManager();
+
+  /*
    * Compute the set of SCCs that can be cloned.
    */
   this->clonableSCCs = this->getClonableSCCs(LDI->getSCCManager(),
@@ -278,14 +284,12 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Helper declarations
    */
-  this->zeroIndexForBaseArray =
-      cast<Value>(ConstantInt::get(this->noelle.int64, 0));
+  this->zeroIndexForBaseArray = cm->getIntegerConstant(0, 64);
+  auto int8Type = tm->getIntegerType(8);
   this->queueArrayType =
-      ArrayType::get(PointerType::getUnqual(this->noelle.int8),
-                     this->queues.size());
+      ArrayType::get(PointerType::getUnqual(int8Type), this->queues.size());
   this->stageArrayType =
-      ArrayType::get(PointerType::getUnqual(this->noelle.int8),
-                     this->tasks.size());
+      ArrayType::get(PointerType::getUnqual(int8Type), this->tasks.size());
 
   /*
    * Create the pipeline stages (technique tasks)

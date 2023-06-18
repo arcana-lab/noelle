@@ -50,6 +50,11 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
   auto profiles = par.getProfiles();
 
   /*
+   * Fetch the managers.
+   */
+  auto cm = par.getConstantsManager();
+
+  /*
    * Fetch the verbosity level.
    */
   auto verbose = par.getVerbosity();
@@ -179,11 +184,11 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
     errs() << prefix << "  Link the parallelize loop\n";
   }
   auto exitBlockID = LDI->getEnvironment()->getExitBlockID();
-  auto exitIndex = ConstantInt::get(
-      par.int64,
+  auto constantValue =
       exitBlockID >= 0
           ? usedTechnique->getIndexOfEnvironmentVariable(exitBlockID)
-          : -1);
+          : -1;
+  auto exitIndex = cm->getIntegerConstant(constantValue, 64);
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
   auto linker = par.getLinker();
   linker->linkTransformedLoopToOriginalFunction(

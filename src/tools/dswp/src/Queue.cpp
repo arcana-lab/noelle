@@ -335,6 +335,12 @@ bool DSWP::areQueuesAcyclical() const {
 }
 
 void DSWP::generateLoadsOfQueuePointers(Noelle &par, int taskIndex) {
+
+  /*
+   * Fetch the managers.
+   */
+  auto cm = par.getConstantsManager();
+
   auto task = (DSWPTask *)this->tasks[taskIndex];
   IRBuilder<> entryBuilder(task->getEntry());
   auto queuesArray =
@@ -346,7 +352,7 @@ void DSWP::generateLoadsOfQueuePointers(Noelle &par, int taskIndex) {
    */
   auto loadQueuePtrFromIndex = [&](int queueIndex) -> void {
     auto queueInfo = this->queues[queueIndex].get();
-    auto queueIndexValue = cast<Value>(ConstantInt::get(par.int64, queueIndex));
+    auto queueIndexValue = cm->getIntegerConstant(queueIndex, 64);
     auto queuePtr = entryBuilder.CreateInBoundsGEP(
         queuesArray,
         ArrayRef<Value *>({ this->zeroIndexForBaseArray, queueIndexValue }));

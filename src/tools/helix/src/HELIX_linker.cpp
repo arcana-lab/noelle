@@ -27,6 +27,11 @@ void HELIX::invokeParallelizedLoop(LoopDependenceInfo *LDI,
                                    uint64_t numberOfSequentialSegments) {
 
   /*
+   * Fetch the managers.
+   */
+  auto cm = this->noelle.getConstantsManager();
+
+  /*
    * Fetch the loop function.
    */
   auto loopSummary = LDI->getLoopStructure();
@@ -51,14 +56,12 @@ void HELIX::invokeParallelizedLoop(LoopDependenceInfo *LDI,
    * Fetch the number of cores
    */
   auto ltm = LDI->getLoopTransformationsManager();
-  auto numCores =
-      ConstantInt::get(this->noelle.int64, ltm->getMaximumNumberOfCores());
+  auto numCores = cm->getIntegerConstant(ltm->getMaximumNumberOfCores(), 64);
 
   /*
    * Fetch the chunk size.
    */
-  auto numOfSS =
-      ConstantInt::get(this->noelle.int64, numberOfSequentialSegments);
+  auto numOfSS = cm->getIntegerConstant(numberOfSequentialSegments, 64);
 
   /*
    * Call the function that incudes the parallelized loop.

@@ -147,6 +147,11 @@ bool DSWP::isCompleteAndValidStageStructure(LoopDependenceInfo *LDI) const {
 void DSWP::createPipelineFromStages(LoopDependenceInfo *LDI, Noelle &par) {
 
   /*
+   * Fetch the managers.
+   */
+  auto cm = par.getConstantsManager();
+
+  /*
    * Fetch the loop function.
    */
   auto loopSummary = LDI->getLoopStructure();
@@ -181,10 +186,8 @@ void DSWP::createPipelineFromStages(LoopDependenceInfo *LDI, Noelle &par) {
    * Call the stage dispatcher with the environment, queues array, and stages
    * array
    */
-  auto queuesCount =
-      cast<Value>(ConstantInt::get(par.int64, this->queues.size()));
-  auto stagesCount =
-      cast<Value>(ConstantInt::get(par.int64, this->numTaskInstances));
+  auto queuesCount = cm->getIntegerConstant(this->queues.size(), 64);
+  auto stagesCount = cm->getIntegerConstant(this->numTaskInstances, 64);
 
   /*
    * Add the call to the task dispatcher
@@ -210,13 +213,20 @@ void DSWP::createPipelineFromStages(LoopDependenceInfo *LDI, Noelle &par) {
 Value *DSWP::createStagesArrayFromStages(LoopDependenceInfo *LDI,
                                          IRBuilder<> funcBuilder,
                                          Noelle &par) {
+
+  /*
+   * Fetch the managers.
+   */
+  auto cm = par.getConstantsManager();
+  auto tm = par.getTypesManager();
+
   auto stagesAlloca =
       cast<Value>(funcBuilder.CreateAlloca(this->stageArrayType));
   auto stageCastType =
       PointerType::getUnqual(this->tasks[0]->getTaskBody()->getType());
   for (int i = 0; i < this->numTaskInstances; ++i) {
     auto stage = this->tasks[i];
-    auto stageIndex = cast<Value>(ConstantInt::get(par.int64, i));
+    auto stageIndex = cm->getIntegerConstant(i, 64);
     auto stagePtr = funcBuilder.CreateInBoundsGEP(
         stagesAlloca,
         ArrayRef<Value *>({ this->zeroIndexForBaseArray, stageIndex }));
@@ -224,31 +234,41 @@ Value *DSWP::createStagesArrayFromStages(LoopDependenceInfo *LDI,
     funcBuilder.CreateStore(stage->getTaskBody(), stageCast);
   }
 
+  auto int8Type = tm->getIntegerType(8);
+
   return cast<Value>(
       funcBuilder.CreateBitCast(stagesAlloca,
-                                PointerType::getUnqual(par.int8)));
+                                PointerType::getUnqual(int8Type)));
 }
 
 Value *DSWP::createQueueSizesArrayFromStages(LoopDependenceInfo *LDI,
                                              IRBuilder<> funcBuilder,
                                              Noelle &par) {
+
+  /*
+   * Fetch the managers.
+   */
+  auto cm = par.getConstantsManager();
+  auto tm = par.getTypesManager();
+
+  auto int64Type = tm->getIntegerType(64);
   auto queuesAlloca = cast<Value>(
-      funcBuilder.CreateAlloca(ArrayType::get(par.int64, this->queues.size())));
+      funcBuilder.CreateAlloca(ArrayType::get(int64Type, this->queues.size())));
   for (int i = 0; i < this->queues.size(); ++i) {
     auto &queue = this->queues[i];
-    auto queueIndex = cast<Value>(ConstantInt::get(par.int64, i));
+    auto queueIndex = cm->getIntegerConstant(i, 64);
     auto queuePtr = funcBuilder.CreateInBoundsGEP(
         queuesAlloca,
         ArrayRef<Value *>({ this->zeroIndexForBaseArray, queueIndex }));
     auto queueCast =
-        funcBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(par.int64));
-    funcBuilder.CreateStore(ConstantInt::get(par.int64, queue->bitLength),
+        funcBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(int64Type));
+    funcBuilder.CreateStore(cm->getIntegerConstant(queue->bitLength, 64),
                             queueCast);
   }
 
   return cast<Value>(
       funcBuilder.CreateBitCast(queuesAlloca,
-                                PointerType::getUnqual(par.int64)));
+                                PointerType::getUnqual(int64Type)));
 }
 
 } // namespace llvm::noelle

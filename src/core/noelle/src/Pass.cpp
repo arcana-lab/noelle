@@ -162,12 +162,6 @@ bool Noelle::doInitialization(Module &M) {
    */
   this->program = &M;
 
-  int1 = IntegerType::get(M.getContext(), 1);
-  int8 = IntegerType::get(M.getContext(), 8);
-  int16 = IntegerType::get(M.getContext(), 16);
-  int32 = IntegerType::get(M.getContext(), 32);
-  int64 = IntegerType::get(M.getContext(), 64);
-
   return false;
 }
 
