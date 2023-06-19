@@ -303,7 +303,7 @@ PointToGraph MayPointToAnalysis::FS(Instruction *inst, PointToSummary *ptSum) {
   return OUT;
 };
 
-PointToSummary *MayPointToAnalysis::getPointToSummary() {
+PointToSummary *MayPointToAnalysis::getPointToSummary(void) {
   errs() << "Enter PointToSummary for function: "
          << functionSummary->F->getFunction().getName() << "\n";
 
@@ -448,7 +448,7 @@ PointToSummary *MayPointToAnalysis::getPointToSummary() {
  * Compute @free() insts that could be removed becase if @malloc() is
  * transformed to allocaInst, the corresponding @free() must be removed.
  */
-LiveMemorySummary *MayPointToAnalysis::getLiveMemorySummary() {
+LiveMemorySummary *MayPointToAnalysis::getLiveMemorySummary(void) {
 
   auto funcSum = functionSummary;
   auto ptSum = getPointToSummary();
@@ -534,7 +534,7 @@ LiveMemorySummary *MayPointToAnalysis::getLiveMemorySummary() {
 
   LiveMemorySummary *memSum = new LiveMemorySummary();
   memSum->removable = removable;
-  memSum->allocable = [&]() {
+  memSum->allocable = [&](void) {
     unordered_set<CallBase *> result;
     for (auto memObj : allocable) {
       auto heapAllocInst = dyn_cast<CallBase>(memObj->getSource());
@@ -547,7 +547,7 @@ LiveMemorySummary *MayPointToAnalysis::getLiveMemorySummary() {
   return memSum;
 }
 
-FunctionSummary *MayPointToAnalysis::getFunctionSummary() {
+FunctionSummary *MayPointToAnalysis::getFunctionSummary(void) {
   return this->functionSummary;
 }
 

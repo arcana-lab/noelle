@@ -36,8 +36,8 @@ enum PointNodeType { VARIABLE, MEMORY_OBJECT };
 class Pointer {
 public:
   Pointer(Value *source);
-  Value *getSource();
-  virtual PointNodeType getType() = 0;
+  Value *getSource(void);
+  virtual PointNodeType getType(void) = 0;
 
 private:
   Value *source;
@@ -46,13 +46,13 @@ private:
 class Variable : public Pointer {
 public:
   Variable(Value *source);
-  PointNodeType getType() override;
+  PointNodeType getType(void) override;
 };
 
 class MemoryObject : public Pointer {
 public:
   MemoryObject(Value *source, bool prev = false);
-  PointNodeType getType() override;
+  PointNodeType getType(void) override;
 
 private:
   bool prevLoopAllocated = false;
@@ -170,9 +170,9 @@ public:
 class MayPointToAnalysis {
 public:
   MayPointToAnalysis(Function *F);
-  FunctionSummary *getFunctionSummary();
-  PointToSummary *getPointToSummary();
-  LiveMemorySummary *getLiveMemorySummary();
+  FunctionSummary *getFunctionSummary(void);
+  PointToSummary *getPointToSummary(void);
+  LiveMemorySummary *getLiveMemorySummary(void);
   ~MayPointToAnalysis();
 
 private:
