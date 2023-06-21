@@ -40,7 +40,9 @@ public:
 private:
   bool enablePrivatizer;
 
-  uint64_t basicBlockNumberThreshold = 100;
+  const uint64_t BB_NUMBER_THRESHOLD = 100;
+
+  const uint64_t STACK_SIZE_THRESHOLD = 8 * 1024 * 1024;
 
   bool applyHeapToStack(Noelle &noelle, MayPointToAnalysis &mayPointToAnalysis);
 

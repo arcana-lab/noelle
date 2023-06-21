@@ -51,7 +51,7 @@ bool PrivatizerManager::runOnModule(Module &M) {
   auto mayPointToAnalysis = noelle.getMayPointToAnalysis(mainF);
   auto funcSum = mayPointToAnalysis.getFunctionSummary();
 
-  if (funcSum->basicBlockCount > basicBlockNumberThreshold) {
+  if (funcSum->basicBlockCount > BB_NUMBER_THRESHOLD) {
     errs() << prefix << "Too many basic blocks in function " << mainF->getName()
            << ", skip privatization.\n";
     return false;

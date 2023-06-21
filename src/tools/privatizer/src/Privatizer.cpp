@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "PrivatizerManager.hpp"
+#include <numeric>
 
 namespace llvm::noelle {
 
@@ -37,8 +38,48 @@ bool PrivatizerManager::applyHeapToStack(
   bool modified = false;
   auto ptSum = mayPointToAnalysis.getPointToSummary();
   auto memSum = mayPointToAnalysis.getLiveMemorySummary();
+  auto dl = funcSum->M->getDataLayout();
+  auto stackMemoryUsage = std::accumulate(
+      funcSum->allocaInsts.begin(),
+      funcSum->allocaInsts.end(),
+      0,
+      [&](uint64_t previous, AllocaInst *item) -> uint64_t {
+        return previous + (item->getAllocationSizeInBits(dl).getValue() / 8);
+      });
+
+  auto getAllocationSize = [memSum](CallBase *heapAllocInst) -> uint64_t {
+    assert(memSum->allocable.count(heapAllocInst) > 0
+           && "Not a fixed-sized memory allocation instruction");
+    if (getCalledFuncName(heapAllocInst) == "malloc") {
+      return dyn_cast<ConstantInt>(heapAllocInst->getOperand(0))
+          ->getZExtValue();
+    } else if (getCalledFuncName(heapAllocInst) == "calloc") {
+      auto elementCount =
+          dyn_cast<ConstantInt>(heapAllocInst->getOperand(0))->getZExtValue();
+      auto elementSizeInBytes =
+          dyn_cast<ConstantInt>(heapAllocInst->getOperand(1))->getZExtValue();
+      return elementCount * elementSizeInBytes;
+    } else {
+      assert(false && "Unsupported memory allocation function");
+    }
+  };
 
   for (auto heapAllocInst : memSum->allocable) {
+    auto allocationSize = getAllocationSize(heapAllocInst);
+    errs()
+        << "PrivatizerManager: @malloc or @calloc: " << *heapAllocInst << "\n";
+    errs() << "                   Allocation size: " << allocationSize << "\n";
+    errs() << "                   Stack memory usage: " << stackMemoryUsage
+           << "\n";
+    if (stackMemoryUsage + allocationSize >= STACK_SIZE_THRESHOLD) {
+      errs()
+          << "PrivatizerManager: Stack memory usage exceeds the limit, can't transfrom to allicaInst: "
+          << heapAllocInst << "\n";
+      continue;
+    } else {
+      stackMemoryUsage += allocationSize;
+    }
+
     auto entryBlock = &funcSum->F->getEntryBlock();
     auto firstInst = entryBlock->getFirstNonPHI();
     IRBuilder<> entryBuilder(firstInst);
@@ -48,6 +89,7 @@ bool PrivatizerManager::applyHeapToStack(
     Type *oneByteType = Type::getInt8Ty(context);
 
     if (getCalledFuncName(heapAllocInst) == "malloc") {
+
       Value *arraySize = heapAllocInst->getOperand(0);
       AllocaInst *allocaInst =
           entryBuilder.CreateAlloca(oneByteType, arraySize, "");
