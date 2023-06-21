@@ -172,8 +172,8 @@ BasicBlock *DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
     clonedCmpInst->replaceUsesOfWith(
         valueUsedToCompareAgainstExitConditionValue,
         prevIterationValue);
-    lastBBBuilder.Insert(clonedCmpInst);
-    lastBBBuilder.CreateCondBr(clonedCmpInst, newJoinBB, newBB);
+    lastBBBuilder.Insert(clonedCmpInst, "isLastLoopIteration");
+    lastBBBuilder.CreateCondBr(clonedCmpInst, newBB, newJoinBB);
 
     /*
      * Step 6: update the condition to check if the last loop iteration (last of
