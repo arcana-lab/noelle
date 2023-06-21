@@ -66,15 +66,10 @@ bool PrivatizerManager::applyHeapToStack(
 
   for (auto heapAllocInst : memSum->allocable) {
     auto allocationSize = getAllocationSize(heapAllocInst);
-    errs()
-        << "PrivatizerManager: @malloc or @calloc: " << *heapAllocInst << "\n";
-    errs() << "                   Allocation size: " << allocationSize << "\n";
-    errs() << "                   Stack memory usage: " << stackMemoryUsage
-           << "\n";
     if (stackMemoryUsage + allocationSize >= STACK_SIZE_THRESHOLD) {
       errs()
-          << "PrivatizerManager: Stack memory usage exceeds the limit, can't transfrom to allicaInst: "
-          << heapAllocInst << "\n";
+          << "PrivatizerManager: Stack memory usage exceeds the limit, can't transfrom to allocaInst: "
+          << *heapAllocInst << "\n";
       continue;
     } else {
       stackMemoryUsage += allocationSize;
