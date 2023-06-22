@@ -378,7 +378,7 @@ void LoopGoverningIVUtility::
     case CmpInst::Predicate::ICMP_ULE:
       newPredicate = this->doesOriginalCmpInstHaveIVAsLeftOperand
                          ? condition->getInversePredicate()
-                         : condition->getStrictPredicate();
+                         : this->strictPredicate;
       break;
 
     case CmpInst::Predicate::ICMP_SGT:
@@ -386,7 +386,7 @@ void LoopGoverningIVUtility::
     case CmpInst::Predicate::ICMP_SLT:
     case CmpInst::Predicate::ICMP_ULT:
       newPredicate = this->doesOriginalCmpInstHaveIVAsLeftOperand
-                         ? condition->getNonStrictPredicate()
+                         ? this->nonStrictPredicate
                          : condition->getInversePredicate();
       break;
 
