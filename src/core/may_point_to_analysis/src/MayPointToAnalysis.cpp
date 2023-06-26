@@ -19,10 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 #include "noelle/core/MayPointToAnalysis.hpp"
 #include "MayPointToAnalysisUtils.hpp"
-#include <unordered_set>
 
 using namespace std;
 

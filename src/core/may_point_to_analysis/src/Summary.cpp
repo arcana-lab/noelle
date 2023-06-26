@@ -22,7 +22,6 @@
 
 #include "noelle/core/MayPointToAnalysis.hpp"
 #include "MayPointToAnalysisUtils.hpp"
-#include <unordered_set>
 
 using namespace std;
 
