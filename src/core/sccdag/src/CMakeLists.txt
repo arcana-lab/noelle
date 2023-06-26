@@ -1,21 +1,14 @@
 # Sources
-set(Srcs
-  HotProfiler.cpp
-  Hot.cpp
-  Hot_Instruction.cpp
-  Hot_BasicBlock.cpp
-  Hot_SCC.cpp
-  Hot_Loop.cpp
-  Hot_Function.cpp
-  Hot_Module.cpp
-  Pass.cpp
+set(Srcs 
+  SCC.cpp
+  SCCDAG.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "HotProfiler")
+set(PassName "SCCDAG")
 
 # configure LLVM 
 find_package(LLVM 9 REQUIRED CONFIG)
@@ -29,14 +22,11 @@ include(AddLLVM)
 
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
-include_directories(${LLVM_INCLUDE_DIRS} 
-  ../include 
-  ../../basic_utilities/include 
-  ../../loop_content/include
+include_directories(${LLVM_INCLUDE_DIRS}
+  ../include
+  ../../basic_utilities/include
   ../../dg/include
   ../../pdg/include
-  ../../sccdag/include
-  ../../loop_structure/include
   )
 
 # Declare the LLVM pass to compile

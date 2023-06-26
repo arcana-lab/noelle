@@ -37,7 +37,9 @@
 #include <set>
 #include <queue>
 
+#include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/PDGPrinter.hpp"
+#include "noelle/core/SCCDAGGraphTraits.hpp"
 
 namespace llvm::noelle {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -24,8 +24,8 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/BitMatrix.hpp"
 #include "noelle/core/DGBase.hpp"
-#include "noelle/core/SCC.hpp"
 #include "noelle/core/PDG.hpp"
+#include "noelle/core/SCC.hpp"
 
 namespace llvm::noelle {
 

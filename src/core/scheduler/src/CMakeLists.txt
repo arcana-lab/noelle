@@ -29,6 +29,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../alloc_aa/include 
   ../../dg/include 
   ../../pdg/include 
+  ../../sccdag/include
   ../../loop_structure/include
   ../../loop_environment/include 
   ../../loop_forest/include

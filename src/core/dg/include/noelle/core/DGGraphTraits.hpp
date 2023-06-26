@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,13 +22,8 @@
 #pragma once
 
 #include "noelle/core/DGBase.hpp"
-#include "noelle/core/SCC.hpp"
 #include "noelle/core/PDG.hpp"
-#include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SubCFGs.hpp"
-
-using namespace llvm;
-using namespace llvm::noelle;
 
 namespace llvm {
 namespace noelle {
@@ -211,54 +206,6 @@ struct ElementTraits : public ElementTraitsBase<GraphType, NodeType, T> {
   }
 };
 
-template <class GraphType, class NodeType>
-struct ElementTraits<GraphType, NodeType, SCC>
-  : public ElementTraitsBase<GraphType, NodeType, SCC> {
-  using NodeRef = NodeType *;
-  using nodes_iterator = typename std::vector<NodeRef>::iterator;
-
-  explicit ElementTraits(bool isSimple = false)
-    : ElementTraitsBase<GraphType, NodeType, SCC>(isSimple) {}
-
-  static std::string getNodeLabel(NodeRef nodeWrapper, GraphType *entry) {
-    std::string nodeStr;
-    raw_string_ostream ros(nodeStr);
-    for (auto nodePair :
-         nodeWrapper->wrappedNode->getT()->internalNodePairs()) {
-      nodePair.first->print(ros);
-      ros << "\n";
-    }
-    return ros.str();
-  }
-
-  static std::string getEdgeSourceLabel(NodeRef nodeWrapper,
-                                        nodes_iterator nodeIter) {
-    std::string edgeStr;
-    raw_string_ostream ros(edgeStr);
-    auto edge = nodeWrapper->outgoingEdgeInstances
-                    [nodeIter - nodeWrapper->outgoingNodeInstances.begin()];
-    for (DGEdge<Value> *edge : edge->getSubEdges()) {
-      printValueStr(edge->getOutgoingT(), ros);
-      printValueStr(edge->getIncomingT(), ros << " -> ");
-      ros << " ; ";
-    }
-    return ros.str();
-  }
-
-  static void printValueStr(Value *value, raw_ostream &ros) {
-    if (auto brI = dyn_cast<BranchInst>(value)) {
-      if (brI->isUnconditional()) {
-        value->print(ros);
-      } else {
-        ros << "br ";
-        printValueStr(brI->getCondition(), ros);
-      }
-    } else {
-      value->printAsOperand(ros);
-    }
-  }
-};
-
 /*
  * GraphTraitsBase template
  */
@@ -310,34 +257,6 @@ struct GraphTraits<DGGraphWrapper<PDG, Value> *>
   : public GraphTraitsBase<DGGraphWrapper<PDG, Value>,
                            DGNodeWrapper<Value>,
                            Value> {};
-
-template <>
-struct DOTGraphTraits<DGGraphWrapper<SCC, Value> *>
-  : public ElementTraits<DGGraphWrapper<SCC, Value>,
-                         DGNodeWrapper<Value>,
-                         Value> {
-  DOTGraphTraits(bool isSimple = false)
-    : ElementTraits<DGGraphWrapper<SCC, Value>, DGNodeWrapper<Value>, Value>(
-        isSimple) {}
-};
-template <>
-struct GraphTraits<DGGraphWrapper<SCC, Value> *>
-  : public GraphTraitsBase<DGGraphWrapper<SCC, Value>,
-                           DGNodeWrapper<Value>,
-                           Value> {};
-
-template <>
-struct DOTGraphTraits<DGGraphWrapper<SCCDAG, SCC> *>
-  : public ElementTraits<DGGraphWrapper<SCCDAG, SCC>, DGNodeWrapper<SCC>, SCC> {
-  DOTGraphTraits(bool isSimple = false)
-    : ElementTraits<DGGraphWrapper<SCCDAG, SCC>, DGNodeWrapper<SCC>, SCC>(
-        isSimple) {}
-};
-template <>
-struct GraphTraits<DGGraphWrapper<SCCDAG, SCC> *>
-  : public GraphTraitsBase<DGGraphWrapper<SCCDAG, SCC>,
-                           DGNodeWrapper<SCC>,
-                           SCC> {};
 
 template <>
 struct DOTGraphTraits<DGGraphWrapper<DG<DGString>, DGString> *>

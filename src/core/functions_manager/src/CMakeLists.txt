@@ -29,6 +29,8 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../pdg/include
   ../../dg/include
   ../../pdg_analysis/include
+  ../../pdg_printer/include
+  ../../sccdag/include
   ../../alloc_aa/include
   ../../talkdown/include
   ../../alias_analysis_engine/include

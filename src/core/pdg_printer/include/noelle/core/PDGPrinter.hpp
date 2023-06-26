@@ -35,7 +35,6 @@
 #include "noelle/core/DGBase.hpp"
 #include "noelle/core/DGGraphTraits.hpp"
 #include "noelle/core/PDG.hpp"
-#include "noelle/core/SCCDAG.hpp"
 
 #include "llvm/ADT/GraphTraits.h"
 #include "llvm/Analysis/DOTGraphTraitsPass.h"

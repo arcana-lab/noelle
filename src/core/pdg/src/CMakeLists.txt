@@ -1,9 +1,6 @@
 # Sources
 set(Srcs 
   PDG.cpp
-  SCCDAG.cpp
-  SCC.cpp
-  PDGPrinter.cpp
 )
 
 # Compilation flags
