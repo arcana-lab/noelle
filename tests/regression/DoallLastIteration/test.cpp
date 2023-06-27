@@ -14,7 +14,6 @@ int main(int argc, char *argv[]) {
   }
   *p = 43;
   std::cout << "*p:  " << *p << std::endl;
-  std::cout << "old p: " << old_p << " and new p: " << p << std::endl;
   std::cout << "p address diff: " << (p - old_p) * sizeof(int) << std::endl;
 
   int *old_q = q;
@@ -24,7 +23,6 @@ int main(int argc, char *argv[]) {
   }
   *q = 43;
   std::cout << "*q:  " << *q << std::endl;
-  std::cout << "old q: " << old_q << " and new q: " << q << std::endl;
   std::cout << "q address diff: " << (q - old_q) * sizeof(int) << std::endl;
 
   int *old_r = r;
@@ -34,7 +32,6 @@ int main(int argc, char *argv[]) {
   }
   *r = 43;
   std::cout << "*r:  " << *r << std::endl;
-  std::cout << "old r: " << old_r << " and new r: " << r << std::endl;
   std::cout << "r address diff: " << (r - old_r) * sizeof(int) << std::endl;
 
   return 0;
