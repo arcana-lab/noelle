@@ -55,6 +55,8 @@ enum MPAFunctionType {
   UNKNOWN
 };
 
+std::string getCalledFuncName(CallBase *callInst);
+
 MemoryObjects intersect(const MemoryObjects &lhs, const MemoryObjects &rhs);
 
 MemoryObjects unite(const MemoryObjects &lhs, const MemoryObjects &rhs);
@@ -64,10 +66,6 @@ MemoryObjects minus(const MemoryObjects &lhs, const MemoryObjects &rhs);
 MemoryObjects replace(const MemoryObjects &memObjSet,
                       MemoryObject *oldObj,
                       MemoryObject *newObj);
-
-// PointToGraph add(const PointToGraph &lhs, const PointToGraph &rhs);
-
-// PointToGraph minus(const PointToGraph &lhs, const PointToGraph &rhs);
 
 bool isLifetimeIntrinsic(CallBase *callInst);
 

@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/MayPointToAnalysis.hpp"
-#include "MayPointToAnalysisUtils.hpp"
+#include "noelle/core/MayPointToAnalysisUtils.hpp"
 
 using namespace std;
 
@@ -62,20 +62,6 @@ string getCalledFuncName(CallBase *callInst) {
     return "";
   return calledFunc->getName();
 }
-
-// PointToGraph add(const PointToGraph &lhs, const PointToGraph &rhs) {
-//   PointToGraph result = lhs;
-//   result.insert(rhs.begin(), rhs.end());
-//   return result;
-// }
-
-// PointToGraph minus(const PointToGraph &lhs, const PointToGraph &rhs) {
-//   PointToGraph result = lhs;
-//   for (auto pair : rhs) {
-//     result.erase(pair.first);
-//   }
-//   return result;
-// }
 
 bool isLifetimeIntrinsic(CallBase *callInst) {
   auto intrinsic = dyn_cast<IntrinsicInst>(callInst);

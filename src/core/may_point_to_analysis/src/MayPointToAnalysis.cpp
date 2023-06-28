@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/MayPointToAnalysis.hpp"
-#include "MayPointToAnalysisUtils.hpp"
+#include "noelle/core/MayPointToAnalysisUtils.hpp"
 
 using namespace std;
 
@@ -279,14 +279,13 @@ void MayPointToAnalysis::updateFunctionSummaryUntilFixedPoint(
   return;
 }
 
-PointToSummary *MayPointToAnalysis::getPointToSummary(Module &M,
-                                                      CallGraph *callGraph) {
+PointToSummary *MayPointToAnalysis::getPointToSummary(Module &M) {
 
   if (ptSum != nullptr) {
     return ptSum;
   }
 
-  ptSum = new PointToSummary(M, callGraph);
+  ptSum = new PointToSummary(M);
   auto mainF = M.getFunction("main");
   auto mainFuncSum = ptSum->getFunctionSummary(mainF);
   auto mainFuncPtGraph = mainFuncSum->functionPointToGraph;

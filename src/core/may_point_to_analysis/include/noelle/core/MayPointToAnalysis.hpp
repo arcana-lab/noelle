@@ -112,7 +112,7 @@ public:
  */
 class PointToSummary {
 public:
-  PointToSummary(Module &M, CallGraph *callGraph);
+  PointToSummary(Module &M);
   ~PointToSummary();
 
   Variable *getVariable(Value *source);
@@ -135,16 +135,10 @@ private:
   std::unordered_map<Function *, FunctionSummary *> funcSums;
 };
 
-class LiveMemorySummary {
-public:
-  std::unordered_set<CallBase *> allocable;
-  std::unordered_set<CallBase *> removable;
-};
-
 class MayPointToAnalysis {
 public:
   MayPointToAnalysis();
-  PointToSummary *getPointToSummary(Module &M, CallGraph *callGraph);
+  PointToSummary *getPointToSummary(Module &M);
   // LiveMemorySummary *getLiveMemorySummary(FunctionSummary *funcSum);
   ~MayPointToAnalysis();
 
@@ -158,7 +152,5 @@ private:
 
   PointToSummary *ptSum;
 };
-
-std::string getCalledFuncName(CallBase *callInst);
 
 } // namespace llvm::noelle

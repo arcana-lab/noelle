@@ -30,51 +30,53 @@ PrivatizerManager::PrivatizerManager() : ModulePass{ ID } {
 
 bool PrivatizerManager::runOnModule(Module &M) {
 
-  return false;
-  // /*
-  //  * Check if enablers have been enabled.
-  //  */
-  // if (!this->enablePrivatizer) {
-  //   return false;
-  // }
-  // auto prefix = "PrivatizerManager: ";
-  // errs() << prefix << "Start\n";
+  /*
+   * Check if enablers have been enabled.
+   */
+  if (!this->enablePrivatizer) {
+    return false;
+  }
+  auto prefix = "PrivatizerManager: ";
+  errs() << prefix << "Start\n";
 
-  // /*
-  //  * Fetch NOELLE.
-  //  */
-  // auto &noelle = getAnalysis<Noelle>();
+  /*
+   * Fetch NOELLE.
+   */
+  auto &noelle = getAnalysis<Noelle>();
 
-  // auto modified = false;
+  auto modified = false;
 
-  // auto fm = noelle.getFunctionsManager();
-  // auto mainF = fm->getEntryFunction();
-  // auto mayPointToAnalysis = noelle.getMayPointToAnalysis(mainF);
-  // auto funcSum = mayPointToAnalysis.getFunctionSummary();
+  auto fm = noelle.getFunctionsManager();
+  auto mainF = fm->getEntryFunction();
+  auto mayPointToAnalysis = noelle.getMayPointToAnalysis();
+  auto ptSum = mayPointToAnalysis.getPointToSummary(M);
 
-  // if (funcSum->basicBlockCount > BB_NUMBER_THRESHOLD) {
-  //   errs() << prefix << "Too many basic blocks in function " <<
-  //   mainF->getName()
-  //          << ", skip privatization.\n";
-  //   return false;
-  // }
+  auto pcf = fm->getProgramCallGraph();
+  auto islands = pcf->getIslands();
+  auto islandOfMain = islands[mainF];
+  for (auto &F : M) {
+    auto funcSum = ptSum->getFunctionSummary(&F);
+    auto fname = F.getName();
+    errs()
+        << prefix
+        << "Try to transform @malloc() or @calloc() to allocaInst in function "
+        << fname << ".\n";
+    auto h2s = this->applyHeapToStack(ptSum, funcSum);
+    errs() << prefix << (h2s ? "" : "no ")
+           << "@malloc() or @calloc() transformed to allocaInst in function "
+           << fname << ".\n";
+    modified |= h2s;
 
-  // errs()
-  //     << prefix << "Try to transform @malloc() or @calloc() to
-  //     allocaInst.\n";
-  // auto h2s = this->applyHeapToStack(noelle, mayPointToAnalysis);
-  // errs() << prefix << (h2s ? "" : "no ")
-  //        << "@malloc() or @calloc() transformed to allocaInst.\n";
-  // modified |= h2s;
+    // errs() << prefix << "Try to transform global variables to allocaInst in
+    // function " << fname << ".\n"; auto g2s = this->applyGlobalToStack(noelle,
+    // mayPointToAnalysis); errs() << prefix << (g2s ? "" : "no ")
+    //        << "global variables transformed to allocaInst in function " <<
+    //        fname << ".\n";
+    // modified |= g2s;
+  }
 
-  // errs() << prefix << "Try to transform global variables to allocaInst.\n";
-  // auto g2s = this->applyGlobalToStack(noelle, mayPointToAnalysis);
-  // errs() << prefix << (g2s ? "" : "no ")
-  //        << "global variables transformed to allocaInst.\n";
-  // modified |= g2s;
-
-  // errs() << prefix << "Exit\n";
-  // return modified;
+  errs() << prefix << "Exit\n";
+  return modified;
 }
 
 } // namespace llvm::noelle

@@ -22,7 +22,7 @@
 
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/MayPointToAnalysis.hpp"
-#include "MayPointToAnalysisUtils.hpp"
+#include "noelle/core/MayPointToAnalysisUtils.hpp"
 
 using namespace std;
 
@@ -157,7 +157,7 @@ FunctionSummary::~FunctionSummary() {
   }
 }
 
-PointToSummary::PointToSummary(Module &M, CallGraph *callGraph) : M(M) {
+PointToSummary::PointToSummary(Module &M) : M(M) {
   for (auto &G : M.globals()) {
     auto globalVar = new Variable(&G);
     auto globalMemObj = new MemoryObject(&G);
@@ -165,6 +165,7 @@ PointToSummary::PointToSummary(Module &M, CallGraph *callGraph) : M(M) {
     memoryObjects[&G] = globalMemObj;
     globalMemoryObjects.insert(globalMemObj);
   }
+  unknownMemoryObject = new MemoryObject(nullptr);
 }
 
 PointToSummary::~PointToSummary() {

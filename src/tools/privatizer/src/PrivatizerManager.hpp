@@ -22,8 +22,15 @@
 #pragma once
 
 #include "noelle/core/Noelle.hpp"
+#include <unordered_set>
 
 namespace llvm::noelle {
+
+class LiveMemorySummary {
+public:
+  std::unordered_set<CallBase *> allocable;
+  std::unordered_set<CallBase *> removable;
+};
 
 class PrivatizerManager : public ModulePass {
 public:
@@ -40,18 +47,16 @@ public:
 private:
   bool enablePrivatizer;
 
-  const uint64_t BB_NUMBER_THRESHOLD = 100;
-
   const uint64_t STACK_SIZE_THRESHOLD = 8 * 1024 * 1024;
 
-  bool applyHeapToStack(Noelle &noelle, MayPointToAnalysis &mayPointToAnalysis);
+  LiveMemorySummary getLiveMemorySummary(PointToSummary *ptSum,
+                                         FunctionSummary *funcSum);
 
-  bool applyGlobalToStack(Noelle &noelle,
-                          MayPointToAnalysis &mayPointToAnalysis);
+  bool applyHeapToStack(PointToSummary *ptSum, FunctionSummary *funcSum);
 
-  bool canBeClonedToStack(GlobalVariable *globalVar,
-                          Noelle &noelle,
-                          MayPointToAnalysis &mayPointToAnalysis);
+  bool applyGlobalToStack(FunctionSummary *funcSum);
+
+  bool canBeClonedToStack(GlobalVariable *globalVar, FunctionSummary *funcSum);
 };
 
 } // namespace llvm::noelle
