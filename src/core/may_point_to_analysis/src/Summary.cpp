@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include "noelle/core/CallGraph.hpp"
 #include "noelle/core/MayPointToAnalysis.hpp"
 #include "MayPointToAnalysisUtils.hpp"
 
@@ -41,21 +42,63 @@ PointNodeType Variable::getType(void) {
   return PointNodeType::VARIABLE;
 }
 
-MemoryObject::MemoryObject(Value *source, bool prev) : Pointer(source) {
-  this->prevLoopAllocated = prev;
-};
+MemoryObject::MemoryObject(Value *source) : Pointer(source) {}
 
 PointNodeType MemoryObject::getType(void) {
   return PointNodeType::MEMORY_OBJECT;
 }
 
-FunctionSummary::FunctionSummary(Function *F) {
-  this->F = F;
-  this->M = F->getParent();
-  this->basicBlockCount = 0;
+PointToGraph::PointToGraph() {}
 
-  for (auto &bb : *F) {
-    this->basicBlockCount++;
+/*
+ * Returns the set of memory objects that the pointer may point to.
+ * The pointer can be a variable or a memory object
+ */
+MemoryObjects PointToGraph::getPointees(Pointer *pointer) {
+  return (ptGraph.count(pointer) > 0) ? ptGraph[pointer] : MemoryObjects();
+}
+
+bool PointToGraph::setPointees(Pointer *ptr, MemoryObjects newPtes) {
+  auto oldPtes = getPointees(ptr);
+  if (oldPtes != newPtes) {
+    ptGraph[ptr] = newPtes;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+MemoryObjects PointToGraph::reachableMemoryObjects(Pointer *pointer) {
+  MemoryObjects reachable;
+  set<Pointer *> worklist;
+  worklist.insert(pointer);
+  while (!worklist.empty()) {
+    auto ptr = *worklist.begin();
+    worklist.erase(ptr);
+    for (auto pte : getPointees(ptr)) {
+      if (reachable.count(pte) == 0) {
+        reachable.insert(pte);
+        worklist.insert(pte);
+      }
+    }
+  }
+  return reachable;
+};
+
+MemoryObject *PointToGraph::mustPointToMemory(Pointer *pointer) {
+  auto ptes = getPointees(pointer);
+  if (ptes.size() == 0 || ptes.size() > 1) {
+    return nullptr;
+  }
+  auto memoryObject = dyn_cast<MemoryObject>(*ptes.begin());
+  return memoryObject;
+}
+
+FunctionSummary::FunctionSummary(Function *caller, Function *currentF) {
+  this->caller = caller;
+  this->currentF = currentF;
+
+  for (auto &bb : *currentF) {
     for (auto &inst : bb) {
       if (isa<AllocaInst>(inst)) {
         auto allocaInst = dyn_cast<AllocaInst>(&inst);
@@ -66,8 +109,12 @@ FunctionSummary::FunctionSummary(Function *F) {
       } else if (isa<StoreInst>(inst)) {
         auto storeInst = dyn_cast<StoreInst>(&inst);
         this->storeInsts.insert(storeInst);
+      } else if (isa<ReturnInst>(inst)) {
+        auto returnInst = dyn_cast<ReturnInst>(&inst);
+        this->returnInsts.insert(returnInst);
       } else if (isa<CallBase>(inst)) {
         auto callInst = dyn_cast<CallBase>(&inst);
+        auto calledFunc = callInst->getCalledFunction();
         auto fname = getCalledFuncName(callInst);
         if (fname == MALLOC) {
           this->mallocInsts.insert(callInst);
@@ -77,9 +124,17 @@ FunctionSummary::FunctionSummary(Function *F) {
           this->reallocInsts.insert(callInst);
         } else if (fname == FREE) {
           this->freeInsts.insert(callInst);
-        } else if ((!isLifetimeIntrinsic(callInst))
-                   && (!isa<MemCpyInst>(callInst))
-                   && (READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX.count(fname) == 0)) {
+        } else if (isLifetimeIntrinsic(callInst)) {
+          // DO NOTHING
+        } else if (isa<MemCpyInst>(callInst)) {
+          // DO NOTHING
+        } else if (READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX.count(fname) > 0) {
+          // DO NOTHING
+        } else if (calledFunc != nullptr && !calledFunc->isDeclaration()) {
+          // DO NOTHING
+          // A user-defined function is not unknown,
+          // its point-to info will be stored in another function summary
+        } else {
           this->unknownFuntctionCalls.insert(callInst);
         }
       }
@@ -87,10 +142,15 @@ FunctionSummary::FunctionSummary(Function *F) {
   }
 }
 
-PointToSummary::PointToSummary(FunctionSummary *funcSum) {
-  M = funcSum->M;
+FunctionSummary::~FunctionSummary() {
+  if (functionPointToGraph != nullptr) {
+    delete functionPointToGraph;
+  }
+}
 
-  for (auto &G : M->globals()) {
+PointToSummary::PointToSummary(Module &M, CallGraph *callGraph) : M(M) {
+
+  for (auto &G : M.globals()) {
     auto globalVar = new Variable(&G);
     auto globalMemObj = new MemoryObject(&G);
     variables[&G] = globalVar;
@@ -98,109 +158,89 @@ PointToSummary::PointToSummary(FunctionSummary *funcSum) {
     globalMemoryObjects.insert(globalMemObj);
   }
 
-  for (auto &bb : *funcSum->F) {
-    bbIN[&bb] = PointToGraph();
-    bbOUT[&bb] = PointToGraph();
+  set<FunctionCall> funcInvokes;
+  auto mainF = M.getFunction("main");
+  auto islands = callGraph->getIslands();
+  auto islandOfMain = islands[mainF];
 
-    for (auto &inst : bb) {
-      instIN[&inst] = PointToGraph();
-      instOUT[&inst] = PointToGraph();
+  for (auto node : callGraph->getFunctionNodes()) {
+    auto f = node->getFunction();
+    /*
+     * An empty function or function with only declaration will not call our
+     * function
+     */
+    if (f->empty() || f->isDeclaration()) {
+      continue;
     }
-  }
+    /*
+     * Ignore cold functions
+     */
+    if (islands[f] != islandOfMain) {
+      continue;
+    }
 
-  for (auto inst : funcSum->mallocInsts) {
-    auto heapVar = new Variable(inst);
-    auto heapMemObj = new MemoryObject(inst);
-    variables[inst] = heapVar;
-    memoryObjects[inst] = heapMemObj;
-  }
-
-  for (auto inst : funcSum->callocInsts) {
-    auto heapVar = new Variable(inst);
-    auto heapMemObj = new MemoryObject(inst);
-    variables[inst] = heapVar;
-    memoryObjects[inst] = heapMemObj;
-  }
-
-  for (auto inst : funcSum->allocaInsts) {
-    auto stackVar = new Variable(inst);
-    auto stackMemObj = new MemoryObject(inst);
-    variables[inst] = stackVar;
-    memoryObjects[inst] = stackMemObj;
-  }
-
-  for (auto &arg : funcSum->F->args()) {
-    variables[&arg] = new Variable(&arg);
-  }
-
-  nonLocalMemoryObject = new MemoryObject(nullptr);
-}
-
-PointToSummary::~PointToSummary() {
-  for (auto &[_, variable] : variables) {
-    free(variable);
-  }
-  for (auto &[_, memoryObject] : memoryObjects) {
-    free(memoryObject);
-  }
-  for (auto &[_, memObjPrev] : prevLoopAllocated) {
-    free(memObjPrev);
-  }
-  free(nonLocalMemoryObject);
-}
-
-/*
- * Returns the set of memory objects that the pointer may point to.
- * The pointer can be a variable or a memory object
- */
-MemoryObjects PointToSummary::getPointees(PointToGraph &ptGraph,
-                                          Pointer *pointer) {
-  return (ptGraph.count(pointer) > 0) ? ptGraph[pointer] : MemoryObjects();
-}
-
-/*
- * Returns the set of memory objects that the pointer may point to.
- * Here the pointer is an instruction or global variable, but cannot be a memory
- * object. To get the getPointees of a memory object, the user must explicitly
- * create the memory object and use `getPointees(PointToGraph &ptGraph, Pointer
- * *ptr)`.
- */
-MemoryObjects PointToSummary::getPointees(PointToGraph &ptGraph,
-                                          Value *pointer) {
-  return getPointees(ptGraph, getVariable(pointer));
-}
-
-MemoryObjects PointToSummary::reachableMemoryObjects(PointToGraph &ptGraph,
-                                                     Pointer *pointer) {
-  MemoryObjects reachable;
-  unordered_set<Pointer *> worklist;
-  worklist.insert(pointer);
-  while (!worklist.empty()) {
-    auto ptr = *worklist.begin();
-    worklist.erase(ptr);
-    for (auto pte : getPointees(ptGraph, ptr)) {
-      if (reachable.count(pte) == 0) {
-        reachable.insert(pte);
-        worklist.insert(pte);
+    for (auto callEdge : node->getOutgoingEdges()) {
+      /*
+       * funcInvokes cares only about the must call edges
+       * for may call edges (i.e. call with function pointer), we can not get
+       * the callee function we will assume the most conservative case later in
+       * may_point_to_analysis.
+       */
+      if (callEdge->isAMustCall()) {
+        auto calleeNode = callEdge->getCallee();
+        auto calleeF = calleeNode->getFunction();
+        funcInvokes.insert(make_pair(f, calleeF));
       }
     }
   }
-  return reachable;
-};
 
-MemoryObject *PointToSummary::mustPointToMemory(PointToGraph &ptGraph,
-                                                Pointer *pointer) {
-  auto ptes = getPointees(ptGraph, pointer);
-  if (ptes.size() == 0 || ptes.size() > 1) {
-    return nullptr;
-  }
-  auto memoryObject = dyn_cast<MemoryObject>(*ptes.begin());
-  for (auto &[_, memObjPrev] : prevLoopAllocated) {
-    if (memoryObject == memObjPrev) {
-      return nullptr;
+  funcSums[make_pair(nullptr, mainF)] = new FunctionSummary(nullptr, mainF);
+  for (auto &[callerF, calleeF] : funcInvokes) {
+    auto funcSum = new FunctionSummary(callerF, calleeF);
+    funcSums[make_pair(callerF, calleeF)] = funcSum;
+
+    for (auto inst : funcSum->mallocInsts) {
+      getVariable(inst);
+      getMemoryObject(inst);
+    }
+
+    for (auto inst : funcSum->callocInsts) {
+      getVariable(inst);
+      getMemoryObject(inst);
+    }
+
+    for (auto inst : funcSum->allocaInsts) {
+      getVariable(inst);
+      getMemoryObject(inst);
+    }
+
+    for (auto &arg : funcSum->currentF->args()) {
+      getVariable(&arg);
     }
   }
-  return memoryObject;
+}
+
+PointToSummary::~PointToSummary() {
+  for (auto &[_, funcSum] : funcSums) {
+    if (funcSum != nullptr) {
+      delete funcSum;
+    }
+  }
+  for (auto &[_, variable] : variables) {
+    if (variable != nullptr) {
+      delete variable;
+    }
+  }
+  for (auto &[_, memoryObject] : memoryObjects) {
+    if (memoryObject != nullptr) {
+      delete memoryObject;
+    }
+  }
+  for (auto globalMemoryObject : globalMemoryObjects) {
+    if (globalMemoryObject != nullptr) {
+      delete globalMemoryObject;
+    }
+  }
 }
 
 Variable *PointToSummary::getVariable(Value *source) {

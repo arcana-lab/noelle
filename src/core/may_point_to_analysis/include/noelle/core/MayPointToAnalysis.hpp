@@ -1,9 +1,12 @@
 #pragma once
 
 #include "noelle/core/Utils.hpp"
+#include "noelle/core/CallGraph.hpp"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/Instructions.h"
 
-#include <unordered_map>
-#include <unordered_set>
+#include <map>
+#include <set>
 #include <vector>
 
 namespace llvm::noelle {
@@ -51,33 +54,55 @@ public:
 
 class MemoryObject : public Pointer {
 public:
-  MemoryObject(Value *source, bool prev = false);
+  MemoryObject(Value *source);
   PointNodeType getType(void) override;
-
-private:
-  bool prevLoopAllocated = false;
 };
 
-using Variables = std::unordered_set<Variable *>;
-using MemoryObjects = std::unordered_set<MemoryObject *>;
-using PointToGraph = std::unordered_map<Pointer *, MemoryObjects>;
+using FunctionCall = std::pair<Function *, Function *>;
+using Variables = std::set<Variable *>;
+using MemoryObjects = std::set<MemoryObject *>;
+
+class PointToGraph {
+public:
+  PointToGraph();
+  MemoryObjects getPointees(Pointer *pointer);
+  bool setPointees(Pointer *pointer, MemoryObjects pointees);
+  MemoryObject *mustPointToMemory(Pointer *pointer);
+  MemoryObjects reachableMemoryObjects(Pointer *pointer);
+
+private:
+  std::map<Pointer *, MemoryObjects> ptGraph;
+};
 
 class FunctionSummary {
 public:
-  FunctionSummary(Function *F);
+  FunctionSummary(Function *caller, Function *currentF);
+  ~FunctionSummary();
 
-  Module *M;
-  Function *F;
+  Function *currentF;
+  Function *caller;
 
-  uint64_t basicBlockCount = 0;
-  std::unordered_set<CallBase *> mallocInsts;
-  std::unordered_set<CallBase *> callocInsts;
-  std::unordered_set<CallBase *> reallocInsts;
-  std::unordered_set<CallBase *> freeInsts;
-  std::unordered_set<CallBase *> unknownFuntctionCalls;
-  std::unordered_set<AllocaInst *> allocaInsts;
-  std::unordered_set<LoadInst *> loadInsts;
-  std::unordered_set<StoreInst *> storeInsts;
+  std::set<CallBase *> mallocInsts;
+  std::set<CallBase *> callocInsts;
+  std::set<CallBase *> reallocInsts;
+  std::set<CallBase *> freeInsts;
+  std::set<CallBase *> unknownFuntctionCalls;
+  std::set<AllocaInst *> allocaInsts;
+  std::set<LoadInst *> loadInsts;
+  std::set<StoreInst *> storeInsts;
+  std::set<ReturnInst *> returnInsts;
+
+  PointToGraph *functionPointToGraph;
+  /*
+   * Record all memory objects that escape from the current function.
+   * An escaped memory object could be read or written after the current
+   * function returns. Therefore, we could not turn it to allocaInst.
+   */
+  MemoryObjects canBeAccessedAfterReturn;
+
+  MemoryObjects returnValue;
+
+  MemoryObjects mustHeap;
 };
 
 /*
@@ -87,99 +112,48 @@ public:
  */
 class PointToSummary {
 public:
-  PointToSummary(FunctionSummary *funSum);
+  PointToSummary(Module &M, CallGraph *callGraph);
   ~PointToSummary();
 
-  MemoryObjects getPointees(PointToGraph &ptGraph, Pointer *pointer);
-  MemoryObjects getPointees(PointToGraph &ptGraph, Value *pointer);
-  MemoryObject *mustPointToMemory(PointToGraph &ptGraph, Pointer *pointer);
-  MemoryObjects reachableMemoryObjects(PointToGraph &ptGraph, Pointer *pointer);
   Variable *getVariable(Value *source);
   MemoryObject *getMemoryObject(Value *source);
 
-  Module *M;
-  std::unordered_map<Instruction *, PointToGraph> instIN;
-  std::unordered_map<Instruction *, PointToGraph> instOUT;
-  std::unordered_map<BasicBlock *, PointToGraph> bbIN;
-  std::unordered_map<BasicBlock *, PointToGraph> bbOUT;
+  Module &M;
+  std::map<FunctionCall, FunctionSummary *> funcSums;
 
-  /*
-   * Assume we have inst `%1 = tail call i8* @malloc(i64 8)` in loop, which will
-   * be executed many times. then we have M1 and M1_prev, where M1 is the memory
-   * object allocated in the latest loop, while M1_prev is the memory object
-   * allocated in any previous loop. prevLoopAllocated is used to record the
-   * mapping: M1 -> M1_prev
-   *
-   * Here lastest means the last execution of `%1 = tail call i8* @malloc(i64
-   * 8)` if current iteration is iteration 3 (start from 0), M1 is the memory
-   * object allocated by the 4th execution of `%1 = tail call i8* @malloc(i64
-   * 8)` M1_prev refers to the memory objects allocated by the 1st, 2nd, 3rf
-   * execution of `%1 = tail call i8* @malloc(i64 8)`
-   *
-   */
-  std::unordered_map<MemoryObject *, MemoryObject *> prevLoopAllocated;
-
-  /*
-   * if only M1 is read or written (see checkAmbiguity() in
-   * MayPointToAnalysis.cpp), then we could say that the memory object allocated
-   * by `%1 = tail call i8* @malloc(i64 8)` will only be read and written in the
-   * current iteration, therefore we could safely hoist the malloc to the entry
-   * block, and turn it to allocainst.
-   *
-   * if some M1_prev is read or written, then we could not hoist the malloc to
-   * the entry block. can the corresponding M1 is marked as ambiguous.
-   */
-  MemoryObjects ambiguous;
   /*
    * Memory objects allocated by global variable declarations
    * For example, in the global variable declaration `@gv = dso_local global
    * [256 x i8]` the `dso_local global [256 x i8]` is one global memory object
    */
   MemoryObjects globalMemoryObjects;
-  /*
-   * Becauase of some bugs of LLVM, if allocaInst is the destination of the
-   * MemCpyInst, The copy will not change the value of the destination.
-   * Therefore, if some `%1 = tail call i8* @malloc(i64 8)` used as the
-   * destination of MemCpyInst, Then we could not turn it to allocaInst.
-   */
-  MemoryObjects mustHeap;
-  /*
-   * Record all memory objects that escape from the current function.
-   * An escaped memory object could be read or written after the current
-   * function returns. Therefore, we could not turn it to allocaInst.
-   */
-  MemoryObjects escaped;
-  /*
-   * nonLocalMemoryObject is summary for memory objects allocated by other
-   * functions. Being pointed by nonLocalMemoryObject means a memory object
-   * escaped.
-   */
-  MemoryObject *nonLocalMemoryObject;
 
 private:
-  std::unordered_map<Value *, Variable *> variables;
-  std::unordered_map<Value *, MemoryObject *> memoryObjects;
+  std::map<Value *, Variable *> variables;
+  std::map<Value *, MemoryObject *> memoryObjects;
 };
 
 class LiveMemorySummary {
 public:
-  std::unordered_set<CallBase *> allocable;
-  std::unordered_set<CallBase *> removable;
+  std::set<CallBase *> allocable;
+  std::set<CallBase *> removable;
 };
 
 class MayPointToAnalysis {
 public:
-  MayPointToAnalysis(Function *F);
-  FunctionSummary *getFunctionSummary(void);
-  PointToSummary *getPointToSummary(void);
-  LiveMemorySummary *getLiveMemorySummary(void);
+  MayPointToAnalysis();
+  PointToSummary *getPointToSummary(Module &M, CallGraph *callGraph);
+  // LiveMemorySummary *getLiveMemorySummary(FunctionSummary *funcSum);
   ~MayPointToAnalysis();
 
 private:
-  FunctionSummary *functionSummary;
-  PointToSummary *pointToSummary;
-  PointToGraph mergeAllPredOut(BasicBlock *bb, PointToSummary *ptSum);
-  PointToGraph FS(Instruction *inst, PointToSummary *ptSum);
+  bool FS(FunctionSummary *funcSum,
+          Instruction *inst,
+          std::set<FunctionCall> &visited);
+  void updateFunctionSummaryUntilFixedPoint(FunctionCall functionCall,
+                                            std::set<FunctionCall> &visited);
+
+  PointToSummary *ptSum;
 };
 
 std::string getCalledFuncName(CallBase *callInst);

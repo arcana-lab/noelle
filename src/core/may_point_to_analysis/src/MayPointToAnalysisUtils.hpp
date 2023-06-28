@@ -32,20 +32,20 @@ const std::string CALLOC = "calloc";
 const std::string REALLOC = "realloc";
 const std::string FREE = "free";
 
-const std::unordered_set<std::string> MEMORY_FUNCTIONS = { MALLOC,
-                                                           CALLOC,
-                                                           REALLOC,
-                                                           FREE };
+const std::set<std::string> MEMORY_FUNCTIONS = { MALLOC,
+                                                 CALLOC,
+                                                 REALLOC,
+                                                 FREE };
 
-const std::unordered_set<std::string> READ_ONLY_LIB_FUNCTIONS = {
+const std::set<std::string> READ_ONLY_LIB_FUNCTIONS = {
   "atoi",   "atof",    "atol",   "atoll",  "fprintf", "fputc", "fputs",
   "putc",   "putchar", "printf", "puts",   "rand",    "scanf", "sqrt",
   "strlen", "strncmp", "strtod", "strtol", "strtoll"
 };
 
-const std::unordered_set<std::string> READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX =
-    []() -> std::unordered_set<std::string> {
-  std::unordered_set<std::string> result;
+const std::set<std::string> READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX =
+    []() -> std::set<std::string> {
+  std::set<std::string> result;
   for (auto fname : READ_ONLY_LIB_FUNCTIONS) {
     result.insert(fname);
     result.insert(fname + "_unlocked");
@@ -63,9 +63,9 @@ MemoryObjects replace(const MemoryObjects &memObjSet,
                       MemoryObject *oldObj,
                       MemoryObject *newObj);
 
-PointToGraph add(const PointToGraph &lhs, const PointToGraph &rhs);
+// PointToGraph add(const PointToGraph &lhs, const PointToGraph &rhs);
 
-PointToGraph minus(const PointToGraph &lhs, const PointToGraph &rhs);
+// PointToGraph minus(const PointToGraph &lhs, const PointToGraph &rhs);
 
 bool isLifetimeIntrinsic(CallBase *callInst);
 

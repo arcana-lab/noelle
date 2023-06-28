@@ -28,6 +28,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_forest/include
   ../../loop_structure/include 
   ../../dominators/include 
+  ../../callgraph/include
   ../include
   ./
   )
