@@ -28,7 +28,9 @@ namespace llvm::noelle {
 template <class T>
 class DGNode {
 public:
-  DGNode(int32_t id, T *node) : ID{ id }, theT(node) {}
+  DGNode(int32_t id, T *node);
+
+  T *getT(void) const;
 
   typedef typename std::vector<DGNode<T> *>::iterator nodes_iterator;
   typedef typename std::unordered_set<DGEdge<T> *>::iterator edges_iterator;
@@ -75,10 +77,6 @@ public:
     return make_range(incomingEdges.begin(), incomingEdges.end());
   }
 
-  T *getT() const {
-    return theT;
-  }
-
   unsigned numConnectedEdges() {
     return outgoingEdges.size() + incomingEdges.size();
   }
@@ -90,11 +88,15 @@ public:
   }
 
   void addIncomingEdge(DGEdge<T> *edge);
+
   void addOutgoingEdge(DGEdge<T> *edge);
+
   void removeConnectedEdge(DGEdge<T> *edge);
+
   void removeConnectedNode(DGNode<T> *node);
 
   std::string toString();
+
   raw_ostream &print(raw_ostream &stream);
 
 protected:
@@ -103,5 +105,67 @@ protected:
   std::unordered_set<DGEdge<T> *> outgoingEdges;
   std::unordered_set<DGEdge<T> *> incomingEdges;
 };
+
+template <class T>
+DGNode<T>::DGNode(int32_t id, T *node) : ID{ id },
+                                         theT(node) {
+  return;
+}
+
+template <class T>
+T *DGNode<T>::getT(void) const {
+  return theT;
+}
+
+template <class T>
+raw_ostream &DGNode<T>::print(raw_ostream &stream) {
+  theT->print(stream);
+  return stream;
+}
+
+template <class T>
+void DGNode<T>::addIncomingEdge(DGEdge<T> *edge) {
+  this->incomingEdges.insert(edge);
+}
+
+template <class T>
+void DGNode<T>::addOutgoingEdge(DGEdge<T> *edge) {
+  this->outgoingEdges.insert(edge);
+}
+
+template <class T>
+void DGNode<T>::removeConnectedEdge(DGEdge<T> *edge) {
+  DGNode<T> *node;
+  if (outgoingEdges.find(edge) != outgoingEdges.end()) {
+    outgoingEdges.erase(edge);
+    node = edge->getIncomingNode();
+  } else {
+    incomingEdges.erase(edge);
+    node = edge->getOutgoingNode();
+  }
+}
+
+template <class T>
+void DGNode<T>::removeConnectedNode(DGNode<T> *node) {
+  std::unordered_set<DGEdge<T> *> outgoingEdgesToRemove{};
+  for (auto edge : outgoingEdges) {
+    if (edge->getIncomingNode() == node) {
+      outgoingEdgesToRemove.insert(edge);
+    }
+  }
+  for (auto edge : outgoingEdgesToRemove) {
+    outgoingEdges.erase(edge);
+  }
+
+  std::unordered_set<DGEdge<T> *> incomingEdgesToRemove{};
+  for (auto edge : incomingEdges) {
+    if (edge->getOutgoingNode() == node) {
+      incomingEdgesToRemove.insert(edge);
+    }
+  }
+  for (auto edge : incomingEdgesToRemove) {
+    incomingEdges.erase(edge);
+  }
+}
 
 } // namespace llvm::noelle

@@ -115,9 +115,9 @@ public:
     entryNode = node;
   }
 
-  bool isInternal(T *theT) const ;
-  bool isExternal(T *theT) const ;
-  bool isInGraph(T *theT) const ;
+  bool isInternal(T *theT) const;
+  bool isExternal(T *theT) const;
+  bool isInGraph(T *theT) const;
 
   unsigned numNodes() const {
     return allNodes.size();
@@ -206,11 +206,10 @@ protected:
 };
 
 template <class T>
-DG<T>::DG()
-: nodeIdCounter{ 0 },
-  depLookupMap{nullptr} {
+DG<T>::DG() : nodeIdCounter{ 0 },
+              depLookupMap{ nullptr } {
 
-  return ;
+  return;
 }
 
 /*
@@ -356,8 +355,8 @@ std::unordered_set<DGNode<T> *> DG<T>::getLeafNodes(bool onlyInternal) {
 }
 
 template <class T>
-std::vector<std::unordered_set<DGNode<T> *> *> DG<
-    T>::getDisconnectedSubgraphs(void) {
+std::vector<std::unordered_set<DGNode<T> *> *> DG<T>::getDisconnectedSubgraphs(
+    void) {
   std::vector<std::unordered_set<DGNode<T> *> *> connectedComponents;
   std::unordered_set<DGNode<T> *> visitedNodes;
 
@@ -539,54 +538,6 @@ raw_ostream &DG<T>::print(raw_ostream &stream) {
   return stream;
 }
 
-/*
- * DGNode<T> class method implementations
- */
-template <class T>
-void DGNode<T>::addIncomingEdge(DGEdge<T> *edge) {
-  this->incomingEdges.insert(edge);
-}
-
-template <class T>
-void DGNode<T>::addOutgoingEdge(DGEdge<T> *edge) {
-  this->outgoingEdges.insert(edge);
-}
-
-template <class T>
-void DGNode<T>::removeConnectedEdge(DGEdge<T> *edge) {
-  DGNode<T> *node;
-  if (outgoingEdges.find(edge) != outgoingEdges.end()) {
-    outgoingEdges.erase(edge);
-    node = edge->getIncomingNode();
-  } else {
-    incomingEdges.erase(edge);
-    node = edge->getOutgoingNode();
-  }
-}
-
-template <class T>
-void DGNode<T>::removeConnectedNode(DGNode<T> *node) {
-  std::unordered_set<DGEdge<T> *> outgoingEdgesToRemove{};
-  for (auto edge : outgoingEdges) {
-    if (edge->getIncomingNode() == node) {
-      outgoingEdgesToRemove.insert(edge);
-    }
-  }
-  for (auto edge : outgoingEdgesToRemove) {
-    outgoingEdges.erase(edge);
-  }
-
-  std::unordered_set<DGEdge<T> *> incomingEdgesToRemove{};
-  for (auto edge : incomingEdges) {
-    if (edge->getOutgoingNode() == node) {
-      incomingEdgesToRemove.insert(edge);
-    }
-  }
-  for (auto edge : incomingEdgesToRemove) {
-    incomingEdges.erase(edge);
-  }
-}
-
 template <class T>
 std::string DGNode<T>::toString() {
   std::string nodeStr;
@@ -604,90 +555,6 @@ inline std::string DGNode<Instruction>::toString() {
   raw_string_ostream instStream(str);
   theT->print(instStream << theT->getFunction()->getName() << ": ");
   return str;
-}
-
-template <class T>
-raw_ostream &DGNode<T>::print(raw_ostream &stream) {
-  theT->print(stream);
-  return stream;
-}
-
-/*
- * DGEdge<T> class method implementations
- */
-template <class T, class SubT>
-DGEdgeBase<T, SubT>::DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge) {
-  auto nodePair = oldEdge.getNodePair();
-  from = nodePair.first;
-  to = nodePair.second;
-  setMemMustType(oldEdge.isMemoryDependence(),
-                 oldEdge.isMustDependence(),
-                 oldEdge.dataDependenceType());
-  setControl(oldEdge.isControlDependence());
-  setLoopCarried(oldEdge.isLoopCarriedDependence());
-  setRemovable(oldEdge.isRemovableDependence());
-  setRemedies(oldEdge.getRemedies());
-  for (auto subEdge : oldEdge.subEdges)
-    addSubEdge(subEdge);
-}
-
-template <class T, class SubT>
-void DGEdgeBase<T, SubT>::setMemMustType(bool mem,
-                                         bool must,
-                                         DataDependenceType dataDepType) {
-  this->memory = mem;
-  this->must = must;
-  this->dataDepType = dataDepType;
-}
-
-template <class T, class SubT>
-std::string DGEdgeBase<T, SubT>::dataDepToString() {
-  if (this->isRAWDependence())
-    return "RAW";
-  else if (this->isWARDependence())
-    return "WAR";
-  else if (this->isWAWDependence())
-    return "WAW";
-  else
-    return "NONE";
-}
-
-template <class T, class SubT>
-std::string DGEdgeBase<T, SubT>::toString() {
-  if (this->subEdges.size() > 0) {
-    std::string edgesStr;
-    raw_string_ostream ros(edgesStr);
-    for (auto edge : this->subEdges)
-      ros << edge->toString();
-    return ros.str();
-  }
-  std::string edgeStr;
-  raw_string_ostream ros(edgeStr);
-  ros << "Attributes: ";
-  if (this->isLoopCarried) {
-    ros << "Loop-carried ";
-  }
-  if (this->isControlDependence()) {
-    ros << "Control ";
-
-  } else {
-    ros << "Data ";
-    ros << this->dataDepToString();
-    ros << (must ? " (must)" : " (may)");
-    ros << (memory ? " from memory " : "");
-  }
-  ros << "\n";
-  ros.flush();
-  return edgeStr;
-}
-
-template <class T, class SubT>
-raw_ostream &DGEdgeBase<T, SubT>::print(raw_ostream &stream,
-                                        std::string linePrefix) {
-  from->print(stream << linePrefix << "From:\t") << "\n";
-  to->print(stream << linePrefix << "To:\t") << "\n";
-  stream << linePrefix << this->toString();
-  return stream;
 }
 
 template <class T>

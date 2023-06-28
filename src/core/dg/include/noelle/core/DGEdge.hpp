@@ -227,4 +227,79 @@ protected:
   SetOfRemedies_ptr remeds;
 };
 
+template <class T, class SubT>
+DGEdgeBase<T, SubT>::DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge) {
+  auto nodePair = oldEdge.getNodePair();
+  from = nodePair.first;
+  to = nodePair.second;
+  setMemMustType(oldEdge.isMemoryDependence(),
+                 oldEdge.isMustDependence(),
+                 oldEdge.dataDependenceType());
+  setControl(oldEdge.isControlDependence());
+  setLoopCarried(oldEdge.isLoopCarriedDependence());
+  setRemovable(oldEdge.isRemovableDependence());
+  setRemedies(oldEdge.getRemedies());
+  for (auto subEdge : oldEdge.subEdges)
+    addSubEdge(subEdge);
 }
+
+template <class T, class SubT>
+void DGEdgeBase<T, SubT>::setMemMustType(bool mem,
+                                         bool must,
+                                         DataDependenceType dataDepType) {
+  this->memory = mem;
+  this->must = must;
+  this->dataDepType = dataDepType;
+}
+
+template <class T, class SubT>
+std::string DGEdgeBase<T, SubT>::dataDepToString() {
+  if (this->isRAWDependence())
+    return "RAW";
+  else if (this->isWARDependence())
+    return "WAR";
+  else if (this->isWAWDependence())
+    return "WAW";
+  else
+    return "NONE";
+}
+
+template <class T, class SubT>
+std::string DGEdgeBase<T, SubT>::toString() {
+  if (this->subEdges.size() > 0) {
+    std::string edgesStr;
+    raw_string_ostream ros(edgesStr);
+    for (auto edge : this->subEdges)
+      ros << edge->toString();
+    return ros.str();
+  }
+  std::string edgeStr;
+  raw_string_ostream ros(edgeStr);
+  ros << "Attributes: ";
+  if (this->isLoopCarried) {
+    ros << "Loop-carried ";
+  }
+  if (this->isControlDependence()) {
+    ros << "Control ";
+
+  } else {
+    ros << "Data ";
+    ros << this->dataDepToString();
+    ros << (must ? " (must)" : " (may)");
+    ros << (memory ? " from memory " : "");
+  }
+  ros << "\n";
+  ros.flush();
+  return edgeStr;
+}
+
+template <class T, class SubT>
+raw_ostream &DGEdgeBase<T, SubT>::print(raw_ostream &stream,
+                                        std::string linePrefix) {
+  from->print(stream << linePrefix << "From:\t") << "\n";
+  to->print(stream << linePrefix << "To:\t") << "\n";
+  stream << linePrefix << this->toString();
+  return stream;
+}
+
+} // namespace llvm::noelle
