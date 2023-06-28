@@ -105,8 +105,8 @@ Hot *Noelle::getProfiles(void) {
   return this->profiles;
 }
 
-MayPointToAnalysis Noelle::getMayPointToAnalysis(Function *F) const {
-  return MayPointToAnalysis(F);
+MayPointToAnalysis Noelle::getMayPointToAnalysis() const {
+  return MayPointToAnalysis();
 }
 
 DataFlowAnalysis Noelle::getDataFlowAnalyses(void) const {

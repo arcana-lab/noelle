@@ -58,39 +58,39 @@ public:
   PointNodeType getType(void) override;
 };
 
-using FunctionCall = std::pair<Function *, Function *>;
-using Variables = std::set<Variable *>;
-using MemoryObjects = std::set<MemoryObject *>;
+using Variables = std::unordered_set<Variable *>;
+using MemoryObjects = std::unordered_set<MemoryObject *>;
 
 class PointToGraph {
 public:
   PointToGraph();
   MemoryObjects getPointees(Pointer *pointer);
-  bool setPointees(Pointer *pointer, MemoryObjects pointees);
+  bool setPointees(Pointer *pointer, MemoryObjects newPtes);
+  bool addPointees(Pointer *pointer, MemoryObjects newPtes);
   MemoryObject *mustPointToMemory(Pointer *pointer);
-  MemoryObjects reachableMemoryObjects(Pointer *pointer);
+  MemoryObjects getReachableMemoryObjects(Pointer *pointer);
 
 private:
-  std::map<Pointer *, MemoryObjects> ptGraph;
+  std::unordered_map<Pointer *, MemoryObjects> ptGraph;
 };
 
 class FunctionSummary {
 public:
-  FunctionSummary(Function *caller, Function *currentF);
+  static FunctionType getFunctionType(CallBase *callInst);
+  FunctionSummary(Function *currentF);
   ~FunctionSummary();
 
   Function *currentF;
-  Function *caller;
 
-  std::set<CallBase *> mallocInsts;
-  std::set<CallBase *> callocInsts;
-  std::set<CallBase *> reallocInsts;
-  std::set<CallBase *> freeInsts;
-  std::set<CallBase *> unknownFuntctionCalls;
-  std::set<AllocaInst *> allocaInsts;
-  std::set<LoadInst *> loadInsts;
-  std::set<StoreInst *> storeInsts;
-  std::set<ReturnInst *> returnInsts;
+  std::unordered_set<CallBase *> mallocInsts;
+  std::unordered_set<CallBase *> callocInsts;
+  std::unordered_set<CallBase *> reallocInsts;
+  std::unordered_set<CallBase *> freeInsts;
+  std::unordered_set<CallBase *> unknownFuntctionCalls;
+  std::unordered_set<AllocaInst *> allocaInsts;
+  std::unordered_set<LoadInst *> loadInsts;
+  std::unordered_set<StoreInst *> storeInsts;
+  std::unordered_set<ReturnInst *> returnInsts;
 
   PointToGraph *functionPointToGraph;
   /*
@@ -117,9 +117,9 @@ public:
 
   Variable *getVariable(Value *source);
   MemoryObject *getMemoryObject(Value *source);
+  FunctionSummary *getFunctionSummary(Function *function);
 
   Module &M;
-  std::map<FunctionCall, FunctionSummary *> funcSums;
 
   /*
    * Memory objects allocated by global variable declarations
@@ -127,16 +127,18 @@ public:
    * [256 x i8]` the `dso_local global [256 x i8]` is one global memory object
    */
   MemoryObjects globalMemoryObjects;
+  MemoryObject *unknownMemoryObject;
 
 private:
-  std::map<Value *, Variable *> variables;
-  std::map<Value *, MemoryObject *> memoryObjects;
+  std::unordered_map<Value *, Variable *> variables;
+  std::unordered_map<Value *, MemoryObject *> memoryObjects;
+  std::unordered_map<Function *, FunctionSummary *> funcSums;
 };
 
 class LiveMemorySummary {
 public:
-  std::set<CallBase *> allocable;
-  std::set<CallBase *> removable;
+  std::unordered_set<CallBase *> allocable;
+  std::unordered_set<CallBase *> removable;
 };
 
 class MayPointToAnalysis {
@@ -149,9 +151,10 @@ public:
 private:
   bool FS(FunctionSummary *funcSum,
           Instruction *inst,
-          std::set<FunctionCall> &visited);
-  void updateFunctionSummaryUntilFixedPoint(FunctionCall functionCall,
-                                            std::set<FunctionCall> &visited);
+          std::unordered_set<Function *> &visited);
+  void updateFunctionSummaryUntilFixedPoint(
+      Function *currentF,
+      std::unordered_set<Function *> &visited);
 
   PointToSummary *ptSum;
 };

@@ -38,7 +38,7 @@ MayPointToAnalysis::~MayPointToAnalysis() {
 
 bool MayPointToAnalysis::FS(FunctionSummary *funcSum,
                             Instruction *inst,
-                            set<FunctionCall> &visited) {
+                            unordered_set<Function *> &visited) {
 
   auto funcPtGraph = funcSum->functionPointToGraph;
   auto modified = false;
@@ -69,7 +69,7 @@ bool MayPointToAnalysis::FS(FunctionSummary *funcSum,
     auto allocaInst = dyn_cast<AllocaInst>(inst);
     auto allocaVar = ptSum->getVariable(allocaInst);
     auto allocaMemObj = ptSum->getMemoryObject(allocaInst);
-    modified |= funcPtGraph->setPointees(allocaVar, { allocaMemObj });
+    modified |= funcPtGraph->addPointees(allocaVar, { allocaMemObj });
   } else if (isa<StoreInst>(inst)) {
     /*
      * *q = p
@@ -82,9 +82,7 @@ bool MayPointToAnalysis::FS(FunctionSummary *funcSum,
     auto q = ptSum->getVariable(storeInst->getPointerOperand());
     // checkAmbiguity(ptSum->getPointees(IN, q));
     for (auto r : funcPtGraph->getPointees(q)) {
-      modified |= funcPtGraph->setPointees(
-          r,
-          unite(funcPtGraph->getPointees(r), funcPtGraph->getPointees(p)));
+      modified |= funcPtGraph->addPointees(r, funcPtGraph->getPointees(p));
     }
 
   } else if (isa<LoadInst>(inst)) {
@@ -97,7 +95,7 @@ bool MayPointToAnalysis::FS(FunctionSummary *funcSum,
     auto loadInst = dyn_cast<LoadInst>(inst);
     auto p = ptSum->getVariable(loadInst);
     auto q = ptSum->getVariable(loadInst->getPointerOperand());
-    modified |= funcPtGraph->setPointees(p, ptesOfMyPte(q));
+    modified |= funcPtGraph->addPointees(p, ptesOfMyPte(q));
   } else if (isa<PHINode>(inst)) {
     /*
      * %5 = phi i64 [ %val1, BB1 ], [ %var2, BB2 ]
@@ -112,7 +110,7 @@ bool MayPointToAnalysis::FS(FunctionSummary *funcSum,
       auto ptesI = funcPtGraph->getPointees(incomingPtr);
       phiPtes = unite(phiPtes, ptesI);
     }
-    modified |= funcPtGraph->setPointees(phiVar, phiPtes);
+    modified |= funcPtGraph->addPointees(phiVar, phiPtes);
   } else if (isa<SelectInst>(inst)) {
     /*
      * %6 = select i1 %cmp, %val1, %var2
@@ -125,7 +123,7 @@ bool MayPointToAnalysis::FS(FunctionSummary *funcSum,
     auto falsePtr = ptSum->getVariable(select->getFalseValue());
     auto truePtes = funcPtGraph->getPointees(truePtr);
     auto falsePtes = funcPtGraph->getPointees(falsePtr);
-    modified |= funcPtGraph->setPointees(selectVar, unite(truePtes, falsePtes));
+    modified |= funcPtGraph->addPointees(selectVar, unite(truePtes, falsePtes));
   } else if (isa<GetElementPtrInst>(inst)) {
     /*
      * %4 = getelementptr inbounds i8*, i8** %ptr, i64 1
@@ -135,14 +133,12 @@ bool MayPointToAnalysis::FS(FunctionSummary *funcSum,
     auto gep = dyn_cast<GetElementPtrInst>(inst);
     auto gepVar = ptSum->getVariable(gep);
     auto ptr = ptSum->getVariable(gep->getOperand(0));
-    modified |= funcPtGraph->setPointees(gepVar, funcPtGraph->getPointees(ptr));
+    modified |= funcPtGraph->addPointees(gepVar, funcPtGraph->getPointees(ptr));
   } else if (isa<CallBase>(inst)) {
     auto callInst = dyn_cast<CallBase>(inst);
-    auto calledFunc = callInst->getCalledFunction();
-    auto functionCall = make_pair(funcSum->currentF, calledFunc);
+    auto funcType = getMPAFunctionType(callInst);
 
-    if (funcSum->mallocInsts.count(callInst) > 0
-        || funcSum->callocInsts.count(callInst) > 0) {
+    if (funcType == MALLOC || funcType == CALLOC) {
       /*
        * %2 = call noalias i8* @malloc(i64 16)
        * GEN[i] = { (%2, M2) } ∪ { (m, M2_prev) | (m, M2) ∈ IN[i] & m != %2 }
@@ -150,8 +146,8 @@ bool MayPointToAnalysis::FS(FunctionSummary *funcSum,
        */
       auto heapVar = ptSum->getVariable(callInst);
       auto heapMemObj = ptSum->getMemoryObject(callInst);
-      modified |= funcPtGraph->setPointees(heapVar, { heapMemObj });
-    } else if (funcSum->reallocInsts.count(callInst) > 0) {
+      modified |= funcPtGraph->addPointees(heapVar, { heapMemObj });
+    } else if (funcType == REALLOC) {
       /*
        * %9 = call void realloc(i8* %7, i64 %8)
        * GEN[i] = { (%9, m) | (%7, m) ∈ IN[i] }
@@ -160,20 +156,18 @@ bool MayPointToAnalysis::FS(FunctionSummary *funcSum,
       auto reallocVar = ptSum->getVariable(callInst);
       auto ptr = ptSum->getVariable(callInst->getArgOperand(0));
       modified |=
-          funcPtGraph->setPointees(reallocVar, funcPtGraph->getPointees(ptr));
-    } else if (funcSum->freeInsts.count(callInst) > 0) {
+          funcPtGraph->addPointees(reallocVar, funcPtGraph->getPointees(ptr));
+    } else if (funcType == FREE) {
       /*
        * call void @free(i8* %7)
        * GEN[i] = { }
        * KILL[i] = { (x, m) | (%7, m) ∈ IN[i] & ( (%7, n) ∉ IN[i] ∀ n != m) }
        */
-    } else if (isLifetimeIntrinsic(callInst)) {
+    } else if (funcType == INTRINSIC) {
       // do nothing
-    } else if (READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX.count(
-                   getCalledFuncName(callInst))
-               > 0) {
+    } else if (funcType == READ_ONLY) {
       // do nothing
-    } else if (isa<MemCpyInst>(callInst)) {
+    } else if (funcType == MEM_COPY) {
       /*
        * call void @memcpy(i8* %1, i8* %2, i64 16)
        * GEN[i] = { (m, t) | (%1, m) ∈ IN[i] & (%2, t) ∈ IN[i] }
@@ -183,28 +177,54 @@ bool MayPointToAnalysis::FS(FunctionSummary *funcSum,
       auto dest = ptSum->getVariable(memcpyInst->getRawDest());
       auto source = ptSum->getVariable(memcpyInst->getRawSource());
       for (auto destMemObj : funcPtGraph->getPointees(dest)) {
-        auto oldPtes = funcPtGraph->getPointees(destMemObj);
         auto newPtes = ptesOfMyPte(source);
-        modified |=
-            funcPtGraph->setPointees(destMemObj, unite(oldPtes, newPtes));
+        modified |= funcPtGraph->addPointees(destMemObj, newPtes);
         funcSum->mustHeap.insert(destMemObj);
       }
-    } else if (ptSum->funcSums.count(functionCall) > 0) {
-      auto calleeSum = ptSum->funcSums.at(functionCall);
+    } else if (funcType == USER_DEFINED) {
+      auto calleeFunc = callInst->getCalledFunction();
+      auto calleeSum = ptSum->getFunctionSummary(calleeFunc);
       auto calleePtGraph = calleeSum->functionPointToGraph;
+
       for (auto &arg : callInst->arg_operands()) {
         auto operand = ptSum->getVariable(
             strip(callInst->getArgOperand(arg.getOperandNo())));
         auto argument =
-            ptSum->getVariable(calledFunc->args().begin() + arg.getOperandNo());
-        calleePtGraph->setPointees(argument, funcPtGraph->getPointees(operand));
+            ptSum->getVariable(calleeFunc->args().begin() + arg.getOperandNo());
+        calleePtGraph->addPointees(argument, funcPtGraph->getPointees(operand));
+
+        for (auto memObj : funcPtGraph->getReachableMemoryObjects(operand)) {
+          calleePtGraph->addPointees(memObj, funcPtGraph->getPointees(memObj));
+        }
       }
-      updateFunctionSummaryUntilFixedPoint(functionCall, visited);
+      for (auto &G : ptSum->M.globals()) {
+        auto globalVar = ptSum->getVariable(&G);
+        calleePtGraph->addPointees(globalVar,
+                                   funcPtGraph->getPointees(globalVar));
+
+        for (auto memObj : funcPtGraph->getReachableMemoryObjects(globalVar)) {
+          calleePtGraph->addPointees(memObj, funcPtGraph->getPointees(memObj));
+        }
+      }
+
+      updateFunctionSummaryUntilFixedPoint(calleeFunc, visited);
 
       auto returnVariable = ptSum->getVariable(callInst);
       auto returnValue = calleeSum->returnValue;
-      modified |= funcPtGraph->setPointees(returnVariable, returnValue);
-    } else {
+
+      modified |= funcPtGraph->addPointees(returnVariable, returnValue);
+
+      for (auto &G : ptSum->M.globals()) {
+        auto globalVar = ptSum->getVariable(&G);
+        for (auto memObj :
+             calleePtGraph->getReachableMemoryObjects(globalVar)) {
+          modified |=
+              funcPtGraph->addPointees(memObj,
+                                       calleePtGraph->getPointees(memObj));
+        }
+      }
+
+    } else if (funcType == UNKNOWN) {
       /*
        * GLOABL_AND_NLMO = { NLMO } ∪ { GLOBAL_MEMORY_OBJECTS }
        * ESCAPED = { reachable(%arg, IN[i]) | %arg ∈ callInst->arg_operands() }}
@@ -218,14 +238,15 @@ bool MayPointToAnalysis::FS(FunctionSummary *funcSum,
             strip(callInst->getArgOperand(arg.getOperandNo())));
         escapedMemObjs =
             unite(escapedMemObjs,
-                  funcPtGraph->reachableMemoryObjects(escapedVariable));
+                  funcPtGraph->getReachableMemoryObjects(escapedVariable));
       }
 
       auto retVar = ptSum->getVariable(callInst);
-
-      modified |= funcPtGraph->setPointees(retVar, escapedMemObjs);
-      for (auto memObj : escapedMemObjs) {
-        modified |= funcPtGraph->setPointees(memObj, escapedMemObjs);
+      auto outsideMemObjs =
+          unite(escapedMemObjs, { ptSum->unknownMemoryObject });
+      modified |= funcPtGraph->addPointees(retVar, outsideMemObjs);
+      for (auto memObj : outsideMemObjs) {
+        modified |= funcPtGraph->addPointees(memObj, outsideMemObjs);
       }
     }
   }
@@ -234,18 +255,16 @@ bool MayPointToAnalysis::FS(FunctionSummary *funcSum,
 };
 
 void MayPointToAnalysis::updateFunctionSummaryUntilFixedPoint(
-    FunctionCall functionCall,
-    set<FunctionCall> &visited) {
+    Function *currentF,
+    unordered_set<Function *> &visited) {
   assert(ptSum != nullptr);
-  assert(ptSum->funcSums.count(functionCall) > 0);
 
-  if (visited.count(functionCall) > 0) {
+  if (visited.count(currentF) > 0) {
     return;
   }
 
-  visited.insert(functionCall);
-  auto funcSum = ptSum->funcSums.at(functionCall);
-  auto currentF = functionCall.second;
+  visited.insert(currentF);
+  auto funcSum = ptSum->getFunctionSummary(currentF);
 
   bool modified = true;
   while (modified) {
@@ -269,8 +288,7 @@ PointToSummary *MayPointToAnalysis::getPointToSummary(Module &M,
 
   ptSum = new PointToSummary(M, callGraph);
   auto mainF = M.getFunction("main");
-  auto mainFuncCall = std::make_pair(nullptr, mainF);
-  auto mainFuncSum = ptSum->funcSums.at(mainFuncCall);
+  auto mainFuncSum = ptSum->getFunctionSummary(mainF);
   auto mainFuncPtGraph = mainFuncSum->functionPointToGraph;
 
   for (auto &G : M.globals()) {
@@ -300,8 +318,8 @@ PointToSummary *MayPointToAnalysis::getPointToSummary(Module &M,
     }
   }
 
-  set<FunctionCall> visited;
-  updateFunctionSummaryUntilFixedPoint(mainFuncCall, visited);
+  unordered_set<Function *> visited;
+  updateFunctionSummaryUntilFixedPoint(mainF, visited);
   return ptSum;
 }
 

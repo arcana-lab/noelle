@@ -68,9 +68,19 @@ bool PointToGraph::setPointees(Pointer *ptr, MemoryObjects newPtes) {
   }
 }
 
-MemoryObjects PointToGraph::reachableMemoryObjects(Pointer *pointer) {
+bool PointToGraph::addPointees(Pointer *ptr, MemoryObjects newPtes) {
+  auto oldPtes = getPointees(ptr);
+  if (oldPtes != newPtes) {
+    ptGraph[ptr] = unite(oldPtes, newPtes);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+MemoryObjects PointToGraph::getReachableMemoryObjects(Pointer *pointer) {
   MemoryObjects reachable;
-  set<Pointer *> worklist;
+  unordered_set<Pointer *> worklist;
   worklist.insert(pointer);
   while (!worklist.empty()) {
     auto ptr = *worklist.begin();
@@ -94,8 +104,7 @@ MemoryObject *PointToGraph::mustPointToMemory(Pointer *pointer) {
   return memoryObject;
 }
 
-FunctionSummary::FunctionSummary(Function *caller, Function *currentF) {
-  this->caller = caller;
+FunctionSummary::FunctionSummary(Function *currentF) {
   this->currentF = currentF;
 
   for (auto &bb : *currentF) {
@@ -114,28 +123,28 @@ FunctionSummary::FunctionSummary(Function *caller, Function *currentF) {
         this->returnInsts.insert(returnInst);
       } else if (isa<CallBase>(inst)) {
         auto callInst = dyn_cast<CallBase>(&inst);
-        auto calledFunc = callInst->getCalledFunction();
-        auto fname = getCalledFuncName(callInst);
-        if (fname == MALLOC) {
-          this->mallocInsts.insert(callInst);
-        } else if (fname == CALLOC) {
-          this->callocInsts.insert(callInst);
-        } else if (fname == REALLOC) {
-          this->reallocInsts.insert(callInst);
-        } else if (fname == FREE) {
-          this->freeInsts.insert(callInst);
-        } else if (isLifetimeIntrinsic(callInst)) {
-          // DO NOTHING
-        } else if (isa<MemCpyInst>(callInst)) {
-          // DO NOTHING
-        } else if (READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX.count(fname) > 0) {
-          // DO NOTHING
-        } else if (calledFunc != nullptr && !calledFunc->isDeclaration()) {
-          // DO NOTHING
-          // A user-defined function is not unknown,
-          // its point-to info will be stored in another function summary
-        } else {
-          this->unknownFuntctionCalls.insert(callInst);
+        auto functionType = getMPAFunctionType(callInst);
+        switch (functionType) {
+          case MALLOC:
+            this->mallocInsts.insert(callInst);
+            break;
+          case CALLOC:
+            this->callocInsts.insert(callInst);
+            break;
+          case REALLOC:
+            this->reallocInsts.insert(callInst);
+            break;
+          case FREE:
+            this->freeInsts.insert(callInst);
+            break;
+          case INTRINSIC:
+          case READ_ONLY:
+          case MEM_COPY:
+          case USER_DEFINED:
+            break;
+          case UNKNOWN:
+            this->unknownFuntctionCalls.insert(callInst);
+            break;
         }
       }
     }
@@ -149,74 +158,12 @@ FunctionSummary::~FunctionSummary() {
 }
 
 PointToSummary::PointToSummary(Module &M, CallGraph *callGraph) : M(M) {
-
   for (auto &G : M.globals()) {
     auto globalVar = new Variable(&G);
     auto globalMemObj = new MemoryObject(&G);
     variables[&G] = globalVar;
     memoryObjects[&G] = globalMemObj;
     globalMemoryObjects.insert(globalMemObj);
-  }
-
-  set<FunctionCall> funcInvokes;
-  auto mainF = M.getFunction("main");
-  auto islands = callGraph->getIslands();
-  auto islandOfMain = islands[mainF];
-
-  for (auto node : callGraph->getFunctionNodes()) {
-    auto f = node->getFunction();
-    /*
-     * An empty function or function with only declaration will not call our
-     * function
-     */
-    if (f->empty() || f->isDeclaration()) {
-      continue;
-    }
-    /*
-     * Ignore cold functions
-     */
-    if (islands[f] != islandOfMain) {
-      continue;
-    }
-
-    for (auto callEdge : node->getOutgoingEdges()) {
-      /*
-       * funcInvokes cares only about the must call edges
-       * for may call edges (i.e. call with function pointer), we can not get
-       * the callee function we will assume the most conservative case later in
-       * may_point_to_analysis.
-       */
-      if (callEdge->isAMustCall()) {
-        auto calleeNode = callEdge->getCallee();
-        auto calleeF = calleeNode->getFunction();
-        funcInvokes.insert(make_pair(f, calleeF));
-      }
-    }
-  }
-
-  funcSums[make_pair(nullptr, mainF)] = new FunctionSummary(nullptr, mainF);
-  for (auto &[callerF, calleeF] : funcInvokes) {
-    auto funcSum = new FunctionSummary(callerF, calleeF);
-    funcSums[make_pair(callerF, calleeF)] = funcSum;
-
-    for (auto inst : funcSum->mallocInsts) {
-      getVariable(inst);
-      getMemoryObject(inst);
-    }
-
-    for (auto inst : funcSum->callocInsts) {
-      getVariable(inst);
-      getMemoryObject(inst);
-    }
-
-    for (auto inst : funcSum->allocaInsts) {
-      getVariable(inst);
-      getMemoryObject(inst);
-    }
-
-    for (auto &arg : funcSum->currentF->args()) {
-      getVariable(&arg);
-    }
   }
 }
 
@@ -241,6 +188,9 @@ PointToSummary::~PointToSummary() {
       delete globalMemoryObject;
     }
   }
+  if (unknownMemoryObject != nullptr) {
+    delete unknownMemoryObject;
+  }
 }
 
 Variable *PointToSummary::getVariable(Value *source) {
@@ -257,6 +207,13 @@ MemoryObject *PointToSummary::getMemoryObject(Value *source) {
     memoryObjects[strippedValue] = new MemoryObject(strippedValue);
   }
   return memoryObjects[strippedValue];
+}
+
+FunctionSummary *PointToSummary::getFunctionSummary(Function *function) {
+  if (funcSums.count(function) == 0) {
+    funcSums[function] = new FunctionSummary(function);
+  }
+  return funcSums[function];
 }
 
 }; // namespace llvm::noelle

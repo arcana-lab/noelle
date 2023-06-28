@@ -27,16 +27,6 @@ namespace llvm::noelle {
 
 Value *strip(Value *pointer);
 
-const std::string MALLOC = "malloc";
-const std::string CALLOC = "calloc";
-const std::string REALLOC = "realloc";
-const std::string FREE = "free";
-
-const std::set<std::string> MEMORY_FUNCTIONS = { MALLOC,
-                                                 CALLOC,
-                                                 REALLOC,
-                                                 FREE };
-
 const std::set<std::string> READ_ONLY_LIB_FUNCTIONS = {
   "atoi",   "atof",    "atol",   "atoll",  "fprintf", "fputc", "fputs",
   "putc",   "putchar", "printf", "puts",   "rand",    "scanf", "sqrt",
@@ -53,6 +43,18 @@ const std::set<std::string> READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX =
   return result;
 }();
 
+enum MPAFunctionType {
+  MALLOC,
+  CALLOC,
+  REALLOC,
+  FREE,
+  INTRINSIC,
+  READ_ONLY,
+  MEM_COPY,
+  USER_DEFINED,
+  UNKNOWN
+};
+
 MemoryObjects intersect(const MemoryObjects &lhs, const MemoryObjects &rhs);
 
 MemoryObjects unite(const MemoryObjects &lhs, const MemoryObjects &rhs);
@@ -68,5 +70,7 @@ MemoryObjects replace(const MemoryObjects &memObjSet,
 // PointToGraph minus(const PointToGraph &lhs, const PointToGraph &rhs);
 
 bool isLifetimeIntrinsic(CallBase *callInst);
+
+MPAFunctionType getMPAFunctionType(CallBase *callInst);
 
 } // namespace llvm::noelle

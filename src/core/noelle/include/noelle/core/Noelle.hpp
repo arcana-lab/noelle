@@ -194,7 +194,7 @@ public:
 
   PDG *getFunctionDependenceGraph(Function *f);
 
-  MayPointToAnalysis getMayPointToAnalysis(Function *f) const;
+  MayPointToAnalysis getMayPointToAnalysis() const;
 
   DataFlowAnalysis getDataFlowAnalyses(void) const;
 

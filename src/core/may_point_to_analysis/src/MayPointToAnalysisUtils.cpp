@@ -85,4 +85,29 @@ bool isLifetimeIntrinsic(CallBase *callInst) {
   return intrinsic->isLifetimeStartOrEnd();
 }
 
+MPAFunctionType getMPAFunctionType(CallBase *callInst) {
+  auto calledFunc = callInst->getCalledFunction();
+  auto fname = getCalledFuncName(callInst);
+
+  if (fname == "malloc") {
+    return MALLOC;
+  } else if (fname == "calloc") {
+    return CALLOC;
+  } else if (fname == "realloc") {
+    return REALLOC;
+  } else if (fname == "free") {
+    return FREE;
+  } else if (isLifetimeIntrinsic(callInst)) {
+    return INTRINSIC;
+  } else if (READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX.count(fname) > 0) {
+    return READ_ONLY;
+  } else if (isa<MemCpyInst>(callInst)) {
+    return MEM_COPY;
+  } else if (calledFunc != nullptr && !calledFunc->isDeclaration()) {
+    return USER_DEFINED;
+  } else {
+    return UNKNOWN;
+  }
+};
+
 } // namespace llvm::noelle
