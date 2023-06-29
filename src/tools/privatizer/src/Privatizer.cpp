@@ -30,16 +30,19 @@ namespace llvm::noelle {
  * transformed to allocaInst, the corresponding @free() must be removed.
  */
 LiveMemorySummary PrivatizerManager::getLiveMemorySummary(
+    Noelle &noelle,
     PointToSummary *ptSum,
     FunctionSummary *funcSum) {
 
+  auto loopStructures = noelle.getLoopStructures();
+  auto loopForest = noelle.organizeLoopsInTheirNestingForest(*loopStructures);
   auto funcPtGraph = funcSum->functionPointToGraph;
 
   /*
    * Only fixed size @malloc(), such as %1 = tail call i8* @malloc(i64 8), can
    * be transformed to allocaInst. Otherwise, it may cause stack overflow.
    */
-  MemoryObjects allocable = [&]() -> MemoryObjects {
+  MemoryObjects allocable = [&]() {
     MemoryObjects fixedSized;
     auto heapAllocInsts = funcSum->mallocInsts;
     heapAllocInsts.insert(funcSum->callocInsts.begin(),
@@ -61,6 +64,19 @@ LiveMemorySummary PrivatizerManager::getLiveMemorySummary(
     return fixedSized;
   }();
 
+  MemoryObjects allocatedInLoop = [&]() {
+    MemoryObjects result;
+    for (auto heapMemObj : allocable) {
+      auto heapAllocInst = dyn_cast<Instruction>(heapMemObj->getSource());
+      auto loop = loopForest->getInnermostLoopThatContains(heapAllocInst);
+      if (loop) {
+        result.insert(heapMemObj);
+      }
+    }
+    return result;
+  }();
+
+  allocable = minus(allocable, allocatedInLoop);
   allocable = minus(allocable, funcSum->mustHeap);
   allocable = minus(allocable, funcSum->canBeAccessedAfterReturn);
   // allocable = minus(allocable, ptSum->ambiguous);
@@ -130,7 +146,8 @@ LiveMemorySummary PrivatizerManager::getLiveMemorySummary(
   return memSum;
 }
 
-bool PrivatizerManager::applyHeapToStack(PointToSummary *ptSum,
+bool PrivatizerManager::applyHeapToStack(Noelle &noelle,
+                                         PointToSummary *ptSum,
                                          FunctionSummary *funcSum) {
   auto fname = funcSum->currentF->getName();
   if (funcSum->mallocInsts.empty() && funcSum->callocInsts.empty()) {
@@ -141,7 +158,7 @@ bool PrivatizerManager::applyHeapToStack(PointToSummary *ptSum,
 
   bool modified = false;
 
-  auto memSum = getLiveMemorySummary(ptSum, funcSum);
+  auto memSum = getLiveMemorySummary(noelle, ptSum, funcSum);
 
   if (memSum.allocable.empty()) {
     errs() << "PrivatizerManager: @malloc or @calloc not allocable in function "

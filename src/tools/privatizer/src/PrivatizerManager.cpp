@@ -58,7 +58,7 @@ bool PrivatizerManager::runOnModule(Module &M) {
         << prefix
         << "Try to transform @malloc() or @calloc() to allocaInst in function "
         << fname << ".\n";
-    auto h2s = this->applyHeapToStack(ptSum, funcSum);
+    auto h2s = this->applyHeapToStack(noelle, ptSum, funcSum);
     errs() << prefix << (h2s ? "" : "no ")
            << "@malloc() or @calloc() transformed to allocaInst in function "
            << fname << ".\n";

@@ -49,10 +49,13 @@ private:
 
   const uint64_t STACK_SIZE_THRESHOLD = 8 * 1024 * 1024;
 
-  LiveMemorySummary getLiveMemorySummary(PointToSummary *ptSum,
+  LiveMemorySummary getLiveMemorySummary(Noelle &noelle,
+                                         PointToSummary *ptSum,
                                          FunctionSummary *funcSum);
 
-  bool applyHeapToStack(PointToSummary *ptSum, FunctionSummary *funcSum);
+  bool applyHeapToStack(Noelle &noelle,
+                        PointToSummary *ptSum,
+                        FunctionSummary *funcSum);
 
   bool applyGlobalToStack(FunctionSummary *funcSum);
 
