@@ -12,6 +12,8 @@ add_subdirectory(src)
 install(
   FILES
   include/noelle/core/AliasAnalysisEngine.hpp
+  include/noelle/core/LoopAliasAnalysisEngine.hpp
+  include/noelle/core/ProgramAliasAnalysisEngine.hpp
   DESTINATION 
   include/noelle/core
   )

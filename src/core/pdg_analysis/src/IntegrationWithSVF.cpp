@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/AliasAnalysisEngine.hpp"
+#include "noelle/core/ProgramAliasAnalysisEngine.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "IntegrationWithSVF.hpp"
 
@@ -211,7 +211,7 @@ std::set<AliasAnalysisEngine *> PDGAnalysis::getProgramAliasAnalysisEngines(
   std::set<AliasAnalysisEngine *> s;
 
 #ifdef ENABLE_SVF
-  auto svf = new AliasAnalysisEngine("SVF", wpa);
+  auto svf = new ProgramAliasAnalysisEngine("SVF", wpa);
   s.insert(svf);
 #endif
 

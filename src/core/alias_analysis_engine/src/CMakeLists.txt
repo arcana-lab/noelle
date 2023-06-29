@@ -1,6 +1,8 @@
 # Sources
 set(Srcs 
   AliasAnalysisEngine.cpp
+  LoopAliasAnalysisEngine.cpp
+  ProgramAliasAnalysisEngine.cpp
 )
 
 # Compilation flags
@@ -23,6 +25,7 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
   ../include 
+  ../../basic_utilities/include
   ${CMAKE_INSTALL_PREFIX}/include
   )
 

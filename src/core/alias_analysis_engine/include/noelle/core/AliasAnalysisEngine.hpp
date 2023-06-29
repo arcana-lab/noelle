@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include "noelle/core/SystemHeaders.hpp"
 
 namespace llvm::noelle {
 
@@ -8,9 +8,9 @@ class AliasAnalysisEngine {
 public:
   AliasAnalysisEngine(const std::string &name, void *rawPtr);
 
-  std::string getName(void) const;
-
   void *getRawPointer(void) const;
+
+  virtual std::string getName(void) const = 0;
 
 protected:
   std::string n;
