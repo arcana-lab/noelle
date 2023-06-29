@@ -76,7 +76,6 @@ private:
 
 class FunctionSummary {
 public:
-  static FunctionType getFunctionType(CallBase *callInst);
   FunctionSummary(Function *currentF);
   ~FunctionSummary();
 
@@ -128,11 +127,11 @@ public:
    */
   MemoryObjects globalMemoryObjects;
   MemoryObject *unknownMemoryObject;
+  std::unordered_map<Function *, FunctionSummary *> funcSums;
 
 private:
   std::unordered_map<Value *, Variable *> variables;
   std::unordered_map<Value *, MemoryObject *> memoryObjects;
-  std::unordered_map<Function *, FunctionSummary *> funcSums;
 };
 
 class MayPointToAnalysis {

@@ -21,6 +21,7 @@
  */
 #include "noelle/core/MayPointToAnalysis.hpp"
 #include "noelle/core/MayPointToAnalysisUtils.hpp"
+#include "llvm/Support/raw_ostream.h"
 
 using namespace std;
 
@@ -271,7 +272,10 @@ void MayPointToAnalysis::updateFunctionSummaryUntilFixedPoint(
     modified = false;
     for (auto &BB : *currentF) {
       for (auto &I : BB) {
-        modified |= FS(funcSum, &I, visited);
+        auto fs = FS(funcSum, &I, visited);
+        errs() << "Inst: " << I << "\n";
+        errs() << "FS: " << fs << "\n";
+        modified |= fs;
       }
     }
   }
@@ -286,6 +290,7 @@ PointToSummary *MayPointToAnalysis::getPointToSummary(Module &M) {
   }
 
   ptSum = new PointToSummary(M);
+
   auto mainF = M.getFunction("main");
   auto mainFuncSum = ptSum->getFunctionSummary(mainF);
   auto mainFuncPtGraph = mainFuncSum->functionPointToGraph;

@@ -89,7 +89,7 @@ MPAFunctionType getMPAFunctionType(CallBase *callInst) {
     return READ_ONLY;
   } else if (isa<MemCpyInst>(callInst)) {
     return MEM_COPY;
-  } else if (calledFunc != nullptr && !calledFunc->isDeclaration()) {
+  } else if ((calledFunc != nullptr) && (!calledFunc->isDeclaration())) {
     return USER_DEFINED;
   } else {
     return UNKNOWN;

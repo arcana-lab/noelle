@@ -142,6 +142,13 @@ bool PrivatizerManager::applyHeapToStack(PointToSummary *ptSum,
   bool modified = false;
 
   auto memSum = getLiveMemorySummary(ptSum, funcSum);
+
+  if (memSum.allocable.empty()) {
+    errs() << "PrivatizerManager: @malloc or @calloc not allocable in function "
+           << fname << "\n";
+    return false;
+  }
+
   auto dl = ptSum->M.getDataLayout();
   auto stackMemoryUsage = std::accumulate(
       funcSum->allocaInsts.begin(),

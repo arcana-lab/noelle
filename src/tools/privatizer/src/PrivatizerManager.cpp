@@ -49,14 +49,11 @@ bool PrivatizerManager::runOnModule(Module &M) {
   auto fm = noelle.getFunctionsManager();
   auto mainF = fm->getEntryFunction();
   auto mayPointToAnalysis = noelle.getMayPointToAnalysis();
+
   auto ptSum = mayPointToAnalysis.getPointToSummary(M);
 
-  auto pcf = fm->getProgramCallGraph();
-  auto islands = pcf->getIslands();
-  auto islandOfMain = islands[mainF];
-  for (auto &F : M) {
-    auto funcSum = ptSum->getFunctionSummary(&F);
-    auto fname = F.getName();
+  for (auto &[F, funcSum] : ptSum->funcSums) {
+    auto fname = F->getName();
     errs()
         << prefix
         << "Try to transform @malloc() or @calloc() to allocaInst in function "

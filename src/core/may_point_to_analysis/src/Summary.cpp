@@ -70,8 +70,10 @@ bool PointToGraph::setPointees(Pointer *ptr, MemoryObjects newPtes) {
 
 bool PointToGraph::addPointees(Pointer *ptr, MemoryObjects newPtes) {
   auto oldPtes = getPointees(ptr);
-  if (oldPtes != newPtes) {
-    ptGraph[ptr] = unite(oldPtes, newPtes);
+  auto updatedPtes = unite(oldPtes, newPtes);
+
+  if (oldPtes != updatedPtes) {
+    ptGraph[ptr] = updatedPtes;
     return true;
   } else {
     return false;
@@ -106,6 +108,7 @@ MemoryObject *PointToGraph::mustPointToMemory(Pointer *pointer) {
 
 FunctionSummary::FunctionSummary(Function *currentF) {
   this->currentF = currentF;
+  this->functionPointToGraph = new PointToGraph();
 
   for (auto &bb : *currentF) {
     for (auto &inst : bb) {
@@ -159,13 +162,12 @@ FunctionSummary::~FunctionSummary() {
 
 PointToSummary::PointToSummary(Module &M) : M(M) {
   for (auto &G : M.globals()) {
-    auto globalVar = new Variable(&G);
-    auto globalMemObj = new MemoryObject(&G);
-    variables[&G] = globalVar;
-    memoryObjects[&G] = globalMemObj;
+    auto globalVar = getVariable(&G);
+    auto globalMemObj = getMemoryObject(&G);
     globalMemoryObjects.insert(globalMemObj);
   }
-  unknownMemoryObject = new MemoryObject(nullptr);
+  unknownMemoryObject = new MemoryObject(NULL);
+  memoryObjects[NULL] = unknownMemoryObject;
 }
 
 PointToSummary::~PointToSummary() {
@@ -174,27 +176,22 @@ PointToSummary::~PointToSummary() {
       delete funcSum;
     }
   }
+
   for (auto &[_, variable] : variables) {
     if (variable != nullptr) {
       delete variable;
     }
   }
+
   for (auto &[_, memoryObject] : memoryObjects) {
     if (memoryObject != nullptr) {
       delete memoryObject;
     }
   }
-  for (auto globalMemoryObject : globalMemoryObjects) {
-    if (globalMemoryObject != nullptr) {
-      delete globalMemoryObject;
-    }
-  }
-  if (unknownMemoryObject != nullptr) {
-    delete unknownMemoryObject;
-  }
 }
 
 Variable *PointToSummary::getVariable(Value *source) {
+  assert(source != nullptr && "Source cannot be null");
   auto strippedValue = isa<Instruction>(source) ? strip(source) : source;
   if (variables.count(strippedValue) == 0) {
     variables[strippedValue] = new Variable(strippedValue);
@@ -203,6 +200,7 @@ Variable *PointToSummary::getVariable(Value *source) {
 }
 
 MemoryObject *PointToSummary::getMemoryObject(Value *source) {
+  assert(source != nullptr && "Source cannot be null");
   auto strippedValue = isa<Instruction>(source) ? strip(source) : source;
   if (memoryObjects.count(strippedValue) == 0) {
     memoryObjects[strippedValue] = new MemoryObject(strippedValue);
