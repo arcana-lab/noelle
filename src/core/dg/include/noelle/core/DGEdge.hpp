@@ -134,10 +134,13 @@ public:
   void setControl(bool ctrl) {
     isControl = ctrl;
   }
+
   void setMemMustType(bool mem, bool must, DataDependenceType dataDepType);
+
   void setLoopCarried(bool lc) {
     isLoopCarried = lc;
   }
+
   void setRemedies(std::optional<SetOfRemedies> R) {
     if (R) {
       remeds = std::make_unique<SetOfRemedies>(*R);
@@ -197,8 +200,11 @@ public:
   }
 
   std::string toString();
+
   raw_ostream &print(raw_ostream &stream, std::string linePrefix = "");
+
   std::string dataDepToString();
+
   static DataDependenceType stringToDataDep(std::string &str) {
     if (str == "RAW")
       return DG_DATA_RAW;
