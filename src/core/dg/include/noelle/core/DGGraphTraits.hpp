@@ -148,7 +148,7 @@ struct ElementTraitsBase : public DefaultDOTGraphTraits {
 
     std::string subgraph = "printercluster=";
     if (dg->isExternal(node->getT())) {
-      bool isIncoming = node->numOutgoingEdges() > 0;
+      auto isIncoming = node->outDegree() > 0;
       subgraph += isIncoming ? "incomingExternal" : "outgoingExternal";
     } else {
       subgraph += "internal";

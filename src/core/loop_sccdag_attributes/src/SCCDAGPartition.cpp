@@ -259,7 +259,7 @@ std::vector<SCCSet *> SCCDAGPartition::getDepthOrderedSets(void) {
     /*
      * Confirm all parents have been encountered before counting this node
      */
-    if (node->numIncomingEdges() > 0) {
+    if (node->inDegree() > 0) {
       bool parentsEncountered = true;
 
       /*
@@ -444,7 +444,7 @@ bool SCCDAGPartitioner::isAncestor(SCCSet *parentTarget, SCCSet *target) {
     setToCheck.pop();
 
     auto node = partition->fetchNode(set);
-    if (node->numIncomingEdges() == 0)
+    if (node->inDegree() == 0)
       continue;
 
     for (auto edge : node->getIncomingEdges()) {
@@ -523,7 +523,7 @@ std::unordered_set<SCCSet *> SCCDAGPartitioner::getDescendants(
     setToCheck.pop();
 
     auto node = partition->fetchNode(set);
-    if (node->numOutgoingEdges() == 0)
+    if (node->outDegree() == 0)
       continue;
 
     for (auto edge : node->getOutgoingEdges()) {
@@ -549,7 +549,7 @@ std::unordered_set<SCCSet *> SCCDAGPartitioner::getAncestors(
     setToCheck.pop();
 
     auto node = partition->fetchNode(set);
-    if (node->numIncomingEdges() == 0)
+    if (node->inDegree() == 0)
       continue;
 
     for (auto edge : node->getIncomingEdges()) {

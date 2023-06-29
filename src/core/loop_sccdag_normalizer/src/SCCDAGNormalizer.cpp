@@ -168,11 +168,11 @@ void SCCDAGNormalizer::mergeSingleSyntacticSugarInstrs(void) {
     // TODO: Even if more than one edge exists, attempt next/previous depth
     // SCCs.
     DGNode<SCC> *adjacentNode = nullptr;
-    if (sccNode->numOutgoingEdges() == 1) {
+    if (sccNode->outDegree() == 1) {
       adjacentNode = (*sccNode->begin_outgoing_edges())->getIncomingNode();
     }
 
-    if (sccNode->numIncomingEdges() == 1) {
+    if (sccNode->inDegree() == 1) {
       auto incomingOption =
           (*sccNode->begin_incoming_edges())->getOutgoingNode();
       if (!adjacentNode) {
@@ -210,7 +210,7 @@ void SCCDAGNormalizer::mergeBranchesWithoutOutgoingEdges(void) {
      * Merging this CmpInst and/or terminator containing SCC node is only done
      * when there is no child SCC and at least one parent SCC
      */
-    if (sccNode->numIncomingEdges() == 0 || sccNode->numOutgoingEdges() > 0)
+    if (sccNode->inDegree() == 0 || sccNode->outDegree() > 0)
       continue;
 
     bool allCmpOrBr = true;

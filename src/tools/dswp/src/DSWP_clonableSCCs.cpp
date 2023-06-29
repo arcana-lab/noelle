@@ -70,7 +70,7 @@ std::set<GenericSCC *> DSWP::getClonableSCCs(SCCDAGAttrs *sccManager,
      * Check if the SCC can be trivially cloned on all DSWP stages.
      */
     auto currentSCCNode = SCCDAG->fetchNode(currentSCC);
-    if (currentSCCNode->numOutgoingEdges() > 0) {
+    if (currentSCCNode->outDegree() > 0) {
 
       /*
        * First case: the SCC contains only instructions that do not represent

@@ -142,7 +142,7 @@ void SCCDAG::markEdgesAndSubEdges(void) {
      */
     for (auto externalNodePair : outgoingSCC->externalNodePairs()) {
       auto incomingNode = externalNodePair.second;
-      if (incomingNode->numIncomingEdges() == 0)
+      if (incomingNode->inDegree() == 0)
         continue;
 
       auto incomingSCCNode = this->valueToSCCNode[externalNodePair.first];

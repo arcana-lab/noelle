@@ -539,7 +539,7 @@ raw_ostream &DG<T>::print(raw_ostream &stream) {
 }
 
 template <class T>
-std::string DGNode<T>::toString() {
+std::string DGNode<T>::toString(void) const {
   std::string nodeStr;
   raw_string_ostream ros(nodeStr);
   theT->print(ros);
@@ -548,7 +548,7 @@ std::string DGNode<T>::toString() {
 }
 
 template <>
-inline std::string DGNode<Instruction>::toString() {
+inline std::string DGNode<Instruction>::toString(void) const {
   if (!theT)
     return "Empty node";
   std::string str;

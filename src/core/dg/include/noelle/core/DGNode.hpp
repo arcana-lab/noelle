@@ -70,22 +70,19 @@ public:
     return allConnectedEdges;
   }
 
-  inline iterator_range<edges_iterator> getOutgoingEdges() {
+  iterator_range<edges_iterator> getOutgoingEdges() {
     return make_range(outgoingEdges.begin(), outgoingEdges.end());
   }
-  inline iterator_range<edges_iterator> getIncomingEdges() {
+
+  iterator_range<edges_iterator> getIncomingEdges() {
     return make_range(incomingEdges.begin(), incomingEdges.end());
   }
 
-  unsigned numConnectedEdges() {
-    return outgoingEdges.size() + incomingEdges.size();
-  }
-  unsigned numOutgoingEdges() {
-    return outgoingEdges.size();
-  }
-  unsigned numIncomingEdges() {
-    return incomingEdges.size();
-  }
+  uint64_t numberOfConnectedEdges(void) const;
+
+  uint64_t outDegree(void) const;
+
+  uint64_t inDegree(void) const;
 
   void addIncomingEdge(DGEdge<T> *edge);
 
@@ -95,7 +92,7 @@ public:
 
   void removeConnectedNode(DGNode<T> *node);
 
-  std::string toString();
+  std::string toString(void) const;
 
   raw_ostream &print(raw_ostream &stream);
 
@@ -166,6 +163,21 @@ void DGNode<T>::removeConnectedNode(DGNode<T> *node) {
   for (auto edge : incomingEdgesToRemove) {
     incomingEdges.erase(edge);
   }
+}
+
+template <class T>
+uint64_t DGNode<T>::numberOfConnectedEdges(void) const {
+  return outgoingEdges.size() + incomingEdges.size();
+}
+
+template <class T>
+uint64_t DGNode<T>::outDegree(void) const {
+  return outgoingEdges.size();
+}
+
+template <class T>
+uint64_t DGNode<T>::inDegree(void) const {
+  return incomingEdges.size();
 }
 
 } // namespace llvm::noelle
