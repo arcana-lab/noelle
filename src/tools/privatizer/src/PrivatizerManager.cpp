@@ -52,7 +52,7 @@ bool PrivatizerManager::runOnModule(Module &M) {
 
   auto ptSum = mayPointToAnalysis.getPointToSummary(M);
 
-  for (auto &[F, funcSum] : ptSum->funcSums) {
+  for (auto &[F, funcSum] : ptSum->functionSummaries) {
     auto fname = F->getName();
     errs()
         << prefix

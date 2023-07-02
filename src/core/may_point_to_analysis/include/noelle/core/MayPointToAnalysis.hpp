@@ -2,8 +2,6 @@
 
 #include "noelle/core/Utils.hpp"
 #include "noelle/core/CallGraph.hpp"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/Instructions.h"
 
 #include <map>
 #include <set>
@@ -97,7 +95,7 @@ public:
    * An escaped memory object could be read or written after the current
    * function returns. Therefore, we could not turn it to allocaInst.
    */
-  MemoryObjects canBeAccessedAfterReturn;
+  MemoryObjects reachableFromReturnValue;
 
   MemoryObjects returnValue;
 
@@ -127,7 +125,7 @@ public:
    */
   MemoryObjects globalMemoryObjects;
   MemoryObject *unknownMemoryObject;
-  std::unordered_map<Function *, FunctionSummary *> funcSums;
+  std::unordered_map<Function *, FunctionSummary *> functionSummaries;
 
 private:
   std::unordered_map<Value *, Variable *> variables;
@@ -136,15 +134,26 @@ private:
 
 class MayPointToAnalysis {
 public:
-  MayPointToAnalysis();
-  PointToSummary *getPointToSummary(Module &M);
+  MayPointToAnalysis(CallGraph *pcf, Module &M);
+  PointToSummary *getPointToSummary();
   // LiveMemorySummary *getLiveMemorySummary(FunctionSummary *funcSum);
   ~MayPointToAnalysis();
 
 private:
+  CallGraph *cg;
+  Module &M;
+
   bool FS(FunctionSummary *funcSum,
           Instruction *inst,
           std::unordered_set<Function *> &visited);
+
+  bool enterUserDefinedFunctionFromCallBase(Function *calleeFunc,
+                                            CallBase *callInst);
+
+  bool enterUnknownExternalFunctionFromCallBase(CallBase *callInst);
+
+  unordered_set<Function *> getPossibleCallees(CallBase *callInst);
+
   void updateFunctionSummaryUntilFixedPoint(
       Function *currentF,
       std::unordered_set<Function *> &visited);

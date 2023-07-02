@@ -171,7 +171,7 @@ PointToSummary::PointToSummary(Module &M) : M(M) {
 }
 
 PointToSummary::~PointToSummary() {
-  for (auto &[_, funcSum] : funcSums) {
+  for (auto &[_, funcSum] : functionSummaries) {
     if (funcSum != nullptr) {
       delete funcSum;
     }
@@ -209,10 +209,10 @@ MemoryObject *PointToSummary::getMemoryObject(Value *source) {
 }
 
 FunctionSummary *PointToSummary::getFunctionSummary(Function *function) {
-  if (funcSums.count(function) == 0) {
-    funcSums[function] = new FunctionSummary(function);
+  if (functionSummaries.count(function) == 0) {
+    functionSummaries[function] = new FunctionSummary(function);
   }
-  return funcSums[function];
+  return functionSummaries[function];
 }
 
 }; // namespace llvm::noelle

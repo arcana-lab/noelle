@@ -36,6 +36,7 @@ class PrivatizerManager : public ModulePass {
 public:
   static char ID;
 
+  // PrivatizerManager.cpp
   PrivatizerManager();
 
   bool doInitialization(Module &M) override;
@@ -49,17 +50,41 @@ private:
 
   const uint64_t STACK_SIZE_THRESHOLD = 8 * 1024 * 1024;
 
+  const string prefix = "PrivatizerManager: ";
+
+  const string emptyPrefix = "                   ";
+
+  unordered_map<Function *, uint64_t> stackMemoryUsages;
+
+  // PrivatizerUtils.cpp
+  bool isFixedSizedHeapAllocation(CallBase *heapAllocInst);
+
+  uint64_t getAllocationSize(Value *allocationSource);
+
+  void setStackMemoryUsage(PointToSummary *ptSum);
+
+  bool stackHasEnoughSpaceForNewAllocaInst(uint64_t allocationSize,
+                                           FunctionSummary *funcSum);
+
+  // HeapToStack.cpp
+  bool applyHeapToStack(Noelle &noelle, PointToSummary *ptSum);
+
   LiveMemorySummary getLiveMemorySummary(Noelle &noelle,
                                          PointToSummary *ptSum,
                                          FunctionSummary *funcSum);
 
-  bool applyHeapToStack(Noelle &noelle,
-                        PointToSummary *ptSum,
-                        FunctionSummary *funcSum);
+  // GlobalToStack.cpp
+  bool applyGlobalToStack(Noelle &noelle, PointToSummary *ptSum);
 
-  bool applyGlobalToStack(FunctionSummary *funcSum);
+  std::unordered_set<Function *> getPrivatizableFunctions(
+      Noelle &noelle,
+      GlobalVariable *globalVar,
+      PointToSummary *ptSum);
 
-  bool canBeClonedToStack(GlobalVariable *globalVar, FunctionSummary *funcSum);
+  bool PrivatizerManager::globalVariableInitializedInFunction(
+      Noelle &noelle,
+      GlobalVariable *globalVar,
+      Function *currentF)
 };
 
 } // namespace llvm::noelle
