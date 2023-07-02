@@ -1,8 +1,10 @@
 # Sources
 set(Srcs 
   Pass.cpp
-  Privatizer.cpp
   PrivatizerManager.cpp
+  PrivatizerUtils.cpp
+  HeapToStack.cpp
+  GlobalToStack.cpp
 )
 
 # Compilation flags

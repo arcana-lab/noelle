@@ -106,10 +106,7 @@ Hot *Noelle::getProfiles(void) {
 }
 
 MayPointToAnalysis Noelle::getMayPointToAnalysis() const {
-  auto M = *this->getProgram();
-  auto fm = this->getFunctionsManager();
-  auto pcf = fm->getCallGraph();
-  return MayPointToAnalysis(pcf, M);
+  return MayPointToAnalysis();
 }
 
 DataFlowAnalysis Noelle::getDataFlowAnalyses(void) const {

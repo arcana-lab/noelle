@@ -83,7 +83,7 @@ public:
   std::unordered_set<CallBase *> callocInsts;
   std::unordered_set<CallBase *> reallocInsts;
   std::unordered_set<CallBase *> freeInsts;
-  std::unordered_set<CallBase *> unknownFuntctionCalls;
+  std::unordered_set<CallBase *> callInsts;
   std::unordered_set<AllocaInst *> allocaInsts;
   std::unordered_set<LoadInst *> loadInsts;
   std::unordered_set<StoreInst *> storeInsts;
@@ -134,30 +134,30 @@ private:
 
 class MayPointToAnalysis {
 public:
-  MayPointToAnalysis(CallGraph *pcf, Module &M);
-  PointToSummary *getPointToSummary();
+  MayPointToAnalysis();
+  PointToSummary *getPointToSummary(Module &M, CallGraph *pcf);
   // LiveMemorySummary *getLiveMemorySummary(FunctionSummary *funcSum);
   ~MayPointToAnalysis();
 
 private:
-  CallGraph *cg;
-  Module &M;
-
   bool FS(FunctionSummary *funcSum,
           Instruction *inst,
           std::unordered_set<Function *> &visited);
 
-  bool enterUserDefinedFunctionFromCallBase(Function *calleeFunc,
-                                            CallBase *callInst);
+  bool enterUserDefinedFunctionFromCallBase(
+      Function *calleeFunc,
+      CallBase *callInst,
+      std::unordered_set<Function *> &visited);
 
   bool enterUnknownExternalFunctionFromCallBase(CallBase *callInst);
 
-  unordered_set<Function *> getPossibleCallees(CallBase *callInst);
+  std::unordered_set<Function *> getPossibleCallees(CallBase *callInst);
 
   void updateFunctionSummaryUntilFixedPoint(
       Function *currentF,
       std::unordered_set<Function *> &visited);
 
+  CallGraph *pcf;
   PointToSummary *ptSum;
 };
 

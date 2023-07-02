@@ -68,7 +68,7 @@ uint64_t PrivatizerManager::getAllocationSize(Value *allocationSource) {
 
 void PrivatizerManager::setStackMemoryUsage(PointToSummary *ptSum) {
   stackMemoryUsages.clear();
-  for (auto funcSum : ptSum->functionSummaries) {
+  for (auto &[_, funcSum] : ptSum->functionSummaries) {
     auto dl = funcSum->currentF->getParent()->getDataLayout();
     auto stackMemoryUsage = std::accumulate(
         funcSum->allocaInsts.begin(),
@@ -83,8 +83,7 @@ void PrivatizerManager::setStackMemoryUsage(PointToSummary *ptSum) {
 
 bool PrivatizerManager::stackHasEnoughSpaceForNewAllocaInst(
     uint64_t allocationSize,
-    FunctionSummary *funcSum) {
-  auto currentF = funcSum->currentF;
+    Function *currentF) {
   auto stackMemoryUsage = stackMemoryUsages.at(currentF);
   if ((stackMemoryUsage + allocationSize) < STACK_SIZE_THRESHOLD) {
     stackMemoryUsages[currentF] = stackMemoryUsage + allocationSize;

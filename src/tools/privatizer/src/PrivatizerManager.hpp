@@ -64,27 +64,35 @@ private:
   void setStackMemoryUsage(PointToSummary *ptSum);
 
   bool stackHasEnoughSpaceForNewAllocaInst(uint64_t allocationSize,
-                                           FunctionSummary *funcSum);
+                                           Function *currentF);
 
   // HeapToStack.cpp
-  bool applyHeapToStack(Noelle &noelle, PointToSummary *ptSum);
+  unordered_map<Function *, LiveMemorySummary> collectHeapToStack(
+      Noelle &noelle,
+      PointToSummary *ptSum);
+
+  bool applyHeapToStack(Noelle &noelle, LiveMemorySummary liveMemSum);
 
   LiveMemorySummary getLiveMemorySummary(Noelle &noelle,
                                          PointToSummary *ptSum,
                                          FunctionSummary *funcSum);
 
   // GlobalToStack.cpp
-  bool applyGlobalToStack(Noelle &noelle, PointToSummary *ptSum);
+  unordered_map<GlobalVariable *, unordered_set<Function *>>
+  collectGlobalToStack(Noelle &noelle, PointToSummary *ptSum);
 
-  std::unordered_set<Function *> getPrivatizableFunctions(
-      Noelle &noelle,
-      GlobalVariable *globalVar,
-      PointToSummary *ptSum);
+  bool applyGlobalToStack(Noelle &noelle,
+                          GlobalVariable *globalVar,
+                          unordered_set<Function *> privatizableFunctions);
 
-  bool PrivatizerManager::globalVariableInitializedInFunction(
-      Noelle &noelle,
-      GlobalVariable *globalVar,
-      Function *currentF)
+  unordered_set<Function *> getPrivatizableFunctions(Noelle &noelle,
+                                                     PointToSummary *ptSum,
+                                                     GlobalVariable *globalVar);
+
+  bool globalVariableInitializedInFunction(Noelle &noelle,
+                                           PointToSummary *ptSum,
+                                           GlobalVariable *globalVar,
+                                           Function *currentF);
 };
 
 } // namespace llvm::noelle

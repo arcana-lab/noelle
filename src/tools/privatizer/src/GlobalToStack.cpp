@@ -25,86 +25,16 @@
 
 namespace llvm::noelle {
 
-bool PrivatizerManager::applyGlobalToStack(Noelle &noelle,
-                                           PointToSummary *ptSum) {
-  bool modified = false;
-
-  for (auto &G : ptSum->M.globals()) {
-    auto privatizableFunctions = getPrivatizableFunctions(&G, ptSum);
-
-    auto fname = funcSum->currentF->getName();
-    auto globalVarName = G.getName();
-
-    if (privatizableFunctions.empty()) {
-      errs()
-          << predix << globalVarName << " can't be privatized to any function.";
-      continue;
-    }
-
-    for (auto currentF : privatizableFunctions) {
-      auto suffix = " in function " + fname + "\n";
-      errs() << prefix << "Try to privatize " << globalVarName << suffix;
-
-      auto allocationSize = getAllocationSize(heapAllocInst);
-      if (!stackHasEnoughSpaceForNewAllocaInst(allocationSize,
-                                               stackMemoryUsage)) {
-        errs() << prefix
-               << "Stack memory usage exceeds the limit, can't privatize "
-               << globalVarName << suffix;
-        continue;
-      }
-
-      modified = true;
-      auto &entryBlock = currentF->getEntryBlock();
-      IRBuilder<> entryBuilder(entryBlock.getFirstNonPHI());
-      Type *globalVarType = G.getValueType();
-      AllocaInst *allocaInst =
-          entryBuilder.CreateAlloca(globalVarType, nullptr, "");
-
-      if (G.hasInitializer()) {
-        auto initializer = G.getInitializer();
-        if (isa<ConstantAggregateZero>(initializer)
-            && globalVarType->isArrayTy()) {
-          auto typesManager = noelle.getTypesManager();
-          auto sizeInByte = typesManager->getSizeOfType(globalVarType);
-          auto zeroVal = ConstantInt::get(Type::getInt8Ty(M->getContext()), 0);
-          entryBuilder.CreateMemSet(allocaInst, zeroVal, sizeInByte, 1);
-        } else {
-          entryBuilder.CreateStore(initializer, allocaInst);
-        }
-      }
-
-      /*
-       * Replace all uses of the global variable in the entry function with an
-       * allocaInst. The allocaInst is placed at the beginning of
-       * the entry block and is initialized with the global variable's
-       * initializer.
-       */
-      unordered_set<Instruction *> instsToReplace;
-      for (auto user : G.users()) {
-        if (auto inst = dyn_cast<Instruction>(user)) {
-          if (inst->getParent()->getParent() == currentF) {
-            instsToReplace.insert(inst);
-          }
-        }
-      }
-      for (auto inst : instsToReplace) {
-        inst->replaceUsesOfWith(&G, allocaInst);
-        errs() << prefix << "Replace global variable " << globalVarName << "\n";
-        errs() << emptyPrefix << "with allocaInst: " << *allocaInst << "\n";
-      }
-    }
-  }
-}
-
 unordered_set<Function *> PrivatizerManager::getPrivatizableFunctions(
     Noelle &noelle,
-    GlobalVariable *globalVar,
-    PointToSummary *ptSum) {
-  auto globalVarName = G.getName();
+    PointToSummary *ptSum,
+    GlobalVariable *globalVar) {
+  auto globalVarName = globalVar->getName();
+
+  errs() << prefix << "CX: 0\n";
 
   auto isFunctionReachable = [&](Function *caller, Function *callee) {
-    auto fm = noelle.getFunctionManager();
+    auto fm = noelle.getFunctionsManager();
     return fm->getFunctionsReachableFrom(caller).count(callee) > 0;
   };
 
@@ -113,6 +43,8 @@ unordered_set<Function *> PrivatizerManager::getPrivatizableFunctions(
     hotFunctions.insert(f);
   }
 
+  errs() << prefix << "CX: A\n";
+
   bool isGlobalVarWritten = false;
   for (auto f : hotFunctions) {
     auto funcSum = ptSum->functionSummaries.at(f);
@@ -120,7 +52,8 @@ unordered_set<Function *> PrivatizerManager::getPrivatizableFunctions(
     for (auto storeInst : funcSum->storeInsts) {
       auto pointerOperand = ptSum->getVariable(storeInst->getPointerOperand());
       auto memObjsMayBeWritten = funcPtGraph->getPointees(pointerOperand);
-      if (memObjsMayBeWritten.count(globalVar) > 0) {
+      auto globalMemObj = ptSum->getMemoryObject(globalVar);
+      if (memObjsMayBeWritten.count(globalMemObj) > 0) {
         isGlobalVarWritten = true;
         break;
       }
@@ -132,8 +65,10 @@ unordered_set<Function *> PrivatizerManager::getPrivatizableFunctions(
     return {};
   }
 
+  errs() << prefix << "CX: B\n";
+
   unordered_set<Function *> privatizableFunctions;
-  for (auto user : G.users()) {
+  for (auto user : globalVar->users()) {
     if (auto inst = dyn_cast<Instruction>(user)) {
       auto userFunction = inst->getParent()->getParent();
       if (hotFunctions.count(userFunction) > 0) {
@@ -144,7 +79,7 @@ unordered_set<Function *> PrivatizerManager::getPrivatizableFunctions(
 
   if (privatizableFunctions.empty()) {
     return privatizableFunctions;
-  } else if (privatiableFuncions.size() == 1) {
+  } else if (privatizableFunctions.size() == 1) {
     auto currentF = *privatizableFunctions.begin();
     auto funcSum = ptSum->functionSummaries.at(currentF);
     auto globalMemObj = ptSum->getMemoryObject(globalVar);
@@ -157,7 +92,7 @@ unordered_set<Function *> PrivatizerManager::getPrivatizableFunctions(
       return privatizableFunctions;
     }
   } else {
-    auto privatizableCandiates = privatizableFunctions;
+    auto privatizableCandidates = privatizableFunctions;
     for (auto funcA : privatizableCandidates) {
       for (auto funcB : privatizableCandidates) {
         if (isFunctionReachable(funcA, funcB)
@@ -174,7 +109,10 @@ unordered_set<Function *> PrivatizerManager::getPrivatizableFunctions(
 
       if (funcSum->reachableFromReturnValue.count(globalMemObj) > 0) {
         return {};
-      } else if (globalVariableInitializedInFunction(globalVar, currentF)) {
+      } else if (globalVariableInitializedInFunction(noelle,
+                                                     ptSum,
+                                                     globalVar,
+                                                     currentF)) {
         return {};
       }
     }
@@ -185,6 +123,7 @@ unordered_set<Function *> PrivatizerManager::getPrivatizableFunctions(
 
 bool PrivatizerManager::globalVariableInitializedInFunction(
     Noelle &noelle,
+    PointToSummary *ptSum,
     GlobalVariable *globalVar,
     Function *currentF) {
   unordered_set<StoreInst *> initCandidates;
@@ -196,7 +135,8 @@ bool PrivatizerManager::globalVariableInitializedInFunction(
   for (auto storeInst : funcSum->storeInsts) {
     auto pointerOperand = ptSum->getVariable(storeInst->getPointerOperand());
     auto memObjsMayBeWritten = funcPtGraph->getPointees(pointerOperand);
-    if (memObjsMayBeWritten.count(globalVar) > 0) {
+    auto globalMemObj = ptSum->getMemoryObject(globalVar);
+    if (memObjsMayBeWritten.count(globalMemObj) > 0) {
       initCandidates.insert(storeInst);
       users.insert(storeInst);
     }
@@ -205,7 +145,8 @@ bool PrivatizerManager::globalVariableInitializedInFunction(
   for (auto loadInst : funcSum->loadInsts) {
     auto pointerOperand = ptSum->getVariable(loadInst->getPointerOperand());
     auto memObjsMayBeRead = funcPtGraph->getPointees(pointerOperand);
-    if (memObjsMayBeRead.count(globalVar) > 0) {
+    auto globalMemObj = ptSum->getMemoryObject(globalVar);
+    if (memObjsMayBeRead.count(globalMemObj) > 0) {
       users.insert(loadInst);
     }
   }
@@ -215,7 +156,8 @@ bool PrivatizerManager::globalVariableInitializedInFunction(
       auto operand = ptSum->getVariable(
           strip(callInst->getArgOperand(arg.getOperandNo())));
       auto memObjsMayBeAccessed = funcPtGraph->getPointees(operand);
-      if (memObjsMayBeAccessed.count(globalVar) > 0) {
+      auto globalMemObj = ptSum->getMemoryObject(globalVar);
+      if (memObjsMayBeAccessed.count(globalMemObj) > 0) {
         users.insert(callInst);
       }
     }
@@ -223,55 +165,58 @@ bool PrivatizerManager::globalVariableInitializedInFunction(
 
   unordered_set<StoreInst *> storeInsts = initCandidates;
 
-  auto getProgramPointOfInitilization = [&](StoreInst *storeInst)
-      -> Instruction * {
-    if (globalVar->getValueType()->isArrayTy()) {
-      auto loopStructures = noelle.getLoopStructures();
-      auto loop = noelle.getLoop(LS);
-      auto loopToInitArray = loop->getNestedMostLoopStructure(storeInst);
-      auto IVM = loop->getInductionVariableManager();
-      auto GIV = IVM->getLoopGoverningInductionVariable();
+  // auto getProgramPointOfInitilization = [&](StoreInst *storeInst)
+  //     -> Instruction * {
+  //   if (globalVar->getValueType()->isArrayTy()) {
+  //     auto LS = noelle.getLoopStructures();
+  //     auto loop = noelle.getLoop(LS);
+  //     auto loopToInitArray = loop->getNestedMostLoopStructure(storeInst);
+  //     auto IVM = loop->getInductionVariableManager();
+  //     auto GIV = IVM->getLoopGoverningInductionVariable();
 
-      if (GIV == nullptr) {
-        return nullptr;
-      }
+  //     if (GIV == nullptr) {
+  //       return nullptr;
+  //     }
 
-      LLVMContext &C = storeInst->getContext();
-      auto arrayType = dyn_cast<ArrayType>(globalVar->getValueType());
-      auto arraySize =
-          ConstantInt::get(Type::getInt32Ty(C), arrayType->getNumElements());
+  //     LLVMContext &C = storeInst->getContext();
+  //     auto arrayType = dyn_cast<ArrayType>(globalVar->getValueType());
+  //     auto arraySize =
+  //         ConstantInt::get(Type::getInt32Ty(C), arrayType->getNumElements());
 
-      auto IV = GIV->getInductionVariable();
-      auto startValue = IV->getStartValue();
-      auto stepValue = IV->getSingleComputedStepValue();
-      auto exitConditionValue = GIV->getExitConditionValue();
+  //     auto IV = GIV->getInductionVariable();
+  //     auto startValue = IV->getStartValue();
+  //     auto stepValue = IV->getSingleComputedStepValue();
+  //     auto exitConditionValue = GIV->getExitConditionValue();
 
-      auto startFromZero =
-          (startValue == ConstantInt::get(Type::getInt32Ty(C), 0));
-      auto stepIsOne = (stepValue == ConstantInt::get(Type::getInt32Ty(C), 1));
-      auto exitArraySize = (exitConditionValue == arraySize);
+  //     auto startFromZero =
+  //         (startValue == ConstantInt::get(Type::getInt32Ty(C), 0));
+  //     auto stepIsOne = (stepValue == ConstantInt::get(Type::getInt32Ty(C),
+  //     1)); auto exitArraySize = (exitConditionValue == arraySize);
 
-      if (startFromZero && stepIsOne && exitArraySize) {
-        return loopToInitArray->getHeader()->getTerminator();
+  //     if (startFromZero && stepIsOne && exitArraySize) {
+  //       return loopToInitArray->getHeader()->getTerminator();
+  //     } else {
+  //       return nullptr;
+  //     }
+  //   } else {
+  //     return storeInst;
+  //   }
+  // };
+
+  auto dominateAllUsers = [&](StoreInst *storeInst) {
+    auto DS = noelle.getDominators(currentF);
+    // auto initProgramPoint = getProgramPointOfInitilization(storeInst);
+    for (auto user : users) {
+      if ((storeInst == user) || DS->DT.dominates(storeInst, user)) {
+        continue;
       } else {
-        return nullptr;
+        return false;
       }
-    } else {
-      return storeInst;
     }
-  }
+    return true;
+  };
 
-         auto dominateAllUsers = [&](StoreInst *storeInst) {
-           auto DS = noelle.getDominators(currentF);
-           for (auto user : users) {
-             if ((storeInst == user) || DS.DT.dominates(storeInst, user)) {
-               continue;
-             } else {
-               return false;
-             }
-           }
-           return true;
-         } for (auto storeInst : storeInsts) {
+  for (auto storeInst : storeInsts) {
     if (!dominateAllUsers(storeInst)) {
       initCandidates.erase(storeInst);
     }
@@ -286,11 +231,101 @@ bool PrivatizerManager::globalVariableInitializedInFunction(
 
   auto valueOperand = ptSum->getVariable(initCandidate->getValueOperand());
   auto memObjsUsedAsInitializer = funcPtGraph->getPointees(valueOperand);
-  if (!intersect(memObjsUsedAsInitializer, globalMemoryObjects).empty()) {
+  if (!intersect(memObjsUsedAsInitializer, ptSum->globalMemoryObjects)
+           .empty()) {
     return false;
   } else if (memObjsUsedAsInitializer.count(ptSum->unknownMemoryObject) > 0) {
     return false;
   }
+}
+
+unordered_map<GlobalVariable *, unordered_set<Function *>> PrivatizerManager::
+    collectGlobalToStack(Noelle &noelle, PointToSummary *ptSum) {
+
+  unordered_map<GlobalVariable *, unordered_set<Function *>> result;
+
+  for (auto &G : ptSum->M.globals()) {
+    errs() << "CX Global: " << G << "\n";
+
+    auto privatizableFunctions = getPrivatizableFunctions(noelle, ptSum, &G);
+
+    auto globalVarName = G.getName();
+
+    if (privatizableFunctions.empty()) {
+      errs() << prefix << globalVarName
+             << " can't be privatized to any function.\n";
+      continue;
+    }
+
+    result[&G] = privatizableFunctions;
+  }
+
+  return result;
+}
+
+bool PrivatizerManager::applyGlobalToStack(
+    Noelle &noelle,
+    GlobalVariable *globalVar,
+    unordered_set<Function *> privatizableFunctions) {
+  bool modified = false;
+
+  for (auto currentF : privatizableFunctions) {
+    auto fname = currentF->getName();
+    auto suffix = " in function " + fname + "\n";
+    auto globalVarName = globalVar->getName();
+    errs() << prefix << "Try to privatize " << globalVarName << suffix;
+
+    auto allocationSize = getAllocationSize(globalVar);
+    if (!stackHasEnoughSpaceForNewAllocaInst(allocationSize, currentF)) {
+      errs()
+          << prefix << "Stack memory usage exceeds the limit, can't privatize "
+          << globalVarName << suffix;
+      return false;
+    }
+
+    modified = true;
+    auto &context = noelle.getProgramContext();
+    auto &entryBlock = currentF->getEntryBlock();
+    IRBuilder<> entryBuilder(entryBlock.getFirstNonPHI());
+    Type *globalVarType = globalVar->getValueType();
+    AllocaInst *allocaInst =
+        entryBuilder.CreateAlloca(globalVarType, nullptr, "");
+
+    if (globalVar->hasInitializer()) {
+      auto initializer = globalVar->getInitializer();
+      if (isa<ConstantAggregateZero>(initializer)
+          && globalVarType->isArrayTy()) {
+        auto typesManager = noelle.getTypesManager();
+        auto sizeInByte = typesManager->getSizeOfType(globalVarType);
+        auto zeroVal = ConstantInt::get(Type::getInt8Ty(context), 0);
+        entryBuilder.CreateMemSet(allocaInst, zeroVal, sizeInByte, 1);
+      } else {
+        entryBuilder.CreateStore(initializer, allocaInst);
+      }
+    }
+
+    /*
+     * Replace all uses of the global variable in the entry function with an
+     * allocaInst. The allocaInst is placed at the beginning of
+     * the entry block and is initialized with the global variable's
+     * initializer.
+     */
+    unordered_set<Instruction *> instsToReplace;
+    for (auto user : globalVar->users()) {
+      if (auto inst = dyn_cast<Instruction>(user)) {
+        if (inst->getParent()->getParent() == currentF) {
+          instsToReplace.insert(inst);
+        }
+      }
+    }
+    for (auto inst : instsToReplace) {
+      inst->replaceUsesOfWith(globalVar, allocaInst);
+      errs() << prefix << "Replace global variable " << globalVarName << "\n";
+      errs() << emptyPrefix << "with allocaInst: " << *allocaInst << "\n";
+    }
+  }
+
+  return modified;
 }
 
 } // namespace llvm::noelle

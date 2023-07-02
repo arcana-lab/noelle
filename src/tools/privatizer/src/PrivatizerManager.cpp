@@ -47,32 +47,25 @@ bool PrivatizerManager::runOnModule(Module &M) {
   auto modified = false;
 
   auto fm = noelle.getFunctionsManager();
-  auto mainF = fm->getEntryFunction();
+  auto pcf = fm->getProgramCallGraph();
   auto mayPointToAnalysis = noelle.getMayPointToAnalysis();
 
-  auto ptSum = mayPointToAnalysis.getPointToSummary(M);
+  auto ptSum = mayPointToAnalysis.getPointToSummary(M, pcf);
 
-  for (auto &[F, funcSum] : ptSum->functionSummaries) {
-    auto fname = F->getName();
-    errs()
-        << prefix
-        << "Try to transform @malloc() or @calloc() to allocaInst in function "
-        << fname << ".\n";
-    auto h2s = this->applyHeapToStack(noelle, ptSum, funcSum);
-    errs() << prefix << (h2s ? "" : "no ")
-           << "@malloc() or @calloc() transformed to allocaInst in function "
-           << fname << ".\n";
-    modified |= h2s;
+  setStackMemoryUsage(ptSum);
 
-    // errs() << prefix << "Try to transform global variables to allocaInst in
-    // function " << fname << ".\n"; auto g2s = this->applyGlobalToStack(noelle,
-    // mayPointToAnalysis); errs() << prefix << (g2s ? "" : "no ")
-    //        << "global variables transformed to allocaInst in function " <<
-    //        fname << ".\n";
-    // modified |= g2s;
+  auto h2s = collectHeapToStack(noelle, ptSum);
+
+  auto g2s = collectGlobalToStack(noelle, ptSum);
+
+  for (auto &[f, liveMemSum] : h2s) {
+    modified |= applyHeapToStack(noelle, liveMemSum);
   }
 
-  errs() << prefix << "Exit\n";
+  for (auto &[globalVar, privariableFunctions] : g2s) {
+    modified |= applyGlobalToStack(noelle, globalVar, privariableFunctions);
+  }
+
   return modified;
 }
 

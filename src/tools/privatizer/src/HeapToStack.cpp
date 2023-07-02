@@ -25,85 +25,6 @@
 
 namespace llvm::noelle {
 
-bool PrivatizerManager::applyHeapToStack(Noelle &noelle,
-                                         PointToSummary *ptSum) {
-  bool modified = false;
-
-  for (auto funcSum : ptSum->functionSummaries) {
-    auto fname = funcSum->currentF->getName();
-    auto suffix = " in function " + fname + "\n";
-
-    if (funcSum->mallocInsts.empty() && funcSum->callocInsts.empty()) {
-      errs() << predix << "@malloc or @calloc not invoked" << suffix;
-      continue;
-    }
-
-    auto memSum = getLiveMemorySummary(noelle, ptSum, funcSum);
-    if (memSum.allocable.empty()) {
-      errs() << prefix << "@malloc or @calloc not allocable" << suffix;
-      continue;
-    }
-
-    errs()
-        << prefix << "Transform @malloc() or @calloc() to allocaInst" << suffix;
-
-    for (auto heapAllocInst : memSum.allocable) {
-      auto allocationSize = getAllocationSize(heapAllocInst);
-      if (!stackHasEnoughSpaceForNewAllocaInst(allocationSize,
-                                               stackMemoryUsage)) {
-        errs()
-            << prefix
-            << "Stack memory usage exceeds the limit, can't transfrom to allocaInst: "
-            << *heapAllocInst << suffix;
-        continue;
-      }
-
-      modified = true;
-      auto entryBlock = &funcSum->currentF->getEntryBlock();
-      auto firstInst = entryBlock->getFirstNonPHI();
-      IRBuilder<> entryBuilder(firstInst);
-      IRBuilder<> allocBuilder(heapAllocInst);
-
-      LLVMContext &context = heapAllocInst->getContext();
-      Type *oneByteType = Type::getInt8Ty(context);
-      ConstantInt *arraySize =
-          ConstantInt::get(Type::getInt64Ty(context), allocationSize);
-
-      if (getCalledFuncName(heapAllocInst) == "malloc") {
-        AllocaInst *allocaInst =
-            entryBuilder.CreateAlloca(oneByteType, arraySize, "");
-
-        errs() << prefix << "Replace @malloc: " << *heapAllocInst << "\n";
-        errs() << emptyPrefix << "with allocaInst: " << *allocaInst << "\n";
-
-        heapAllocInst->replaceAllUsesWith(allocaInst);
-        heapAllocInst->eraseFromParent();
-
-      } else if (getCalledFuncName(heapAllocInst) == "calloc") {
-        ConstantInt *zeroVal = ConstantInt::get(Type::getInt8Ty(context), 0);
-
-        AllocaInst *allocaInst =
-            entryBuilder.CreateAlloca(oneByteType, arraySize, "");
-
-        CallInst *memSetInst =
-            allocBuilder.CreateMemSet(allocaInst, zeroVal, arraySize, 1);
-
-        errs() << prefix << "Replace @malloc: " << *heapAllocInst << "\n";
-        errs() << emptyPrefix << "with allocaInst: " << *allocaInst << "\n";
-        errs() << emptyPrefix << "and memsetInst: " << *memSetInst << "\n";
-
-        heapAllocInst->replaceAllUsesWith(allocaInst);
-        heapAllocInst->eraseFromParent();
-      }
-    }
-    for (auto freeInst : memSum.removable) {
-      freeInst->eraseFromParent();
-    }
-  }
-
-  return modified;
-}
-
 /*
  * Compute @malloc() or @calloc() insts that could be transformed to allocaInst.
  * Compute @free() insts that could be removed becase if @malloc() is
@@ -216,6 +137,96 @@ LiveMemorySummary PrivatizerManager::getLiveMemorySummary(
   }();
 
   return memSum;
+}
+
+unordered_map<Function *, LiveMemorySummary> PrivatizerManager::
+    collectHeapToStack(Noelle &noelle, PointToSummary *ptSum) {
+
+  unordered_map<Function *, LiveMemorySummary> result;
+
+  for (auto &[f, funcSum] : ptSum->functionSummaries) {
+    auto fname = funcSum->currentF->getName();
+    auto suffix = " in function " + fname + "\n";
+
+    if (funcSum->mallocInsts.empty() && funcSum->callocInsts.empty()) {
+      errs() << prefix << "@malloc or @calloc not invoked" << suffix;
+      continue;
+    }
+
+    auto memSum = getLiveMemorySummary(noelle, ptSum, funcSum);
+    if (memSum.allocable.empty()) {
+      errs() << prefix << "@malloc or @calloc not allocable" << suffix;
+      continue;
+    }
+
+    result[f] = memSum;
+  }
+
+  return result;
+}
+
+bool PrivatizerManager::applyHeapToStack(Noelle &noelle,
+                                         LiveMemorySummary liveMemSum) {
+  bool modified = false;
+
+  for (auto heapAllocInst : liveMemSum.allocable) {
+    auto allocationSize = getAllocationSize(heapAllocInst);
+    auto currentF = heapAllocInst->getParent()->getParent();
+    auto suffix = " in function " + currentF->getName() + "\n";
+
+    if (!stackHasEnoughSpaceForNewAllocaInst(allocationSize, currentF)) {
+      errs()
+          << prefix
+          << "Stack memory usage exceeds the limit, can't transfrom to allocaInst: "
+          << *heapAllocInst << suffix;
+      continue;
+    }
+
+    errs()
+        << prefix << "Transform @malloc() or @calloc() to allocaInst" << suffix;
+
+    modified = true;
+    auto entryBlock = &currentF->getEntryBlock();
+    auto firstInst = entryBlock->getFirstNonPHI();
+    IRBuilder<> entryBuilder(firstInst);
+    IRBuilder<> allocBuilder(heapAllocInst);
+
+    LLVMContext &context = noelle.getProgramContext();
+    Type *oneByteType = Type::getInt8Ty(context);
+    ConstantInt *arraySize =
+        ConstantInt::get(Type::getInt64Ty(context), allocationSize);
+
+    if (getCalledFuncName(heapAllocInst) == "malloc") {
+      AllocaInst *allocaInst =
+          entryBuilder.CreateAlloca(oneByteType, arraySize, "");
+
+      errs() << prefix << "Replace @malloc: " << *heapAllocInst << "\n";
+      errs() << emptyPrefix << "with allocaInst: " << *allocaInst << "\n";
+
+      heapAllocInst->replaceAllUsesWith(allocaInst);
+      heapAllocInst->eraseFromParent();
+
+    } else if (getCalledFuncName(heapAllocInst) == "calloc") {
+      ConstantInt *zeroVal = ConstantInt::get(Type::getInt8Ty(context), 0);
+
+      AllocaInst *allocaInst =
+          entryBuilder.CreateAlloca(oneByteType, arraySize, "");
+
+      CallInst *memSetInst =
+          allocBuilder.CreateMemSet(allocaInst, zeroVal, arraySize, 1);
+
+      errs() << prefix << "Replace @malloc: " << *heapAllocInst << "\n";
+      errs() << emptyPrefix << "with allocaInst: " << *allocaInst << "\n";
+      errs() << emptyPrefix << "and memsetInst: " << *memSetInst << "\n";
+
+      heapAllocInst->replaceAllUsesWith(allocaInst);
+      heapAllocInst->eraseFromParent();
+    }
+  }
+  for (auto freeInst : liveMemSum.removable) {
+    freeInst->eraseFromParent();
+  }
+  return modified;
 }
 
 } // namespace llvm::noelle

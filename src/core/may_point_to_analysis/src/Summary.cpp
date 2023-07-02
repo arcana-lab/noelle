@@ -126,6 +126,7 @@ FunctionSummary::FunctionSummary(Function *currentF) {
         this->returnInsts.insert(returnInst);
       } else if (isa<CallBase>(inst)) {
         auto callInst = dyn_cast<CallBase>(&inst);
+        this->callInsts.insert(callInst);
         auto functionType = getMPAFunctionType(callInst);
         switch (functionType) {
           case MALLOC:
@@ -143,10 +144,9 @@ FunctionSummary::FunctionSummary(Function *currentF) {
           case INTRINSIC:
           case READ_ONLY:
           case MEM_COPY:
-          case USER_DEFINED:
             break;
+          case USER_DEFINED:
           case UNKNOWN:
-            this->unknownFuntctionCalls.insert(callInst);
             break;
         }
       }
