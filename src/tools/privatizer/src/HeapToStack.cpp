@@ -20,7 +20,6 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "PrivatizerManager.hpp"
-#include "llvm/IR/Constants.h"
 #include <numeric>
 
 namespace llvm::noelle {
@@ -70,9 +69,9 @@ LiveMemorySummary PrivatizerManager::getLiveMemorySummary(
   }();
 
   allocable = minus(allocable, allocatedInLoop);
-  allocable = minus(allocable, funcSum->mustHeap);
-  allocable = minus(allocable, funcSum->reachableFromReturnValue);
-  // allocable = minus(allocable, ptSum->ambiguous);
+  allocable = minus(allocable, funcSum->mustHeapMemoryObjects);
+  allocable =
+      minus(allocable, funcSum->memoryObjectsCanBeAccessedAfterReturn());
 
   auto [removable, notAllocable] =
       [&]() -> pair<unordered_set<CallBase *>, MemoryObjects> {

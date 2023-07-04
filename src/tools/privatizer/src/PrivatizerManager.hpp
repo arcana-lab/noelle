@@ -89,6 +89,10 @@ private:
                                                      PointToSummary *ptSum,
                                                      GlobalVariable *globalVar);
 
+  Instruction *getProgramPointOfInitilization(Noelle &noelle,
+                                              GlobalVariable *globalVar,
+                                              StoreInst *storeInst);
+
   bool globalVariableInitializedInFunction(Noelle &noelle,
                                            PointToSummary *ptSum,
                                            GlobalVariable *globalVar,

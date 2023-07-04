@@ -58,6 +58,7 @@ public:
 
 using Variables = std::unordered_set<Variable *>;
 using MemoryObjects = std::unordered_set<MemoryObject *>;
+using Pointers = std::unordered_set<Pointer *>;
 
 class PointToGraph {
 public:
@@ -67,6 +68,7 @@ public:
   bool addPointees(Pointer *pointer, MemoryObjects newPtes);
   MemoryObject *mustPointToMemory(Pointer *pointer);
   MemoryObjects getReachableMemoryObjects(Pointer *pointer);
+  Pointers getAllPointers(void);
 
 private:
   std::unordered_map<Pointer *, MemoryObjects> ptGraph;
@@ -76,6 +78,15 @@ class FunctionSummary {
 public:
   FunctionSummary(Function *currentF);
   ~FunctionSummary();
+  /*
+   * Memory objects that can be accessed after the function returns.
+   * i.e. memory objects reachable form
+   * 1. global variables,
+   * 2. unknown memory object,
+   * 3. input arguments,
+   * 4. return values.
+   */
+  MemoryObjects memoryObjectsCanBeAccessedAfterReturn();
 
   Function *currentF;
 
@@ -90,16 +101,16 @@ public:
   std::unordered_set<ReturnInst *> returnInsts;
 
   PointToGraph *functionPointToGraph;
+
   /*
-   * Record all memory objects that escape from the current function.
-   * An escaped memory object could be read or written after the current
-   * function returns. Therefore, we could not turn it to allocaInst.
+   * Memory objects directly pointed by all return values of the function
+   * For example, the functions has two returns: `return %1` and `return %2`,
+   * and %1 points to M1 and M2, %2 points to M3 and M4, M1 points to M5
+   * then returnMemoryObjects = { M1, M2, M3, M4 }, not including M5
    */
-  MemoryObjects reachableFromReturnValue;
+  MemoryObjects returnMemoryObjects;
 
-  MemoryObjects returnValue;
-
-  MemoryObjects mustHeap;
+  MemoryObjects mustHeapMemoryObjects;
 };
 
 /*

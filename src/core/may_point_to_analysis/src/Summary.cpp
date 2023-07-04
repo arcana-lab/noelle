@@ -87,6 +87,9 @@ MemoryObjects PointToGraph::getReachableMemoryObjects(Pointer *pointer) {
   while (!worklist.empty()) {
     auto ptr = *worklist.begin();
     worklist.erase(ptr);
+    if (pointer->getType() == PointNodeType::MEMORY_OBJECT) {
+      reachable.insert((MemoryObject *)ptr);
+    }
     for (auto pte : getPointees(ptr)) {
       if (reachable.count(pte) == 0) {
         reachable.insert(pte);
@@ -104,6 +107,14 @@ MemoryObject *PointToGraph::mustPointToMemory(Pointer *pointer) {
   }
   auto memoryObject = dyn_cast<MemoryObject>(*ptes.begin());
   return memoryObject;
+}
+
+Pointers PointToGraph::getAllPointers(void) {
+  Pointers allPointers;
+  for (auto &[ptr, ptes] : ptGraph) {
+    allPointers.insert(ptr);
+  }
+  return allPointers;
 }
 
 FunctionSummary::FunctionSummary(Function *currentF) {
@@ -158,6 +169,30 @@ FunctionSummary::~FunctionSummary() {
   if (functionPointToGraph != nullptr) {
     delete functionPointToGraph;
   }
+}
+
+MemoryObjects FunctionSummary::memoryObjectsCanBeAccessedAfterReturn() {
+  MemoryObjects result;
+  for (auto ptr : functionPointToGraph->getAllPointers()) {
+    if (ptr->getType() == PointNodeType::VARIABLE) {
+      assert(ptr->getSource() != nullptr && "Pointer source is null");
+      auto inst = dyn_cast<Instruction>(ptr->getSource());
+      if (inst && inst->getParent()->getParent() == currentF) {
+        // The pointer is a variable defined in the current function
+        // do nothing
+      } else {
+        // The pointer is a variable defined in other functions
+        // or a global variable
+        result =
+            unite(result, functionPointToGraph->getReachableMemoryObjects(ptr));
+      }
+    }
+  }
+  for (auto memObj : returnMemoryObjects) {
+    result =
+        unite(result, functionPointToGraph->getReachableMemoryObjects(memObj));
+  }
+  return result;
 }
 
 PointToSummary::PointToSummary(Module &M) : M(M) {

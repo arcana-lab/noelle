@@ -180,7 +180,7 @@ bool MayPointToAnalysis::FS(FunctionSummary *funcSum,
       for (auto destMemObj : funcPtGraph->getPointees(dest)) {
         auto newPtes = ptesOfMyPte(source);
         modified |= funcPtGraph->addPointees(destMemObj, newPtes);
-        funcSum->mustHeap.insert(destMemObj);
+        funcSum->mustHeapMemoryObjects.insert(destMemObj);
       }
     } else if (funcType == USER_DEFINED) {
       auto calleeFunc = callInst->getCalledFunction();
@@ -204,11 +204,8 @@ bool MayPointToAnalysis::FS(FunctionSummary *funcSum,
     if (retValue != nullptr) {
       auto retVariable = ptSum->getVariable(retValue);
       auto retMemObjs = funcPtGraph->getPointees(retVariable);
-      auto reachableFromReturnValue =
-          funcPtGraph->getReachableMemoryObjects(retVariable);
-      funcSum->returnValue = unite(funcSum->returnValue, retMemObjs);
-      funcSum->reachableFromReturnValue =
-          unite(funcSum->reachableFromReturnValue, reachableFromReturnValue);
+      funcSum->returnMemoryObjects =
+          unite(funcSum->returnMemoryObjects, retMemObjs);
     }
   }
 
@@ -251,20 +248,12 @@ bool MayPointToAnalysis::enterUserDefinedFunctionFromCallBase(
 
   auto returnVariable = ptSum->getVariable(callInst);
 
-  modified |=
-      callerPtGraph->addPointees(returnVariable, calleeSum->returnValue);
-  for (auto memObj : calleeSum->reachableFromReturnValue) {
+  modified |= callerPtGraph->addPointees(returnVariable,
+                                         calleeSum->returnMemoryObjects);
+
+  for (auto memObj : calleeSum->memoryObjectsCanBeAccessedAfterReturn()) {
     modified |=
         callerPtGraph->addPointees(memObj, calleePtGraph->getPointees(memObj));
-  }
-
-  for (auto &G : ptSum->M.globals()) {
-    auto globalVar = ptSum->getVariable(&G);
-    for (auto memObj : calleePtGraph->getReachableMemoryObjects(globalVar)) {
-      modified |=
-          callerPtGraph->addPointees(memObj,
-                                     calleePtGraph->getPointees(memObj));
-    }
   }
 
   return modified;
@@ -272,22 +261,17 @@ bool MayPointToAnalysis::enterUserDefinedFunctionFromCallBase(
 
 unordered_set<Function *> MayPointToAnalysis::getPossibleCallees(
     CallBase *callInst) {
-  auto currentF = callInst->getParent()->getParent();
 
   unordered_set<Function *> possibleCallees;
-  for (auto node : pcf->getFunctionNodes()) {
-    auto f = node->getFunction();
-    if (f != currentF) {
-      continue;
-    }
 
-    for (auto callEdge : node->getOutgoingEdges()) {
-      for (auto subEdge : callEdge->getSubEdges()) {
-        auto caller = subEdge->getCaller()->getInstruction();
-        if (caller == callInst) {
-          auto callee = subEdge->getCallee()->getFunction();
-          possibleCallees.insert(callee);
-        }
+  auto currentF = callInst->getParent()->getParent();
+  auto funcNode = pcf->getFunctionNode(currentF);
+  for (auto callEdge : funcNode->getOutgoingEdges()) {
+    for (auto subEdge : callEdge->getSubEdges()) {
+      auto caller = subEdge->getCaller()->getInstruction();
+      if (caller == callInst) {
+        auto callee = subEdge->getCallee()->getFunction();
+        possibleCallees.insert(callee);
       }
     }
   }
@@ -348,8 +332,6 @@ void MayPointToAnalysis::updateFunctionSummaryUntilFixedPoint(
     for (auto &BB : *currentF) {
       for (auto &I : BB) {
         auto fs = FS(funcSum, &I, visited);
-        errs() << "Inst: " << I << "\n";
-        errs() << "FS: " << fs << "\n";
         modified |= fs;
       }
     }
