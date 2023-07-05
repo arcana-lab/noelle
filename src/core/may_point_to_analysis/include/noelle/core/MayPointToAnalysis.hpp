@@ -88,6 +88,8 @@ public:
    */
   MemoryObjects memoryObjectsCanBeAccessedAfterReturn();
 
+  MemoryObjects memoryObjectsReachableFromReturnValue();
+
   Function *currentF;
 
   std::unordered_set<CallBase *> mallocInsts;
@@ -171,5 +173,13 @@ private:
   CallGraph *pcf;
   PointToSummary *ptSum;
 };
+
+std::string getCalledFuncName(CallBase *callInst);
+
+MemoryObjects intersect(const MemoryObjects &lhs, const MemoryObjects &rhs);
+
+MemoryObjects unite(const MemoryObjects &lhs, const MemoryObjects &rhs);
+
+MemoryObjects minus(const MemoryObjects &lhs, const MemoryObjects &rhs);
 
 } // namespace llvm::noelle

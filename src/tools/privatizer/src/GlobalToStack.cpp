@@ -108,101 +108,24 @@ unordered_set<Function *> PrivatizerManager::getPrivatizableFunctions(
     auto funcSum = ptSum->functionSummaries.at(currentF);
     auto globalMemObj = ptSum->getMemoryObject(globalVar);
 
-    if (funcSum->memoryObjectsCanBeAccessedAfterReturn().count(globalMemObj)
+    if (funcSum->memoryObjectsReachableFromReturnValue().count(globalMemObj)
         > 0) {
       return {};
     } else if (mayInvoke(currentF, currentF)) {
       return {};
-    } else {
-      // if (globalVar->getValueType()->isArrayTy()) {
-      //   for (auto inst : globalVar->users()) {
-      //     if (isa<GetElementPtrInst>(inst)) {
-      //       auto storeInst = dyn_cast<GetElementPtrInst>(inst);
-      //       auto currentF = *privatizableFunctions.begin();
-      //       LoopDependenceInfo *LDI = nullptr;
-
-      //       for (auto ldi : *noelle.getLoops(currentF)) {
-      //         if (!ldi->getLoopStructure()->isIncluded(storeInst)) {
-      //           continue;
-      //         }
-      //         if (!LDI) {
-      //           LDI = ldi;
-      //         } else if (LDI->getLoopStructure()->getNestingLevel() <
-      //                    ldi->getLoopStructure()->getNestingLevel()) {
-      //           LDI = ldi;
-      //         }
-      //       }
-
-      //       if (!LDI) {
-      //         continue;
-      //       }
-
-      //       auto IVM = LDI->getInductionVariableManager();
-      //       auto GIV = IVM->getLoopGoverningInductionVariable();
-
-      //       if (GIV == nullptr) {
-      //         errs() << "CX: GIV is null\n";
-      //         continue;
-      //       }
-
-      //       LLVMContext &C = noelle.getProgramContext();
-      //       auto arrayType = dyn_cast<ArrayType>(globalVar->getValueType());
-      //       auto arraySize =
-      //         ConstantInt::get(Type::getInt32Ty(C),
-      //         arrayType->getNumElements());
-
-      //       auto IV = GIV->getInductionVariable();
-      //       auto startValue = IV->getStartValue();
-      //       auto stepValue = IV->getSingleComputedStepValue();
-      //       auto exitConditionValue = GIV->getExitConditionValue();
-
-      //       errs() << "CX Iam here\n";
-      //       errs() << "StartValue: " << *startValue << "\n";
-      //       errs() << "StepValue: " << *stepValue << "\n";
-      //       errs() << "ExitConditionValue: " << *exitConditionValue << "\n";
-
-      //       auto startFromZero = isa<ConstantInt>(startValue) &&
-      //       dyn_cast<ConstantInt>(startValue)->isZero(); auto stepIsOne =
-      //       isa<ConstantInt>(stepValue) &&
-      //       dyn_cast<ConstantInt>(stepValue)->isOne(); auto exitArraySize =
-      //       isa<ConstantInt>(exitConditionValue) &&
-      //                            dyn_cast<ConstantInt>(exitConditionValue)->equalsInt(arrayType->getNumElements());
-
-      //       errs() << "startFromZero: " << startFromZero << "\n";
-      //       errs() << "stepIsOne: " << stepIsOne << "\n";
-      //       errs() << "exitArraySize: " << exitArraySize << "\n";
-
-      //       if (startFromZero && stepIsOne && exitArraySize) {
-      //         errs() <<
-      //         *LDI->getLoopStructure()->getHeader()->getTerminator() << "\n";
-      //       } else {
-      //         errs() << "NULLPTR\n";
-      //       }
-
-      //       auto gep = storeInst;
-      //       auto gepOfGlobalVar = gep->getOperand(0) == globalVar;
-      //       auto gepOfArrayIndex = gep->getNumIndices() == 2;
-      //       auto gepZero = isa<ConstantInt>(gep->getOperand(1)) &&
-      //       dyn_cast<ConstantInt>(gep->getOperand(1))->isZero(); auto gepOfIV
-      //       = gep->getOperand(2) == *IV->getPHIs().begin();
-
-      //       errs() << "gepOfGlobalVar: " << gepOfGlobalVar << "\n";
-      //       errs() << "gepOfArrayIndex: " << gepOfArrayIndex << "\n";
-      //       errs() << "gepZero: " << gepZero << "\n";
-      //       errs() << "gepOfIV: " << gepOfIV << "\n";
-      //     }
-      //   }
-      // }
-
-      return privatizableFunctions;
+    } else if (!globalVariableInitializedInFunction(noelle,
+                                                    ptSum,
+                                                    globalVar,
+                                                    currentF)) {
+      return {};
     }
+    return privatizableFunctions;
   } else {
     auto privatizableCandidates = privatizableFunctions;
     for (auto funcA : privatizableCandidates) {
       for (auto funcB : privatizableCandidates) {
         if (mayInvoke(funcA, funcB)) {
-          privatizableFunctions.erase(funcA);
-          privatizableFunctions.erase(funcB);
+          return {};
         }
       }
     }
@@ -211,13 +134,13 @@ unordered_set<Function *> PrivatizerManager::getPrivatizableFunctions(
       auto funcSum = ptSum->functionSummaries.at(currentF);
       auto globalMemObj = ptSum->getMemoryObject(globalVar);
 
-      if (funcSum->memoryObjectsCanBeAccessedAfterReturn().count(globalMemObj)
+      if (funcSum->memoryObjectsReachableFromReturnValue().count(globalMemObj)
           > 0) {
         return {};
-      } else if (globalVariableInitializedInFunction(noelle,
-                                                     ptSum,
-                                                     globalVar,
-                                                     currentF)) {
+      } else if (!globalVariableInitializedInFunction(noelle,
+                                                      ptSum,
+                                                      globalVar,
+                                                      currentF)) {
         return {};
       }
     }
@@ -258,8 +181,8 @@ bool PrivatizerManager::globalVariableInitializedInFunction(
 
   for (auto callInst : funcSum->callInsts) {
     for (auto &arg : callInst->arg_operands()) {
-      auto operand = ptSum->getVariable(
-          strip(callInst->getArgOperand(arg.getOperandNo())));
+      auto operand =
+          ptSum->getVariable(callInst->getArgOperand(arg.getOperandNo()));
       auto memObjsMayBeAccessed = funcPtGraph->getPointees(operand);
       auto globalMemObj = ptSum->getMemoryObject(globalVar);
       if (memObjsMayBeAccessed.count(globalMemObj) > 0) {
@@ -299,16 +222,8 @@ bool PrivatizerManager::globalVariableInitializedInFunction(
   }
 
   assert(initCandidates.size() == 1);
-  auto initCandidate = *initCandidates.begin();
 
-  auto valueOperand = ptSum->getVariable(initCandidate->getValueOperand());
-  auto memObjsUsedAsInitializer = funcPtGraph->getPointees(valueOperand);
-  if (!intersect(memObjsUsedAsInitializer, ptSum->globalMemoryObjects)
-           .empty()) {
-    return false;
-  } else if (memObjsUsedAsInitializer.count(ptSum->unknownMemoryObject) > 0) {
-    return false;
-  }
+  return true;
 }
 
 /*
@@ -444,7 +359,7 @@ bool PrivatizerManager::applyGlobalToStack(
     IRBuilder<> entryBuilder(entryBlock.getFirstNonPHI());
     Type *globalVarType = globalVar->getValueType();
     AllocaInst *allocaInst =
-        entryBuilder.CreateAlloca(globalVarType, nullptr, "");
+        entryBuilder.CreateAlloca(globalVarType, nullptr, globalVarName);
 
     if (globalVar->hasInitializer()) {
       auto initializer = globalVar->getInitializer();

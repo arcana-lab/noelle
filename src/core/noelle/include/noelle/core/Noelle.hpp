@@ -28,7 +28,6 @@
 #include "noelle/core/LoopForest.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/MayPointToAnalysis.hpp"
-#include "noelle/core/MayPointToAnalysisUtils.hpp"
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
 #include "noelle/core/HotProfiler.hpp"

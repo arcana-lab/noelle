@@ -12,7 +12,6 @@ add_subdirectory(src)
 install(
   FILES
   include/noelle/core/MayPointToAnalysis.hpp
-  include/noelle/core/MayPointToAnalysisUtils.hpp
   DESTINATION 
   include/noelle/core
   )

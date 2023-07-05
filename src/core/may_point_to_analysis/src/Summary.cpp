@@ -22,7 +22,7 @@
 
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/MayPointToAnalysis.hpp"
-#include "noelle/core/MayPointToAnalysisUtils.hpp"
+#include "MayPointToAnalysisUtils.hpp"
 
 using namespace std;
 
@@ -188,6 +188,11 @@ MemoryObjects FunctionSummary::memoryObjectsCanBeAccessedAfterReturn() {
       }
     }
   }
+  return unite(result, memoryObjectsReachableFromReturnValue());
+}
+
+MemoryObjects FunctionSummary::memoryObjectsReachableFromReturnValue() {
+  MemoryObjects result;
   for (auto memObj : returnMemoryObjects) {
     result =
         unite(result, functionPointToGraph->getReachableMemoryObjects(memObj));

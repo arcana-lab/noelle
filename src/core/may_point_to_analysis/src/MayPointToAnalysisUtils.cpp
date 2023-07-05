@@ -20,9 +20,25 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/MayPointToAnalysis.hpp"
-#include "noelle/core/MayPointToAnalysisUtils.hpp"
+#include "MayPointToAnalysisUtils.hpp"
 
 using namespace std;
+
+const set<std::string> READ_ONLY_LIB_FUNCTIONS = {
+  "atoi",   "atof",    "atol",   "atoll",  "fprintf", "fputc", "fputs",
+  "putc",   "putchar", "printf", "puts",   "rand",    "scanf", "sqrt",
+  "strlen", "strncmp", "strtod", "strtol", "strtoll"
+};
+
+const set<std::string> READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX =
+    []() -> std::set<std::string> {
+  std::set<std::string> result;
+  for (auto fname : READ_ONLY_LIB_FUNCTIONS) {
+    result.insert(fname);
+    result.insert(fname + "_unlocked");
+  }
+  return result;
+}();
 
 namespace llvm::noelle {
 
@@ -45,15 +61,6 @@ MemoryObjects minus(const MemoryObjects &lhs, const MemoryObjects &rhs) {
 
 MemoryObjects intersect(const MemoryObjects &lhs, const MemoryObjects &rhs) {
   return minus(lhs, minus(lhs, rhs));
-}
-
-MemoryObjects replace(const MemoryObjects &memObjSet,
-                      MemoryObject *oldObj,
-                      MemoryObject *newObj) {
-  MemoryObjects result(memObjSet);
-  result.erase(oldObj);
-  result.insert(newObj);
-  return result;
 }
 
 string getCalledFuncName(CallBase *callInst) {

@@ -25,24 +25,6 @@
 
 namespace llvm::noelle {
 
-Value *strip(Value *pointer);
-
-const std::set<std::string> READ_ONLY_LIB_FUNCTIONS = {
-  "atoi",   "atof",    "atol",   "atoll",  "fprintf", "fputc", "fputs",
-  "putc",   "putchar", "printf", "puts",   "rand",    "scanf", "sqrt",
-  "strlen", "strncmp", "strtod", "strtol", "strtoll"
-};
-
-const std::set<std::string> READ_ONLY_LIB_FUNCTIONS_WITH_SUFFIX =
-    []() -> std::set<std::string> {
-  std::set<std::string> result;
-  for (auto fname : READ_ONLY_LIB_FUNCTIONS) {
-    result.insert(fname);
-    result.insert(fname + "_unlocked");
-  }
-  return result;
-}();
-
 enum MPAFunctionType {
   MALLOC,
   CALLOC,
@@ -55,17 +37,7 @@ enum MPAFunctionType {
   UNKNOWN
 };
 
-std::string getCalledFuncName(CallBase *callInst);
-
-MemoryObjects intersect(const MemoryObjects &lhs, const MemoryObjects &rhs);
-
-MemoryObjects unite(const MemoryObjects &lhs, const MemoryObjects &rhs);
-
-MemoryObjects minus(const MemoryObjects &lhs, const MemoryObjects &rhs);
-
-MemoryObjects replace(const MemoryObjects &memObjSet,
-                      MemoryObject *oldObj,
-                      MemoryObject *newObj);
+Value *strip(Value *pointer);
 
 bool isLifetimeIntrinsic(CallBase *callInst);
 

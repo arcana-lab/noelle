@@ -20,8 +20,8 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/MayPointToAnalysis.hpp"
-#include "noelle/core/MayPointToAnalysisUtils.hpp"
 #include "noelle/core/SystemHeaders.hpp"
+#include "MayPointToAnalysisUtils.hpp"
 
 using namespace std;
 
