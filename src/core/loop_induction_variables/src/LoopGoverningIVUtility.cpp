@@ -377,22 +377,22 @@ void LoopGoverningIVUtility::
     case CmpInst::Predicate::ICMP_SLE:
     case CmpInst::Predicate::ICMP_ULE:
       newPredicate = this->doesOriginalCmpInstHaveIVAsLeftOperand
-                         ? condition->getInversePredicate()
-                         : this->strictPredicate;
-      break;
-
-    case CmpInst::Predicate::ICMP_SGT:
-    case CmpInst::Predicate::ICMP_UGT:
-    case CmpInst::Predicate::ICMP_SLT:
-    case CmpInst::Predicate::ICMP_ULT:
-      newPredicate = this->doesOriginalCmpInstHaveIVAsLeftOperand
-                         ? this->nonStrictPredicate
+                         ? this->strictPredicate
                          : condition->getInversePredicate();
       break;
 
+      // case CmpInst::Predicate::ICMP_SGT:
+      // case CmpInst::Predicate::ICMP_UGT:
+      // case CmpInst::Predicate::ICMP_SLT:
+      // case CmpInst::Predicate::ICMP_ULT:
+      //   newPredicate = this->doesOriginalCmpInstHaveIVAsLeftOperand
+      //                      ? this->nonStrictPredicate
+      //                      : condition->getInversePredicate();
+      //   break;
+
     case CmpInst::Predicate::ICMP_EQ:
     case CmpInst::Predicate::ICMP_NE:
-      newPredicate = condition->getInversePredicate();
+      newPredicate = this->strictPredicate;
       break;
 
     default:
