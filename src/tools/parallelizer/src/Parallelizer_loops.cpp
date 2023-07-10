@@ -65,8 +65,11 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
    */
   auto mm = noelle.getMetadataManager();
   std::map<uint32_t, LoopDependenceInfo *> loopParallelizationOrder;
+  uint32_t selectedIndex = 0;
+  errs() << "Parallelizer:    Insert the index of the loop to parallelize: ";
+  std::cin >> selectedIndex;
   for (auto tree : forest->getTrees()) {
-    auto selector = [&noelle, &mm, &loopParallelizationOrder](
+    auto selector = [&noelle, &mm, &loopParallelizationOrder, selectedIndex](
                         LoopTree *n,
                         uint32_t treeLevel) -> bool {
       auto ls = n->getLoop();
@@ -75,6 +78,9 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
       }
       auto parallelizationOrderIndex =
           std::stoi(mm->getMetadata(ls, "noelle.parallelizer.looporder"));
+      if (parallelizationOrderIndex != selectedIndex) {
+        return false;
+      }
       auto optimizations = {
         LoopDependenceInfoOptimization::MEMORY_CLONING_ID,
         LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID
@@ -85,9 +91,12 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
     };
     tree->visitPreOrder(selector);
   }
-  errs() << "Parallelizer:    There are " << loopParallelizationOrder.size()
-         << " loops that the planner has selected\n";
-  errs() << "Parallelizer:    We are going to try to parallelize all of them\n";
+  errs() << "Parallelizer:    Header of the selected loop:";
+  for (const auto &[k, v] : loopParallelizationOrder) {
+    errs() << *v->getLoopStructure()->getHeader() << "\n";
+    errs() << "Parallelizer:    The selected loop is in function "
+           << v->getLoopStructure()->getFunction()->getName().str() << "\n";
+  }
 
   /*
    * Parallelize the loops in order.
