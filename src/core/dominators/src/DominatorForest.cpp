@@ -268,7 +268,7 @@ bool DominatorForest::dominates(DominatorNode *node1,
 std::set<DominatorNode *> DominatorForest::dominates(
     DominatorNode *node) const {
   std::set<DominatorNode *> dominators;
-  while (node->parent) {
+  while (node) {
     dominators.insert(node);
     node = node->parent;
   }
