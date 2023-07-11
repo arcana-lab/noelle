@@ -91,6 +91,7 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
     };
     tree->visitPreOrder(selector);
   }
+  errs() << "Parallelizer:    Loop " << selectedIndex << " has been selected\n";
   errs() << "Parallelizer:    Header of the selected loop:";
   for (const auto &[k, v] : loopParallelizationOrder) {
     errs() << *v->getLoopStructure()->getHeader() << "\n";
