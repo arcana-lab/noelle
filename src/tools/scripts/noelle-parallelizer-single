@@ -13,7 +13,6 @@ if test $# -lt 2 ; then
   echo "TIMEOUT          Seconds after which the executable will be interruped"
   echo "                 causing a non-zero return code."
   echo "                 If not specified the binary will not be run."
-
   exit 1
 fi
 
@@ -21,6 +20,17 @@ inputBitcode=$1
 numLoops=$2
 digitCount=`echo -n "$numLoops" | wc -c`
 prefix="Selector:"
+
+showReturnCode() {
+  prefix=$1
+  retCode=$2
+  if test $retCode -eq 0 ; then
+    colorRetCode="\033[1;32m$retCode\033[0m"
+  else
+    colorRetCode="\033[1;31m$retCode\033[0m"
+  fi
+  echo -e "${prefix}     returned code $colorRetCode"
+}
 
 for ((i=0; i<numLoops; i++)); do
   echo -e "${prefix} \033[1;37mloop index ${i}\033[0m"
@@ -40,7 +50,7 @@ for ((i=0; i<numLoops; i++)); do
     <<< "$i" \
     > loop${i_pad}.log 2>&1
 
-  echo -e "${prefix}     returned code \033[1;37m$?\033[0m"
+  showReturnCode $prefix $?
 
   # creating the executable
   #
@@ -50,7 +60,7 @@ for ((i=0; i<numLoops; i++)); do
     -o parallelized_loop${i_pad} \
     -pthreads
 
-  echo -e "${prefix}     returned code \033[1;37m$?\033[0m"
+  showReturnCode $prefix $?
 
   # conditionally run the executable
   #
@@ -60,7 +70,7 @@ for ((i=0; i<numLoops; i++)); do
     timeout ${timeout}s ./parallelized_loop${i_pad} `cat input.txt` \
       > /dev/null
 
-    echo -e "${prefix}     returned code \033[1;37m$?\033[0m"
+    showReturnCode $prefix $?
   fi
   
 done
