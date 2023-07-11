@@ -36,6 +36,11 @@ static cl::opt<bool> ForceNoSCCPartition(
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Force no SCC merging when parallelizing"));
+static cl::list<int> SelectedLoopIndexes(
+    "noelle-select-only-loops",
+    cl::ZeroOrMore,
+    cl::CommaSeparated,
+    cl::desc("Parallelize only a specific set loops"));
 
 Parallelizer::Parallelizer()
   : ModulePass{ ID },
@@ -48,6 +53,7 @@ Parallelizer::Parallelizer()
 bool Parallelizer::doInitialization(Module &M) {
   this->forceParallelization = (ForceParallelization.getNumOccurrences() > 0);
   this->forceNoSCCPartition = (ForceNoSCCPartition.getNumOccurrences() > 0);
+  this->selectedLoopIndexes = SelectedLoopIndexes;
 
   return false;
 }

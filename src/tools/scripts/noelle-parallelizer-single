@@ -1,25 +1,27 @@
 #!/bin/bash
 
-if test $# -lt 2 ; then
-  echo "USAGE: `basename $0` BITCODE NUMBER_OF_LOOPS [TIMEOUT_S]"
+installDir
+
+if test $# -lt 1 ; then
+  echo "USAGE: `basename $0` BITCODE [TIMEOUT_S]"
   echo
   echo "Tool for parallelizing one loop at a time"
   echo
   echo "BITCODE          Input bitcode with parallel plan and API already linked."
   echo "                 Generally this file is code_to_parallelize.bc"
-  echo "NUMBER_OF_LOOPS  Total number of loop with a parallel plan, a.k.a. loops"
-  echo "                 with a noelle.parallelizer.looporder attribute attached" 
-  echo "                 to an instruction in the header."
   echo "TIMEOUT          Seconds after which the executable will be interruped"
   echo "                 causing a non-zero return code."
   echo "                 If not specified the binary will not be run."
   exit 1
 fi
 
-inputBitcode=$1
-numLoops=$2
+inputBC=$1
 digitCount=`echo -n "$numLoops" | wc -c`
 prefix="Selector:"
+
+loopsInfo=`noelle-parallelizer-info $inputBC`
+numLoops=$(echo "$loopsInfo" | grep "Parallel loops" | egrep -o "[0-9]+")
+echo "$loopsInfo"
 
 showReturnCode() {
   prefix=$1
@@ -43,11 +45,11 @@ for ((i=0; i<numLoops; i++)); do
   # NOTE: this number is NOT related in any way to the
   # noelle.parallelizer.looporder attribute in the IR
   #
-  noelle-parallelizer-loop $inputBitcode \
+  noelle-parallelizer-loop $inputBC \
     -o code_to_parallelize.loop${i_pad}.bc \
+    -noelle-select-only-loops=$i \
     -noelle-parallelizer-force \
     -alloc-aa-verbose=1 \
-    <<< "$i" \
     > loop${i_pad}.log 2>&1
 
   showReturnCode $prefix $?
@@ -64,8 +66,8 @@ for ((i=0; i<numLoops; i++)); do
 
   # conditionally run the executable
   #
-  if test $# -ge 3 ; then
-    timeout=$3
+  if test $# -ge 2 ; then
+    timeout=$2
     echo "${prefix}   running parallelized_loop${i_pad}"
     timeout ${timeout}s ./parallelized_loop${i_pad} `cat input.txt` \
       > /dev/null

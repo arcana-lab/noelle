@@ -60,16 +60,18 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
   errs() << "Parallelizer:    There are " << forest->getNumberOfLoops()
          << " loops in the program that are enabled from the options used\n";
 
+  const auto isSelectedIndex = [&](int i) {
+    const auto &SLI = this->selectedLoopIndexes;
+    return std::find(SLI.begin(), SLI.end(), i) != std::end(SLI);
+  };
+
   /*
    * Determine the parallelization order from the metadata.
    */
   auto mm = noelle.getMetadataManager();
   std::map<uint32_t, LoopDependenceInfo *> loopParallelizationOrder;
-  uint32_t selectedIndex = 0;
-  errs() << "Parallelizer:    Insert the index of the loop to parallelize: ";
-  std::cin >> selectedIndex;
   for (auto tree : forest->getTrees()) {
-    auto selector = [&noelle, &mm, &loopParallelizationOrder, selectedIndex](
+    auto selector = [&noelle, &mm, &loopParallelizationOrder, &isSelectedIndex](
                         LoopTree *n,
                         uint32_t treeLevel) -> bool {
       auto ls = n->getLoop();
@@ -78,7 +80,7 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
       }
       auto parallelizationOrderIndex =
           std::stoi(mm->getMetadata(ls, "noelle.parallelizer.looporder"));
-      if (parallelizationOrderIndex != selectedIndex) {
+      if (!isSelectedIndex(parallelizationOrderIndex)) {
         return false;
       }
       auto optimizations = {
@@ -91,13 +93,11 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
     };
     tree->visitPreOrder(selector);
   }
-  errs() << "Parallelizer:    Loop " << selectedIndex << " has been selected\n";
-  errs() << "Parallelizer:    Header of the selected loop:";
+  errs() << "Parallelizer:    Selected loop indexes: ";
   for (const auto &[k, v] : loopParallelizationOrder) {
-    errs() << *v->getLoopStructure()->getHeader() << "\n";
-    errs() << "Parallelizer:    The selected loop is in function "
-           << v->getLoopStructure()->getFunction()->getName().str() << "\n";
+    errs() << k << " ";
   }
+  errs() << "\n";
 
   /*
    * Parallelize the loops in order.
