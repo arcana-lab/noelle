@@ -12,22 +12,16 @@ if test $# -lt 2 ; then
   echo "                 to an instruction in the header."
   echo "TIMEOUT          Seconds after which the executable will be interruped"
   echo "                 causing a non-zero return code."
+  echo "                 If not specified the binary will not be run."
 
   exit 1
 fi
 
 inputBitcode=$1
 numLoops=$2
-timeout=3600 # seconds
-if test $# -ge 3 ; then
-  timeout=$3
-fi
-
+digitCount=`echo -n "$numLoops" | wc -c`
 prefix="Selector:"
 
-echo "${prefix} timeout is set to ${timeout} seconds"
-
-digitCount=`echo -n "$numLoops" | wc -c`
 for ((i=0; i<numLoops; i++)); do
   echo -e "${prefix} \033[1;37mloop index ${i}\033[0m"
   echo "${prefix}   running noelle-parallelizer-loop"
@@ -46,25 +40,28 @@ for ((i=0; i<numLoops; i++)); do
     <<< "$i" \
     > loop${i_pad}.log 2>&1
 
-  echo -e "${prefix}     noelle-parallelizer-loop returned\t\t$?"
-  echo "${prefix}   running clang++"
+  echo -e "${prefix}     returned code \033[1;37m$?\033[0m"
 
   # creating the executable
   #
+  echo "${prefix}   running clang++"
   clang++ code_to_parallelize.loop${i_pad}.bc \
     Parallelizer_utils.bc \
     -o parallelized_loop${i_pad} \
     -pthreads
 
-  echo -e "${prefix}     clang++ returned\t\t\t\t$?"
-  echo "${prefix}   running parallelized_loop${i_pad}"
+  echo -e "${prefix}     returned code \033[1;37m$?\033[0m"
 
-  # running the executable
+  # conditionally run the executable
   #
-  timeout ${timeout}s ./parallelized_loop${i_pad} `cat input.txt` \
-    > /dev/null
+  if test $# -ge 3 ; then
+    timeout=$3
+    echo "${prefix}   running parallelized_loop${i_pad}"
+    timeout ${timeout}s ./parallelized_loop${i_pad} `cat input.txt` \
+      > /dev/null
 
-  echo -e "${prefix}   parallelized_loop${i_pad} returned \t\t$?"
+    echo -e "${prefix}     returned code \033[1;37m$?\033[0m"
+  fi
   
 done
 
