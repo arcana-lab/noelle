@@ -3,15 +3,16 @@
 installDir
 
 if test $# -lt 1 ; then
-  echo "USAGE: `basename $0` BITCODE [TIMEOUT_S]"
+  echo "USAGE: `basename $0` BITCODE [TIMEOUT] [ARGUMENTS]"
   echo
   echo "Tool for parallelizing one loop at a time"
   echo
-  echo "BITCODE          Input bitcode with parallel plan and API already linked."
-  echo "                 Generally this file is code_to_parallelize.bc"
-  echo "TIMEOUT          Seconds after which the executable will be interruped"
-  echo "                 causing a non-zero return code."
-  echo "                 If not specified the binary will not be run."
+  echo "BITCODE         Input bitcode with parallel plan and API already linked."
+  echo "                Generally this file is code_to_parallelize.bc"
+  echo "TIMEOUT         Seconds after which the executable will be interruped"
+  echo "                causing a non-zero return code."
+  echo "                If not specified the binary will not be run."
+  echo "ARGUMENTS       Arguments to the executable."
   exit 1
 fi
 
@@ -68,8 +69,12 @@ for ((i=0; i<numLoops; i++)); do
   #
   if test $# -ge 2 ; then
     timeout=$2
+    args=""
+    if test $# -ge 3 ; then
+      args="$3"
+    fi
     echo "${prefix}   running parallelized_loop${i_pad}"
-    timeout ${timeout}s ./parallelized_loop${i_pad} `cat input.txt` \
+    timeout ${timeout}s ./parallelized_loop${i_pad} "$args" \
       > /dev/null
 
     showReturnCode $prefix $?
