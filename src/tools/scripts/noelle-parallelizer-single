@@ -2,27 +2,20 @@
 
 installDir
 
-if test $# -lt 1 ; then
-  echo "USAGE: `basename $0` BITCODE [TIMEOUT] [ARGUMENTS]"
+usage() {
+  echo "USAGE: `basename $0` INPUT_BC [OPTIONS]..."
   echo
   echo "Tool for parallelizing one loop at a time"
   echo
-  echo "BITCODE         Input bitcode with parallel plan and API already linked."
+  echo "Options:"
+  echo "INPUT_BC        Input bitcode with parallel plan and API already linked."
   echo "                Generally this file is code_to_parallelize.bc"
-  echo "TIMEOUT         Seconds after which the executable will be interruped"
+  echo "--timeout       Seconds after which the executable will be interruped"
   echo "                causing a non-zero return code."
   echo "                If not specified the binary will not be run."
-  echo "ARGUMENTS       Arguments to the executable."
-  exit 1
-fi
-
-inputBC=$1
-digitCount=`echo -n "$numLoops" | wc -c`
-prefix="Selector:"
-
-loopsInfo=`noelle-parallelizer-info $inputBC`
-numLoops=$(echo "$loopsInfo" | grep "Parallel loops" | egrep -o "[0-9]+")
-echo "$loopsInfo"
+  echo "--args          Arguments to the executable."
+  echo "--help          Display this message."
+}
 
 showReturnCode() {
   prefix=$1
@@ -35,14 +28,70 @@ showReturnCode() {
   echo -e "${prefix}     returned code $colorRetCode"
 }
 
+#------ Beginning --------------------------------------------------------------#
+
+if test $# -lt 1 ; then
+  usage
+fi
+
+# Defaults
+#
+timeout=600 # 10 minutes
+executeBin="n"
+args=""
+
+# Parsing arguments
+#
+inputBC="$1"
+for arg in "$@"; do
+  case ${arg} in
+    --args=*)
+      args="${arg#*=}"
+      executeBin="y"
+      shift
+      ;;
+    --timeout=*)
+      timeout="${arg#*=}"
+      executeBin="y"
+      shift
+      ;;
+    --help)
+      usage
+      exit 0
+      ;;
+    -*|--*)
+      echo "ERROR: Unknown option $arg"
+      usage
+      exit 1
+      ;;
+    *)
+      ;;
+  esac
+done
+
+digitCount=`echo -n "$numLoops" | wc -c`
+prefix="Selector:"
+
+if [ "$executeBin" == "y" ]; then
+  echo "${prefix} The executable will run"
+  echo "${prefix}   Arguments: $args"
+  echo "${prefix}   Timeout: $timeout seconds"
+else
+  echo "${prefix} The executable will not run"
+fi
+
+loopsInfo=`noelle-parallelizer-info $inputBC`
+numLoops=$(echo "$loopsInfo" | grep "Parallel loops" | egrep -o "[0-9]+")
+echo "$loopsInfo"
+
 for ((i=0; i<numLoops; i++)); do
   echo -e "${prefix} \033[1;37mloop index ${i}\033[0m"
   echo "${prefix}   running noelle-parallelizer-loop"
 
   i_pad=`printf "%0${digitCount}i" $i`
 
-  # creating the parallelized bitcode.
-  # only loop number $i will be parallelized.
+  # Creating the parallelized bitcode.
+  # Only loop number $i will be parallelized.
   # NOTE: this number is NOT related in any way to the
   # noelle.parallelizer.looporder attribute in the IR
   #
@@ -55,7 +104,7 @@ for ((i=0; i<numLoops; i++)); do
 
   showReturnCode $prefix $?
 
-  # creating the executable
+  # Creating the executable
   #
   echo "${prefix}   running clang++"
   clang++ code_to_parallelize.loop${i_pad}.bc \
@@ -65,14 +114,9 @@ for ((i=0; i<numLoops; i++)); do
 
   showReturnCode $prefix $?
 
-  # conditionally run the executable
+  # Conditionally run the executable
   #
-  if test $# -ge 2 ; then
-    timeout=$2
-    args=""
-    if test $# -ge 3 ; then
-      args="$3"
-    fi
+  if [ "$executeBin" == "y" ]; then
     echo "${prefix}   running parallelized_loop${i_pad}"
     timeout ${timeout}s ./parallelized_loop${i_pad} "$args" \
       > /dev/null
