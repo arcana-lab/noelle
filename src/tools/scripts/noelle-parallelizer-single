@@ -1,0 +1,70 @@
+#!/bin/bash
+
+if test $# -lt 2 ; then
+  echo "USAGE: `basename $0` BITCODE NUMBER_OF_LOOPS [TIMEOUT_S]"
+  echo
+  echo "Tool for parallelizing one loop at a time"
+  echo
+  echo "BITCODE          Input bitcode with parallel plan and API already linked."
+  echo "                 Generally this file is code_to_parallelize.bc"
+  echo "NUMBER_OF_LOOPS  Total number of loop with a parallel plan, a.k.a. loops"
+  echo "                 with a noelle.parallelizer.looporder attribute attached" 
+  echo "                 to an instruction in the header."
+  echo "TIMEOUT          Seconds after which the executable will be interruped"
+  echo "                 causing a non-zero return code."
+
+  exit 1
+fi
+
+inputBitcode=$1
+numLoops=$2
+timeout=3600 # seconds
+if test $# -ge 3 ; then
+  timeout=$3
+fi
+
+prefix="Selector:"
+
+echo "${prefix} timeout is set to ${timeout} seconds"
+
+digitCount=`echo -n "$numLoops" | wc -c`
+for ((i=0; i<numLoops; i++)); do
+  echo -e "${prefix} \033[1;37mloop index ${i}\033[0m"
+  echo "${prefix}   running noelle-parallelizer-loop"
+
+  i_pad=`printf "%0${digitCount}i" $i`
+
+  # creating the parallelized bitcode.
+  # only loop number $i will be parallelized.
+  # NOTE: this number is NOT related in any way to the
+  # noelle.parallelizer.looporder attribute in the IR
+  #
+  noelle-parallelizer-loop $inputBitcode \
+    -o code_to_parallelize.loop${i_pad}.bc \
+    -noelle-parallelizer-force \
+    -alloc-aa-verbose=1 \
+    <<< "$i" \
+    > loop${i_pad}.log 2>&1
+
+  echo -e "${prefix}     noelle-parallelizer-loop returned\t\t$?"
+  echo "${prefix}   running clang++"
+
+  # creating the executable
+  #
+  clang++ code_to_parallelize.loop${i_pad}.bc \
+    Parallelizer_utils.bc \
+    -o parallelized_loop${i_pad} \
+    -pthreads
+
+  echo -e "${prefix}     clang++ returned\t\t\t\t$?"
+  echo "${prefix}   running parallelized_loop${i_pad}"
+
+  # running the executable
+  #
+  timeout ${timeout}s ./parallelized_loop${i_pad} `cat input.txt` \
+    > /dev/null
+
+  echo -e "${prefix}   parallelized_loop${i_pad} returned \t\t$?"
+  
+done
+
