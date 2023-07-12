@@ -71,6 +71,7 @@ bool Parallelizer::runOnModule(Module &M) {
    * Parallelize the loops of the target program.
    */
   auto modified = this->parallelizeLoops(noelle, heuristics);
+  errs() << "Parallelizer: Exit\n";
 
   return modified;
 }
