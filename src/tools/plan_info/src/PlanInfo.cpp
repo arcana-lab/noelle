@@ -24,7 +24,7 @@
 
 namespace llvm::noelle {
 
-PlanInfo::PlanInfo() : ModulePass{ ID }, printHeaders{ false } {
+PlanInfo::PlanInfo() : ModulePass{ ID }, printAllHeaders{ false } {
   return;
 }
 
@@ -73,14 +73,19 @@ bool PlanInfo::runOnModule(Module &M) {
       << "PlanInfo: Number of loops with a parallel plan: " << order2ldi.size()
       << "\n";
 
-  if (this->printHeaders) {
-    for (const auto &[order, ldi] : order2ldi) {
+  const auto shouldPrint = [&](int order) {
+    const auto &PH = this->printHeaders;
+    return std::find(PH.begin(), PH.end(), order) != std::end(PH);
+  };
+
+  for (const auto &[order, ldi] : order2ldi) {
+    if (this->printAllHeaders || shouldPrint(order)) {
       errs() << "PlanInfo:    Loop with order index " << order << ":\n";
       auto ls = ldi->getLoopStructure();
       errs() << *ls->getHeader() << "\n";
     }
-    errs() << "\n";
   }
+  errs() << "\n";
 
   return false;
 }

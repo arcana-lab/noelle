@@ -11,7 +11,8 @@ if test $# -lt 1 ; then
   echo "IR_FILE                     Input bitcode with an embedded parallel plan."
   echo
   echo "Options:"
-  echo "--plan-info-print-headers   Print the header of every loop."
+  echo "--info-print-all-headers    Print the header of every loop."
+  echo "--info-print-headers        Print the headers of some loops."
   exit 1
 fi
 

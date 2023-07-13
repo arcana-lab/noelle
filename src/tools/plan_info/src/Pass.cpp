@@ -22,16 +22,23 @@
 
 #include "PlanInfo.hpp"
 
-static cl::opt<bool> PrintHeaders(
-    "plan-info-print-headers",
+static cl::opt<bool> PrintAllHeaders(
+    "info-print-all-headers",
     cl::ZeroOrMore,
     cl::Hidden,
-    cl::desc("Show the header of all loops with a parallel plan"));
+    cl::desc("Print the header of all loops with a parallel plan"));
+static cl::list<int> PrintHeaders(
+    "info-print-headers",
+    cl::ZeroOrMore,
+    cl::Hidden,
+    cl::CommaSeparated,
+    cl::desc("Print the headers of some loops with a parallel plan"));
 
 namespace llvm::noelle {
 
 bool PlanInfo::doInitialization(Module &M) {
-  this->printHeaders = PrintHeaders.getValue();
+  this->printAllHeaders = PrintAllHeaders.getValue();
+  this->printHeaders = PrintHeaders;
   return false;
 }
 

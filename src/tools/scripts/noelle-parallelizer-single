@@ -7,9 +7,10 @@ usage() {
   echo
   echo "Tool for parallelizing one loop at a time"
   echo
-  echo "Options:"
   echo "INPUT_BC        Input bitcode with parallel plan and API already linked."
   echo "                Generally this file is code_to_parallelize.bc"
+  echo
+  echo "Options:"
   echo "--timeout       Seconds after which the executable will be interruped"
   echo "                causing a non-zero return code."
   echo "                If not specified the binary will not be run."

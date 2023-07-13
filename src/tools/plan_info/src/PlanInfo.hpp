@@ -39,7 +39,9 @@ public:
   static char ID;
 
 private:
-  bool printHeaders;
+  bool printAllHeaders;
+
+  std::vector<int> printHeaders;
 };
 
 } // namespace llvm::noelle
