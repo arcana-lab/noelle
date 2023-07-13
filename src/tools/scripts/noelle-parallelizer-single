@@ -47,6 +47,10 @@ args=""
 inputBC="$1"
 for arg in "$@"; do
   case ${arg} in
+    --only=*)
+      only="${arg#*=}"
+      shift
+      ;;
     --args=*)
       args="${arg#*=}"
       executeBin="y"
@@ -82,7 +86,6 @@ else
   echo "${prefix} The executable will not run"
 fi
 
-# loopsInfo=`noelle-parallelizer-info $inputBC`
 loopsInfo=`noelle-plan-info $inputBC 2>&1 | grep "PlanInfo"`
 numLoops=$(echo "$loopsInfo" | grep "parallel plan" | egrep -o "[0-9]+")
 echo "$loopsInfo"
