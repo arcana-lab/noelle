@@ -33,6 +33,7 @@ showReturnCode() {
 
 if test $# -lt 1 ; then
   usage
+  exit 1
 fi
 
 # Defaults
@@ -81,8 +82,9 @@ else
   echo "${prefix} The executable will not run"
 fi
 
-loopsInfo=`noelle-parallelizer-info $inputBC`
-numLoops=$(echo "$loopsInfo" | grep "Parallel loops" | egrep -o "[0-9]+")
+# loopsInfo=`noelle-parallelizer-info $inputBC`
+loopsInfo=`noelle-plan-info $inputBC 2>&1 | grep "PlanInfo"`
+numLoops=$(echo "$loopsInfo" | grep "parallel plan" | egrep -o "[0-9]+")
 echo "$loopsInfo"
 
 for ((i=0; i<numLoops; i++)); do
