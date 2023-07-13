@@ -98,8 +98,6 @@ for ((i=0; i<numLoops; i++)); do
 
   # Creating the parallelized bitcode.
   # Only loop number $i will be parallelized.
-  # NOTE: this number is NOT related in any way to the
-  # noelle.parallelizer.looporder attribute in the IR
   #
   noelle-parallelizer-loop $inputBC \
     -o code_to_parallelize.loop${i_pad}.bc \
