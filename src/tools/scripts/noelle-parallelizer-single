@@ -5,7 +5,7 @@ installDir
 usage() {
   echo "USAGE: `basename $0` INPUT_BC [OPTIONS]..."
   echo
-  echo "Tool for parallelizing one loop at a time"
+  echo "Tool for parallelizing one loop at a time and running the binary."
   echo
   echo "INPUT_BC        Input bitcode with parallel plan and API already linked."
   echo "                Generally this file is code_to_parallelize.bc"
