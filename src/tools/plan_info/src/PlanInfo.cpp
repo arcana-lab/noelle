@@ -43,7 +43,6 @@ bool PlanInfo::runOnModule(Module &M) {
     errs() << "PlanInfo: Exit\n";
     return false;
   }
-  errs() << "PlanInfo: Number of loops: " << forest->getNumberOfLoops() << "\n";
 
   /*
    * Collecting loops with a parallel plan
@@ -69,6 +68,7 @@ bool PlanInfo::runOnModule(Module &M) {
     tree->visitPreOrder(collector);
   }
 
+  errs() << "PlanInfo: Number of loops: " << forest->getNumberOfLoops() << "\n";
   errs()
       << "PlanInfo: Number of loops with a parallel plan: " << order2ldi.size()
       << "\n";
