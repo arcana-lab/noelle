@@ -100,7 +100,7 @@ for ((i=0; i<numLoops; i++)); do
   # Only loop number $i will be parallelized.
   #
   noelle-parallelizer-loop $inputBC \
-    -o code_to_parallelize.loop${i_pad}.bc \
+    -o parallelized.loop${i_pad}.bc \
     -noelle-select-only-loops=$i \
     -noelle-parallelizer-force \
     -alloc-aa-verbose=1 \
@@ -111,9 +111,9 @@ for ((i=0; i<numLoops; i++)); do
   # Creating the executable
   #
   echo "${prefix}   running clang++"
-  clang++ code_to_parallelize.loop${i_pad}.bc \
+  clang++ parallelized.loop${i_pad}.bc \
     Parallelizer_utils.bc \
-    -o parallelized_loop${i_pad} \
+    -o parallelized.loop${i_pad} \
     -pthreads
 
   showReturnCode $prefix $?
@@ -121,8 +121,8 @@ for ((i=0; i<numLoops; i++)); do
   # Conditionally run the executable
   #
   if [ "$executeBin" == "y" ]; then
-    echo "${prefix}   running parallelized_loop${i_pad}"
-    timeout ${timeout}s ./parallelized_loop${i_pad} "$args" \
+    echo "${prefix}   running parallelized.loop${i_pad}"
+    timeout ${timeout}s ./parallelized.loop${i_pad} "$args" \
       > /dev/null
 
     showReturnCode $prefix $?

@@ -1,0 +1,105 @@
+#!/bin/bash
+
+installDir
+
+usage() {
+  echo "USAGE: `basename $0` INPUT_BC SUBSET [--help]"
+  echo
+  echo "Tool for parallelizing a specific subset or loops with a plan."
+  echo
+  echo "INPUT_BC        Input bitcode with parallel plan and API already linked."
+  echo "                Generally this file is code_to_parallelize.bc"
+  echo "SUBSET          Comma separated. List of loops to parallelize."
+  echo
+  echo "Options:"
+  echo "--help          Display this message."
+}
+
+showReturnCode() {
+  prefix=$1
+  retCode=$2
+  if test $retCode -eq 0 ; then
+    colorRetCode="\033[1;32m$retCode\033[0m"
+  else
+    colorRetCode="\033[1;31m$retCode\033[0m"
+  fi
+  echo -e "${prefix}     returned code $colorRetCode"
+}
+
+#------ Beginning --------------------------------------------------------------#
+
+if test $# -lt 1 ; then
+  usage
+  exit 1
+fi
+
+# Parsing arguments
+#
+inputBC="$1"
+loops="$2"
+for arg in "$@"; do
+  case ${arg} in
+    --help)
+      usage
+      exit 0
+      ;;
+    -*|--*)
+      echo "ERROR: Unknown option $arg"
+      usage
+      exit 1
+      ;;
+    *)
+      ;;
+  esac
+done
+
+prefix="Selector:"
+loopsInfo=`noelle-plan-info $inputBC 2>&1 | grep "PlanInfo"`
+numLoops=$(echo "$loopsInfo" | grep "parallel plan" | egrep -o "[0-9]+")
+echo "$loopsInfo"
+
+for num in "$loops{[@]}"; do
+  if test $num -ge $numLoops ; then
+    echo "${prefix} ERROR: loop with order index $num is out of range [0, $numLoops)"
+    exit 2
+  fi
+done
+
+echo -e "${prefix} \033[1;37mloop indexes ${loops}\033[0m"
+echo "${prefix}   running noelle-parallelizer-loop"
+
+i_pad=`printf "%0${digitCount}i" $i`
+loops_underscore=`echo "$loops" | sed "s/,/_/g"`
+
+# Creating the parallelized bitcode.
+# Only loop numbers in $loops will be parallelized.
+#
+noelle-parallelizer-loop $inputBC \
+  -o parallelized.only${loops_underscore}.bc \
+  -noelle-select-only-loops="$loops" \
+  -noelle-parallelizer-force \
+  -alloc-aa-verbose=1 \
+  > only${loops_underscore}.log 2>&1
+
+showReturnCode $prefix $?
+
+# Creating the executable
+#
+echo "${prefix}   running clang++"
+clang++ parallelized.only${loops_underscore}.bc \
+  Parallelizer_utils.bc \
+  -o parallelized.only${loops_underscore} \
+  -pthreads
+
+showReturnCode $prefix $?
+
+# Conditionally run the executable
+#
+if [ "$executeBin" == "y" ]; then
+  echo "${prefix}   running parallelized.only${loops_underscore}"
+  timeout ${timeout}s ./parallelized.only${loops_underscore} "$args" \
+    > /dev/null
+
+  showReturnCode $prefix $?
+fi
+
