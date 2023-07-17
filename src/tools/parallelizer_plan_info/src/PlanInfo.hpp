@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2023 - Federico Sossai
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,25 +19,16 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
 #pragma once
 
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
-#include "noelle/core/PDG.hpp"
-#include "noelle/core/SCC.hpp"
-#include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/Noelle.hpp"
-#include "noelle/core/MetadataManager.hpp"
-#include "noelle/tools/DOALL.hpp"
-#include "noelle/tools/HELIX.hpp"
-#include "HeuristicsPass.hpp"
-#include "noelle/tools/DSWP.hpp"
 
 namespace llvm::noelle {
 
-class Parallelizer : public ModulePass {
+class PlanInfo : public ModulePass {
 public:
-  Parallelizer();
+  PlanInfo();
 
   bool doInitialization(Module &M) override;
 
@@ -45,30 +36,12 @@ public:
 
   void getAnalysisUsage(AnalysisUsage &AU) const override;
 
-  /*
-   * Class fields
-   */
   static char ID;
 
 private:
-  /*
-   * Fields
-   */
-  bool forceParallelization;
-  bool forceNoSCCPartition;
-  std::vector<int> selectedLoopIndexes;
+  bool printAllHeaders;
 
-  /*
-   * Methods
-   */
-  bool parallelizeLoop(LoopDependenceInfo *LDI, Noelle &par, Heuristics *h);
-
-  bool parallelizeLoops(Noelle &noelle, Heuristics *heuristics);
-
-  std::vector<LoopDependenceInfo *> getLoopsToParallelize(Module &M,
-                                                          Noelle &par);
-
-  bool collectThreadPoolHelperFunctionsAndTypes(Module &M, Noelle &par);
+  std::vector<int> printHeaders;
 };
 
 } // namespace llvm::noelle

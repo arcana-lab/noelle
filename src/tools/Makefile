@@ -1,4 +1,4 @@
-PARALLELIZER=parallelizer heuristics parallelization_technique dswp doall helix parallelization_planner
+PARALLELIZER=parallelizer heuristics parallelization_technique dswp doall helix parallelization_planner parallelizer_plan_info
 TOOLS=pdg_stats loop_size removefunction time_saved autotuner_search_space autotuner_doall_filter input_output
 ALL=$(TOOLS) enablers deadfunctioneliminator loop_invariant_code_motion scev_simplification inliner $(PARALLELIZER) loop_stats scripts
 
@@ -68,6 +68,9 @@ repl:
 	cd $@ ; ../../scripts/run_me.sh
 
 time_saved:
+	cd $@ ; ../../scripts/run_me.sh
+
+parallelizer_plan_info:
 	cd $@ ; ../../scripts/run_me.sh
 
 clean:
