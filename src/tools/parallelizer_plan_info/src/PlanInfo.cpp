@@ -32,6 +32,7 @@ bool PlanInfo::runOnModule(Module &M) {
   auto &noelle = getAnalysis<Noelle>();
   auto verbosity = noelle.getVerbosity();
 
+  errs() << "Parallelizer: PlanInfo: Start\n";
   /*
    * Fetch all the loops we want to parallelize.
    */
