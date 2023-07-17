@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 - Federico Sossai
+ * Copyright 2023 - Federico Sossai, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -49,7 +49,7 @@ void PlanInfo::getAnalysisUsage(AnalysisUsage &AU) const {
 
 // Next there is code to register your pass to "opt"
 char PlanInfo::ID = 0;
-static RegisterPass<PlanInfo> X("PlanInfo",
+static RegisterPass<PlanInfo> X("ParallelizerPlanInfo",
                                 "Print information about a parallel plan");
 
 // Next there is code to register your pass to "clang"

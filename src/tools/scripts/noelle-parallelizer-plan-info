@@ -16,6 +16,6 @@ if test $# -lt 1 ; then
   exit 1
 fi
 
-cmdToExecute="noelle-load -noelle-verbose=0 -load ${installDir}/lib/PlanInfo.so -PlanInfo -disable-output $@" 
+cmdToExecute="noelle-load -noelle-verbose=0 -load ${installDir}/lib/ParallelizerPlanInfo.so -ParallelizerPlanInfo -disable-output $@" 
 echo $cmdToExecute
 eval $cmdToExecute 

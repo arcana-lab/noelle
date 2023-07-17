@@ -37,10 +37,10 @@ bool PlanInfo::runOnModule(Module &M) {
    */
   auto forest = noelle.getLoopNestingForest();
   if (forest->getNumberOfLoops() == 0) {
-    errs() << "PlanInfo:    There is no loop to consider\n";
+    errs() << "Parallelizer: PlanInfo:    There is no loop to consider\n";
     delete forest;
 
-    errs() << "PlanInfo: Exit\n";
+    errs() << "Parallelizer: PlanInfo: Exit\n";
     return false;
   }
 
@@ -68,10 +68,10 @@ bool PlanInfo::runOnModule(Module &M) {
     tree->visitPreOrder(collector);
   }
 
-  errs() << "PlanInfo: Number of loops: " << forest->getNumberOfLoops() << "\n";
-  errs()
-      << "PlanInfo: Number of loops with a parallel plan: " << order2ldi.size()
-      << "\n";
+  errs() << "Parallelizer: PlanInfo: Number of loops: "
+         << forest->getNumberOfLoops() << "\n";
+  errs() << "Parallelizer: PlanInfo: Number of loops with a parallel plan: "
+         << order2ldi.size() << "\n";
 
   const auto shouldPrint = [&](int order) {
     const auto &PH = this->printHeaders;
@@ -80,7 +80,8 @@ bool PlanInfo::runOnModule(Module &M) {
 
   for (const auto &[order, ldi] : order2ldi) {
     if (this->printAllHeaders || shouldPrint(order)) {
-      errs() << "PlanInfo:    Loop with order index " << order << ":\n";
+      errs() << "Parallelizer: PlanInfo:    Loop with order index " << order
+             << ":\n";
       auto ls = ldi->getLoopStructure();
       errs() << *ls->getHeader() << "\n";
     }
