@@ -86,8 +86,9 @@ else
   echo "${prefix} The executable will not run"
 fi
 
-loopsInfo=`noelle-plan-info $inputBC 2>&1 | grep "PlanInfo"`
+loopsInfo=`noelle-parallelizer-plan-info $inputBC 2>&1 | grep "PlanInfo"`
 numLoops=$(echo "$loopsInfo" | grep "parallel plan" | egrep -o "[0-9]+")
+outputPrefix="parallelized.loop"
 echo "$loopsInfo"
 
 for ((i=0; i<numLoops; i++)); do
@@ -100,7 +101,7 @@ for ((i=0; i<numLoops; i++)); do
   # Only loop number $i will be parallelized.
   #
   noelle-parallelizer-loop $inputBC \
-    -o parallelized.loop${i_pad}.bc \
+    -o ${outputPrefix}${i_pad}.bc \
     -noelle-select-only-loops=$i \
     -noelle-parallelizer-force \
     -alloc-aa-verbose=1 \
@@ -111,9 +112,9 @@ for ((i=0; i<numLoops; i++)); do
   # Creating the executable
   #
   echo "${prefix}   running clang++"
-  clang++ parallelized.loop${i_pad}.bc \
+  clang++ ${outputPrefix}${i_pad}.bc \
     Parallelizer_utils.bc \
-    -o parallelized.loop${i_pad} \
+    -o ${outputPrefix}${i_pad} \
     -pthreads
 
   showReturnCode $prefix $?
@@ -121,8 +122,8 @@ for ((i=0; i<numLoops; i++)); do
   # Conditionally run the executable
   #
   if [ "$executeBin" == "y" ]; then
-    echo "${prefix}   running parallelized.loop${i_pad}"
-    timeout ${timeout}s ./parallelized.loop${i_pad} "$args" \
+    echo "${prefix}   running ${outputPrefix}${i_pad}"
+    timeout ${timeout}s ./${outputPrefix}${i_pad} "$args" \
       > /dev/null
 
     showReturnCode $prefix $?

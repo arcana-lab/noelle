@@ -54,7 +54,7 @@ for arg in "$@"; do
 done
 
 prefix="Selector:"
-loopsInfo=`noelle-plan-info $inputBC 2>&1 | grep "PlanInfo"`
+loopsInfo=`noelle-parallelizer-plan-info $inputBC 2>&1 | grep "PlanInfo"`
 numLoops=$(echo "$loopsInfo" | grep "parallel plan" | egrep -o "[0-9]+")
 echo "$loopsInfo"
 
@@ -69,26 +69,27 @@ echo -e "${prefix} \033[1;37mloop indexes ${loops}\033[0m"
 echo "${prefix}   running noelle-parallelizer-loop"
 
 i_pad=`printf "%0${digitCount}i" $i`
-loops_underscore=`echo "$loops" | sed "s/,/_/g"`
+loopsUnderscore=`echo "$loops" | sed "s/,/_/g"`
+outputPrefix="parallelized.subset"
 
 # Creating the parallelized bitcode.
 # Only loop numbers in $loops will be parallelized.
 #
 noelle-parallelizer-loop $inputBC \
-  -o parallelized.only${loops_underscore}.bc \
+  -o ${outputPrefix}${loopsUnderscore}.bc \
   -noelle-select-only-loops="$loops" \
   -noelle-parallelizer-force \
   -alloc-aa-verbose=1 \
-  > only${loops_underscore}.log 2>&1
+  > only${loopsUnderscore}.log 2>&1
 
 showReturnCode $prefix $?
 
 # Creating the executable
 #
 echo "${prefix}   running clang++"
-clang++ parallelized.only${loops_underscore}.bc \
+clang++ ${outputPrefix}${loopsUnderscore}.bc \
   Parallelizer_utils.bc \
-  -o parallelized.only${loops_underscore} \
+  -o ${outputPrefix}${loopsUnderscore} \
   -pthreads
 
 showReturnCode $prefix $?
@@ -96,8 +97,8 @@ showReturnCode $prefix $?
 # Conditionally run the executable
 #
 if [ "$executeBin" == "y" ]; then
-  echo "${prefix}   running parallelized.only${loops_underscore}"
-  timeout ${timeout}s ./parallelized.only${loops_underscore} "$args" \
+  echo "${prefix}   running ${outputPrefix}${loopsUnderscore}"
+  timeout ${timeout}s ./${outputPrefix}${loopsUnderscore} "$args" \
     > /dev/null
 
   showReturnCode $prefix $?
