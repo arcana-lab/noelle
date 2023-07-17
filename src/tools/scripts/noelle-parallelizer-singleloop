@@ -75,7 +75,6 @@ for arg in "$@"; do
   esac
 done
 
-digitCount=`echo -n "$numLoops" | wc -c`
 prefix="Selector:"
 
 if [ "$executeBin" == "y" ]; then
@@ -88,6 +87,7 @@ fi
 
 loopsInfo=`noelle-parallelizer-plan-info $inputBC 2>&1 | grep "PlanInfo"`
 numLoops=$(echo "$loopsInfo" | grep "parallel plan" | egrep -o "[0-9]+")
+digitCount=`echo -n "$numLoops" | wc -c`
 outputPrefix="parallelized.loop"
 echo "$loopsInfo"
 
@@ -105,7 +105,7 @@ for ((i=0; i<numLoops; i++)); do
     -noelle-select-only-loops=$i \
     -noelle-parallelizer-force \
     -alloc-aa-verbose=1 \
-    > loop${i_pad}.log 2>&1
+    > ${outputPrefix}${i_pad}.log 2>&1
 
   showReturnCode $prefix $?
 

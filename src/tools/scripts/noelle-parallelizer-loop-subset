@@ -28,7 +28,7 @@ showReturnCode() {
 
 #------ Beginning --------------------------------------------------------------#
 
-if test $# -lt 1 ; then
+if test $# -lt 2 ; then
   usage
   exit 1
 fi
@@ -58,7 +58,8 @@ loopsInfo=`noelle-parallelizer-plan-info $inputBC 2>&1 | grep "PlanInfo"`
 numLoops=$(echo "$loopsInfo" | grep "parallel plan" | egrep -o "[0-9]+")
 echo "$loopsInfo"
 
-for num in "$loops{[@]}"; do
+IFS=',' read -ra loopList <<< "$loops"
+for num in "${loopList[@]}"; do
   if test $num -ge $numLoops ; then
     echo "${prefix} ERROR: loop with order index $num is out of range [0, $numLoops)"
     exit 2
@@ -70,7 +71,7 @@ echo "${prefix}   running noelle-parallelizer-loop"
 
 i_pad=`printf "%0${digitCount}i" $i`
 loopsUnderscore=`echo "$loops" | sed "s/,/_/g"`
-outputPrefix="parallelized.subset"
+outputPrefix="parallelized.subset.loop"
 
 # Creating the parallelized bitcode.
 # Only loop numbers in $loops will be parallelized.
@@ -80,7 +81,7 @@ noelle-parallelizer-loop $inputBC \
   -noelle-select-only-loops="$loops" \
   -noelle-parallelizer-force \
   -alloc-aa-verbose=1 \
-  > only${loopsUnderscore}.log 2>&1
+  > ${outPrefix}${loopsUnderscore}.log 2>&1
 
 showReturnCode $prefix $?
 
