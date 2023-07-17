@@ -40,6 +40,6 @@ patchInstallDir "noelle-parallelization-planner" ;
 patchInstallDir "noelle-parallelizer-loop" ;
 patchInstallDir "noelle-parallelizer-single" ;
 patchInstallDir "noelle-parallelizer-only" ;
-patchInstallDir "noelle-plan-info" ;
+patchInstallDir "noelle-parallelizer-plan-info" ;
 patchInstallDir "noelle-parallelizer-autotuner" ;
 patchInstallDir "noelle-time-saved" ;
