@@ -26,7 +26,16 @@ showReturnCode() {
   else
     colorRetCode="\033[1;31m$retCode\033[0m"
   fi
-  echo -e "${prefix}     returned code $colorRetCode"
+  description=""
+  case $retCode in
+    124)
+      description="(timed out)"
+      ;;
+    139)
+      description="(seg fault)"
+      ;;
+  esac
+  echo -e "${prefix}     returned code $colorRetCode $description"
 }
 
 #------ Beginning --------------------------------------------------------------#
