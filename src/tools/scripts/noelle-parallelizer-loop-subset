@@ -3,16 +3,17 @@
 installDir
 
 usage() {
-  echo "USAGE: `basename $0` INPUT_BC SUBSET [--help]"
+  echo "USAGE: `basename $0` INPUT_BC [OPTIONS]..."
   echo
   echo "Tool for parallelizing a specific subset or loops with a plan."
   echo
   echo "INPUT_BC        Input bitcode with parallel plan and API already linked."
   echo "                Generally this file is code_to_parallelize.bc"
-  echo "SUBSET          Comma separated. List of loops to parallelize."
   echo
   echo "Options:"
   echo "--help          Display this message."
+  echo "--black-list    Comma separated values. Specify which loops will be skipped."
+  echo "--white-list    Comma separated values. Specify which loops will be selected."
 }
 
 showReturnCode() {
@@ -36,9 +37,18 @@ fi
 # Parsing arguments
 #
 inputBC="$1"
-loops="$2"
+whiteList=""
+blackList=""
 for arg in "$@"; do
   case ${arg} in
+    --black-list=*)
+      blackList="${arg#*=}"
+      shift
+      ;;
+    --white-list=*)
+      whiteList="${arg#*=}"
+      shift
+      ;;
     --help)
       usage
       exit 0
@@ -53,12 +63,29 @@ for arg in "$@"; do
   esac
 done
 
+if [[ "$whiteList" != "" ]] && [[ "$blackList" != "" ]]; then
+  echo "ERROR: please specify either a while list or a black list. Not both."
+  exit 1
+fi
+
 prefix="Selector:"
 loopsInfo=`noelle-parallelizer-plan-info $inputBC 2>&1 | grep "PlanInfo"`
 numLoops=$(echo "$loopsInfo" | grep "parallel plan" | egrep -o "[0-9]+")
 echo "$loopsInfo"
 
-IFS=',' read -ra loopList <<< "$loops"
+i_pad=`printf "%0${digitCount}i" $i`
+if [[ "$blackList" != "" ]]; then
+  list=$blackList
+  listName="black"
+fi
+if [[ "$whiteList" != "" ]]; then
+  list=$whiteList
+  listName="white"
+fi
+
+# Checking that all the specified indexes are valid
+#
+IFS=',' read -ra loopList <<< "$list"
 for num in "${loopList[@]}"; do
   if test $num -ge $numLoops ; then
     echo "${prefix} ERROR: loop with order index $num is out of range [0, $numLoops)"
@@ -66,42 +93,34 @@ for num in "${loopList[@]}"; do
   fi
 done
 
-echo -e "${prefix} \033[1;37mloop indexes ${loops}\033[0m"
+echo -e "${prefix} \033[1;37m${listName} list of loop indexes: ${list}\033[0m"
 echo "${prefix}   running noelle-parallelizer-loop"
 
-i_pad=`printf "%0${digitCount}i" $i`
-loopsUnderscore=`echo "$loops" | sed "s/,/_/g"`
-outputPrefix="parallelized.subset.loop"
+loops=`echo "$list" | sed "s/,/_/g"`
+outputName="parallelized.loop.subset.${listName}.${loops}"
 
 # Creating the parallelized bitcode.
-# Only loop numbers in $loops will be parallelized.
+# Only loop numbers in $list will be parallelized.
 #
 noelle-parallelizer-loop $inputBC \
-  -o ${outputPrefix}${loopsUnderscore}.bc \
-  -noelle-select-only-loops="$loops" \
+  -o ${outputName}.bc \
+  -noelle-loops-${listName}-list="\"$list\"" \
   -noelle-parallelizer-force \
   -alloc-aa-verbose=1 \
-  > ${outPrefix}${loopsUnderscore}.log 2>&1
+  > ${outputName}.log 2>&1
 
 showReturnCode $prefix $?
 
 # Creating the executable
 #
 echo "${prefix}   running clang++"
-clang++ ${outputPrefix}${loopsUnderscore}.bc \
+clang++ ${outputName}.bc \
   Parallelizer_utils.bc \
-  -o ${outputPrefix}${loopsUnderscore} \
+  -o ${outputName} \
   -pthreads
 
 showReturnCode $prefix $?
 
-# Conditionally run the executable
-#
-if [ "$executeBin" == "y" ]; then
-  echo "${prefix}   running ${outputPrefix}${loopsUnderscore}"
-  timeout ${timeout}s ./${outputPrefix}${loopsUnderscore} "$args" \
-    > /dev/null
+echo "${prefix}   generated binary ${outputName}"
 
-  showReturnCode $prefix $?
-fi
 

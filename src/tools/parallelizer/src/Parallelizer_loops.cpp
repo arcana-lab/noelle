@@ -61,14 +61,18 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
          << " loops in the program that are enabled from the options used\n";
 
   const auto isSelected = [&](int i) {
-    const auto &SLI = this->selectedLoopIndexes;
+    const auto &WL = this->loopIndexesWhiteList;
+    const auto &BL = this->loopIndexesBlackList;
     /*
      * If no index has been specified we will select them all
      */
-    if (SLI.empty()) {
-      return true;
+    if (!WL.empty()) {
+      return std::find(WL.begin(), WL.end(), i) != std::end(WL);
     }
-    return std::find(SLI.begin(), SLI.end(), i) != std::end(SLI);
+    if (!BL.empty()) {
+      return std::find(BL.begin(), BL.end(), i) == std::end(BL);
+    }
+    return true;
   };
 
   /*
@@ -76,7 +80,6 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
    */
   auto mm = noelle.getMetadataManager();
   std::map<uint32_t, LoopDependenceInfo *> loopParallelizationOrder;
-  const auto selectAll = this->selectedLoopIndexes.empty();
   for (auto tree : forest->getTrees()) {
     auto selector = [&noelle, &mm, &loopParallelizationOrder, &isSelected](
                         LoopTree *n,

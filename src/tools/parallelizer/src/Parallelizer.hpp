@@ -56,7 +56,8 @@ private:
    */
   bool forceParallelization;
   bool forceNoSCCPartition;
-  std::vector<int> selectedLoopIndexes;
+  std::vector<int> loopIndexesWhiteList;
+  std::vector<int> loopIndexesBlackList;
 
   /*
    * Methods

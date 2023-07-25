@@ -56,10 +56,6 @@ args=""
 inputBC="$1"
 for arg in "$@"; do
   case ${arg} in
-    --only=*)
-      only="${arg#*=}"
-      shift
-      ;;
     --args=*)
       args="${arg#*=}"
       executeBin="y"
@@ -105,25 +101,26 @@ for ((i=0; i<numLoops; i++)); do
   echo "${prefix}   running noelle-parallelizer-loop"
 
   i_pad=`printf "%0${digitCount}i" $i`
+  outputName="${outputPrefix}${i_pad}"
 
   # Creating the parallelized bitcode.
   # Only loop number $i will be parallelized.
   #
   noelle-parallelizer-loop $inputBC \
-    -o ${outputPrefix}${i_pad}.bc \
-    -noelle-select-only-loops=$i \
+    -o ${outputName}.bc \
+    -noelle-loops-white-list=$i \
     -noelle-parallelizer-force \
     -alloc-aa-verbose=1 \
-    > ${outputPrefix}${i_pad}.log 2>&1
+    > ${outputName}.log 2>&1
 
   showReturnCode $prefix $?
 
   # Creating the executable
   #
   echo "${prefix}   running clang++"
-  clang++ ${outputPrefix}${i_pad}.bc \
+  clang++ ${outputName}.bc \
     Parallelizer_utils.bc \
-    -o ${outputPrefix}${i_pad} \
+    -o ${outputName} \
     -pthreads
 
   showReturnCode $prefix $?
@@ -131,8 +128,8 @@ for ((i=0; i<numLoops; i++)); do
   # Conditionally run the executable
   #
   if [ "$executeBin" == "y" ]; then
-    echo "${prefix}   running ${outputPrefix}${i_pad}"
-    timeout ${timeout}s ./${outputPrefix}${i_pad} "$args" \
+    echo "${prefix}   running binary ${outputName}"
+    timeout ${timeout}s ./${outputName} "$args" \
       > /dev/null
 
     showReturnCode $prefix $?
