@@ -352,6 +352,29 @@ Value *LoopGoverningIVUtility::generateCodeToComputeValueToUseForAnIterationAgo(
   return currentIterationValue;
 }
 
+Value *LoopGoverningIVUtility::generateCodeToDetermineLastIterationValue(
+    IRBuilder<> &builder,
+    Value *currentIterationValue,
+    PHINode *lastIterationFlag,
+    Value *stepValue) {
+
+  auto IV = this->attribution.getInductionVariable();
+
+  auto prevIterationValue =
+      IV->getType()->isIntegerTy()
+          ? builder.CreateSub(currentIterationValue, stepValue)
+          : builder.CreateFSub(currentIterationValue, stepValue);
+
+  /*
+   * Decide which iteration value is the last iteration based on the
+   * PHINode flag.
+   */
+  auto lastIterationSelect = builder.CreateSelect(lastIterationFlag,
+                                                  currentIterationValue,
+                                                  prevIterationValue);
+  return lastIterationSelect;
+}
+
 void LoopGoverningIVUtility::
     updateConditionToCheckIfTheLastLoopIterationWasExecuted(
         CmpInst *condition) {
@@ -377,22 +400,22 @@ void LoopGoverningIVUtility::
     case CmpInst::Predicate::ICMP_SLE:
     case CmpInst::Predicate::ICMP_ULE:
       newPredicate = this->doesOriginalCmpInstHaveIVAsLeftOperand
-                         ? this->strictPredicate
+                         ? condition->getInversePredicate()
+                         : this->strictPredicate;
+      break;
+
+    case CmpInst::Predicate::ICMP_SGT:
+    case CmpInst::Predicate::ICMP_UGT:
+    case CmpInst::Predicate::ICMP_SLT:
+    case CmpInst::Predicate::ICMP_ULT:
+      newPredicate = this->doesOriginalCmpInstHaveIVAsLeftOperand
+                         ? this->nonStrictPredicate
                          : condition->getInversePredicate();
       break;
 
-      // case CmpInst::Predicate::ICMP_SGT:
-      // case CmpInst::Predicate::ICMP_UGT:
-      // case CmpInst::Predicate::ICMP_SLT:
-      // case CmpInst::Predicate::ICMP_ULT:
-      //   newPredicate = this->doesOriginalCmpInstHaveIVAsLeftOperand
-      //                      ? this->nonStrictPredicate
-      //                      : condition->getInversePredicate();
-      //   break;
-
     case CmpInst::Predicate::ICMP_EQ:
     case CmpInst::Predicate::ICMP_NE:
-      newPredicate = this->strictPredicate;
+      newPredicate = condition->getInversePredicate();
       break;
 
     default:
