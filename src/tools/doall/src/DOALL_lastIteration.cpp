@@ -38,6 +38,9 @@ BasicBlock *DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
   auto task = (DOALLTask *)this->tasks[taskIndex];
   assert(task != nullptr);
   auto taskFunction = task->getTaskBody();
+  auto taskModule = taskFunction->getParent();
+  TypesManager typesManager(*taskModule);
+  ConstantsManager constantsManager(*taskModule, &typesManager);
 
   /*
    * Collect clones of step size deriving values for all induction variables
@@ -57,9 +60,14 @@ BasicBlock *DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
    */
   assert(bb.size() > 0);
   auto splitPoint = bb.getTerminator();
-  auto addConditionalBranch = [this, &bb, LDI, task, &clonedStepSizeMap](
-                                  BasicBlock *newBB,
-                                  BasicBlock *newJoinBB) {
+  auto addConditionalBranch = [this,
+                               &bb,
+                               LDI,
+                               task,
+                               &clonedStepSizeMap,
+                               typesManager,
+                               constantsManager](BasicBlock *newBB,
+                                                 BasicBlock *newJoinBB) {
     IRBuilder<> lastBBBuilder(&bb);
 
     /*
@@ -109,7 +117,9 @@ BasicBlock *DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
      * @valueOfLoopGoverningIVAfterConsideringChunking is computed in the basic
      * block where all IVs are fast-forwarded to their value at the beginning of
      * the next chunk. This basic block is side-stepped if the last iteration
-     * left the loop. This is why we need to introduce a new PHI.
+     * left the loop. This is why we need to introduce @loopGoverningExitPHI and
+     * @lastIterationPHI to determine where the value used in the exit condition
+     * came from.
      */
     auto firstNotPHI = bb.getFirstNonPHI();
     if (firstNotPHI != nullptr) {
@@ -117,9 +127,16 @@ BasicBlock *DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
     }
     auto valueOfLoopGoverningIVAfterConsideringChunkingBB =
         valueOfLoopGoverningIVAfterConsideringChunking->getParent();
-    auto loopGoverningExitPHI = lastBBBuilder.CreatePHI(
-        valueOfLoopGoverningIVAfterConsideringChunking->getType(),
-        2);
+    auto loopGoverningIVType =
+        valueOfLoopGoverningIVAfterConsideringChunking->getType();
+    auto loopGoverningExitPHI = lastBBBuilder.CreatePHI(loopGoverningIVType, 2);
+    auto lastIterationSelectConditionType = typesManager.getIntegerType(1);
+    auto lastIterationPHI =
+        lastBBBuilder.CreatePHI(lastIterationSelectConditionType, 2);
+    auto onesValueForLastIterationSelect =
+        constantsManager.getIntegerConstant(1, 1);
+    auto zeroValueForLastIterationSelect =
+        constantsManager.getIntegerConstant(0, 1);
     auto foundBB = false;
     for (auto predBB : predecessors(&bb)) {
       if (predBB == valueOfLoopGoverningIVAfterConsideringChunkingBB) {
@@ -131,11 +148,16 @@ BasicBlock *DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
       loopGoverningExitPHI->addIncoming(
           valueOfLoopGoverningIVAfterConsideringChunking,
           valueOfLoopGoverningIVAfterConsideringChunkingBB);
+      lastIterationPHI->addIncoming(
+          onesValueForLastIterationSelect,
+          valueOfLoopGoverningIVAfterConsideringChunkingBB);
     }
     for (auto predBB : predecessors(&bb)) {
       if (predBB == loopGoverningIVLastValueBB) {
         loopGoverningExitPHI->addIncoming(loopGoverningIVLastValue,
                                           loopGoverningIVLastValueBB);
+        lastIterationPHI->addIncoming(zeroValueForLastIterationSelect,
+                                      loopGoverningIVLastValueBB);
         break;
       }
     }
@@ -147,11 +169,11 @@ BasicBlock *DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
      */
     auto stepSize = clonedStepSizeMap.at(loopGoverningIV);
     auto prevIterationValue =
-        ivUtility
-            .generateCodeToComputePreviousValueUsedToCompareAgainstExitConditionValue(
-                lastBBBuilder,
-                loopGoverningExitPHI,
-                stepSize);
+        ivUtility.generateCodeToDetermineLastIterationValue(
+            lastBBBuilder,
+            loopGoverningExitPHI,
+            lastIterationPHI,
+            stepSize);
 
     /*
      * Step 5: Add the conditional branch to jump to the new basic block.
@@ -172,8 +194,8 @@ BasicBlock *DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
     clonedCmpInst->replaceUsesOfWith(
         valueUsedToCompareAgainstExitConditionValue,
         prevIterationValue);
-    lastBBBuilder.Insert(clonedCmpInst);
-    lastBBBuilder.CreateCondBr(clonedCmpInst, newJoinBB, newBB);
+    lastBBBuilder.Insert(clonedCmpInst, "isLastLoopIteration");
+    lastBBBuilder.CreateCondBr(clonedCmpInst, newBB, newJoinBB);
 
     /*
      * Step 6: update the condition to check if the last loop iteration (last of

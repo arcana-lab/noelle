@@ -120,6 +120,11 @@ public:
       Value *currentIterationValue,
       Value *stepValue);
 
+  Value *generateCodeToDetermineLastIterationValue(IRBuilder<> &builder,
+                                                   Value *currentIterationValue,
+                                                   PHINode *lastIterationFlag,
+                                                   Value *stepValue);
+
   void updateConditionToCheckIfTheLastLoopIterationWasExecuted(
       CmpInst *condition);
 

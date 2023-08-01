@@ -213,6 +213,8 @@ void LoopGoverningIVUtility::
     branchInst->swapSuccessors();
   }
 
+  assert(branchInst->getSuccessor(0) == exitBlock
+         && "header br inst doesn't exit on true!");
   return;
 }
 
@@ -350,6 +352,29 @@ Value *LoopGoverningIVUtility::generateCodeToComputeValueToUseForAnIterationAgo(
   return currentIterationValue;
 }
 
+Value *LoopGoverningIVUtility::generateCodeToDetermineLastIterationValue(
+    IRBuilder<> &builder,
+    Value *currentIterationValue,
+    PHINode *lastIterationFlag,
+    Value *stepValue) {
+
+  auto IV = this->attribution.getInductionVariable();
+
+  auto prevIterationValue =
+      IV->getType()->isIntegerTy()
+          ? builder.CreateSub(currentIterationValue, stepValue)
+          : builder.CreateFSub(currentIterationValue, stepValue);
+
+  /*
+   * Decide which iteration value is the last iteration based on the
+   * PHINode flag.
+   */
+  auto lastIterationSelect = builder.CreateSelect(lastIterationFlag,
+                                                  currentIterationValue,
+                                                  prevIterationValue);
+  return lastIterationSelect;
+}
+
 void LoopGoverningIVUtility::
     updateConditionToCheckIfTheLastLoopIterationWasExecuted(
         CmpInst *condition) {
@@ -363,31 +388,40 @@ void LoopGoverningIVUtility::
 
   /*
    * Adjust the predicate.
+   *
+   * For example, assume the loop exit condition is i >= 100.
+   * If the loop is exited, the previous iteration was the last loop iteration
+   * iff on the previous iteration, i < 100.
    */
-  if (this->doesOriginalCmpInstHaveIVAsLeftOperand) {
-    switch (condition->getPredicate()) {
-      case CmpInst::Predicate::ICMP_SGE:
-      case CmpInst::Predicate::ICMP_UGE:
-        condition->setPredicate(CmpInst::Predicate::ICMP_EQ);
-        break;
+  auto newPredicate = condition->getPredicate();
+  switch (condition->getPredicate()) {
+    case CmpInst::Predicate::ICMP_SGE:
+    case CmpInst::Predicate::ICMP_UGE:
+    case CmpInst::Predicate::ICMP_SLE:
+    case CmpInst::Predicate::ICMP_ULE:
+      newPredicate = this->doesOriginalCmpInstHaveIVAsLeftOperand
+                         ? condition->getInversePredicate()
+                         : this->strictPredicate;
+      break;
 
-      default:
-        condition->setPredicate(this->strictPredicate);
-        break;
-    }
+    case CmpInst::Predicate::ICMP_SGT:
+    case CmpInst::Predicate::ICMP_UGT:
+    case CmpInst::Predicate::ICMP_SLT:
+    case CmpInst::Predicate::ICMP_ULT:
+      newPredicate = this->doesOriginalCmpInstHaveIVAsLeftOperand
+                         ? this->nonStrictPredicate
+                         : condition->getInversePredicate();
+      break;
 
-  } else {
-    switch (condition->getPredicate()) {
-      case CmpInst::Predicate::ICMP_SLE:
-      case CmpInst::Predicate::ICMP_ULE:
-        condition->setPredicate(CmpInst::Predicate::ICMP_EQ);
-        break;
+    case CmpInst::Predicate::ICMP_EQ:
+    case CmpInst::Predicate::ICMP_NE:
+      newPredicate = condition->getInversePredicate();
+      break;
 
-      default:
-        condition->setPredicate(this->strictPredicate);
-        break;
-    }
+    default:
+      break;
   }
+  condition->setPredicate(newPredicate);
 
   return;
 }
