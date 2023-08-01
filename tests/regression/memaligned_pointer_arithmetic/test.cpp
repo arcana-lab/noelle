@@ -1,12 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include <unordered_map>
-#include <math.h>
 #include <string.h>
 
-//#define VSIZE 32
-//#define LOOP_ITER 100000000
 #define CACHE_LINE_SIZE 64
 
 int main(int argc, char *argv[]) {
