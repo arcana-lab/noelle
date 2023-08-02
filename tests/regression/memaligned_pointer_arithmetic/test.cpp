@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     (*((int *)(((uint64_t)x) + CACHE_LINE_SIZE * (i % VSIZE)))) += i;
   }
 
-  printf("%d\n", *((int *)(((uint64_t)x) + CACHE_LINE_SIZE * (3 % VSIZE))));
+  printf("%d\n", *((int *)(((uint64_t)x) + CACHE_LINE_SIZE * (1 % VSIZE))));
 
   return 0;
 }
