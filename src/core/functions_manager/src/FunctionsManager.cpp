@@ -147,6 +147,12 @@ std::set<Function *> FunctionsManager::getFunctions(void) const {
   std::set<Function *> s;
 
   for (auto &f : this->program) {
+    if (f.empty()) {
+      continue;
+    }
+    if (f.isIntrinsic()) {
+      continue;
+    }
     s.insert(&f);
   }
 
