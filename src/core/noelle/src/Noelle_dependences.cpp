@@ -43,7 +43,7 @@ PDG *Noelle::getFunctionDependenceGraph(Function *f) {
    * Create the function dependence graph (FDG).
    */
   auto fdg = pdg->createFunctionSubgraph(*f);
-    
+
   return fdg;
 }
 
