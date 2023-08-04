@@ -3,9 +3,9 @@
 #include <iostream>
 
 int main(int argc, char *argv[]) {
-  int *p = (int *)malloc(100 * sizeof(int));
-  int *q = (int *)malloc(100 * sizeof(int));
-  int *r = (int *)malloc(100 * sizeof(int));
+  int *p = (int *)malloc(101 * sizeof(int));
+  int *q = (int *)malloc(101 * sizeof(int));
+  int *r = (int *)malloc(101 * sizeof(int));
 
   int *old_p = p;
   for (int i = 0; i < 100; i++) {
