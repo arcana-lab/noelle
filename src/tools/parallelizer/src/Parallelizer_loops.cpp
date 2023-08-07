@@ -103,7 +103,7 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
     };
     tree->visitPreOrder(selector);
   }
-  errs() << "Parallelizer:    Selected loop indexes: ";
+  errs() << "Parallelizer:    Selected loops with index: ";
   for (const auto &[k, v] : loopParallelizationOrder) {
     errs() << k << " ";
   }
@@ -158,8 +158,13 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
      * Keep track of the parallelization.
      */
     if (loopIsParallelized) {
+      errs() << "Parallelizer:    Loop ";
+      assert(loopIDOpt);
+      auto loopID = loopIDOpt.value();
+      errs() << loopID;
+      errs() << " has been parallelized\n";
       errs()
-          << "Parallelizer:    Keep track of basic blocks being modified by the parallelization\n";
+          << "Parallelizer:      Keep track of basic blocks being modified by the parallelization\n";
       modified = true;
       for (auto bb : ls->getBasicBlocks()) {
         modifiedBBs[bb] = true;
