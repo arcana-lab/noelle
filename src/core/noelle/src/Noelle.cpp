@@ -125,6 +125,10 @@ Scheduler Noelle::getScheduler(void) const {
   return Scheduler{};
 }
 
+MayPointsToAnalysis Noelle::getMayPointsToAnalysis(void) const {
+  return MayPointsToAnalysis{};
+}
+
 LoopTransformer &Noelle::getLoopTransformer(void) {
   auto &lt = getAnalysis<LoopTransformer>();
   auto pdg = this->getProgramDependenceGraph();
