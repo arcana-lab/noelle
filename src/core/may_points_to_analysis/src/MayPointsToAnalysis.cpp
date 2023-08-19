@@ -42,6 +42,10 @@ bool MayPointsToAnalysis::mayAlias(Value *ptr1, Value *ptr2) {
   auto stripped1 = strip(ptr1);
   auto stripped2 = strip(ptr2);
 
+  if (stripped1 == stripped2) {
+    return true;
+  }
+
   auto func1 = getOwnerFunction(stripped1);
   auto func2 = getOwnerFunction(stripped2);
 
