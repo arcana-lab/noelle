@@ -95,4 +95,20 @@ BitVector unite(const BitVector &lhs, const BitVector &rhs) {
   return result;
 }
 
+bool isAllocation(Instruction *allocation) {
+  if (isa<AllocaInst>(allocation)) {
+    return true;
+  }
+
+  if (isa<CallBase>(allocation)) {
+    auto callInst = dyn_cast<CallBase>(allocation);
+    auto calleeType = getCalleeFunctionType(callInst);
+    if (calleeType == MALLOC || calleeType == CALLOC) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 } // namespace llvm::noelle

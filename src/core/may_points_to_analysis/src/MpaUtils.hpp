@@ -46,4 +46,6 @@ Value *strip(Value *pointer);
 
 BitVector unite(const BitVector &lhs, const BitVector &rhs);
 
+bool isAllocation(Instruction *allocation);
+
 } // namespace llvm::noelle
