@@ -37,6 +37,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_structure/include
   ../../dataflow/include
   ../../types_manager/include
+  ../../may_points_to_analysis/include
   ${CMAKE_INSTALL_PREFIX}/include
   )
 
