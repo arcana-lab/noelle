@@ -27,6 +27,7 @@ mkdir -p ${installDir}/bin ;
 patchInstallDir "noelle-parallel-load" ;
 patchInstallDir "noelle-parallelizer" ;
 patchInstallDir "noelle-inline" ;
+patchInstallDir "noelle-privatizer" ;
 patchInstallDir "noelle-enable" ;
 patchInstallDir "noelle-pre" ;
 patchInstallDir "noelle-deadcode" ;
