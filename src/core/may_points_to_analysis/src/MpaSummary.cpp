@@ -146,22 +146,6 @@ unordered_set<Value *> MpaSummary::getPointeeMemobjs(Value *ptr) {
   return pointees;
 }
 
-unordered_set<Value *> MpaSummary::getReachableMemobjs(Value *ptr) {
-  assert(mpaFinished);
-
-  auto stripped = strip(ptr);
-  assert(ptr2nodeId.find(stripped) != ptr2nodeId.end());
-
-  auto ptrId = ptr2nodeId[stripped];
-  unordered_set<Value *> reachable;
-
-  auto reachableMemobjIds = getreachableMemobjIds(ptrId);
-  for (auto memobjId : reachableMemobjIds) {
-    reachable.insert(nodeId2memobj[memobjId]);
-  }
-  return reachable;
-}
-
 bool MpaSummary::mayBePointedByUnknown(Value *memobj) {
   assert(mpaFinished);
   assert(getAllocations().count(memobj) > 0);

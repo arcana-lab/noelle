@@ -98,32 +98,6 @@ bool MayPointsToAnalysis::notPrivatizable(GlobalVariable *globalVar,
   return result;
 }
 
-bool MayPointsToAnalysis::mayAccessEscapedMemobj(Instruction *inst) {
-  if (!isa<LoadInst>(inst) && !isa<StoreInst>(inst)) {
-    return true;
-  }
-
-  auto currentF = inst->getFunction();
-  auto funcSum = getFunctionSummary(currentF);
-
-  Value *ptr;
-  if (isa<LoadInst>(inst)) {
-    ptr = dyn_cast<LoadInst>(inst)->getPointerOperand();
-  } else if (isa<StoreInst>(inst)) {
-    ptr = dyn_cast<StoreInst>(inst)->getPointerOperand();
-  }
-
-  funcSum->doMayPointsToAnalysis();
-  auto pointees = funcSum->getReachableMemobjs(ptr);
-  for (auto memobj : pointees) {
-    if (memobj == nullptr || funcSum->mayBePointedByUnknown(memobj)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
 std::unordered_set<Value *> MayPointsToAnalysis::getPointees(
     Value *ptr,
     Function *currentF) {

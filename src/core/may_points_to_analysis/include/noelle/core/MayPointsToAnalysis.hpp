@@ -42,7 +42,6 @@ public:
   bool mayBePointedByUnknown(Value *memobj);
   bool mayBePointedByReturnValue(Value *memobj);
   std::unordered_set<Value *> getPointeeMemobjs(Value *ptr);
-  std::unordered_set<Value *> getReachableMemobjs(Value *ptr);
 
   void doMayPointsToAnalysis(void);
   void doMayPointsToAnalysisFor(GlobalVariable *globalVar);
@@ -196,7 +195,6 @@ public:
   bool mayAlias(Value *ptr1, Value *ptr2);
   bool mayEscape(Instruction *inst);
   bool notPrivatizable(GlobalVariable *globalVar, Function *currentF);
-  bool mayAccessEscapedMemobj(Instruction *inst);
   std::unordered_set<Value *> getPointees(Value *ptr, Function *currentF);
 
   ~MayPointsToAnalysis();
