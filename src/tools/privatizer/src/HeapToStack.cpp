@@ -224,7 +224,7 @@ bool Privatizer::transformH2S(Noelle &noelle, LiveMemorySummary liveMemSum) {
 
     if (calleeFunc && calleeFunc->getName() == "malloc") {
       AllocaInst *allocaInst =
-          entryBuilder.CreateAlloca(oneByteType, arraySize, "");
+          entryBuilder.CreateAlloca(oneByteType, arraySize, "malloc2alloca");
 
       errs() << prefix << "Replace @malloc: " << *heapAllocInst << "\n";
       errs() << emptyPrefix << "with allocaInst: " << *allocaInst << "\n";
@@ -237,7 +237,7 @@ bool Privatizer::transformH2S(Noelle &noelle, LiveMemorySummary liveMemSum) {
       ConstantInt *zeroVal = ConstantInt::get(Type::getInt8Ty(context), 0);
 
       AllocaInst *allocaInst =
-          entryBuilder.CreateAlloca(oneByteType, arraySize, "");
+          entryBuilder.CreateAlloca(oneByteType, arraySize, "calloc2alloca");
 
       CallInst *memSetInst =
           entryBuilder.CreateMemSet(allocaInst, zeroVal, arraySize, 1);
@@ -251,6 +251,7 @@ bool Privatizer::transformH2S(Noelle &noelle, LiveMemorySummary liveMemSum) {
       heapAllocInst->eraseFromParent();
     }
   }
+
   for (auto freeInst : liveMemSum.removable) {
     freeInst->eraseFromParent();
   }

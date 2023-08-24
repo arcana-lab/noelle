@@ -393,7 +393,7 @@ bool Privatizer::transformG2S(Noelle &noelle,
   for (auto currentF : privatizable) {
     auto funcSum = getFunctionSummary(currentF);
     auto suffix = "in function " + currentF->getName() + "\n";
-    auto globalVarName = globalVar->getName();
+    auto globalVarName = globalVar->getName() + "_privatized";
 
     modified = true;
     auto &context = noelle.getProgramContext();
