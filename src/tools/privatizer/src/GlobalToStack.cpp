@@ -393,7 +393,7 @@ bool Privatizer::transformG2S(Noelle &noelle,
   for (auto currentF : privatizable) {
     auto funcSum = getFunctionSummary(currentF);
     auto suffix = "in function " + currentF->getName() + "\n";
-    auto globalVarName = globalVar->getName() + "_privatized";
+    auto globalVarName = globalVar->getName();
 
     modified = true;
     auto &context = noelle.getProgramContext();
@@ -401,7 +401,9 @@ bool Privatizer::transformG2S(Noelle &noelle,
     IRBuilder<> entryBuilder(entryBlock.getFirstNonPHI());
     Type *globalVarType = globalVar->getValueType();
     AllocaInst *allocaInst =
-        entryBuilder.CreateAlloca(globalVarType, nullptr, globalVarName);
+        entryBuilder.CreateAlloca(globalVarType,
+                                  nullptr,
+                                  globalVarName + "_privatized");
 
     /*
      * Replace all uses of the global variable in the entry function with an
