@@ -94,18 +94,7 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
       InductionVariable *IV = nullptr;
       if (!SE.isSCEVable(phi.getType())) {
         noelleDeterminedValidIV = false;
-
       } else {
-
-        /*
-         * Fetch the SCEV and check if it suggests this is an induction
-         * variable.
-         */
-        auto scev = SE.getSCEV(&phi);
-        if (!scev) {
-          noelleDeterminedValidIV = false;
-        }
-
         /*
          * For a PHI that has a SCEV that is not an AddRecExpr, it may still be
          * an IV that is being updated in a subloop if the proceeding conditions
