@@ -89,10 +89,12 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
        * First, let's check if the PHI node can be analyzed by the SCEV
        * analysis.
        */
+      auto sccContainingIV = sccdag.sccOfValue(&phi);
       auto noelleDeterminedValidIV = true;
+      auto stepMultiplier = 0;
+      InductionVariable *IV = nullptr;
       if (!SE.isSCEVable(phi.getType())) {
         noelleDeterminedValidIV = false;
-
       } else {
 
         /*
@@ -100,16 +102,67 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
          * variable.
          */
         auto scev = SE.getSCEV(&phi);
-        if (!scev || scev->getSCEVType() != SCEVTypes::scAddRecExpr) {
+        if (!scev) {
           noelleDeterminedValidIV = false;
+        } else if (scev->getSCEVType() != SCEVTypes::scAddRecExpr) {
+          noelleDeterminedValidIV = false;
+
+          PHINode *internalPHI;
+          auto found = false;
+          for (auto internalNode = sccContainingIV->begin_internal_node_map();
+               internalNode != sccContainingIV->end_internal_node_map();
+               internalNode++) {
+            if (isa<PHINode>(internalNode->first)
+                && internalNode->first != &phi) {
+              internalPHI = cast<PHINode>(internalNode->first);
+              auto internalSCEV = SE.getSCEV(internalPHI);
+              if (internalSCEV->getSCEVType() == SCEVTypes::scAddRecExpr) {
+                auto internalAddRecExpr = cast<SCEVAddRecExpr>(internalSCEV);
+
+                if (this->loop->isIncludedInItsSubLoops(internalPHI)) {
+                  found = true;
+                  break;
+                }
+              }
+            }
+          }
+          if (found) {
+            auto innerHeaderTerminator =
+                cast<BranchInst>(internalPHI->getParent()->getTerminator());
+            if (innerHeaderTerminator->getNumSuccessors() == 2
+                && loop->getLatches().find(
+                       innerHeaderTerminator->getSuccessor(0))
+                       != loop->getLatches().end()) {
+              auto innerExitCond =
+                  cast<Instruction>(innerHeaderTerminator->getCondition());
+              if (isa<ConstantInt>(
+                      innerExitCond->getOperand(1))) { // TODO: generalize
+                auto innerLoopIterations =
+                    cast<ConstantInt>(innerExitCond->getOperand(1));
+                // errs() << "loop iterations: "
+                //        << innerLoopIterations->getSExtValue() << "\n";
+
+                // update SCEV, create IV
+                stepMultiplier = innerLoopIterations->getSExtValue();
+
+                IV = new InductionVariable(loop,
+                                           IVM,
+                                           SE,
+                                           stepMultiplier,
+                                           &phi,
+                                           internalPHI,
+                                           *sccContainingIV,
+                                           loopEnv,
+                                           referentialExpander);
+              }
+            }
+          }
         }
       }
 
       /*
        * Allocate the induction variable.
        */
-      InductionVariable *IV = nullptr;
-      auto sccContainingIV = sccdag.sccOfValue(&phi);
       if (noelleDeterminedValidIV) {
         IV = new InductionVariable(loop,
                                    IVM,
