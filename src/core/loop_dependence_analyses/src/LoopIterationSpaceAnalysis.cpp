@@ -217,7 +217,7 @@ void LoopIterationSpaceAnalysis::computeMemoryAccessSpace(ScalarEvolution &SE) {
     auto memAccessSpace = (*element.first).get();
     accessSpaceByInstruction.insert(
         std::make_pair(memoryAccessor, memAccessSpace));
-    Value *valueForMemoryAccessorSCEV = memAccessSpace->memoryAccessor;
+    auto valueForMemoryAccessorSCEV = memAccessSpace->memoryAccessor;
     if (auto phi = dyn_cast<PHINode>(memoryAccessor)) {
       if (phi->getNumIncomingValues() == 1)
         valueForMemoryAccessorSCEV = phi->getIncomingValue(0);
