@@ -101,8 +101,8 @@ bool LoopIterationSpaceAnalysis::
   // << "\n";
 
   auto getLoopForIV = [&](InductionVariable *iv) -> LoopStructure * {
-    auto loopEntryPHI = iv->getLoopEntryPHI();
-    return this->loops->getInnermostLoopThatContains(loopEntryPHI);
+    auto SCEVPHI = iv->getSCEVPHI();
+    return this->loops->getInnermostLoopThatContains(SCEVPHI);
   };
 
   /*
@@ -217,8 +217,12 @@ void LoopIterationSpaceAnalysis::computeMemoryAccessSpace(ScalarEvolution &SE) {
     auto memAccessSpace = (*element.first).get();
     accessSpaceByInstruction.insert(
         std::make_pair(memoryAccessor, memAccessSpace));
-    memAccessSpace->memoryAccessorSCEV =
-        SE.getSCEV(memAccessSpace->memoryAccessor);
+    auto valueForMemoryAccessorSCEV = memAccessSpace->memoryAccessor;
+    if (auto phi = dyn_cast<PHINode>(memoryAccessor)) {
+      if (phi->getNumIncomingValues() == 1)
+        valueForMemoryAccessorSCEV = phi->getIncomingValue(0);
+    }
+    memAccessSpace->memoryAccessorSCEV = SE.getSCEV(valueForMemoryAccessorSCEV);
 
     /*
      * Catalog accesses that pertain to this memory space
@@ -622,9 +626,32 @@ void LoopIterationSpaceAnalysis::identifyIVForMemoryAccessSubscripts(
   };
 
   for (auto &memAccessSpace : this->accessSpaces) {
+    auto idx = 0;
     for (auto subscriptSCEV : memAccessSpace->subscripts) {
+      if (isa<SCEVConstant>(subscriptSCEV)) {
+        memAccessSpace->subscripts[idx] = memAccessSpace->memoryAccessorSCEV;
+        subscriptSCEV = memAccessSpace->memoryAccessorSCEV;
+      }
       auto ivOrNullptr = findCorrespondingIVForSubscript(subscriptSCEV);
       memAccessSpace->subscriptIVs.push_back(ivOrNullptr);
+      idx++;
+    }
+    if (auto phi = dyn_cast<PHINode>(memAccessSpace->memoryAccessor)) {
+      if (idx == 0 && phi->getNumIncomingValues() == 1) {
+        auto ivOrNullptr =
+            findCorrespondingIVForSubscript(memAccessSpace->memoryAccessorSCEV);
+        // assert(ivOrNullptr != nullptr && "ivOrNullptr is nullptr!\n");
+
+        memAccessSpace->subscriptIVs.push_back(ivOrNullptr);
+        assert(memAccessSpace->elementSize != nullptr
+               && "elementSize is nullptr!\n");
+
+        memAccessSpace->sizes.push_back(memAccessSpace->elementSize);
+        const SCEV *Expr = SE.getSCEV(phi->getIncomingValue(0));
+        assert(Expr != nullptr && "Expr is nullptr!\n");
+
+        memAccessSpace->subscripts.push_back(Expr);
+      }
     }
   }
 
