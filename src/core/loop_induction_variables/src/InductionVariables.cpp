@@ -194,15 +194,16 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
                 stepMultiplier =
                     (subloopExitConstant - subloopStartValue) / subloopStepSize;
 
-                IV = new InductionVariable(loop,
-                                           IVM,
-                                           SE,
-                                           stepMultiplier,
-                                           &phi,
-                                           internalPHI,
-                                           *sccContainingIV,
-                                           loopEnv,
-                                           referentialExpander);
+                IV = new InductionVariable(
+                    loop,
+                    IVM,
+                    SE,
+                    stepMultiplier,
+                    &phi,
+                    std::unordered_set<PHINode *>({ internalPHI }),
+                    *sccContainingIV,
+                    loopEnv,
+                    referentialExpander);
               }
             }
           }
@@ -216,7 +217,9 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
         IV = new InductionVariable(loop,
                                    IVM,
                                    SE,
+                                   1,
                                    &phi,
+                                   std::unordered_set<PHINode *>({ &phi }),
                                    *sccContainingIV,
                                    loopEnv,
                                    referentialExpander);

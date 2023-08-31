@@ -101,8 +101,14 @@ bool LoopIterationSpaceAnalysis::
   // << "\n";
 
   auto getLoopForIV = [&](InductionVariable *iv) -> LoopStructure * {
-    auto stepSCEVPHI = iv->getStepSCEVPHI();
-    return this->loops->getInnermostLoopThatContains(stepSCEVPHI);
+    auto stepPHIs = iv->getPHIsInvolvedInComputingIVStep();
+    std::unordered_set<LoopStructure *> loopsForIV;
+    for (std::unordered_set<PHINode *>::iterator it = stepPHIs.begin();
+         it != stepPHIs.end();
+         it++) {
+      loopsForIV.insert(this->loops->getInnermostLoopThatContains(*it));
+    }
+    return loopsForIV;
   };
 
   /*
@@ -123,10 +129,20 @@ bool LoopIterationSpaceAnalysis::
       return false;
     }
 
-    auto loop1 = getLoopForIV(iv1);
-    auto loop2 = getLoopForIV(iv2);
-    if (rootLoopStructure == loop1 ^ rootLoopStructure == loop2)
-      return false;
+    auto loops1 = getLoopsForIV(iv1);
+    auto loops2 = getLoopsForIV(iv2);
+    if (loops1 != loops2) {
+      for (std::unordered_set<LoopStructure *>::iterator it1 = loops1.begin();
+           it1 != loops1.end();
+           it1++) {
+        for (std::unordered_set<LoopStructure *>::iterator it2 = loops2.begin();
+             it2 != loops2.end();
+             it2++) {
+          if (rootLoopStructure == *it1 || rootLoopStructure == *it2)
+            return false;
+        }
+      }
+    }
 
     auto scev1 = space1->subscripts[subscriptIdx];
     auto scev2 = space2->subscripts[subscriptIdx];
