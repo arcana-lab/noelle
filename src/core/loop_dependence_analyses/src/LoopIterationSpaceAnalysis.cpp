@@ -238,11 +238,7 @@ void LoopIterationSpaceAnalysis::computeMemoryAccessSpace(ScalarEvolution &SE) {
     auto memAccessSpace = (*element.first).get();
     accessSpaceByInstruction.insert(
         std::make_pair(memoryAccessor, memAccessSpace));
-<<<<<<< HEAD
     Value *valueForMemoryAccessorSCEV = memAccessSpace->memoryAccessor;
-=======
-    auto valueForMemoryAccessorSCEV = memAccessSpace->memoryAccessor;
->>>>>>> 94efbc6e (new IV algorithm)
     if (auto phi = dyn_cast<PHINode>(memoryAccessor)) {
       if (phi->getNumIncomingValues() == 1)
         valueForMemoryAccessorSCEV = phi->getIncomingValue(0);
@@ -664,10 +660,6 @@ void LoopIterationSpaceAnalysis::identifyIVForMemoryAccessSubscripts(
       if (idx == 0 && phi->getNumIncomingValues() == 1) {
         auto ivOrNullptr =
             findCorrespondingIVForSubscript(memAccessSpace->memoryAccessorSCEV);
-<<<<<<< HEAD
-=======
-        // assert(ivOrNullptr != nullptr && "ivOrNullptr is nullptr!\n");
->>>>>>> 94efbc6e (new IV algorithm)
 
         memAccessSpace->subscriptIVs.push_back(ivOrNullptr);
         assert(memAccessSpace->elementSize != nullptr
