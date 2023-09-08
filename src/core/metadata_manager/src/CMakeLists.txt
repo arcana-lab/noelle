@@ -5,6 +5,7 @@ set(Srcs
   MetadataManager_Module.cpp
   MetadataManager_Instruction.cpp
   MetadataManager_annotations.cpp
+  MetadataManager_PDG.cpp
 )
 
 # Compilation flags

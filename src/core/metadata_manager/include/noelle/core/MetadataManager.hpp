@@ -128,6 +128,8 @@ public:
                       const std::string &metadataName,
                       const std::string &metadataValue);
 
+  void removePDGMetadata(void);
+
   std::set<std::string> getSourceCodeAnnotations(Function *f) const;
 
   std::set<std::string> getSourceCodeAnnotations(AllocaInst *var) const;
