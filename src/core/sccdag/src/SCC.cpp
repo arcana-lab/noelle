@@ -234,6 +234,17 @@ bool SCC::iterateOverInstructions(
   return false;
 }
 
+std::set<Instruction *> SCC::getInstructions(void) {
+  std::set<Instruction *> s{};
+
+  auto f = [&s](Instruction *i) -> bool {
+    s.insert(i);
+    return false;
+  };
+
+  return s;
+}
+
 bool SCC::iterateOverAllInstructions(
     std::function<bool(Instruction *)> funcToInvoke) {
 

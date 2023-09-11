@@ -58,6 +58,13 @@ public:
   bool iterateOverInstructions(std::function<bool(Instruction *)> funcToInvoke);
 
   /*
+   * Return the instructions inside the SCC.
+   * These are the same instructions that @iterateOverInstructions iterates
+   * over.
+   */
+  std::set<Instruction *> getInstructions(void);
+
+  /*
    * Iterate over all instructions (internal and external) until @funcToInvoke
    * returns true or no other instruction exists. External nodes represent
    * live-ins and live-outs of the SCC.
