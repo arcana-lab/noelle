@@ -135,14 +135,10 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
                        != loop->getLatches().end()) {
               auto innerExitCond =
                   cast<Instruction>(innerHeaderTerminator->getCondition());
-              if (isa<ConstantInt>(
-                      innerExitCond->getOperand(1))) { // TODO: generalize
-                auto innerLoopIterations =
-                    cast<ConstantInt>(innerExitCond->getOperand(1));
-                // errs() << "loop iterations: "
-                //        << innerLoopIterations->getSExtValue() << "\n";
+              // TODO: generalize to loop invariants
+              if (auto innerLoopIterations =
+                      dyn_cast<ConstantInt>(innerExitCond->getOperand(1))) {
 
-                // update SCEV, create IV
                 stepMultiplier = innerLoopIterations->getSExtValue();
 
                 IV = new InductionVariable(loop,
