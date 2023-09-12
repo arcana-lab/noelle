@@ -141,6 +141,8 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
 
                 stepMultiplier = innerLoopIterations->getSExtValue();
 
+                assert(SE.getSCEV(internalPHI)->getSCEVType()
+                       == SCEVTypes::scAddRecExpr);
                 IV = new InductionVariable(loop,
                                            IVM,
                                            SE,
