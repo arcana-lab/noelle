@@ -31,12 +31,10 @@ bool ScalarEvolutionDelinearization::getIndexExpressionsFromGEP(
   assert(Subscripts.empty() && Sizes.empty()
          && "Expected output lists to be empty on entry to this function.");
   assert(GEP && "getIndexExpressionsFromGEP called with a null GEP");
-  errs() << "getIndexExpressionsFromGEP: " << *GEP << "\n";
   Type *Ty = GEP->getPointerOperandType();
   bool DroppedFirstDim = false;
   for (unsigned i = 1; i < GEP->getNumOperands(); i++) {
     const SCEV *Expr = SE.getSCEV(GEP->getOperand(i));
-    errs() << "operand:" << *GEP->getOperand(i) << "\nSCEV:" << *Expr << "\n";
     if (i == 1) {
       if (auto *PtrTy = dyn_cast<PointerType>(Ty)) {
         Ty = PtrTy->getElementType();
