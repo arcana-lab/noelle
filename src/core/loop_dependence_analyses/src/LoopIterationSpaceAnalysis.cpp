@@ -481,7 +481,6 @@ void LoopIterationSpaceAnalysis::
         // "); errs() << "\n";
 
         auto loopEntryPHI = iv->getLoopEntryPHI();
-        auto loopEntryPHISCEV = cast<SCEVAddRecExpr>(SE.getSCEV(loopEntryPHI));
         auto loopStructure =
             this->loops->getInnermostLoopThatContains(loopEntryPHI);
         bool isRootLoopIV = (rootLoopStructure == loopStructure);
@@ -640,7 +639,6 @@ void LoopIterationSpaceAnalysis::identifyIVForMemoryAccessSubscripts(
       if (idx == 0 && phi->getNumIncomingValues() == 1) {
         auto ivOrNullptr =
             findCorrespondingIVForSubscript(memAccessSpace->memoryAccessorSCEV);
-        // assert(ivOrNullptr != nullptr && "ivOrNullptr is nullptr!\n");
 
         memAccessSpace->subscriptIVs.push_back(ivOrNullptr);
         assert(memAccessSpace->elementSize != nullptr
