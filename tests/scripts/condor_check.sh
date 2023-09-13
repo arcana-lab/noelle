@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 RED='\033[1;31m' ;
 GREEN='\033[0;32m' ;
@@ -33,7 +33,7 @@ function printTestsThatDoNotFailAnymore {
   tmpFileTests2="`mktemp`" ;
   ./scripts/printUniqueTests.sh regression/failing_tests > $tmpFileTests ;
   ./scripts/printUniqueTestsThatFailed.sh > $tmpFileTests2 ;
-  cmp $tmpFileTests $tmpFileTests2 &> /dev/null ;
+  cmp $tmpFileTests $tmpFileTests2 &> /dev/null || true;
   if test $? -ne 0 ; then
     echo "    There are new tests that now pass for all configurations. They are the next ones:" ;
     identifyElementsOutsideSet $tmpFileTests2 $tmpFileTests ;
@@ -164,9 +164,11 @@ echo "" ;
 
 # Check the performance tests
 echo "################################### PERFORMANCE TESTS:" ;
-grep -i error compiler_output_performance.txt &> /dev/null ;
-if test $? -eq 0 ; then
-  echo -e "  At least one performance test ${RED}failed${NC} to compile" ;
+if test -f compiler_output_performance.txt ; then
+  linesMatched=`grep -i error compiler_output_performance.txt | wc -l | awk '{print $1}'` ;
+  if test $linesMatched != "0" ; then
+    echo -e "  At least one performance test ${RED}failed${NC} to compile" ;
+  fi
 fi
 
 # Check if they are still running
