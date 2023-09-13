@@ -31,6 +31,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../alloc_aa/include 
   ../../dg/include 
   ../../pdg/include 
+  ../../data_dependence_analysis/include
   ../../hotprofiler/include 
   ../../loop_structure/include 
   ../../talkdown/include

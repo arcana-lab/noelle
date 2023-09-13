@@ -43,6 +43,7 @@
 #include "noelle/core/Linker.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
 #include "noelle/core/MayPointsToAnalysis.hpp"
+#include "noelle/core/DataDependenceAnalysis.hpp"
 
 namespace llvm::noelle {
 
@@ -182,6 +183,8 @@ public:
   LLVMContext &getProgramContext(void) const;
 
   Hot *getProfiles(void);
+
+  void addAnalysis(DataDependenceAnalysis *a);
 
   PDG *getProgramDependenceGraph(void);
 

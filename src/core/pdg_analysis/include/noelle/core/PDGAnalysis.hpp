@@ -30,6 +30,7 @@
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
 #include "noelle/core/MayPointsToAnalysis.hpp"
+#include "noelle/core/DataDependenceAnalysis.hpp"
 
 namespace llvm::noelle {
 
@@ -41,8 +42,6 @@ public:
 
   PDGAnalysis();
 
-  virtual ~PDGAnalysis();
-
   bool doInitialization(Module &M) override;
 
   void getAnalysisUsage(AnalysisUsage &AU) const override;
@@ -51,15 +50,21 @@ public:
 
   bool runOnModule(Module &M) override;
 
+  void addAnalysis(DataDependenceAnalysis *a);
+
   PDG *getPDG(void);
 
   noelle::CallGraph *getProgramCallGraph(void);
+
+  virtual ~PDGAnalysis();
 
   static bool isTheLibraryFunctionPure(Function *libraryFunction);
 
   static bool isTheLibraryFunctionThreadSafe(Function *libraryFunction);
 
   static std::set<AliasAnalysisEngine *> getProgramAliasAnalysisEngines(void);
+
+  static bool canAccessMemory(Instruction *i);
 
 private:
   Module *M;
@@ -77,6 +82,7 @@ private:
   bool disableRA;
   PDGPrinter printer;
   noelle::CallGraph *noelleCG;
+  std::set<DataDependenceAnalysis *> ddAnalyses;
 
   std::unordered_set<const Function *> internalFuncs;
   std::unordered_set<const Function *> unhandledExternalFuncs;
@@ -196,6 +202,11 @@ private:
   bool isInIndependentRegion(Instruction *, Instruction *);
 
   bool canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge);
+
+  std::pair<bool, bool> isThereThisMemoryDataDependenceType(
+      DataDependenceType t,
+      Instruction *fromInst,
+      Instruction *toInst);
 
   static const StringSet<> externalFuncsHaveNoSideEffectOrHandledBySVF;
 

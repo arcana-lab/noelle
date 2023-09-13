@@ -29,6 +29,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../pdg/include
   ../../dg/include
   ../../pdg_analysis/include
+  ../../data_dependence_analysis/include
   ../../pdg_printer/include
   ../../sccdag/include
   ../../alloc_aa/include
