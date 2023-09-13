@@ -35,6 +35,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../dg/include 
   ../../pdg/include 
   ../../pdg_analysis/include 
+  ../../data_dependence_analysis/include
   ../../pdg_printer/include
   ../../sccdag/include
   ../../hotprofiler/include 

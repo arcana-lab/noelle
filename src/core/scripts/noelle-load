@@ -40,7 +40,7 @@ PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/AliasAnalysi
 
 
 ########### All analyses
-ANALYSES="${AA} ${LOOPAA} -scalar-evolution -loops -domtree -postdomtree ${EXTRA_AA} -load ${installDir}/lib/LoopDependenceAnalyses.so"
+ANALYSES="${AA} ${LOOPAA} -scalar-evolution -loops -domtree -postdomtree ${EXTRA_AA} -load ${installDir}/lib/LoopDependenceAnalyses.so -load ${installDir}/lib/DataDependenceAnalysis.so"
 
 
 ########### Transformations
