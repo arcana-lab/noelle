@@ -78,7 +78,7 @@ baseline.bc: test.bc
 
 baseline_with_metadata.bc: default.profraw baseline_pre.bc
 	noelle-meta-prof-embed $^ -o $@
-	noelle-meta-pdg-embed $@ -o $@
+	noelle-meta-pdg-embed $(NOELLE_OPTIONS) $@ -o $@
 
 baseline_with_runtime_prof: test.bc
 	noelle-prof-coverage $^ $@ $(LIBS)

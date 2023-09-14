@@ -850,7 +850,7 @@ void PDGAnalysis::addEdgeFromMemoryAlias(
       break;
     case MustAlias:
       must = true;
-      return;
+      break;
   }
 
   /*
