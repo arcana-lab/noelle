@@ -374,6 +374,9 @@ void HELIX::defineFrontierForLoadsToSpilledLCD(
      */
     if (auto userPHI = dyn_cast<PHINode>(user)) {
       for (auto i = 0; i < userPHI->getNumIncomingValues(); ++i) {
+        if (spill->getClone() != userPHI->getIncomingValue(i)) {
+          continue;
+        }
         auto cloneIncomingBlock = userPHI->getIncomingBlock(i);
         auto originalIncomingBlock =
             cloneToOriginalBlockMap.at(cloneIncomingBlock);
@@ -445,15 +448,18 @@ void HELIX::replaceUsesOfSpilledPHIWithLoads(
      * block Otherwise, insert right before the first user/store
      */
     auto insertPoint = cloneBlock->getTerminator();
-    for (auto &I : *cloneBlock) {
-      auto isUserInst = spillUsers.find(&I) != spillUsers.end();
-      auto store = dyn_cast<StoreInst>(&I);
+    auto I = cloneBlock->getFirstNonPHI();
+    while (!I->isTerminator()) {
+      auto isUserInst = spillUsers.find(I) != spillUsers.end();
+      auto store = dyn_cast<StoreInst>(I);
       auto isStoreInst = store != nullptr
                          && spill->environmentStores.find(store)
                                 != spill->environmentStores.end();
-      if (!isUserInst && !isStoreInst)
+      if (!isUserInst && !isStoreInst) {
+        I = I->getNextNode();
         continue;
-      insertPoint = &I;
+      }
+      insertPoint = I;
       break;
     }
 
