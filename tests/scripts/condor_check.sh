@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 
 RED='\033[1;31m' ;
 GREEN='\033[0;32m' ;
@@ -51,7 +51,7 @@ echo "  Checking the regression test results" ;
 # Check the tests that are still running
 regressionFinished="0" ;
 stillRunning="`mktemp`" ;
-condor_q `whoami` -l | grep ^Arguments | grep "`pwd`" | grep regression > $stillRunning ;
+condor_q `whoami` -l | grep ^Arguments | grep "`pwd`" | grep regression > $stillRunning || true;
 stillRunningRegressionTests="0";
 if test -s $stillRunning ; then
   stillRunningJobs=`wc -l $stillRunning | awk '{print $1}'` ;
