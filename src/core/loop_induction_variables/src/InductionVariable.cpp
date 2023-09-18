@@ -98,7 +98,7 @@ InductionVariable::InductionVariable(
     LoopStructure *LS,
     InvariantManager &IVM,
     ScalarEvolution &SE,
-    int stepMultiplier,
+    int64_t stepMultiplier,
     PHINode *loopEntryPHI,
     PHINode *SCEVPHI,
     SCC &scc,
@@ -140,7 +140,7 @@ InductionVariable::InductionVariable(
     LoopStructure *LS,
     InvariantManager &IVM,
     ScalarEvolution &SE,
-    int stepMultiplier,
+    int64_t stepMultiplier,
     PHINode *loopEntryPHI,
     SCC &scc,
     LoopEnvironment &loopEnv,
@@ -170,7 +170,6 @@ InductionVariable::InductionVariable(
   traverseCycleThroughLoopEntryPHIToGetAllIVInstructions(LS);
   traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions(LS, IVM, SE);
   collectValuesInternalAndExternalToLoopAndSCC(LS, loopEnv);
-  errs() << "derive stepMultiplier: " << stepMultiplier << "\n";
   deriveStepValue(LS, SE, referentialExpander, stepMultiplier);
 
   return;
@@ -411,7 +410,7 @@ void InductionVariable::deriveStepValue(
     LoopStructure *LS,
     ScalarEvolution &SE,
     ScalarEvolutionReferentialExpander &referentialExpander,
-    int multiplier) {
+    int64_t multiplier) {
 
   /*
    * Fetch the SCEV for the step value.
@@ -458,7 +457,7 @@ void InductionVariable::deriveStepValue(
 
 void InductionVariable::deriveStepValueFromSCEVConstant(
     const SCEVConstant *scev,
-    int multiplier) {
+    int64_t multiplier) {
   if (ConstantInt *CI = dyn_cast<ConstantInt>(scev->getValue())) {
     this->singleStepValue = ConstantInt::get(scev->getValue()->getType(),
                                              multiplier * CI->getSExtValue());
