@@ -47,7 +47,7 @@ public:
   InductionVariable(LoopStructure *LS,
                     InvariantManager &IVM,
                     ScalarEvolution &SE,
-                    int stepMultiplier,
+                    int64_t stepMultiplier,
                     PHINode *loopEntryPHI,
                     SCC &scc,
                     LoopEnvironment &loopEnvironment,
@@ -56,7 +56,7 @@ public:
   InductionVariable(LoopStructure *LS,
                     InvariantManager &IVM,
                     ScalarEvolution &SE,
-                    int stepMultiplier,
+                    int64_t stepMultiplier,
                     PHINode *loopEntryPHI,
                     PHINode *SCEVPHI,
                     SCC &scc,
@@ -157,7 +157,7 @@ private:
    */
   Value *singleStepValue;
 
-  int stepMultiplier;
+  int64_t stepMultiplier;
 
   /*
    * The values, in order of execution, used to compute the step recurrence
@@ -195,10 +195,10 @@ private:
   void deriveStepValue(LoopStructure *LS,
                        ScalarEvolution &SE,
                        ScalarEvolutionReferentialExpander &referentialExpander,
-                       int stepMultiplier);
+                       int64_t multiplier);
 
   void deriveStepValueFromSCEVConstant(const SCEVConstant *scev,
-                                       int multiplier);
+                                       int64_t multiplier);
   void deriveStepValueFromSCEVUnknown(const SCEVUnknown *scev,
                                       LoopStructure *LS);
   bool deriveStepValueFromCompositeSCEV(

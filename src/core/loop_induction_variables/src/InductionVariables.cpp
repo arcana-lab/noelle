@@ -104,54 +104,76 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
         auto scev = SE.getSCEV(&phi);
         if (!scev) {
           noelleDeterminedValidIV = false;
-        } else if (scev->getSCEVType() != SCEVTypes::scAddRecExpr) {
+        }
+        /*
+         * For a PHI that has a SCEV that is not an AddRecExpr, it may still be
+         * an IV that is being updated in a subloop if the proceeding conditions
+         * are met.
+         */
+        else if (scev->getSCEVType() != SCEVTypes::scAddRecExpr) {
           noelleDeterminedValidIV = false;
 
-          PHINode *internalPHI;
-          auto found = false;
+          /*
+           * 1. In the PHI's SCC, there is another PHI that has an AddRecExpr
+           * SCEV and is contained in the subloop of the original loop.
+           */
+          PHINode *internalPHI = nullptr;
           for (auto internalNode = sccContainingIV->begin_internal_node_map();
                internalNode != sccContainingIV->end_internal_node_map();
                internalNode++) {
             if (isa<PHINode>(internalNode->first)
                 && internalNode->first != &phi) {
-              internalPHI = cast<PHINode>(internalNode->first);
-              auto internalSCEV = SE.getSCEV(internalPHI);
-              if (internalSCEV->getSCEVType() == SCEVTypes::scAddRecExpr) {
-                auto internalAddRecExpr = cast<SCEVAddRecExpr>(internalSCEV);
-
-                if (this->loop->isIncludedInItsSubLoops(internalPHI)) {
-                  found = true;
-                  break;
-                }
+              auto potentialPHI = cast<PHINode>(internalNode->first);
+              if (SE.getSCEV(potentialPHI)->getSCEVType()
+                      == SCEVTypes::scAddRecExpr
+                  && this->loop->isIncludedInItsSubLoops(potentialPHI)) {
+                internalPHI = potentialPHI;
+                break;
               }
             }
           }
-          if (found) {
-            auto innerHeaderTerminator =
-                cast<BranchInst>(internalPHI->getParent()->getTerminator());
-            if (innerHeaderTerminator->getNumSuccessors() == 2
-                && loop->getLatches().find(
-                       innerHeaderTerminator->getSuccessor(0))
-                       != loop->getLatches().end()) {
-              auto innerExitCond =
-                  cast<Instruction>(innerHeaderTerminator->getCondition());
-              // TODO: generalize to loop invariants
-              if (auto innerLoopIterations =
-                      dyn_cast<ConstantInt>(innerExitCond->getOperand(1))) {
+          if (internalPHI != nullptr) {
+            /*
+             * 2. This subloop has only one exit: a latch of the parent loop.
+             */
+            if (auto innerHeaderTerminator = dyn_cast<BranchInst>(
+                    internalPHI->getParent()->getTerminator())) {
+              if (innerHeaderTerminator->getNumSuccessors() == 2
+                  && loop->getLatches().find(
+                         innerHeaderTerminator->getSuccessor(0))
+                         != loop->getLatches().end()) {
 
-                stepMultiplier = innerLoopIterations->getSExtValue();
-
-                assert(SE.getSCEV(internalPHI)->getSCEVType()
-                       == SCEVTypes::scAddRecExpr);
-                IV = new InductionVariable(loop,
-                                           IVM,
-                                           SE,
-                                           stepMultiplier,
-                                           &phi,
-                                           internalPHI,
-                                           *sccContainingIV,
-                                           loopEnv,
-                                           referentialExpander);
+                /*
+                 * 3. The exit condition should be associated with a constant.
+                 * TODO: generalize to loop invariants
+                 */
+                auto innerExitCond =
+                    cast<Instruction>(innerHeaderTerminator->getCondition());
+                ConstantInt *innerLoopIterations = nullptr;
+                if (isa<ConstantInt>(innerExitCond->getOperand(0))) {
+                  innerLoopIterations =
+                      cast<ConstantInt>(innerExitCond->getOperand(0));
+                } else if (isa<ConstantInt>(innerExitCond->getOperand(1))) {
+                  innerLoopIterations =
+                      cast<ConstantInt>(innerExitCond->getOperand(1));
+                }
+                if (innerLoopIterations != nullptr) {
+                  /*
+                   * If all conditions are met, create the IV.
+                   */
+                  stepMultiplier = innerLoopIterations->getSExtValue();
+                  assert(SE.getSCEV(internalPHI)->getSCEVType()
+                         == SCEVTypes::scAddRecExpr);
+                  IV = new InductionVariable(loop,
+                                             IVM,
+                                             SE,
+                                             stepMultiplier,
+                                             &phi,
+                                             internalPHI,
+                                             *sccContainingIV,
+                                             loopEnv,
+                                             referentialExpander);
+                }
               }
             }
           }
