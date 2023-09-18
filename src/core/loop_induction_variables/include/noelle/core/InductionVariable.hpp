@@ -144,10 +144,14 @@ private:
   Value *singleStepValue;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   int64_t stepMultiplier;
 =======
   int stepMultiplier;
 >>>>>>> 94efbc6e (new IV algorithm)
+=======
+  int64_t stepMultiplier;
+>>>>>>> a95150b4 (comments added and code cleaned)
 
   /*
    * The values, in order of execution, used to compute the step recurrence
@@ -186,6 +190,7 @@ private:
                        ScalarEvolution &SE,
                        ScalarEvolutionReferentialExpander &referentialExpander,
 <<<<<<< HEAD
+<<<<<<< HEAD
                        int64_t multiplier);
 
   void deriveStepValueFromSCEVConstant(const SCEVConstant *scev,
@@ -196,6 +201,12 @@ private:
   void deriveStepValueFromSCEVConstant(const SCEVConstant *scev,
                                        int multiplier);
 >>>>>>> 94efbc6e (new IV algorithm)
+=======
+                       int64_t multiplier);
+
+  void deriveStepValueFromSCEVConstant(const SCEVConstant *scev,
+                                       int64_t multiplier);
+>>>>>>> a95150b4 (comments added and code cleaned)
   void deriveStepValueFromSCEVUnknown(const SCEVUnknown *scev,
                                       LoopStructure *LS);
   bool deriveStepValueFromCompositeSCEV(
