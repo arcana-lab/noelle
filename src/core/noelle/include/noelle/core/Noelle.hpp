@@ -42,6 +42,7 @@
 #include "noelle/core/CFGTransformer.hpp"
 #include "noelle/core/Linker.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
+#include "noelle/core/MayPointsToAnalysis.hpp"
 
 namespace llvm::noelle {
 
@@ -193,6 +194,8 @@ public:
   DataFlowEngine getDataFlowEngine(void) const;
 
   Scheduler getScheduler(void) const;
+
+  MayPointsToAnalysis getMayPointsToAnalysis(void) const;
 
   LoopTransformer &getLoopTransformer(void);
 

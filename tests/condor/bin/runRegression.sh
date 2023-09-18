@@ -18,6 +18,13 @@ errorFile="$8" ;
 source ~/.bash_profile ;
 cd $repoDir/ ;
 
+if ! test -e $testDir ; then
+  fileName="TestDir_not_exists_`echo ${testDir} | tr -s '/' '_'`" ;
+  echo "TestDir not exists : $testDir" > ${fileName}.txt ;
+  echo "RepoDir : $repoDir" >> ${fileName}.txt ;
+  exit 0 ;
+fi
+
 # Go to the directory
 cd $testDir ;
 
