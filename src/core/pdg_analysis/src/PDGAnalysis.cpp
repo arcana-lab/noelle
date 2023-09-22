@@ -32,6 +32,7 @@ PDGAnalysis::PDGAnalysis()
     M{ nullptr },
     programDependenceGraph{ nullptr },
     dfa{},
+    mpa{},
     embedPDG{ false },
     dumpPDG{ false },
     performThePDGComparison{ false },
@@ -186,7 +187,9 @@ void PDGAnalysis::trimDGUsingCustomAliasAnalysis(PDG *pdg) {
 
   /*
    * Invoke AllocAA
+   * Fetch and invoke MayPointsToAnalysis
    */
+  this->mpa = MayPointsToAnalysis{};
   removeEdgesNotUsedByParSchemes(pdg);
 
   /*
@@ -348,6 +351,39 @@ bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge) {
   assert(pdg != nullptr);
   assert(edge != nullptr);
 
+  auto isCallToPrint = [](Value *i) -> bool {
+    if (!isa<CallBase>(i)) {
+      return false;
+    }
+    auto calleeFunc = dyn_cast<CallBase>(i)->getCalledFunction();
+    if (!calleeFunc) {
+      return false;
+    }
+
+    auto fname = calleeFunc->getName();
+    unordered_set<string> printFuncs = { "printf",
+                                         "fprintf",
+                                         "puts",
+                                         "putc",
+                                         "putchar" };
+    for (auto printFunc : printFuncs) {
+      if (fname == printFunc || fname == (printFunc + "_unlocked")) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  auto getPointer = [](Value *i) -> Value * {
+    if (isa<LoadInst>(i)) {
+      return dyn_cast<LoadInst>(i)->getPointerOperand();
+    } else if (isa<StoreInst>(i)) {
+      return dyn_cast<StoreInst>(i)->getPointerOperand();
+    } else {
+      return nullptr;
+    }
+  };
+
   /*
    * Fetch the instructions
    */
@@ -358,10 +394,11 @@ bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge) {
    * Handle the case where the two instructions are not calls.
    */
   if ((!isa<CallBase>(i0)) && (!isa<CallBase>(i1))) {
-    if (!this->allocAA->canPointToTheSameObject(i0, i1)) {
+    auto p0 = getPointer(i0);
+    auto p1 = getPointer(i1);
+    if (p0 && p1 && !mpa.mayAlias(p0, p1)) {
       return true;
     }
-
     return false;
   }
 
@@ -401,8 +438,16 @@ bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge) {
    *
    * Check it invokes a known library function.
    */
-  if (callee->getName().compare("printf") != 0) {
+  if (!isCallToPrint(callInst)) {
     return false;
+  }
+
+  /*
+   * There is no memory dependence between print and loadInst.
+   * Both of them only read.
+   */
+  if (isa<LoadInst>(otherInst)) {
+    return true;
   }
 
   /*
@@ -424,9 +469,8 @@ bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge) {
   Value *o1 = nullptr;
   if (auto st = dyn_cast<StoreInst>(otherInst)) {
     o1 = st->getPointerOperand();
-  } else if (auto ld = dyn_cast<LoadInst>(otherInst)) {
-    o1 = ld;
   }
+
   if (o1 == nullptr) {
     return false;
   }
@@ -437,7 +481,7 @@ bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge) {
    */
   auto doOverlap = false;
   for (auto o0 : objects) {
-    if (this->allocAA->canPointToTheSameObject(o0, o1)) {
+    if (mpa.mayAlias(o0, o1)) {
       doOverlap = true;
       break;
     }

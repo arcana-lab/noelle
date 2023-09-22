@@ -36,7 +36,7 @@ fi
 
 
 ########### NOELLE analyses
-PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/AliasAnalysisEngine.so -load ${installDir}/lib/TalkDown.so -load ${installDir}/lib/CallGraph.so -load ${installDir}/lib/DG.so -load ${installDir}/lib/PDG.so -load ${installDir}/lib/SCCDAG.so -load ${installDir}/lib/PDGPrinter.so -load ${installDir}/lib/PDGAnalysis.so -load ${installDir}/lib/MemoryCloningAnalysis.so"
+PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/AliasAnalysisEngine.so -load ${installDir}/lib/TalkDown.so -load ${installDir}/lib/CallGraph.so -load ${installDir}/lib/DG.so -load ${installDir}/lib/PDG.so -load ${installDir}/lib/SCCDAG.so -load ${installDir}/lib/PDGPrinter.so -load ${installDir}/lib/MayPointsToAnalysis.so -load ${installDir}/lib/PDGAnalysis.so -load ${installDir}/lib/MemoryCloningAnalysis.so"
 
 
 ########### All analyses

@@ -29,6 +29,7 @@
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
+#include "noelle/core/MayPointsToAnalysis.hpp"
 
 namespace llvm::noelle {
 
@@ -64,6 +65,7 @@ private:
   Module *M;
   PDG *programDependenceGraph;
   AllocAA *allocAA;
+  MayPointsToAnalysis mpa;
   TalkDown *talkdown;
   DataFlowAnalysis dfa;
   PDGVerbosity verbose;
