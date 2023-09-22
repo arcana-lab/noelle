@@ -49,8 +49,11 @@ public:
    * in the `userInsts` set of @array.
    *
    * However, only the loadInst uses @array directly, the storeInst only uses
-   * the BitCastOpearator of @array. As a result, the `users` set of @array will
-   * contain the loadInst and `i8** bitcast (i64** @array to i8**)`.
+   * the BitCastOpearator of @array.
+   *
+   * As a result, different from the definition of user in llvm, the `users` set
+   * of @array will contain the loadInst and `i8** bitcast (i64** @array to
+   * i8**)`.
    */
   unordered_map<Function *, unordered_set<Instruction *>> userInsts;
 };

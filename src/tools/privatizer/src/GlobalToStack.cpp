@@ -60,9 +60,11 @@ unordered_set<Function *> Privatizer::getPrivatizableFunctions(
    * each user function must satisfy three conditions:
    *
    * 1. The global variable should be initialized before any use.
-   * 2. The global variable should not be used by my callee.
-   * 3. The global variable should not be pointed by other global variables,
-   *    arguments of the current func, and return values of the current func.
+   * 2. The global variable should not be used by callee of current func.
+   * 3. The global variable should not be pointed directly or indirectly by
+   *    (1) other global variables,
+   *    (2) arguments or return values of the current func,
+   *    (3) arguments or return values of callInsts.
    *
    * The first condition says the current user function will not read data
    * written by user functions invoked before the current user function.
@@ -70,8 +72,9 @@ unordered_set<Function *> Privatizer::getPrivatizableFunctions(
    * The second condition says other user functions will not directly write
    * data to the global variable during the current user function.
    *
-   * The third condition says the global variable will never be written through
-   * pointers during the current function.
+   * The third condition says other functions will never write the global
+   * variable through pointers. Also, it ensures that it's safe to transform
+   * the global variable into an allocaInst.
    */
   if (privatizable.size() == 1) {
     auto currentF = *privatizable.begin();
@@ -406,8 +409,8 @@ bool Privatizer::transformG2S(Noelle &noelle,
                                   globalVarName + "_privatized");
 
     /*
-     * Replace all uses of the global variable in the entry function with an
-     * allocaInst. The allocaInst is placed at the beginning of the entry block.
+     * Replace all uses of the global variable with an allocaInst in the entry
+     * block. The allocaInst is placed at the beginning of the entry block.
      */
     for (auto inst : directUses[currentF]) {
       inst->replaceUsesOfWith(globalVar, allocaInst);
