@@ -51,16 +51,7 @@ public:
                     ScalarEvolution &SE,
                     int64_t stepMultiplier,
                     PHINode *loopEntryPHI,
-                    SCC &scc,
-                    LoopEnvironment &loopEnvironment,
-                    ScalarEvolutionReferentialExpander &referentialExpander);
-
-  InductionVariable(LoopStructure *LS,
-                    InvariantManager &IVM,
-                    ScalarEvolution &SE,
-                    int64_t stepMultiplier,
-                    PHINode *loopEntryPHI,
-                    PHINode *SCEVPHI,
+                    PHINode *stepSCEVPHI,
                     SCC &scc,
                     LoopEnvironment &loopEnvironment,
                     ScalarEvolutionReferentialExpander &referentialExpander);
@@ -121,7 +112,7 @@ private:
    */
   PHINode *loopEntryPHI;
 
-  PHINode *SCEVPHI;
+  PHINode *stepSCEVPHI;
 
   /*
    * The PHINodes that are involved in the calculation of the step of the IV.
