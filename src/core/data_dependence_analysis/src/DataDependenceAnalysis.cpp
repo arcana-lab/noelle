@@ -37,7 +37,8 @@ std::string DataDependenceAnalysis::getName(void) const {
 MemoryDataDependenceStrength DataDependenceAnalysis::
     isThereThisMemoryDataDependenceType(DataDependenceType t,
                                         Instruction *fromInst,
-                                        Instruction *toInst) {
+                                        Instruction *toInst,
+                                        Scope s) {
   return MAY_EXIST;
 }
 
