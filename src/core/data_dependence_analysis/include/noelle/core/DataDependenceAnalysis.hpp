@@ -27,6 +27,7 @@
 namespace llvm::noelle {
 
 enum MemoryDataDependenceStrength { CANNOT_EXIST, MAY_EXIST, MUST_EXIST };
+enum Scope { PROGRAM, FUNCTION, LOOP };
 
 class DataDependenceAnalysis {
 public:
@@ -35,12 +36,14 @@ public:
   std::string getName(void) const;
 
   virtual bool canThereBeAMemoryDataDependence(Instruction *fromInst,
-                                               Instruction *toInst) = 0;
+                                               Instruction *toInst,
+                                               Scope s) = 0;
 
   virtual MemoryDataDependenceStrength isThereThisMemoryDataDependenceType(
       DataDependenceType t,
       Instruction *fromInst,
-      Instruction *toInst);
+      Instruction *toInst,
+      Scope s);
 
 private:
   std::string analysisName;

@@ -36,9 +36,11 @@ std::pair<bool, bool> PDGAnalysis::isThereThisMemoryDataDependenceType(
   bool mustExist = false;
 
   for (auto ddAnalysis : this->ddAnalyses) {
-    auto resp = ddAnalysis->isThereThisMemoryDataDependenceType(DG_DATA_WAR,
-                                                                fromInst,
-                                                                toInst);
+    auto resp =
+        ddAnalysis->isThereThisMemoryDataDependenceType(DG_DATA_WAR,
+                                                        fromInst,
+                                                        toInst,
+                                                        Scope::FUNCTION);
     if (resp == CANNOT_EXIST) {
       noDep = true;
       break;
@@ -79,7 +81,9 @@ void PDGAnalysis::iterateInstForStore(PDG *pdg,
      */
     auto noDep = false;
     for (auto ddAnalysis : this->ddAnalyses) {
-      if (ddAnalysis->canThereBeAMemoryDataDependence(store, inst)) {
+      if (ddAnalysis->canThereBeAMemoryDataDependence(store,
+                                                      inst,
+                                                      Scope::FUNCTION)) {
         noDep = true;
       }
     }
@@ -145,7 +149,9 @@ void PDGAnalysis::iterateInstForLoad(PDG *pdg,
      */
     auto noDep = false;
     for (auto ddAnalysis : this->ddAnalyses) {
-      if (ddAnalysis->canThereBeAMemoryDataDependence(load, inst)) {
+      if (ddAnalysis->canThereBeAMemoryDataDependence(load,
+                                                      inst,
+                                                      Scope::FUNCTION)) {
         noDep = true;
       }
     }
@@ -224,7 +230,9 @@ void PDGAnalysis::iterateInstForCall(PDG *pdg,
      */
     auto noDep = false;
     for (auto ddAnalysis : this->ddAnalyses) {
-      if (ddAnalysis->canThereBeAMemoryDataDependence(call, inst)) {
+      if (ddAnalysis->canThereBeAMemoryDataDependence(call,
+                                                      inst,
+                                                      Scope::FUNCTION)) {
         noDep = true;
       }
     }
