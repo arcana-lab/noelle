@@ -104,6 +104,7 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
         if (!scev) {
           noelleDeterminedValidIV = false;
         }
+
         /*
          * For a PHI that has a SCEV that is not an AddRecExpr, it may still be
          * an IV that is being updated in a subloop if the proceeding conditions

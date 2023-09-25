@@ -41,7 +41,11 @@ public:
                     ScalarEvolution &SE,
                     int64_t stepMultiplier,
                     PHINode *loopEntryPHI,
+<<<<<<< HEAD
                     std::unordered_set<PHINode *> stepPHIs,
+=======
+                    PHINode *stepSCEVPHI,
+>>>>>>> 9d3aacc6 (renamed stepSCEVPHI; added more checks and comments)
                     SCC &scc,
                     LoopEnvironment &loopEnvironment,
                     ScalarEvolutionReferentialExpander &referentialExpander);
@@ -60,7 +64,11 @@ public:
 
   PHINode *getLoopEntryPHI(void) const;
 
+<<<<<<< HEAD
   std::unordered_set<PHINode *> getPHIsInvolvedInComputingIVStep(void) const;
+=======
+  PHINode *getStepSCEVPHI(void) const;
+>>>>>>> 9d3aacc6 (renamed stepSCEVPHI; added more checks and comments)
 
   std::unordered_set<PHINode *> getPHIs(void) const;
 
@@ -102,11 +110,16 @@ private:
    */
   PHINode *loopEntryPHI;
 
+<<<<<<< HEAD
   /*
    * The PHINodes that are involved in the calculation of the step of the IV.
    * Note: we currently only catch IVs that have one such PHINode.
    */
   std::unordered_set<PHINode *> stepPHIs;
+=======
+  PHINode *stepSCEVPHI;
+
+>>>>>>> 9d3aacc6 (renamed stepSCEVPHI; added more checks and comments)
   /*
    * All PHIs, whether intermediate or the loop entry PHI
    */
