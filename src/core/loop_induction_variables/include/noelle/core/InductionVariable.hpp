@@ -49,16 +49,7 @@ public:
                     ScalarEvolution &SE,
                     int64_t stepMultiplier,
                     PHINode *loopEntryPHI,
-                    SCC &scc,
-                    LoopEnvironment &loopEnvironment,
-                    ScalarEvolutionReferentialExpander &referentialExpander);
-
-  InductionVariable(LoopStructure *LS,
-                    InvariantManager &IVM,
-                    ScalarEvolution &SE,
-                    int64_t stepMultiplier,
-                    PHINode *loopEntryPHI,
-                    PHINode *SCEVPHI,
+                    PHINode *stepSCEVPHI,
                     SCC &scc,
                     LoopEnvironment &loopEnvironment,
                     ScalarEvolutionReferentialExpander &referentialExpander);
@@ -77,7 +68,7 @@ public:
 
   PHINode *getLoopEntryPHI(void) const;
 
-  PHINode *getSCEVPHI(void) const;
+  PHINode *getStepSCEVPHI(void) const;
 
   std::unordered_set<PHINode *> getPHIs(void) const;
 
@@ -119,7 +110,7 @@ private:
    */
   PHINode *loopEntryPHI;
 
-  PHINode *SCEVPHI;
+  PHINode *stepSCEVPHI;
 
   /*
    * All PHIs, whether intermediate or the loop entry PHI

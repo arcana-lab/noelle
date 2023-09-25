@@ -104,10 +104,7 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
         if (!scev) {
           noelleDeterminedValidIV = false;
         }
-<<<<<<< HEAD
 
-=======
->>>>>>> a95150b4 (comments added and code cleaned)
         /*
          * For a PHI that has a SCEV that is not an AddRecExpr, it may still be
          * an IV that is being updated in a subloop if the proceeding conditions
@@ -118,7 +115,6 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
           auto stepMultiplier = 0;
 
           /*
-<<<<<<< HEAD
            * 1. In the PHI's SCC, there is another PHI that has one AddRecExpr
            * SCEV and is contained in the subloop of the original loop.
            */
@@ -207,68 +203,6 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
                                            *sccContainingIV,
                                            loopEnv,
                                            referentialExpander);
-=======
-           * 1. In the PHI's SCC, there is another PHI that has an AddRecExpr
-           * SCEV and is contained in the subloop of the original loop.
-           */
-          PHINode *internalPHI = nullptr;
-          for (auto internalNode = sccContainingIV->begin_internal_node_map();
-               internalNode != sccContainingIV->end_internal_node_map();
-               internalNode++) {
-            if (isa<PHINode>(internalNode->first)
-                && internalNode->first != &phi) {
-              auto potentialPHI = cast<PHINode>(internalNode->first);
-              if (SE.getSCEV(potentialPHI)->getSCEVType()
-                      == SCEVTypes::scAddRecExpr
-                  && this->loop->isIncludedInItsSubLoops(potentialPHI)) {
-                internalPHI = potentialPHI;
-                break;
-              }
-            }
-          }
-          if (internalPHI != nullptr) {
-            /*
-             * 2. This subloop has only one exit: a latch of the parent loop.
-             */
-            if (auto innerHeaderTerminator = dyn_cast<BranchInst>(
-                    internalPHI->getParent()->getTerminator())) {
-              if (innerHeaderTerminator->getNumSuccessors() == 2
-                  && loop->getLatches().find(
-                         innerHeaderTerminator->getSuccessor(0))
-                         != loop->getLatches().end()) {
-
-                /*
-                 * 3. The exit condition should be associated with a constant.
-                 * TODO: generalize to loop invariants
-                 */
-                auto innerExitCond =
-                    cast<Instruction>(innerHeaderTerminator->getCondition());
-                ConstantInt *innerLoopIterations = nullptr;
-                if (isa<ConstantInt>(innerExitCond->getOperand(0))) {
-                  innerLoopIterations =
-                      cast<ConstantInt>(innerExitCond->getOperand(0));
-                } else if (isa<ConstantInt>(innerExitCond->getOperand(1))) {
-                  innerLoopIterations =
-                      cast<ConstantInt>(innerExitCond->getOperand(1));
-                }
-                if (innerLoopIterations != nullptr) {
-                  /*
-                   * If all conditions are met, create the IV.
-                   */
-                  stepMultiplier = innerLoopIterations->getSExtValue();
-                  assert(SE.getSCEV(internalPHI)->getSCEVType()
-                         == SCEVTypes::scAddRecExpr);
-                  IV = new InductionVariable(loop,
-                                             IVM,
-                                             SE,
-                                             stepMultiplier,
-                                             &phi,
-                                             internalPHI,
-                                             *sccContainingIV,
-                                             loopEnv,
-                                             referentialExpander);
-                }
->>>>>>> a95150b4 (comments added and code cleaned)
               }
             }
           }
