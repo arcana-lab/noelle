@@ -34,7 +34,7 @@ InductionVariable::InductionVariable(
     InductionDescriptor &ID)
   : scc{ scc },
     loopEntryPHI{ loopEntryPHI },
-    SCEVPHI{ loopEntryPHI },
+    stepSCEVPHI{ loopEntryPHI },
     startValue{ ID.getStartValue() },
     loopEntryPHIType{ loopEntryPHI->getType() },
     stepSCEV{ ID.getStep() },
@@ -66,7 +66,7 @@ InductionVariable::InductionVariable(
     ScalarEvolutionReferentialExpander &referentialExpander)
   : scc{ scc },
     loopEntryPHI{ loopEntryPHI },
-    SCEVPHI{ loopEntryPHI },
+    stepSCEVPHI{ loopEntryPHI },
     startValue{ nullptr },
     loopEntryPHIType{ loopEntryPHI->getType() },
     stepSCEV{ nullptr },
@@ -100,54 +100,13 @@ InductionVariable::InductionVariable(
     ScalarEvolution &SE,
     int64_t stepMultiplier,
     PHINode *loopEntryPHI,
-    PHINode *SCEVPHI,
+    PHINode *stepSCEVPHI,
     SCC &scc,
     LoopEnvironment &loopEnv,
     ScalarEvolutionReferentialExpander &referentialExpander)
   : scc{ scc },
     loopEntryPHI{ loopEntryPHI },
-    SCEVPHI{ SCEVPHI },
-    startValue{ nullptr },
-    loopEntryPHIType{ loopEntryPHI->getType() },
-    stepSCEV{
-      cast<SCEVAddRecExpr>(SE.getSCEV(SCEVPHI))->getStepRecurrence(SE)
-    },
-    stepMultiplier{ stepMultiplier },
-    computationOfStepValue{},
-    isComputedStepValueLoopInvariant{ false } {
-
-  /*
-   * Fetch initial value of induction variable
-   */
-  auto bbs = LS->getBasicBlocks();
-  for (auto i = 0; i < loopEntryPHI->getNumIncomingValues(); ++i) {
-    auto incomingBB = loopEntryPHI->getIncomingBlock(i);
-    if (bbs.find(incomingBB) == bbs.end()) {
-      this->startValue = loopEntryPHI->getIncomingValue(i);
-      break;
-    }
-  }
-
-  traverseCycleThroughLoopEntryPHIToGetAllIVInstructions(LS);
-  traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions(LS, IVM, SE);
-  collectValuesInternalAndExternalToLoopAndSCC(LS, loopEnv);
-  deriveStepValue(LS, SE, referentialExpander, stepMultiplier);
-
-  return;
-}
-
-InductionVariable::InductionVariable(
-    LoopStructure *LS,
-    InvariantManager &IVM,
-    ScalarEvolution &SE,
-    int64_t stepMultiplier,
-    PHINode *loopEntryPHI,
-    SCC &scc,
-    LoopEnvironment &loopEnv,
-    ScalarEvolutionReferentialExpander &referentialExpander)
-  : scc{ scc },
-    loopEntryPHI{ loopEntryPHI },
-    SCEVPHI{ loopEntryPHI },
+    stepSCEVPHI{ stepSCEVPHI },
     startValue{ nullptr },
     loopEntryPHIType{ loopEntryPHI->getType() },
     stepSCEV{ nullptr },
@@ -416,9 +375,9 @@ void InductionVariable::deriveStepValue(
    * Fetch the SCEV for the step value.
    */
   if (!this->stepSCEV) {
-    auto loopEntrySCEV = SE.getSCEV(loopEntryPHI);
-    assert(loopEntrySCEV->getSCEVType() == SCEVTypes::scAddRecExpr);
-    this->stepSCEV = cast<SCEVAddRecExpr>(loopEntrySCEV)->getStepRecurrence(SE);
+    assert(SE.getSCEV(stepSCEVPHI)->getSCEVType() == SCEVTypes::scAddRecExpr);
+    this->stepSCEV =
+        cast<SCEVAddRecExpr>(SE.getSCEV(stepSCEVPHI))->getStepRecurrence(SE);
   }
 
   switch (stepSCEV->getSCEVType()) {
@@ -548,8 +507,8 @@ PHINode *InductionVariable::getLoopEntryPHI(void) const {
   return loopEntryPHI;
 }
 
-PHINode *InductionVariable::getSCEVPHI(void) const {
-  return SCEVPHI;
+PHINode *InductionVariable::getStepSCEVPHI(void) const {
+  return stepSCEVPHI;
 }
 
 std::unordered_set<PHINode *> InductionVariable::getPHIs(void) const {

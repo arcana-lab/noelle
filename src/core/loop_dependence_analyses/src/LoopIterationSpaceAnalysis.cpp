@@ -101,8 +101,8 @@ bool LoopIterationSpaceAnalysis::
   // << "\n";
 
   auto getLoopForIV = [&](InductionVariable *iv) -> LoopStructure * {
-    auto SCEVPHI = iv->getSCEVPHI();
-    return this->loops->getInnermostLoopThatContains(SCEVPHI);
+    auto stepSCEVPHI = iv->getStepSCEVPHI();
+    return this->loops->getInnermostLoopThatContains(stepSCEVPHI);
   };
 
   /*
