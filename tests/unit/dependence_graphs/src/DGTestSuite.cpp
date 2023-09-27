@@ -209,9 +209,10 @@ Values DGTestSuite::getSCCValues(std::set<SCC *> sccs) {
   Values sccStrings;
   for (auto scc : sccs) {
     std::vector<Value *> values(scc->numInternalNodes());
-    int i = 0;
-    for (auto nodePair : scc->internalNodePairs())
+    auto i = 0;
+    for (auto nodePair : scc->internalNodePairs()) {
       values[i++] = nodePair.first;
+    }
 
     std::string valuesDelimited = suite->valueToString(values[0]);
     for (i = 1; i < values.size(); ++i) {
