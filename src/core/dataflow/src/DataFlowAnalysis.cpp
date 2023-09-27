@@ -71,14 +71,16 @@ DataFlowResult *DataFlowAnalysis::runReachableAnalysis(
     return;
   };
   auto computeKILL = [](Instruction *, DataFlowResult *) { return; };
-  auto computeOUT =
-      [](std::set<Value *> &OUT, Instruction *succ, DataFlowResult *df) {
-        auto &inS = df->IN(succ);
-        OUT.insert(inS.begin(), inS.end());
-        return;
-      };
+  auto computeOUT = [](Instruction *inst,
+                       Instruction *succ,
+                       std::set<Value *> &OUT,
+                       DataFlowResult *df) {
+    auto &inS = df->IN(succ);
+    OUT.insert(inS.begin(), inS.end());
+    return;
+  };
   auto computeIN =
-      [](std::set<Value *> &IN, Instruction *inst, DataFlowResult *df) {
+      [](Instruction *inst, std::set<Value *> &IN, DataFlowResult *df) {
         auto &genI = df->GEN(inst);
         auto &outI = df->OUT(inst);
 

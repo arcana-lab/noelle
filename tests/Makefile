@@ -44,5 +44,6 @@ clean:
 	rm -f compiler_output* ;
 	find ./ -name output_parallelized.txt.xz -delete
 	find ./ -name vgcore* -delete
+	rm -f TestDir_not_exists*
 
 .PHONY: condor condor_autotuner condor_check regression performance performance_autotuner unit download clean condor_regression_add

@@ -232,8 +232,9 @@ DataFlowResult *computeReachabilityFromInstructions(
     gen.insert(i);
     return;
   };
-  auto computeOUT = [loopHeader](std::set<Value *> &OUT,
+  auto computeOUT = [loopHeader](Instruction *inst,
                                  Instruction *succ,
+                                 std::set<Value *> &OUT,
                                  DataFlowResult *df) {
     assert(succ != nullptr);
     assert(df != nullptr);
@@ -257,7 +258,7 @@ DataFlowResult *computeReachabilityFromInstructions(
     return;
   };
   auto computeIN =
-      [](std::set<Value *> &IN, Instruction *inst, DataFlowResult *df) {
+      [](Instruction *inst, std::set<Value *> &IN, DataFlowResult *df) {
         assert(inst != nullptr);
         assert(df != nullptr);
 

@@ -1,0 +1,10 @@
+#!/bin/bash -e
+
+installDir
+
+# Run the privatizer until a fixed point is reached
+echo "NOELLE: Privatizer: Start" ;
+cmdToExecute="noelle-fixedpoint $1 $1 \"noelle-parallel-load\" -load ${installDir}/lib/Privatizer.so -privatizer ${@:2}"
+echo $cmdToExecute ;
+eval $cmdToExecute ;
+echo "NOELLE: Privatizer: Exit" ;

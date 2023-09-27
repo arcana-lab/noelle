@@ -3,6 +3,7 @@
 installDir
 
 # Configurations
+enablePrivatizer="1" ;
 enableEnablers="1" ;
 enableDead="1" ;
 
@@ -13,6 +14,10 @@ for var in "$@" ; do
   if [[ $var == -* ]] ; then
 
     # Handle custom options
+    if [[ $var == "-noelle-disable-privatizer" ]] ; then
+      enablePrivatizer="0" ;
+      continue ;
+    fi
     if [[ $var == "-noelle-disable-enablers" ]] ; then
       enableEnablers="0" ;
       continue ;
@@ -78,6 +83,13 @@ fi
 cmdToExecute="noelle-simplification $notOptions -o $notOptions"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
+
+# Run the privatizer
+if test "$enablePrivatizer" == "1" ; then
+  cmdToExecute="noelle-privatizer $notOptions $options"
+  echo $cmdToExecute ;
+  eval $cmdToExecute ;
+fi
 
 # Run the enablers
 if test "$enableEnablers" == "1" ; then

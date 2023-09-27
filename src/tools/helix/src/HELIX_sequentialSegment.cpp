@@ -443,8 +443,9 @@ DataFlowResult *HELIX::computeReachabilityFromInstructions(
     gen.insert(i);
     return;
   };
-  auto computeOUT = [LDI, loopHeader](std::set<Value *> &OUT,
+  auto computeOUT = [LDI, loopHeader](Instruction *inst,
                                       Instruction *succ,
+                                      std::set<Value *> &OUT,
                                       DataFlowResult *df) {
     /*
      * Check if the successor is the header.
@@ -465,7 +466,7 @@ DataFlowResult *HELIX::computeReachabilityFromInstructions(
     return;
   };
   auto computeIN =
-      [](std::set<Value *> &IN, Instruction *inst, DataFlowResult *df) {
+      [](Instruction *inst, std::set<Value *> &IN, DataFlowResult *df) {
         auto &genI = df->GEN(inst);
         auto &outI = df->OUT(inst);
         IN.insert(outI.begin(), outI.end());
