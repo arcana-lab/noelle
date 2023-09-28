@@ -375,9 +375,12 @@ void InductionVariable::deriveStepValue(
    * Fetch the SCEV for the step value.
    */
   if (!this->stepSCEV) {
+<<<<<<< HEAD
     /*
      * stepSCEV is being defined without using LLVM InductionDescriptor.
      */
+=======
+>>>>>>> 9d3aacc64f7050b757a155b82e30624cc7b04ff1
     assert(SE.getSCEV(stepSCEVPHI)->getSCEVType() == SCEVTypes::scAddRecExpr);
     this->stepSCEV =
         cast<SCEVAddRecExpr>(SE.getSCEV(stepSCEVPHI))->getStepRecurrence(SE);
