@@ -170,7 +170,7 @@ void SCCDAG::markEdgesAndSubEdges(void) {
        * subedges
        */
       if (clearedEdges.find(sccEdge) == clearedEdges.end()) {
-        sccEdge->clearSubEdges();
+        sccEdge->removeSubEdges();
         clearedEdges.insert(sccEdge);
       }
       for (auto edge : incomingNode->getIncomingEdges())

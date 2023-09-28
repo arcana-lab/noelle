@@ -41,24 +41,13 @@ public:
 template <class T, class SubT>
 class DGEdgeBase {
 public:
-  DGEdgeBase(DGNode<T> *src, DGNode<T> *dst)
-    : from(src),
-      to(dst),
-      subEdges{},
-      memory{ false },
-      must{ false },
-      isControl(false),
-      isLoopCarried(false),
-      isRemovable(false),
-      dataDepType{ DG_DATA_NONE },
-      remeds(nullptr) {
-    return;
-  }
+  DGEdgeBase(DGNode<T> *src, DGNode<T> *dst);
+
   DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge);
 
-  typedef typename std::unordered_set<DGEdge<SubT> *>::iterator edges_iterator;
-  typedef typename std::unordered_set<DGEdge<SubT> *>::const_iterator
-      edges_const_iterator;
+  using edges_iterator = typename std::unordered_set<DGEdge<SubT> *>::iterator;
+  using edges_const_iterator =
+      typename std::unordered_set<DGEdge<SubT> *>::const_iterator;
 
   edges_iterator begin_sub_edges() {
     return subEdges.begin();
@@ -73,26 +62,31 @@ public:
     return subEdges.end();
   }
 
-  inline iterator_range<edges_iterator> getSubEdges() {
+  iterator_range<edges_iterator> getSubEdges() {
     return make_range(subEdges.begin(), subEdges.end());
   }
 
   std::pair<DGNode<T> *, DGNode<T> *> getNodePair() const {
     return std::make_pair(from, to);
   }
+
   void setNodePair(DGNode<T> *from, DGNode<T> *to) {
     this->from = from;
     this->to = to;
   }
+
   DGNode<T> *getOutgoingNode() const {
     return from;
   }
+
   DGNode<T> *getIncomingNode() const {
     return to;
   }
+
   T *getOutgoingT() const {
     return from->getT();
   }
+
   T *getIncomingT() const {
     return to->getT();
   }
@@ -100,33 +94,43 @@ public:
   bool isMemoryDependence() const {
     return memory;
   }
+
   bool isMustDependence() const {
     return must;
   }
+
   bool isRAWDependence() const {
     return dataDepType == DG_DATA_RAW;
   }
+
   bool isWARDependence() const {
     return dataDepType == DG_DATA_WAR;
   }
+
   bool isWAWDependence() const {
     return dataDepType == DG_DATA_WAW;
   }
+
   bool isControlDependence() const {
     return isControl;
   }
+
   bool isDataDependence() const {
     return !isControl;
   }
+
   bool isLoopCarriedDependence() const {
     return isLoopCarried;
   }
+
   DataDependenceType dataDependenceType() const {
     return dataDepType;
   }
+
   bool isRemovableDependence() const {
     return isRemovable;
   }
+
   std::optional<SetOfRemedies> getRemedies() const {
     return (remeds) ? std::make_optional<SetOfRemedies>(*remeds) : std::nullopt;
   }
@@ -147,6 +151,7 @@ public:
       isRemovable = true;
     }
   }
+
   void addRemedies(const Remedies_ptr &R) {
     if (!remeds) {
       remeds = std::make_unique<SetOfRemedies>();
@@ -154,6 +159,7 @@ public:
     }
     remeds->insert(R);
   }
+
   void setRemovable(bool rem) {
     isRemovable = rem;
   }
@@ -188,16 +194,9 @@ public:
     }
   }
 
-  void removeSubEdge(DGEdge<SubT> *edge) {
-    subEdges.erase(edge);
-  }
+  void removeSubEdge(DGEdge<SubT> *edge);
 
-  void clearSubEdges() {
-    subEdges.clear();
-    setLoopCarried(false);
-    remeds = nullptr;
-    setRemovable(false);
-  }
+  void removeSubEdges(void);
 
   std::string toString();
 
@@ -234,6 +233,21 @@ protected:
 };
 
 template <class T, class SubT>
+DGEdgeBase<T, SubT>::DGEdgeBase(DGNode<T> *src, DGNode<T> *dst)
+  : from(src),
+    to(dst),
+    subEdges{},
+    memory{ false },
+    must{ false },
+    isControl(false),
+    isLoopCarried(false),
+    isRemovable(false),
+    dataDepType{ DG_DATA_NONE },
+    remeds(nullptr) {
+  return;
+}
+
+template <class T, class SubT>
 DGEdgeBase<T, SubT>::DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge) {
   auto nodePair = oldEdge.getNodePair();
   from = nodePair.first;
@@ -247,6 +261,23 @@ DGEdgeBase<T, SubT>::DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge) {
   setRemedies(oldEdge.getRemedies());
   for (auto subEdge : oldEdge.subEdges)
     addSubEdge(subEdge);
+}
+
+template <class T, class SubT>
+void DGEdgeBase<T, SubT>::removeSubEdge(DGEdge<SubT> *edge) {
+  subEdges.erase(edge);
+
+  return;
+}
+
+template <class T, class SubT>
+void DGEdgeBase<T, SubT>::removeSubEdges(void) {
+  subEdges.clear();
+  setLoopCarried(false);
+  remeds = nullptr;
+  setRemovable(false);
+
+  return;
 }
 
 template <class T, class SubT>
