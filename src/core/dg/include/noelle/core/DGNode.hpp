@@ -32,10 +32,10 @@ public:
 
   T *getT(void) const;
 
-  typedef typename std::vector<DGNode<T> *>::iterator nodes_iterator;
-  typedef typename std::unordered_set<DGEdge<T> *>::iterator edges_iterator;
-  typedef typename std::unordered_set<DGEdge<T> *>::const_iterator
-      edges_const_iterator;
+  using nodes_iterator = typename std::vector<DGNode<T> *>::iterator;
+  using edges_iterator = typename std::unordered_set<DGEdge<T> *>::iterator;
+  using edges_const_iterator =
+      typename std::unordered_set<DGEdge<T> *>::const_iterator;
 
   edges_iterator begin_outgoing_edges() {
     return outgoingEdges.begin();
@@ -63,22 +63,17 @@ public:
     return incomingEdges.end();
   }
 
-  std::unordered_set<DGEdge<T> *> getAllConnectedEdges() {
-    std::unordered_set<DGEdge<T> *> allConnectedEdges{ outgoingEdges.begin(),
-                                                       outgoingEdges.end() };
-    allConnectedEdges.insert(incomingEdges.begin(), incomingEdges.end());
-    return allConnectedEdges;
-  }
+  std::unordered_set<DGEdge<T> *> getAllEdges(void);
 
-  iterator_range<edges_iterator> getOutgoingEdges() {
+  iterator_range<edges_iterator> getOutgoingEdges(void) {
     return make_range(outgoingEdges.begin(), outgoingEdges.end());
   }
 
-  iterator_range<edges_iterator> getIncomingEdges() {
+  iterator_range<edges_iterator> getIncomingEdges(void) {
     return make_range(incomingEdges.begin(), incomingEdges.end());
   }
 
-  uint64_t numberOfConnectedEdges(void) const;
+  uint64_t degree(void) const;
 
   uint64_t outDegree(void) const;
 
@@ -166,7 +161,15 @@ void DGNode<T>::removeConnectedNode(DGNode<T> *node) {
 }
 
 template <class T>
-uint64_t DGNode<T>::numberOfConnectedEdges(void) const {
+std::unordered_set<DGEdge<T> *> DGNode<T>::getAllEdges(void) {
+  std::unordered_set<DGEdge<T> *> allConnectedEdges{ outgoingEdges.begin(),
+                                                     outgoingEdges.end() };
+  allConnectedEdges.insert(incomingEdges.begin(), incomingEdges.end());
+  return allConnectedEdges;
+}
+
+template <class T>
+uint64_t DGNode<T>::degree(void) const {
   return outgoingEdges.size() + incomingEdges.size();
 }
 

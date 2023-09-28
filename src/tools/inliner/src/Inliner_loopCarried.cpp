@@ -312,7 +312,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(
        * Count how many memory edges this call is involved in.
        */
       auto memEdgeCount = 0;
-      for (auto edge : valNode->getAllConnectedEdges()) {
+      for (auto edge : valNode->getAllEdges()) {
         if (edge->isMemoryDependence()) {
           memEdgeCount++;
         }

@@ -463,7 +463,7 @@ void DG<T>::removeNode(DGNode<T> *node) {
     incomingToNode.insert(edge);
   for (auto edge : node->getOutgoingEdges())
     outgoingFromNode.insert(edge);
-  for (auto edge : node->getAllConnectedEdges())
+  for (auto edge : node->getAllEdges())
     allToAndFromNode.insert(edge);
 
   /*
