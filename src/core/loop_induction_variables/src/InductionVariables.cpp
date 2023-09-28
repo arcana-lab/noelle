@@ -94,6 +94,7 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
       InductionVariable *IV = nullptr;
       if (!SE.isSCEVable(phi.getType())) {
         noelleDeterminedValidIV = false;
+
       } else {
         /*
          * For a PHI that has a SCEV that is not an AddRecExpr, it may still be
