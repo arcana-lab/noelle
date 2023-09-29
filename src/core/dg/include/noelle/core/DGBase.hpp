@@ -262,8 +262,8 @@ const DGNode<T> *DG<T>::fetchConstNode(T *theT) const {
 
 template <class T>
 DGEdge<T> *DG<T>::addEdge(T *from, T *to) {
-  auto fromNode = fetchNode(from);
-  auto toNode = fetchNode(to);
+  auto fromNode = this->fetchNode(from);
+  auto toNode = this->fetchNode(to);
   auto edge = new DGEdge<T>(fromNode, toNode);
   allEdges.insert(edge);
   fromNode->addOutgoingEdge(edge);
