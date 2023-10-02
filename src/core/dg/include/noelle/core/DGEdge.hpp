@@ -178,21 +178,7 @@ public:
     return;
   }
 
-  void addSubEdge(DGEdge<SubT> *edge) {
-    subEdges.insert(edge);
-    isLoopCarried |= edge->isLoopCarriedDependence();
-    if (edge->isRemovableDependence()
-        && (subEdges.size() == 1 || this->isRemovableDependence())) {
-      isRemovable = true;
-      if (auto optional_remeds = edge->getRemedies()) {
-        for (auto &r : *(optional_remeds))
-          this->addRemedies(r);
-      }
-    } else {
-      remeds = nullptr;
-      isRemovable = false;
-    }
-  }
+  void addSubEdge(DGEdge<SubT> *edge);
 
   void removeSubEdge(DGEdge<SubT> *edge);
 
@@ -204,16 +190,7 @@ public:
 
   std::string dataDepToString();
 
-  static DataDependenceType stringToDataDep(std::string &str) {
-    if (str == "RAW")
-      return DG_DATA_RAW;
-    else if (str == "WAR")
-      return DG_DATA_WAR;
-    else if (str == "WAW")
-      return DG_DATA_WAW;
-    else
-      return DG_DATA_NONE;
-  }
+  static DataDependenceType stringToDataDep(std::string &str);
 
 protected:
   DGNode<T> *from;
@@ -337,6 +314,37 @@ raw_ostream &DGEdgeBase<T, SubT>::print(raw_ostream &stream,
   to->print(stream << linePrefix << "To:\t") << "\n";
   stream << linePrefix << this->toString();
   return stream;
+}
+
+template <class T, class SubT>
+void DGEdgeBase<T, SubT>::addSubEdge(DGEdge<SubT> *edge) {
+  subEdges.insert(edge);
+  isLoopCarried |= edge->isLoopCarriedDependence();
+  if (edge->isRemovableDependence()
+      && (subEdges.size() == 1 || this->isRemovableDependence())) {
+    isRemovable = true;
+    if (auto optional_remeds = edge->getRemedies()) {
+      for (auto &r : *(optional_remeds))
+        this->addRemedies(r);
+    }
+  } else {
+    remeds = nullptr;
+    isRemovable = false;
+  }
+
+  return;
+}
+
+template <class T, class SubT>
+DataDependenceType DGEdgeBase<T, SubT>::stringToDataDep(std::string &str) {
+  if (str == "RAW")
+    return DG_DATA_RAW;
+  else if (str == "WAR")
+    return DG_DATA_WAR;
+  else if (str == "WAW")
+    return DG_DATA_WAW;
+  else
+    return DG_DATA_NONE;
 }
 
 } // namespace llvm::noelle
