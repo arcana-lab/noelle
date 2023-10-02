@@ -33,14 +33,12 @@ class DG {
 public:
   DG();
 
-  typedef typename std::set<DGNode<T> *>::iterator nodes_iterator;
-  typedef typename std::set<DGNode<T> *>::const_iterator nodes_const_iterator;
-
-  typedef typename std::set<DGEdge<T> *>::iterator edges_iterator;
-  typedef typename std::set<DGEdge<T> *>::const_iterator edges_const_iterator;
+  using nodes_iterator = typename std::set<DGNode<T> *>::iterator;
+  using nodes_const_iterator = typename std::set<DGNode<T> *>::const_iterator;
+  using edges_iterator = typename std::set<DGEdge<T> *>::iterator;
+  using edges_const_iterator = typename std::set<DGEdge<T> *>::const_iterator;
+  using node_map_iterator = typename std::map<T *, DGNode<T> *>::iterator;
   typedef std::map<DGEdge<T> *, uint32_t> DepIdReverseMap_t;
-
-  typedef typename std::map<T *, DGNode<T> *>::iterator node_map_iterator;
 
   /*
    * Node and Edge Iterators
@@ -119,18 +117,10 @@ public:
   bool isExternal(T *theT) const;
   bool isInGraph(T *theT) const;
 
-  unsigned numNodes() const {
-    return allNodes.size();
-  }
-  unsigned numInternalNodes() const {
-    return internalNodeMap.size();
-  }
-  unsigned numExternalNodes() const {
-    return externalNodeMap.size();
-  }
-  unsigned numEdges() const {
-    return allEdges.size();
-  }
+  uint64_t numNodes(void) const;
+  uint64_t numInternalNodes(void) const;
+  uint64_t numExternalNodes(void) const;
+  uint64_t numEdges(void) const;
 
   /*
    * Iterator ranges
@@ -205,6 +195,9 @@ protected:
   std::shared_ptr<DepIdReverseMap_t> depLookupMap;
 };
 
+/*
+ * DG<T> class method implementations
+ */
 template <class T>
 DG<T>::DG() : nodeIdCounter{ 0 },
               depLookupMap{ nullptr } {
@@ -212,9 +205,6 @@ DG<T>::DG() : nodeIdCounter{ 0 },
   return;
 }
 
-/*
- * DG<T> class method implementations
- */
 template <class T>
 DGNode<T> *DG<T>::addNode(T *theT, bool inclusion) {
   auto node = new DGNode<T>(nodeIdCounter++, theT);
@@ -606,6 +596,26 @@ std::vector<DGEdge<T> *> DG<T>::sortDependences(
   std::sort(v.begin(), v.end(), sortingFunction);
 
   return v;
+}
+
+template <class T>
+uint64_t DG<T>::numNodes(void) const {
+  return allNodes.size();
+}
+
+template <class T>
+uint64_t DG<T>::numInternalNodes(void) const {
+  return internalNodeMap.size();
+}
+
+template <class T>
+uint64_t DG<T>::numExternalNodes(void) const {
+  return externalNodeMap.size();
+}
+
+template <class T>
+uint64_t DG<T>::numEdges(void) const {
+  return allEdges.size();
 }
 
 } // namespace llvm::noelle
