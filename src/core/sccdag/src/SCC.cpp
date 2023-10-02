@@ -43,12 +43,12 @@ SCC::SCC(std::set<DGNode<Value> *> internalNodes) {
   for (auto node : internalNodes) {
     for (auto edge : node->getOutgoingEdges()) {
       if (internalValues.find(edge->getIncomingT()) == internalValues.end()) {
-        externalNodes.insert(edge->getIncomingNode());
+        externalNodes.insert(edge->getDstNode());
       }
     }
     for (auto edge : node->getIncomingEdges()) {
       if (internalValues.find(edge->getOutgoingT()) == internalValues.end()) {
-        externalNodes.insert(edge->getOutgoingNode());
+        externalNodes.insert(edge->getSrcNode());
       }
     }
   }
@@ -95,13 +95,13 @@ void SCC::copyNodesAndEdges(std::set<DGNode<Value> *> internalNodes,
    */
   for (auto node : internalNodes) {
     for (auto edge : node->getOutgoingEdges()) {
-      auto incomingT = edge->getIncomingNode()->getT();
+      auto incomingT = edge->getDstNode()->getT();
       if (isInternal(incomingT))
         continue;
       copyAddEdge(*edge);
     }
     for (auto edge : node->getIncomingEdges()) {
-      auto outgoingT = edge->getOutgoingNode()->getT();
+      auto outgoingT = edge->getSrcNode()->getT();
       if (isInternal(outgoingT))
         continue;
       copyAddEdge(*edge);
@@ -200,7 +200,7 @@ bool SCC::hasCycle(bool ignoreControlDep) {
         if (ignoreControlDep && edge->isControlDependence())
           continue;
 
-        auto otherNode = edge->getIncomingNode();
+        auto otherNode = edge->getDstNode();
         if (nodesSeen.find(otherNode) != nodesSeen.end())
           return true;
         if (nodesChecked.find(otherNode) != nodesChecked.end())

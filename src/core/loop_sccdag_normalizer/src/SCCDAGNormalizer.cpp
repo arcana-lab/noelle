@@ -169,12 +169,11 @@ void SCCDAGNormalizer::mergeSingleSyntacticSugarInstrs(void) {
     // SCCs.
     DGNode<SCC> *adjacentNode = nullptr;
     if (sccNode->outDegree() == 1) {
-      adjacentNode = (*sccNode->begin_outgoing_edges())->getIncomingNode();
+      adjacentNode = (*sccNode->begin_outgoing_edges())->getDstNode();
     }
 
     if (sccNode->inDegree() == 1) {
-      auto incomingOption =
-          (*sccNode->begin_incoming_edges())->getOutgoingNode();
+      auto incomingOption = (*sccNode->begin_incoming_edges())->getSrcNode();
       if (!adjacentNode) {
         adjacentNode = incomingOption;
       } else {

@@ -130,10 +130,10 @@ void DGNode<T>::removeConnectedEdge(DGEdge<T> *edge) {
   DGNode<T> *node;
   if (outgoingEdges.find(edge) != outgoingEdges.end()) {
     outgoingEdges.erase(edge);
-    node = edge->getIncomingNode();
+    node = edge->getDstNode();
   } else {
     incomingEdges.erase(edge);
-    node = edge->getOutgoingNode();
+    node = edge->getSrcNode();
   }
 }
 
@@ -141,7 +141,7 @@ template <class T>
 void DGNode<T>::removeConnectedNode(DGNode<T> *node) {
   std::unordered_set<DGEdge<T> *> outgoingEdgesToRemove{};
   for (auto edge : outgoingEdges) {
-    if (edge->getIncomingNode() == node) {
+    if (edge->getDstNode() == node) {
       outgoingEdgesToRemove.insert(edge);
     }
   }
@@ -151,7 +151,7 @@ void DGNode<T>::removeConnectedNode(DGNode<T> *node) {
 
   std::unordered_set<DGEdge<T> *> incomingEdgesToRemove{};
   for (auto edge : incomingEdges) {
-    if (edge->getOutgoingNode() == node) {
+    if (edge->getSrcNode() == node) {
       incomingEdgesToRemove.insert(edge);
     }
   }

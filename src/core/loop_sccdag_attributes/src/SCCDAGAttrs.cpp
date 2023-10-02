@@ -390,7 +390,7 @@ SCCDAGAttrs::computeSCCDAGWhenSCCsAreIgnored(
     std::set<DGNode<SCC> *> nodes;
     auto scc = node->getT();
     for (auto edge : node->getIncomingEdges()) {
-      nodes.insert(edge->getOutgoingNode());
+      nodes.insert(edge->getSrcNode());
       edgesViaClones[scc].insert(edge);
     }
     for (auto node : nodes) {
@@ -946,10 +946,8 @@ void SCCDAGAttrs::dumpToFile(int id) {
   }
 
   for (auto sccEdge : sccdag->getEdges()) {
-    auto outgoingDesc =
-        sccToDescriptionMap.at(sccEdge->getOutgoingNode())->getT();
-    auto incomingDesc =
-        sccToDescriptionMap.at(sccEdge->getIncomingNode())->getT();
+    auto outgoingDesc = sccToDescriptionMap.at(sccEdge->getSrcNode())->getT();
+    auto incomingDesc = sccToDescriptionMap.at(sccEdge->getDstNode())->getT();
     stageGraph.addEdge(outgoingDesc, incomingDesc);
   }
 

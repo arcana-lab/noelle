@@ -75,13 +75,9 @@ public:
     this->to = to;
   }
 
-  DGNode<T> *getOutgoingNode() const {
-    return from;
-  }
+  DGNode<T> *getSrcNode(void) const;
 
-  DGNode<T> *getIncomingNode() const {
-    return to;
-  }
+  DGNode<T> *getDstNode(void) const;
 
   T *getOutgoingT() const {
     return from->getT();
@@ -345,6 +341,16 @@ DataDependenceType DGEdgeBase<T, SubT>::stringToDataDep(std::string &str) {
     return DG_DATA_WAW;
   else
     return DG_DATA_NONE;
+}
+
+template <class T, class SubT>
+DGNode<T> *DGEdgeBase<T, SubT>::getSrcNode(void) const {
+  return from;
+}
+
+template <class T, class SubT>
+DGNode<T> *DGEdgeBase<T, SubT>::getDstNode(void) const {
+  return to;
 }
 
 } // namespace llvm::noelle

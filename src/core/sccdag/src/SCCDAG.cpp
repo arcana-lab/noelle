@@ -153,12 +153,12 @@ void SCCDAG::markEdgesAndSubEdges(void) {
        */
       std::unordered_set<DGEdge<SCC> *> edgeSet;
       for (auto edge : outgoingSCCNode->getOutgoingEdges()) {
-        if (edge->getIncomingNode() != incomingSCCNode)
+        if (edge->getDstNode() != incomingSCCNode)
           continue;
         edgeSet.insert(edge);
       }
       for (auto edge : outgoingSCCNode->getIncomingEdges()) {
-        if (edge->getOutgoingNode() != incomingSCCNode)
+        if (edge->getSrcNode() != incomingSCCNode)
           continue;
         edgeSet.insert(edge);
       }

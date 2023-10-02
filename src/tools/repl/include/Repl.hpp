@@ -313,8 +313,8 @@ protected:
 
   // helper function for dumping edge
   void dumpEdge(unsigned depId, DGEdge<Value> *edge) {
-    auto idA = instIdLookupMap->at(edge->getOutgoingNode());
-    auto idB = instIdLookupMap->at(edge->getIncomingNode());
+    auto idA = instIdLookupMap->at(edge->getSrcNode());
+    auto idB = instIdLookupMap->at(edge->getDstNode());
     outs() << depId << "\t" << idA << "->" << idB << ":\t" << edge->toString()
            << (edge->isLoopCarriedDependence() ? "(LC)" : "(LL)") << "\n";
   };

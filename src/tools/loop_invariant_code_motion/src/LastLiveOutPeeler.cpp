@@ -282,7 +282,7 @@ LastLiveOutPeeler::LastLiveOutPeeler(LoopDependenceInfo const &LDI,
 //     computationOfLastLiveOut.insert(scc);
 
 //     for (auto edge : sccNode->getIncomingEdges()) {
-//       auto producerSCCNode = edge->getOutgoingNode();
+//       auto producerSCCNode = edge->getSrcNode();
 //       if (visited.find(producerSCCNode) != visited.end()) continue;
 //       queueOfLastLiveOutComputation.push(producerSCCNode);
 //       visited.insert(producerSCCNode);

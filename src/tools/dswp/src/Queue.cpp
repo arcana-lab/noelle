@@ -105,7 +105,7 @@ void DSWP::collectControlQueueInfo(LoopDependenceInfo *LDI, Noelle &par) {
       if (!controlEdge->isControlDependence())
         continue;
 
-      auto controlNode = controlEdge->getOutgoingNode();
+      auto controlNode = controlEdge->getSrcNode();
       auto controlSCC = sccdag->sccOfValue(controlNode->getT());
       auto sccAttrs = sccManager->getSCCAttrs(controlSCC);
       if (this->canBeCloned(sccAttrs))
@@ -231,7 +231,7 @@ std::set<Task *> DSWP::collectTransitivelyControlledTasks(
      * Enqueue dependent instructions in tasks not already visited
      */
     for (auto dependencyEdge : node->getOutgoingEdges()) {
-      auto dependentNode = dependencyEdge->getIncomingNode();
+      auto dependentNode = dependencyEdge->getDstNode();
       queuedNodes.push(dependentNode);
 
       Task *dependentTask = getTaskOfNode(dependentNode);

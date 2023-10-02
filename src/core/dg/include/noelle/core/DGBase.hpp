@@ -267,7 +267,7 @@ std::unordered_set<DGEdge<T> *> DG<T>::fetchEdges(DGNode<T> *From,
   std::unordered_set<DGEdge<T> *> edgeSet;
 
   for (auto &edge : From->getOutgoingEdges()) {
-    if (edge->getIncomingNode() == To) {
+    if (edge->getDstNode() == To) {
       edgeSet.insert(edge);
     }
   }
@@ -307,7 +307,7 @@ std::unordered_set<DGNode<T> *> DG<T>::getTopLevelNodes(bool onlyInternal) {
 
     bool noOtherIncoming = true;
     for (auto incomingE : node->getIncomingEdges()) {
-      bool edgeToSelf = (incomingE->getOutgoingNode() == node);
+      bool edgeToSelf = (incomingE->getSrcNode() == node);
       bool edgeToExternal =
           onlyInternal && isExternal(incomingE->getOutgoingT());
       noOtherIncoming &= edgeToSelf || edgeToExternal;
@@ -326,7 +326,7 @@ std::unordered_set<DGNode<T> *> DG<T>::getLeafNodes(bool onlyInternal) {
     for (auto selfNode : allNodes) {
       bool noChildNode = true;
       for (auto edge : selfNode->getOutgoingEdges()) {
-        noChildNode &= (edge->getIncomingNode() == selfNode);
+        noChildNode &= (edge->getDstNode() == selfNode);
       }
       if (noChildNode)
         leafNodes.insert(selfNode);
@@ -335,7 +335,7 @@ std::unordered_set<DGNode<T> *> DG<T>::getLeafNodes(bool onlyInternal) {
     for (auto selfNodePair : internalNodePairs()) {
       bool noChildNode = true;
       for (auto edge : selfNodePair.second->getOutgoingEdges()) {
-        noChildNode &= (edge->getIncomingNode() == selfNodePair.second);
+        noChildNode &= (edge->getDstNode() == selfNodePair.second);
       }
       if (noChildNode)
         leafNodes.insert(selfNodePair.second);
@@ -375,9 +375,9 @@ std::vector<std::unordered_set<DGNode<T> *> *> DG<T>::getDisconnectedSubgraphs(
       };
 
       for (auto edge : currentNode->getOutgoingEdges())
-        checkToVisitNode(edge->getIncomingNode());
+        checkToVisitNode(edge->getDstNode());
       for (auto edge : currentNode->getIncomingEdges())
-        checkToVisitNode(edge->getOutgoingNode());
+        checkToVisitNode(edge->getSrcNode());
     }
 
     connectedComponents.push_back(component);
@@ -390,7 +390,7 @@ template <class T>
 std::unordered_set<DGNode<T> *> DG<T>::getNextDepthNodes(DGNode<T> *node) {
   std::unordered_set<DGNode<T> *> incomingNodes;
   for (auto edge : node->getOutgoingEdges())
-    incomingNodes.insert(edge->getIncomingNode());
+    incomingNodes.insert(edge->getDstNode());
 
   std::unordered_set<DGNode<T> *> nextDepthNodes;
   for (auto incoming : incomingNodes) {
@@ -400,8 +400,8 @@ std::unordered_set<DGNode<T> *> DG<T>::getNextDepthNodes(DGNode<T> *node) {
      */
     bool isNextDepth = true;
     for (auto incomingE : incoming->getIncomingEdges()) {
-      isNextDepth &= (incomingNodes.find(incomingE->getOutgoingNode())
-                      == incomingNodes.end());
+      isNextDepth &=
+          (incomingNodes.find(incomingE->getSrcNode()) == incomingNodes.end());
     }
 
     if (!isNextDepth)
@@ -415,7 +415,7 @@ template <class T>
 std::unordered_set<DGNode<T> *> DG<T>::getPreviousDepthNodes(DGNode<T> *node) {
   std::unordered_set<DGNode<T> *> outgoingNodes;
   for (auto edge : node->getIncomingEdges())
-    outgoingNodes.insert(edge->getOutgoingNode());
+    outgoingNodes.insert(edge->getSrcNode());
 
   std::unordered_set<DGNode<T> *> previousDepthNodes;
   for (auto outgoing : outgoingNodes) {
@@ -425,8 +425,8 @@ std::unordered_set<DGNode<T> *> DG<T>::getPreviousDepthNodes(DGNode<T> *node) {
      */
     bool isPrevDepth = true;
     for (auto outgoingE : outgoing->getOutgoingEdges()) {
-      isPrevDepth &= (outgoingNodes.find(outgoingE->getIncomingNode())
-                      == outgoingNodes.end());
+      isPrevDepth &=
+          (outgoingNodes.find(outgoingE->getDstNode()) == outgoingNodes.end());
     }
 
     if (!isPrevDepth)
@@ -460,9 +460,9 @@ void DG<T>::removeNode(DGNode<T> *node) {
    * Delete relations to edges and edges themselves
    */
   for (auto edge : incomingToNode)
-    edge->getOutgoingNode()->removeConnectedNode(node);
+    edge->getSrcNode()->removeConnectedNode(node);
   for (auto edge : outgoingFromNode)
-    edge->getIncomingNode()->removeConnectedNode(node);
+    edge->getDstNode()->removeConnectedNode(node);
   for (auto edge : allToAndFromNode) {
     allEdges.erase(edge);
     delete edge;
@@ -473,8 +473,8 @@ void DG<T>::removeNode(DGNode<T> *node) {
 
 template <class T>
 void DG<T>::removeEdge(DGEdge<T> *edge) {
-  edge->getOutgoingNode()->removeConnectedEdge(edge);
-  edge->getIncomingNode()->removeConnectedEdge(edge);
+  edge->getSrcNode()->removeConnectedEdge(edge);
+  edge->getDstNode()->removeConnectedEdge(edge);
   allEdges.erase(edge);
   delete edge;
 }
@@ -496,7 +496,7 @@ void DG<T>::copyNodesIntoNewGraph(DG<T> &newGraph,
    */
   for (auto node : nodesToPartition) {
     for (auto edgeToCopy : node->getOutgoingEdges()) {
-      auto incomingT = edgeToCopy->getIncomingNode()->getT();
+      auto incomingT = edgeToCopy->getDstNode()->getT();
       if (!newGraph.isInGraph(incomingT))
         continue;
       newGraph.copyAddEdge(*edgeToCopy);

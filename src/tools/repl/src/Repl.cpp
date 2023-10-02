@@ -229,7 +229,7 @@ void ReplDriver::depsFn() {
     auto fromNode = instIdMap->at(fromId);
     auto toNode = instIdMap->at(toId);
     for (auto &edge : fromNode->getOutgoingEdges()) {
-      if (edge->getIncomingNode() == toNode) {
+      if (edge->getDstNode() == toNode) {
         dumpEdge(id, edge);
         depIdMap->insert(make_pair(id++, edge));
       }

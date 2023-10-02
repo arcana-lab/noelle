@@ -68,7 +68,7 @@ public:
       std::set<DGEdge<T> *> allOutgoingEdges{ wrapped->begin_outgoing_edges(),
                                               wrapped->end_outgoing_edges() };
       for (auto edge : allOutgoingEdges) {
-        auto unwrappedOtherNode = edge->getIncomingNode();
+        auto unwrappedOtherNode = edge->getDstNode();
         if (nodeToWrapperMap.find(unwrappedOtherNode)
             != nodeToWrapperMap.end()) {
           auto wrappedOtherNode = nodeToWrapperMap.at(unwrappedOtherNode);

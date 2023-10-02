@@ -94,7 +94,7 @@ void DSWP::addClonableSCCsToStages(LoopDependenceInfo *LDI) {
        * Collect clonable SCCs with outgoing edges to SCCs in the task
        */
       for (auto sccEdge : depSCCNode->getIncomingEdges()) {
-        auto fromSCCNode = sccEdge->getOutgoingNode();
+        auto fromSCCNode = sccEdge->getSrcNode();
         auto fromSCC = fromSCCNode->getT();
         if (visitedNodes.find(fromSCCNode) != visitedNodes.end())
           continue;

@@ -136,7 +136,7 @@ void InductionVariable::traverseCycleThroughLoopEntryPHIToGetAllIVInstructions(
     for (auto edge : node->getIncomingEdges()) {
       if (!edge->isDataDependence() || edge->isMemoryDependence())
         continue;
-      auto otherNode = edge->getOutgoingNode();
+      auto otherNode = edge->getSrcNode();
       auto otherValue = otherNode->getT();
       if (!scc.isInternal(otherValue))
         continue;

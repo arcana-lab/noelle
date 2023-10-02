@@ -253,7 +253,7 @@ std::unordered_set<Instruction *> SCCPartitionScheduler::
       /*
        * Ignore self edges
        */
-      auto consumedNode = edge->getOutgoingNode();
+      auto consumedNode = edge->getSrcNode();
       auto consumedValue = edge->getOutgoingT();
       if (consumedValue == I)
         continue;
