@@ -3,6 +3,8 @@ Universe = vanilla
 
 # Describe the target machine
 Requirements = 
+# (Machine != "fix.cs.northwestern.edu") && (Machine != "allagash.cs.northwestern.edu") 
+request_memory = 1M
 
 Rank = TARGET.Mips
 Copy_To_Spool = False
