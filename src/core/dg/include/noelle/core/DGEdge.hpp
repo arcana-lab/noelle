@@ -188,18 +188,19 @@ protected:
   DGNode<T> *from;
   DGNode<T> *to;
   std::unordered_set<DGEdge<SubT> *> subEdges;
-
-  // TODO: Use LLVM's bit set (keep getters the same)
   bool memory;
   bool must;
   bool isControl;
   bool isLoopCarried;
   bool isRemovable;
-
   DataDependenceType dataDepType;
-
   SetOfRemedies_ptr remeds;
 };
+
+
+
+
+
 
 template <class T, class SubT>
 DGEdgeBase<T, SubT>::DGEdgeBase(DGNode<T> *src, DGNode<T> *dst)
