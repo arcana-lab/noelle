@@ -63,10 +63,10 @@ public:
 
   void addIncomingEdge(LoopNestingGraphLoopLoopEdge *edge);
 
-  std::unordered_set<LoopNestingGraphLoopLoopEdge *> getIncomingEdges(
+  std::unordered_set<LoopNestingGraphLoopLoopEdge *> getDstEdges(
       void) const;
 
-  std::unordered_set<LoopNestingGraphLoopLoopEdge *> getOutgoingEdges(
+  std::unordered_set<LoopNestingGraphLoopLoopEdge *> getSrcEdges(
       void) const;
 
   std::unordered_set<LoopNestingGraphLoopLoopEdge *> getEdges(void) const;

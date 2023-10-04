@@ -175,8 +175,8 @@ struct ElementTraitsBase : public DefaultDOTGraphTraits {
                 : (edge->isMemoryDependence() ? memColor : varColor));
     if (edge->isLoopCarriedDependence())
       ros << ", penwidth=2";
-    if (dg->isExternal(edge->getOutgoingT())
-        || dg->isExternal(edge->getIncomingT()))
+    if (dg->isExternal(edge->getSrc())
+        || dg->isExternal(edge->getDst()))
       ros << ",style=dotted";
     // dump the edge id set by the map
     if (auto edgeId = dg->getEdgeID(edge)) {

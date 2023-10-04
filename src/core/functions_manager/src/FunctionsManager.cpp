@@ -214,7 +214,7 @@ std::set<Function *> FunctionsManager::getFunctionsReachableFrom(
     funcSet.insert(func);
 
     auto funcCGNode = callGraph->getFunctionNode(func);
-    for (auto outEdge : funcCGNode->getOutgoingEdges()) {
+    for (auto outEdge : funcCGNode->getSrcEdges()) {
       auto calleeNode = outEdge->getCallee();
       auto F = calleeNode->getFunction();
       if (!F) {

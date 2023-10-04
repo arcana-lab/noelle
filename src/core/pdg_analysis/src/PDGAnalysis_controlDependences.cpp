@@ -137,7 +137,7 @@ void PDGAnalysis::constructEdgesFromControlForFunction(PDG *pdg, Function &F) {
     for (auto edge : node->getIncomingEdges()) {
       if (!edge->isControlDependence())
         continue;
-      auto controlProducer = edge->getOutgoingT();
+      auto controlProducer = edge->getSrc();
       controlProducers.insert(controlProducer);
     }
     return controlProducers;

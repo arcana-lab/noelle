@@ -218,8 +218,8 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
       /*
        * Fetch the instructions involved in the dependence
        */
-      auto fromInst = dep->getOutgoingT();
-      auto toInst = dep->getIncomingT();
+      auto fromInst = dep->getSrc();
+      auto toInst = dep->getDst();
 
       /*
        * Check that both instructions belong to the SCC.
@@ -272,8 +272,8 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
     if (!dep->isLoopCarriedDependence()) {
       continue;
     }
-    auto fromInst = dep->getOutgoingT();
-    auto toInst = dep->getIncomingT();
+    auto fromInst = dep->getSrc();
+    auto toInst = dep->getDst();
     stream << prefixString << "  " << *fromInst << " ---> " << *toInst;
 
     /*

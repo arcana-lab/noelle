@@ -450,8 +450,8 @@ void SCCDAGAttrs::collectLoopCarriedDependencies(LoopTree *loopNode) {
        * Fetch the SCCs that contain the source and destination of the current
        * loop-carried data dependence.
        */
-      auto producer = edge->getOutgoingT();
-      auto consumer = edge->getIncomingT();
+      auto producer = edge->getSrc();
+      auto consumer = edge->getDst();
       auto producerSCC = this->sccdag->sccOfValue(producer);
       auto consumerSCC = this->sccdag->sccOfValue(consumer);
 
@@ -568,8 +568,8 @@ std::tuple<bool, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
     Value *period;
     Value *step;
 
-    auto from = edge->getOutgoingT();
-    auto to = edge->getIncomingT();
+    auto from = edge->getSrc();
+    auto to = edge->getDst();
 
     if (!isa<PHINode>(to))
       return notPeriodic;
@@ -683,7 +683,7 @@ LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(SCC *scc,
     /*
      * Ignore external control dependencies, do not allow internal ones
      */
-    auto producer = dependency->getOutgoingT();
+    auto producer = dependency->getSrc();
     if (dependency->isControlDependence()) {
       if (scc->isInternal(producer)) {
         return nullptr;
@@ -694,7 +694,7 @@ LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(SCC *scc,
     /*
      * Fetch the destination of the dependence.
      */
-    auto consumer = dependency->getIncomingT();
+    auto consumer = dependency->getDst();
     if (!isa<PHINode>(consumer)) {
 
       /*
@@ -813,8 +813,8 @@ std::set<Instruction *> SCCDAGAttrs::checkIfRecomputable(
     /*
      * Fetch the instructions involved in the current loop-carried dependence.
      */
-    auto valueFrom = loopCarriedDependency->getOutgoingT();
-    auto valueTo = loopCarriedDependency->getIncomingT();
+    auto valueFrom = loopCarriedDependency->getSrc();
+    auto valueTo = loopCarriedDependency->getDst();
     assert(isa<Instruction>(valueFrom) && isa<Instruction>(valueTo));
     auto instFrom = cast<Instruction>(valueFrom);
 
@@ -856,7 +856,7 @@ std::set<ClonableMemoryObject *> SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
     /*
      * Fetch the next loop-carried dependence.
      */
-    auto depValue = dependency->getOutgoingT();
+    auto depValue = dependency->getSrc();
     auto inst = dyn_cast<Instruction>(depValue);
     if (!inst) {
       return {};

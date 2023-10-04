@@ -53,8 +53,8 @@ struct ElementTraits<GraphType, NodeType, SCC>
     auto edge = nodeWrapper->outgoingEdgeInstances
                     [nodeIter - nodeWrapper->outgoingNodeInstances.begin()];
     for (DGEdge<Value> *edge : edge->getSubEdges()) {
-      printValueStr(edge->getOutgoingT(), ros);
-      printValueStr(edge->getIncomingT(), ros << " -> ");
+      printValueStr(edge->getSrc(), ros);
+      printValueStr(edge->getDst(), ros << " -> ");
       ros << " ; ";
     }
     return ros.str();

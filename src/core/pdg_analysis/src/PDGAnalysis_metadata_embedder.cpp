@@ -113,9 +113,9 @@ void PDGAnalysis::embedEdgesAsMetadata(
   for (auto &edge : pdg->getSortedDependences()) {
     if (edge->isMemoryDependence()) {
       auto edgeM = this->getEdgeMetadata(edge, C, nodeIDMap);
-      if (auto arg = dyn_cast<Argument>(edge->getOutgoingT())) {
+      if (auto arg = dyn_cast<Argument>(edge->getSrc())) {
         functionEdgesMap[arg->getParent()].push_back(edgeM);
-      } else if (auto inst = dyn_cast<Instruction>(edge->getOutgoingT())) {
+      } else if (auto inst = dyn_cast<Instruction>(edge->getSrc())) {
         functionEdgesMap[inst->getFunction()].push_back(edgeM);
       }
     }

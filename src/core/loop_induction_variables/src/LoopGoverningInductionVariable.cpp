@@ -214,7 +214,7 @@ LoopGoverningInductionVariable::LoopGoverningInductionVariable(
           continue;
         }
 
-        auto outgoingValue = edge->getOutgoingT();
+        auto outgoingValue = edge->getSrc();
         if (!scc.isInternal(outgoingValue)) {
           continue;
         }

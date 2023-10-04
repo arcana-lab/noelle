@@ -535,8 +535,8 @@ void SequentialSegment::printSCCInfo(
      */
     errs() << prefixString << "    Loop-carried data dependences\n";
     for (auto dep : lcSCC->getLoopCarriedDependences()) {
-      auto fromInst = dep->getOutgoingT();
-      auto toInst = dep->getIncomingT();
+      auto fromInst = dep->getSrc();
+      auto toInst = dep->getDst();
       assert(scc->isInternal(fromInst) || scc->isInternal(toInst));
       errs()
           << prefixString << "      " << *fromInst << " -> " << *toInst << "\n";

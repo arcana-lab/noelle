@@ -79,13 +79,9 @@ public:
 
   DGNode<T> *getDstNode(void) const;
 
-  T *getOutgoingT() const {
-    return from->getT();
-  }
+  T *getSrc(void) const ;
 
-  T *getIncomingT() const {
-    return to->getT();
-  }
+  T *getDst(void) const ;
 
   bool isMemoryDependence() const {
     return memory;
@@ -351,6 +347,16 @@ DGNode<T> *DGEdgeBase<T, SubT>::getSrcNode(void) const {
 template <class T, class SubT>
 DGNode<T> *DGEdgeBase<T, SubT>::getDstNode(void) const {
   return to;
+}
+
+template <class T, class SubT>
+T *DGEdgeBase<T, SubT>::getSrc(void) const {
+  return from->getT();
+}
+
+template <class T, class SubT>
+T *DGEdgeBase<T, SubT>::getDst(void) const {
+  return to->getT();
 }
 
 } // namespace llvm::noelle

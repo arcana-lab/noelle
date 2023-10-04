@@ -195,6 +195,11 @@ protected:
   std::shared_ptr<DepIdReverseMap_t> depLookupMap;
 };
 
+
+
+
+
+
 /*
  * DG<T> class method implementations
  */
@@ -309,7 +314,7 @@ std::unordered_set<DGNode<T> *> DG<T>::getTopLevelNodes(bool onlyInternal) {
     for (auto incomingE : node->getIncomingEdges()) {
       bool edgeToSelf = (incomingE->getSrcNode() == node);
       bool edgeToExternal =
-          onlyInternal && isExternal(incomingE->getOutgoingT());
+          onlyInternal && isExternal(incomingE->getSrc());
       noOtherIncoming &= edgeToSelf || edgeToExternal;
     }
     if (noOtherIncoming)
@@ -567,8 +572,8 @@ std::vector<DGEdge<T> *> DG<T>::sortDependences(
     assert(d1 != nullptr);
     assert(d2 != nullptr);
 
-    auto src1 = d1->getOutgoingT();
-    auto src2 = d2->getOutgoingT();
+    auto src1 = d1->getSrc();
+    auto src2 = d2->getSrc();
     assert(src1 != nullptr);
     assert(src2 != nullptr);
     if (src1 < src2) {
@@ -579,8 +584,8 @@ std::vector<DGEdge<T> *> DG<T>::sortDependences(
     }
     assert(src1 == src2);
 
-    auto dst1 = d1->getIncomingT();
-    auto dst2 = d2->getIncomingT();
+    auto dst1 = d1->getDst();
+    auto dst2 = d2->getDst();
     assert(dst1 != nullptr);
     assert(dst2 != nullptr);
     if (dst1 < dst2) {

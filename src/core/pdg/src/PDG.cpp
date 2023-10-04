@@ -257,7 +257,7 @@ bool PDG::iterateOverDependencesFrom(
      * Fetch the destination value.
      */
     auto edge = *edgeIt;
-    auto destValue = edge->getIncomingT();
+    auto destValue = edge->getDst();
 
     /*
      * Check if this is a control dependence.
@@ -322,7 +322,7 @@ bool PDG::iterateOverDependencesTo(
      * Fetch the destination value.
      */
     auto edge = *edgeIt;
-    auto srcValue = edge->getOutgoingT();
+    auto srcValue = edge->getSrc();
 
     /*
      * Check if this is a control dependence.

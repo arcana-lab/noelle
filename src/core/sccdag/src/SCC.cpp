@@ -42,12 +42,12 @@ SCC::SCC(std::set<DGNode<Value> *> internalNodes) {
   std::set<DGNode<Value> *> externalNodes;
   for (auto node : internalNodes) {
     for (auto edge : node->getOutgoingEdges()) {
-      if (internalValues.find(edge->getIncomingT()) == internalValues.end()) {
+      if (internalValues.find(edge->getDst()) == internalValues.end()) {
         externalNodes.insert(edge->getDstNode());
       }
     }
     for (auto edge : node->getIncomingEdges()) {
-      if (internalValues.find(edge->getOutgoingT()) == internalValues.end()) {
+      if (internalValues.find(edge->getSrc()) == internalValues.end()) {
         externalNodes.insert(edge->getSrcNode());
       }
     }
@@ -83,7 +83,7 @@ void SCC::copyNodesAndEdges(std::set<DGNode<Value> *> internalNodes,
    */
   for (auto node : internalNodes) {
     for (auto edge : node->getOutgoingEdges()) {
-      auto incomingT = edge->getIncomingT();
+      auto incomingT = edge->getDst();
       if (isExternal(incomingT))
         continue;
       copyAddEdge(*edge);

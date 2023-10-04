@@ -32,8 +32,8 @@ MDNode *PDGAnalysis::getEdgeMetadata(
     unordered_map<Value *, MDNode *> &nodeIDMap) {
   assert(edge != nullptr);
   Metadata *edgeM[] = {
-    nodeIDMap[edge->getOutgoingT()],
-    nodeIDMap[edge->getIncomingT()],
+    nodeIDMap[edge->getSrc()],
+    nodeIDMap[edge->getDst()],
     MDNode::get(
         C,
         MDString::get(C, edge->isMemoryDependence() ? "true" : "false")),
@@ -63,8 +63,8 @@ MDNode *PDGAnalysis::getSubEdgesMetadata(
 
   for (auto &subEdge : edge->getSubEdges()) {
     Metadata *subEdgeM[] = {
-      nodeIDMap[subEdge->getOutgoingT()],
-      nodeIDMap[subEdge->getIncomingT()],
+      nodeIDMap[subEdge->getSrc()],
+      nodeIDMap[subEdge->getDst()],
       MDNode::get(
           C,
           MDString::get(C, edge->isMemoryDependence() ? "true" : "false")),

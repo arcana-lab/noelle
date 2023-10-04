@@ -385,8 +385,8 @@ void SCCDAG::computeReachabilityAmongSCCs(void) {
    * Populate bitMatrix with all reported dependences among SCC nodes.
    */
   for (auto *SCCEdge : this->getEdges()) {
-    const SCC *srcSCC = SCCEdge->getOutgoingT();
-    const SCC *dstSCC = SCCEdge->getIncomingT();
+    const SCC *srcSCC = SCCEdge->getSrc();
+    const SCC *dstSCC = SCCEdge->getDst();
     ordered.set(sccIndexes[srcSCC], sccIndexes[dstSCC]);
   }
 

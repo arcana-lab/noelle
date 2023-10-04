@@ -145,7 +145,7 @@ void DSWP::collectControlQueueInfo(LoopDependenceInfo *LDI, Noelle &par) {
       if (conditionToBranchDependency->isControlDependence())
         continue;
 
-      auto condition = conditionToBranchDependency->getOutgoingT();
+      auto condition = conditionToBranchDependency->getSrc();
       auto conditionSCC = sccdag->sccOfValue(condition);
       auto conditionSCCAttrs = sccManager->getSCCAttrs(conditionSCC);
       if (this->canBeCloned(conditionSCCAttrs))
@@ -261,7 +261,7 @@ void DSWP::collectDataAndMemoryQueueInfo(LoopDependenceInfo *LDI, Noelle &par) {
     for (auto scc : allSCCs) {
       for (auto sccEdge :
            sccManager->getSCCDAG()->fetchNode(scc)->getIncomingEdges()) {
-        auto fromSCC = sccEdge->getOutgoingT();
+        auto fromSCC = sccEdge->getSrc();
         auto fromSCCInfo = sccManager->getSCCAttrs(fromSCC);
         if (this->canBeCloned(fromSCCInfo)) {
           continue;
@@ -279,8 +279,8 @@ void DSWP::collectDataAndMemoryQueueInfo(LoopDependenceInfo *LDI, Noelle &par) {
           if (instructionEdge->isControlDependence())
             continue;
 
-          auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
-          auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
+          auto producer = cast<Instruction>(instructionEdge->getSrc());
+          auto consumer = cast<Instruction>(instructionEdge->getDst());
 
           /*
            * TODO: Handle memory dependencies and enable synchronization queues

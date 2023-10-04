@@ -42,7 +42,7 @@ CallGraphWrapper::CallGraphWrapper(CallGraph *graph)
 
   for (auto caller : graph->getFunctionNodes()) {
     auto callerWrapper = nodeToWrapperMap.at(caller);
-    for (auto edge : caller->getOutgoingEdges()) {
+    for (auto edge : caller->getSrcEdges()) {
       auto callee = edge->getCallee();
       auto calleeWrapper = nodeToWrapperMap.at(callee);
       callerWrapper->outgoingNodeInstances.push_back(calleeWrapper);

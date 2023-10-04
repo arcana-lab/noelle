@@ -66,8 +66,8 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
         break;
       }
 
-      auto fromInst = dyn_cast<Instruction>(dep->getOutgoingT());
-      auto toInst = dyn_cast<Instruction>(dep->getIncomingT());
+      auto fromInst = dyn_cast<Instruction>(dep->getSrc());
+      auto toInst = dyn_cast<Instruction>(dep->getDst());
       areAllDataLCDsFromDisjointMemoryAccesses &=
           fromInst && toInst
           && domainSpaceAnalysis

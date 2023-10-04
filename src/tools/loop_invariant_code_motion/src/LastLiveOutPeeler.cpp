@@ -197,7 +197,7 @@ LastLiveOutPeeler::LastLiveOutPeeler(LoopDependenceInfo const &LDI,
 //   loopCarriedDependencies->getLoopCarriedDependenciesForLoop(*loopStructure);
 //   std::unordered_set<Value *> loopCarriedConsumers{};
 //   for (auto dependency : outermostLoopCarriedDependencies) {
-//     auto consumer = dependency->getIncomingT();
+//     auto consumer = dependency->getDst();
 //     this->loopCarriedConsumers.insert(consumer);
 //   }
 

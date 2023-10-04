@@ -65,8 +65,8 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
   /*
    * Fetch the instructions involved in the dependence.
    */
-  auto producer = edge->getOutgoingT();
-  auto consumer = edge->getIncomingT();
+  auto producer = edge->getSrc();
+  auto consumer = edge->getDst();
 
   /*
    * Only dependences between instructions can be loop-carried.
@@ -230,7 +230,7 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::
       continue;
     }
 
-    auto consumer = edge->getIncomingT();
+    auto consumer = edge->getDst();
     auto consumerI = cast<Instruction>(consumer);
     auto consumerLoop = loopNode->getInnermostLoopThatContains(consumerI);
     if (consumerLoop != &LS) {
@@ -257,14 +257,14 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::
         continue;
       }
 
-      auto consumer = edge->getIncomingT();
+      auto consumer = edge->getDst();
       auto consumerI = cast<Instruction>(consumer);
       auto consumerLoop = loopNode->getInnermostLoopThatContains(consumerI);
       if (consumerLoop != &LS) {
         continue;
       }
 
-      auto producer = edge->getOutgoingT();
+      auto producer = edge->getSrc();
       auto producerI = dyn_cast<Instruction>(producer);
       if (producerI == NULL) {
         continue;

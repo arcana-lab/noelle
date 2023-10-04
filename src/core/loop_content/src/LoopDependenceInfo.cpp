@@ -333,8 +333,8 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
       if (!edge->isMemoryDependence()) {
         continue;
       }
-      auto vo = edge->getOutgoingT();
-      auto vi = edge->getIncomingT();
+      auto vo = edge->getSrc();
+      auto vi = edge->getDst();
       if (!isa<CallBase>(vo)) {
         continue;
       }
@@ -523,8 +523,8 @@ void LoopDependenceInfo::
     /*
      * Only dependences between instructions can be removed.
      */
-    auto producer = dyn_cast<Instruction>(edge->getOutgoingT());
-    auto consumer = dyn_cast<Instruction>(edge->getIncomingT());
+    auto producer = dyn_cast<Instruction>(edge->getSrc());
+    auto consumer = dyn_cast<Instruction>(edge->getDst());
     if (!producer || !consumer) {
       continue;
     }
@@ -597,8 +597,8 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
      * Only dependences between instructions can be removed by cloning memory
      * objects.
      */
-    auto producer = dyn_cast<Instruction>(edge->getOutgoingT());
-    auto consumer = dyn_cast<Instruction>(edge->getIncomingT());
+    auto producer = dyn_cast<Instruction>(edge->getSrc());
+    auto consumer = dyn_cast<Instruction>(edge->getDst());
     if (!producer || !consumer) {
       continue;
     }

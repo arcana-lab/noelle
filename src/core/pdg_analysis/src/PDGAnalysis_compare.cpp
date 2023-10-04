@@ -54,7 +54,7 @@ bool PDGAnalysis::compareEdges(
     std::function<void(DGEdge<Value> *dependenceMissingInPdg2)> func) {
   for (auto &edge1 : pdg1->getEdges()) {
     auto edgeSet =
-        pdg2->getDependences(edge1->getOutgoingT(), edge1->getIncomingT());
+        pdg2->getDependences(edge1->getSrc(), edge1->getDst());
     if (edgeSet.empty()) {
       func(edge1);
       return false;
@@ -101,16 +101,16 @@ bool PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
     errs()
         << errorPrefix
         << "  PDG2 does not have the following dependence that exists in PDG1:\n";
-    errs() << errorPrefix << "    From: " << *d->getOutgoingT() << "\n";
-    errs() << errorPrefix << "    To: " << *d->getIncomingT() << "\n";
+    errs() << errorPrefix << "    From: " << *d->getSrc() << "\n";
+    errs() << errorPrefix << "    To: " << *d->getDst() << "\n";
     return;
   };
   auto printErrorPDG2 = [&errorPrefix](DGEdge<Value> *d) {
     errs()
         << errorPrefix
         << "  PDG1 does not have the following dependence that exists in PDG2:\n";
-    errs() << errorPrefix << "    From: " << *d->getOutgoingT() << "\n";
-    errs() << errorPrefix << "    To: " << *d->getIncomingT() << "\n";
+    errs() << errorPrefix << "    From: " << *d->getSrc() << "\n";
+    errs() << errorPrefix << "    To: " << *d->getDst() << "\n";
     return;
   };
 
