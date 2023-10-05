@@ -116,41 +116,40 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
           auto stepMultiplier = 0;
 
           /*
-           * 1. In the PHI's SCC, there is another PHI that has one AddRecExpr
+           * 1. In the PHI's SCC, there is one PHI that has an AddRecExpr
            * SCEV and is contained in the subloop of the original loop.
            */
           bool foundOnePHI = false;
           PHINode *internalPHI = nullptr;
-          for (auto internalNode : sccContainingIV->getInstructions()) {
-            if (isa<PHINode>(internalNode) && internalNode != &phi) {
-              internalPHI = cast<PHINode>(internalNode);
 
-              if (SE.getSCEV(internalPHI)->getSCEVType()
-                      == SCEVTypes::scAddRecExpr
-                  && this->loop->isIncludedInItsSubLoops(internalPHI)) {
-                if (!foundOnePHI)
-                  foundOnePHI = true;
-                else {
-                  foundOnePHI = false;
-                  break;
-                }
+          sccContainingIV->iterateOverInstructions([&](Instruction *I) -> bool {
+            if (isa<PHINode>(I) && I != &phi
+                && SE.getSCEV(I)->getSCEVType() == SCEVTypes::scAddRecExpr
+                && this->loop->isIncludedInItsSubLoops(I)) {
+              if (!foundOnePHI) {
+                foundOnePHI = true;
+                internalPHI = cast<PHINode>(I);
+              } else {
+                foundOnePHI = false;
+                return true;
               }
             }
-          }
+            return false;
+          });
 
           if (!foundOnePHI)
             continue;
 
           /*
            * 2. The subloop has only one exit condition, which compares
-           * the subloop's IV to a constant.
+           * the subloop's governing IV to a constant.
            */
           auto subloop = this->loop->getInnermostLoopThatContains(internalPHI);
           if (subloop->getLoopExitBasicBlocks().size() != 1)
             continue;
+
           if (auto subloopHeaderTerminator =
                   dyn_cast<BranchInst>(subloop->getHeader()->getTerminator())) {
-
             assert(isa<CmpInst>(subloopHeaderTerminator->getCondition())
                    && "subloop loop exit condition not CmpInst!\n");
             auto subloopExitCond =
@@ -158,18 +157,23 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
             auto subloopExitCondL = subloopExitCond->getOperand(0);
             auto subloopExitCondR = subloopExitCond->getOperand(1);
 
+            const SCEV *subloopIV = nullptr;
             const SCEV *subloopExitSCEV = nullptr;
-            if (subloopExitCondL == internalPHI) {
-              if (SE.getSCEV(subloopExitCondR)->getSCEVType()
-                  == SCEVTypes::scConstant)
-                subloopExitSCEV = SE.getSCEV(subloopExitCondR);
-            } else if (subloopExitCondR == internalPHI) {
-              if (SE.getSCEV(subloopExitCondL)->getSCEVType()
-                  == SCEVTypes::scConstant)
-                subloopExitSCEV = SE.getSCEV(subloopExitCondL);
+            if (SE.getSCEV(subloopExitCondL)->getSCEVType()
+                    == SCEVTypes::scAddRecExpr
+                && SE.getSCEV(subloopExitCondR)->getSCEVType()
+                       == SCEVTypes::scConstant) {
+              subloopIV = SE.getSCEV(subloopExitCondL);
+              subloopExitSCEV = SE.getSCEV(subloopExitCondR);
+            } else if (SE.getSCEV(subloopExitCondR)->getSCEVType()
+                           == SCEVTypes::scAddRecExpr
+                       && SE.getSCEV(subloopExitCondL)->getSCEVType()
+                              == SCEVTypes::scConstant) {
+              subloopIV = SE.getSCEV(subloopExitCondR);
+              subloopExitSCEV = SE.getSCEV(subloopExitCondL);
             }
 
-            if (subloopExitSCEV == nullptr)
+            if (subloopExitSCEV == nullptr || subloopIV == nullptr)
               continue;
 
             /*
@@ -180,30 +184,30 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
             auto subloopExitConstant =
                 cast<SCEVConstant>(subloopExitSCEV)->getValue()->getSExtValue();
 
-            assert(SE.getSCEV(internalPHI)->getSCEVType()
-                   == SCEVTypes::scAddRecExpr);
-            auto subloopGoverningIV =
-                cast<SCEVAddRecExpr>(SE.getSCEV(internalPHI));
+            assert(subloopIV->getSCEVType() == SCEVTypes::scAddRecExpr);
+            auto subloopIVSCEV = cast<SCEVAddRecExpr>(subloopIV);
+
             if (auto startSCEVConstant =
-                    dyn_cast<SCEVConstant>(subloopGoverningIV->getStart())) {
+                    dyn_cast<SCEVConstant>(subloopIVSCEV->getStart())) {
               auto subloopStartValue =
                   startSCEVConstant->getValue()->getSExtValue();
               if (auto stepSCEVConstant = dyn_cast<SCEVConstant>(
-                      subloopGoverningIV->getStepRecurrence(SE))) {
+                      subloopIVSCEV->getStepRecurrence(SE))) {
                 auto subloopStepSize =
                     stepSCEVConstant->getValue()->getSExtValue();
                 stepMultiplier =
                     (subloopExitConstant - subloopStartValue) / subloopStepSize;
 
-                IV = new InductionVariable(loop,
-                                           IVM,
-                                           SE,
-                                           stepMultiplier,
-                                           &phi,
-                                           internalPHI,
-                                           *sccContainingIV,
-                                           loopEnv,
-                                           referentialExpander);
+                IV = new InductionVariable(
+                    loop,
+                    IVM,
+                    SE,
+                    stepMultiplier,
+                    &phi,
+                    std::unordered_set<PHINode *>({ internalPHI }),
+                    *sccContainingIV,
+                    loopEnv,
+                    referentialExpander);
               }
             }
           }
