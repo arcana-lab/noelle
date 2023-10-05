@@ -100,8 +100,9 @@ bool LoopIterationSpaceAnalysis::
   // "\t"; space2->memoryAccessor->print(errs() << "Space 2 accessor: "); errs()
   // << "\n";
 
-  auto getLoopForIV = [&](InductionVariable *iv) -> LoopStructure * {
-    auto stepPHIs = iv->getPHIsInvolvedInComputingIVStep();
+  auto getLoopsForIV =
+      [&](InductionVariable *iv) -> std::unordered_set<LoopStructure *> {
+    auto stepPHIs = iv->getStepPHIs();
     std::unordered_set<LoopStructure *> loopsForIV;
     for (std::unordered_set<PHINode *>::iterator it = stepPHIs.begin();
          it != stepPHIs.end();
@@ -146,8 +147,12 @@ bool LoopIterationSpaceAnalysis::
 
     auto scev1 = space1->subscripts[subscriptIdx];
     auto scev2 = space2->subscripts[subscriptIdx];
-    if (rootLoopStructure == loop1 && scev1 != scev2)
-      return false;
+    for (std::unordered_set<LoopStructure *>::iterator it = loops1.begin();
+         it != loops1.end();
+         it++) {
+      if (rootLoopStructure == *it && scev1 != scev2)
+        return false;
+    }
   }
 
   return true;
