@@ -116,7 +116,7 @@ void PDG::setEntryPointAt(Function &F) {
   assert(entryNode != nullptr);
 }
 
-DGEdge<Value> *PDG::addEdge(Value *from, Value *to) {
+DGEdgeBase<Value, Value> *PDG::addEdge(Value *from, Value *to) {
   return this->DG<Value>::addEdge(from, to);
 }
 
@@ -166,7 +166,7 @@ PDG *PDG::createSubgraphFromValues(std::vector<Value *> &valueList,
 PDG *PDG::createSubgraphFromValues(
     std::vector<Value *> &valueList,
     bool linkToExternal,
-    std::unordered_set<DGEdge<Value> *> edgesToIgnore) {
+    std::unordered_set<DGEdgeBase<Value, Value> *> edgesToIgnore) {
   if (valueList.empty())
     return nullptr;
   auto newPDG = new PDG(valueList);
@@ -185,7 +185,7 @@ void PDG::copyEdgesInto(PDG *newPDG, bool linkToExternal) {
 void PDG::copyEdgesInto(
     PDG *newPDG,
     bool linkToExternal,
-    std::unordered_set<DGEdge<Value> *> const &edgesToIgnore) {
+    std::unordered_set<DGEdgeBase<Value, Value> *> const &edgesToIgnore) {
   for (auto *oldEdge : allEdges) {
     if (edgesToIgnore.find(oldEdge) != edgesToIgnore.end()) {
       continue;
@@ -235,7 +235,7 @@ bool PDG::iterateOverDependencesFrom(
     bool includeControlDependences,
     bool includeMemoryDataDependences,
     bool includeRegisterDataDependences,
-    std::function<bool(Value *to, DGEdge<Value> *dependence)>
+    std::function<bool(Value *to, DGEdgeBase<Value, Value> *dependence)>
         functionToInvokePerDependence) {
 
   /*
@@ -300,7 +300,7 @@ bool PDG::iterateOverDependencesTo(
     bool includeControlDependences,
     bool includeMemoryDataDependences,
     bool includeRegisterDataDependences,
-    std::function<bool(Value *fromValue, DGEdge<Value> *dependence)>
+    std::function<bool(Value *fromValue, DGEdgeBase<Value, Value> *dependence)>
         functionToInvokePerDependence) {
 
   /*
@@ -379,7 +379,7 @@ std::vector<Value *> PDG::getSortedValues(void) {
   return s;
 }
 
-std::vector<DGEdge<Value> *> PDG::getSortedDependences(void) {
+std::vector<DGEdgeBase<Value, Value> *> PDG::getSortedDependences(void) {
 
   /*
    * Sort the edges.
@@ -389,8 +389,8 @@ std::vector<DGEdge<Value> *> PDG::getSortedDependences(void) {
   return v;
 }
 
-std::unordered_set<DGEdge<Value> *> PDG::getDependences(Value *from,
-                                                        Value *to) {
+std::unordered_set<DGEdgeBase<Value, Value> *> PDG::getDependences(Value *from,
+                                                                   Value *to) {
 
   /*
    * Fetch the nodes.

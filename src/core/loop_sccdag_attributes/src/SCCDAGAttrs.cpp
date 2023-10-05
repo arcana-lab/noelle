@@ -379,11 +379,12 @@ GenericSCC *SCCDAGAttrs::getSCCAttrs(SCC *scc) const {
 }
 
 std::pair<std::unordered_map<SCC *, std::unordered_set<SCC *>>,
-          std::unordered_map<SCC *, std::unordered_set<DGEdge<SCC> *>>>
+          std::unordered_map<SCC *, std::unordered_set<DGEdgeBase<SCC, SCC> *>>>
 SCCDAGAttrs::computeSCCDAGWhenSCCsAreIgnored(
     std::function<bool(GenericSCC *)> ignoreSCC) const {
   std::unordered_map<SCC *, std::unordered_set<SCC *>> parentsViaClones;
-  std::unordered_map<SCC *, std::unordered_set<DGEdge<SCC> *>> edgesViaClones;
+  std::unordered_map<SCC *, std::unordered_set<DGEdgeBase<SCC, SCC> *>>
+      edgesViaClones;
 
   auto addIncomingNodes = [&](std::queue<DGNode<SCC> *> &queue,
                               DGNode<SCC> *node) -> void {

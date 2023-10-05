@@ -45,19 +45,21 @@ protected:
   Value *identity;
   PHINode *headerAccumulator;
 
-  ReductionSCC(SCCKind K,
-               SCC *s,
-               LoopStructure *loop,
-               const std::set<DGEdge<Value> *> &loopCarriedDependences,
-               DominatorSummary &dom);
+  ReductionSCC(
+      SCCKind K,
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences,
+      DominatorSummary &dom);
 
-  ReductionSCC(SCCKind K,
-               SCC *s,
-               LoopStructure *loop,
-               const std::set<DGEdge<Value> *> &loopCarriedDependences,
-               Value *initialValue,
-               PHINode *accumulator,
-               Value *identity);
+  ReductionSCC(
+      SCCKind K,
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences,
+      Value *initialValue,
+      PHINode *accumulator,
+      Value *identity);
 
   void initializeObject(LoopStructure &loop);
 };

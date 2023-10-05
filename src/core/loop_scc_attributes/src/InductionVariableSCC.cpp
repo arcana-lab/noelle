@@ -27,7 +27,7 @@ InductionVariableSCC::InductionVariableSCC(
     SCCKind K,
     SCC *s,
     LoopStructure *loop,
-    const std::set<DGEdge<Value> *> &loopCarriedDependences,
+    const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences,
     DominatorSummary &dom)
   : SingleAccumulatorRecomputableSCC{ K,
                                       s,

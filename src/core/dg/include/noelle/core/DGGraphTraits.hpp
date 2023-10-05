@@ -65,8 +65,10 @@ public:
 
     for (auto node : this->nodes) {
       auto wrapped = node->wrappedNode;
-      std::set<DGEdge<T> *> allOutgoingEdges{ wrapped->begin_outgoing_edges(),
-                                              wrapped->end_outgoing_edges() };
+      std::set<DGEdgeBase<T, T> *> allOutgoingEdges{
+        wrapped->begin_outgoing_edges(),
+        wrapped->end_outgoing_edges()
+      };
       for (auto edge : allOutgoingEdges) {
         auto unwrappedOtherNode = edge->getDstNode();
         if (nodeToWrapperMap.find(unwrappedOtherNode)
@@ -124,7 +126,7 @@ public:
 
   DGNode<T> *wrappedNode;
   std::vector<NodeRef> outgoingNodeInstances;
-  std::vector<DGEdge<T> *> outgoingEdgeInstances;
+  std::vector<DGEdgeBase<T, T> *> outgoingEdgeInstances;
 };
 
 /***************************************************************************************************
@@ -175,8 +177,7 @@ struct ElementTraitsBase : public DefaultDOTGraphTraits {
                 : (edge->isMemoryDependence() ? memColor : varColor));
     if (edge->isLoopCarriedDependence())
       ros << ", penwidth=2";
-    if (dg->isExternal(edge->getSrc())
-        || dg->isExternal(edge->getDst()))
+    if (dg->isExternal(edge->getSrc()) || dg->isExternal(edge->getDst()))
       ros << ",style=dotted";
     // dump the edge id set by the map
     if (auto edgeId = dg->getEdgeID(edge)) {

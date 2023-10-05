@@ -32,7 +32,7 @@ public:
   LoopCarriedUnknownSCC(
       SCC *s,
       LoopStructure *loop,
-      const std::set<DGEdge<Value> *> &loopCarriedDependences);
+      const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences);
 
   LoopCarriedUnknownSCC() = delete;
 

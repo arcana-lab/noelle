@@ -237,8 +237,7 @@ void PDGStats::collectStatsForLoopEdges(
   if (programLoops.find(&F) != programLoops.end()) {
     auto loopForest = programLoops[&F];
     for (auto loopTree : loopForest->getTrees()) {
-      auto visitor = [this, &lsToLDI](LoopTree *n,
-                                      uint32_t level) -> bool {
+      auto visitor = [this, &lsToLDI](LoopTree *n, uint32_t level) -> bool {
         /*
          * Fetch the loop.
          */
@@ -335,7 +334,7 @@ uint64_t PDGStats::computePotentialEdges(uint64_t totLoads,
   return tot;
 }
 
-void PDGStats::analyzeDependence(DGEdge<Value> *edge) {
+void PDGStats::analyzeDependence(DGEdgeBase<Value, Value> *edge) {
   this->numberOfEdges++;
 
   /*

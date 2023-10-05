@@ -171,7 +171,7 @@ InvariantManager::InvarianceChecker::InvarianceChecker(
       this->invariants.insert(inst);
     }
 
-    auto isEvolving = [this](Value *toValue, DGEdge<Value> *dep) {
+    auto isEvolving = [this](Value *toValue, DGEdgeBase<Value, Value> *dep) {
       return this->isEvolvingValue(toValue, dep);
     };
     auto canEvolve =
@@ -209,8 +209,9 @@ InvariantManager::InvarianceChecker::InvarianceChecker(
   return;
 }
 
-bool InvariantManager::InvarianceChecker::isEvolvingValue(Value *toValue,
-                                                          DGEdge<Value> *dep) {
+bool InvariantManager::InvarianceChecker::isEvolvingValue(
+    Value *toValue,
+    DGEdgeBase<Value, Value> *dep) {
 
   /*
    * Check if @toValue isn't an instruction.
@@ -299,7 +300,7 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue(Value *toValue,
   }
   this->dependencyValuesBeingChecked.insert(toInst);
 
-  auto isEvolving = [this](Value *toValue, DGEdge<Value> *dep) {
+  auto isEvolving = [this](Value *toValue, DGEdgeBase<Value, Value> *dep) {
     return this->isEvolvingValue(toValue, dep);
   };
   auto canEvolve =

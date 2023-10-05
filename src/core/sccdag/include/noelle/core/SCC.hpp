@@ -105,11 +105,12 @@ private:
 };
 
 template <>
-class DGEdge<SCC> : public DGEdgeBase<SCC, Value> {
+class DGEdgeBase<SCC, SCC> : public DGEdgeBase<SCC, Value> {
 public:
-  DGEdge(DGNode<SCC> *src, DGNode<SCC> *dst)
+  DGEdgeBase(DGNode<SCC> *src, DGNode<SCC> *dst)
     : DGEdgeBase<SCC, Value>(src, dst) {}
-  DGEdge(const DGEdge<SCC> &oldEdge) : DGEdgeBase<SCC, Value>(oldEdge) {}
+  DGEdgeBase(const DGEdgeBase<SCC, SCC> &oldEdge)
+    : DGEdgeBase<SCC, Value>(oldEdge) {}
 };
 
 } // namespace llvm::noelle

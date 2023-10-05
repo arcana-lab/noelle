@@ -27,7 +27,7 @@ LoopCarriedSCC::LoopCarriedSCC(
     SCCKind K,
     SCC *s,
     LoopStructure *loop,
-    const std::set<DGEdge<Value> *> &loopCarriedDependences,
+    const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences,
     bool commutative)
   : GenericSCC(K, s, loop),
     lcDeps{ loopCarriedDependences },
@@ -35,7 +35,7 @@ LoopCarriedSCC::LoopCarriedSCC(
   return;
 }
 
-std::set<DGEdge<Value> *> LoopCarriedSCC::getLoopCarriedDependences(
+std::set<DGEdgeBase<Value, Value> *> LoopCarriedSCC::getLoopCarriedDependences(
     void) const {
   return this->lcDeps;
 }

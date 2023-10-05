@@ -303,7 +303,7 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction(PDG *pdg, Function &F) {
 }
 
 void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
-  std::set<DGEdge<Value> *> removeEdges;
+  std::set<DGEdgeBase<Value, Value> *> removeEdges;
 
   /*
    * Collect the edges in the PDG that can be safely removed.
@@ -347,7 +347,8 @@ void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
   return;
 }
 
-bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge) {
+bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg,
+                                         DGEdgeBase<Value, Value> *edge) {
   assert(pdg != nullptr);
   assert(edge != nullptr);
 
@@ -495,7 +496,8 @@ bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge) {
 
 // NOTE: Loads between random parts of separate GVs and both edges between GVs
 // should be removed
-bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency(DGEdge<Value> *edge) {
+bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency(
+    DGEdgeBase<Value, Value> *edge) {
 
   /*
    * Check if this is a memory dependence.
@@ -549,7 +551,7 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency(DGEdge<Value> *edge) {
   return !loopCarried;
 }
 
-bool PDGAnalysis::isBackedgeIntoSameGlobal(DGEdge<Value> *edge) {
+bool PDGAnalysis::isBackedgeIntoSameGlobal(DGEdgeBase<Value, Value> *edge) {
   auto access1 = allocAA->getPrimitiveArrayAccess(edge->getSrc());
   auto access2 = allocAA->getPrimitiveArrayAccess(edge->getDst());
 
@@ -577,16 +579,13 @@ bool PDGAnalysis::isBackedgeIntoSameGlobal(DGEdge<Value> *edge) {
   if (GEP1 && GEP2) {
     if (!allocAA->areIdenticalGEPAccessesInSameLoop(GEP1, GEP2))
       return false;
-    if (!isa<LoadInst>(edge->getSrc())
-        || !isa<LoadInst>(edge->getDst()))
+    if (!isa<LoadInst>(edge->getSrc()) || !isa<LoadInst>(edge->getDst()))
       return false;
   } else if (GEP1) {
-    if (!isa<StoreInst>(edge->getSrc())
-        || !isa<LoadInst>(edge->getDst()))
+    if (!isa<StoreInst>(edge->getSrc()) || !isa<LoadInst>(edge->getDst()))
       return false;
   } else if (GEP2) {
-    if (!isa<LoadInst>(edge->getSrc())
-        || !isa<StoreInst>(edge->getDst()))
+    if (!isa<LoadInst>(edge->getSrc()) || !isa<StoreInst>(edge->getDst()))
       return false;
   } else
     return false;
@@ -603,7 +602,8 @@ bool PDGAnalysis::isBackedgeIntoSameGlobal(DGEdge<Value> *edge) {
   return true;
 }
 
-bool PDGAnalysis::isMemoryAccessIntoDifferentArrays(DGEdge<Value> *edge) {
+bool PDGAnalysis::isMemoryAccessIntoDifferentArrays(
+    DGEdgeBase<Value, Value> *edge) {
   Value *array1 = allocAA->getPrimitiveArrayAccess(edge->getSrc()).first;
   Value *array2 = allocAA->getPrimitiveArrayAccess(edge->getDst()).first;
   return (array1 && array2 && array1 != array2);
@@ -655,7 +655,8 @@ bool PDGAnalysis::canPrecedeInCurrentIteration(Instruction *from,
   return false;
 }
 
-bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions(DGEdge<Value> *edge) {
+bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions(
+    DGEdgeBase<Value, Value> *edge) {
 
   /*
    * Check if this is a memory dependence.

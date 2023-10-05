@@ -129,7 +129,7 @@ void SCCDAG::markEdgesAndSubEdges(void) {
    *
    * Iterate across SCCs.
    */
-  std::set<DGEdge<SCC> *> clearedEdges;
+  std::set<DGEdgeBase<SCC, SCC> *> clearedEdges;
   for (auto outgoingSCCNode : this->getNodes()) {
 
     /*
@@ -151,7 +151,7 @@ void SCCDAG::markEdgesAndSubEdges(void) {
       /*
        * Find or create unique edge between the two connected SCC
        */
-      std::unordered_set<DGEdge<SCC> *> edgeSet;
+      std::unordered_set<DGEdgeBase<SCC, SCC> *> edgeSet;
       for (auto edge : outgoingSCCNode->getOutgoingEdges()) {
         if (edge->getDstNode() != incomingSCCNode)
           continue;

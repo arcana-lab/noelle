@@ -328,7 +328,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
    * Remove dependences thank to compilation options.
    */
   if (com->arePRVGsNonDeterministic()) {
-    std::set<DGEdge<Value> *> toDelete;
+    std::set<DGEdgeBase<Value, Value> *> toDelete;
     for (auto edge : loopDG->getEdges()) {
       if (!edge->isMemoryDependence()) {
         continue;
@@ -507,7 +507,7 @@ void LoopDependenceInfo::
   /*
    * Identify the dependences to remove.
    */
-  std::unordered_set<DGEdge<Value> *> edgesToRemove;
+  std::unordered_set<DGEdgeBase<Value, Value> *> edgesToRemove;
   for (auto edge :
        LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*rootLoop,
                                                                   loopNode,
@@ -580,7 +580,7 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
   /*
    * Identify opportunities for cloning stack locations.
    */
-  std::unordered_set<DGEdge<Value> *> edgesToRemove;
+  std::unordered_set<DGEdgeBase<Value, Value> *> edgesToRemove;
   for (auto edge : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(
            *rootLoop,
            loopNode,
@@ -746,7 +746,7 @@ SCCDAG *LoopDependenceInfo::computeSCCDAGWithOnlyVariableAndControlDependences(
   /*
    * Collect the dependences that we want to ignore.
    */
-  std::unordered_set<DGEdge<Value> *> memDeps{};
+  std::unordered_set<DGEdgeBase<Value, Value> *> memDeps{};
   for (auto currentDependence : loopDG->getSortedDependences()) {
     if (currentDependence->isMemoryDependence()) {
       memDeps.insert(currentDependence);

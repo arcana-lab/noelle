@@ -58,11 +58,12 @@ LoopCarriedVariable::LoopCarriedVariable(const LoopStructure &loop,
                                                                  loopNode,
                                                                  sccdag);
 
-  std::unordered_set<DGEdge<Value> *> edgesThatExist;
-  std::unordered_set<DGEdge<Value> *> edgesToRemove;
+  std::unordered_set<DGEdgeBase<Value, Value> *> edgesThatExist;
+  std::unordered_set<DGEdgeBase<Value, Value> *> edgesToRemove;
 
   std::unordered_set<Value *> loopCarriedValues{};
-  std::unordered_set<DGEdge<Value> *> loopCarriedDependenciesNotOfVariable{};
+  std::unordered_set<DGEdgeBase<Value, Value> *>
+      loopCarriedDependenciesNotOfVariable{};
 
   for (auto dependency : loopCarriedDependencies) {
     auto consumer = dependency->getDst();

@@ -38,13 +38,14 @@ public:
 
   static bool classof(const GenericSCC *s);
 
-  PeriodicVariableSCC(SCC *s,
-                      LoopStructure *loop,
-                      const std::set<DGEdge<Value> *> &loopCarriedDependences,
-                      DominatorSummary &dom,
-                      Value *initialValue,
-                      Value *period,
-                      Value *step);
+  PeriodicVariableSCC(
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences,
+      DominatorSummary &dom,
+      Value *initialValue,
+      Value *period,
+      Value *step);
 
 protected:
   Value *initialValue;

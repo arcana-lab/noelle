@@ -26,7 +26,7 @@ namespace llvm::noelle {
 UnknownClosedFormSCC::UnknownClosedFormSCC(
     SCC *s,
     LoopStructure *loop,
-    const std::set<DGEdge<Value> *> &loopCarriedDependences,
+    const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences,
     const std::set<Instruction *> &valuesToPropagateAcrossLoopIterations)
   : RecomputableSCC{ UNKNOWN_CLOSED_FORM,
                      s,

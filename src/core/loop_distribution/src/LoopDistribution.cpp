@@ -140,7 +140,8 @@ bool LoopDistribution::splitLoop(LoopDependenceInfo const &LDI,
       return false;
     }
 
-    auto fn = [&loopBBs](Value *v, DGEdge<Value> *dependence) -> bool {
+    auto fn = [&loopBBs](Value *v,
+                         DGEdgeBase<Value, Value> *dependence) -> bool {
       if (!isa<Instruction>(v)) {
         return false;
       }
@@ -232,7 +233,7 @@ void LoopDistribution::recursivelyCollectDependencies(
   auto BBs = LDI.getLoopStructure()->getBasicBlocks();
   auto pdg = LDI.getLoopDG();
   auto fn = [&BBs, &queue, &toPopulate](Value *from,
-                                        DGEdge<Value> *dep) -> bool {
+                                        DGEdgeBase<Value, Value> *dep) -> bool {
     if (!isa<Instruction>(from)) {
       return false;
     }
@@ -304,7 +305,7 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies(
   auto BBs = LDI.getLoopStructure()->getBasicBlocks();
   auto fromFn = [&BBs, &instsToPullOut, &instsToClone](
                     Value *from,
-                    DGEdge<Value> *dependence) -> bool {
+                    DGEdgeBase<Value, Value> *dependence) -> bool {
     if (!isa<Instruction>(from)) {
       return false;
     }
@@ -331,8 +332,9 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies(
     }
     return false;
   };
-  auto toFn = [&BBs, &instsToPullOut](Value *to,
-                                      DGEdge<Value> *dependence) -> bool {
+  auto toFn = [&BBs, &instsToPullOut](
+                  Value *to,
+                  DGEdgeBase<Value, Value> *dependence) -> bool {
     if (!isa<Instruction>(to)) {
       return false;
     }

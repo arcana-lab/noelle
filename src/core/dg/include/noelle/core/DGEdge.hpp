@@ -29,25 +29,16 @@ namespace llvm::noelle {
 enum DataDependenceType { DG_DATA_NONE, DG_DATA_RAW, DG_DATA_WAR, DG_DATA_WAW };
 
 template <class T, class SubT>
-class DGEdgeBase;
-
-template <class T>
-class DGEdge : public DGEdgeBase<T, T> {
-public:
-  DGEdge(DGNode<T> *src, DGNode<T> *dst) : DGEdgeBase<T, T>(src, dst) {}
-  DGEdge(const DGEdge<T> &oldEdge) : DGEdgeBase<T, T>(oldEdge) {}
-};
-
-template <class T, class SubT>
 class DGEdgeBase {
 public:
   DGEdgeBase(DGNode<T> *src, DGNode<T> *dst);
 
   DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge);
 
-  using edges_iterator = typename std::unordered_set<DGEdge<SubT> *>::iterator;
+  using edges_iterator =
+      typename std::unordered_set<DGEdgeBase<SubT, SubT> *>::iterator;
   using edges_const_iterator =
-      typename std::unordered_set<DGEdge<SubT> *>::const_iterator;
+      typename std::unordered_set<DGEdgeBase<SubT, SubT> *>::const_iterator;
 
   edges_iterator begin_sub_edges() {
     return subEdges.begin();
@@ -79,9 +70,9 @@ public:
 
   DGNode<T> *getDstNode(void) const;
 
-  T *getSrc(void) const ;
+  T *getSrc(void) const;
 
-  T *getDst(void) const ;
+  T *getDst(void) const;
 
   bool isMemoryDependence() const {
     return memory;
@@ -170,9 +161,9 @@ public:
     return;
   }
 
-  void addSubEdge(DGEdge<SubT> *edge);
+  void addSubEdge(DGEdgeBase<SubT, SubT> *edge);
 
-  void removeSubEdge(DGEdge<SubT> *edge);
+  void removeSubEdge(DGEdgeBase<SubT, SubT> *edge);
 
   void removeSubEdges(void);
 
@@ -187,7 +178,7 @@ public:
 protected:
   DGNode<T> *from;
   DGNode<T> *to;
-  std::unordered_set<DGEdge<SubT> *> subEdges;
+  std::unordered_set<DGEdgeBase<SubT, SubT> *> subEdges;
   bool memory;
   bool must;
   bool isControl;
@@ -196,11 +187,6 @@ protected:
   DataDependenceType dataDepType;
   SetOfRemedies_ptr remeds;
 };
-
-
-
-
-
 
 template <class T, class SubT>
 DGEdgeBase<T, SubT>::DGEdgeBase(DGNode<T> *src, DGNode<T> *dst)
@@ -234,7 +220,7 @@ DGEdgeBase<T, SubT>::DGEdgeBase(const DGEdgeBase<T, SubT> &oldEdge) {
 }
 
 template <class T, class SubT>
-void DGEdgeBase<T, SubT>::removeSubEdge(DGEdge<SubT> *edge) {
+void DGEdgeBase<T, SubT>::removeSubEdge(DGEdgeBase<SubT, SubT> *edge) {
   subEdges.erase(edge);
 
   return;
@@ -310,7 +296,7 @@ raw_ostream &DGEdgeBase<T, SubT>::print(raw_ostream &stream,
 }
 
 template <class T, class SubT>
-void DGEdgeBase<T, SubT>::addSubEdge(DGEdge<SubT> *edge) {
+void DGEdgeBase<T, SubT>::addSubEdge(DGEdgeBase<SubT, SubT> *edge) {
   subEdges.insert(edge);
   isLoopCarried |= edge->isLoopCarriedDependence();
   if (edge->isRemovableDependence()

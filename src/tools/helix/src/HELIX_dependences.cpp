@@ -53,8 +53,8 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
   constructEdgesFromControlForFunction(taskFunctionDG, *taskBody, doms->PDT);
 
   auto copyEdgeUsingTaskClonedValues =
-      [&](DGEdge<Value> *originalEdge) -> void {
-    DGEdge<Value> edgeToPointToClones{ *originalEdge };
+      [&](DGEdgeBase<Value, Value> *originalEdge) -> void {
+    DGEdgeBase<Value, Value> edgeToPointToClones{ *originalEdge };
 
     /*
      * Loop carry dependencies will be recomputed
