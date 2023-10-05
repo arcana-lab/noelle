@@ -345,6 +345,10 @@ void InductionVariable::deriveStepValue(
     assert(this->stepPHIs.size() == 1
            && "Not one PHI for step value calculation!\n");
     auto stepSCEVPHI = *(stepPHIs.begin());
+<<<<<<< HEAD
+=======
+
+>>>>>>> c4497242 (stepPHIs abstraction added)
     assert(SE.getSCEV(stepSCEVPHI)->getSCEVType() == SCEVTypes::scAddRecExpr);
     this->stepSCEV =
         cast<SCEVAddRecExpr>(SE.getSCEV(stepSCEVPHI))->getStepRecurrence(SE);
