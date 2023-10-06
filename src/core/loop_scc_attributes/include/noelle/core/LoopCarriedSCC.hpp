@@ -30,7 +30,7 @@ class LoopCarriedSCC : public GenericSCC {
 public:
   LoopCarriedSCC() = delete;
 
-  std::set<DGEdgeBase<Value, Value> *> getLoopCarriedDependences(void) const;
+  std::set<DGEdge<Value, Value> *> getLoopCarriedDependences(void) const;
 
   /*
    * @return true if different instances of the SCC executed in different loop
@@ -41,15 +41,14 @@ public:
   static bool classof(const GenericSCC *s);
 
 protected:
-  std::set<DGEdgeBase<Value, Value> *> lcDeps;
+  std::set<DGEdge<Value, Value> *> lcDeps;
   bool _commutative;
 
-  LoopCarriedSCC(
-      SCCKind K,
-      SCC *s,
-      LoopStructure *loop,
-      const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences,
-      bool commutative);
+  LoopCarriedSCC(SCCKind K,
+                 SCC *s,
+                 LoopStructure *loop,
+                 const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+                 bool commutative);
 };
 
 } // namespace llvm::noelle

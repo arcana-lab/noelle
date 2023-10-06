@@ -27,7 +27,7 @@ RecomputableSCC::RecomputableSCC(
     SCCKind K,
     SCC *s,
     LoopStructure *loop,
-    const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences,
+    const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
     const std::set<Instruction *> &vs,
     bool commutative)
   : LoopCarriedSCC{ K, s, loop, loopCarriedDependences, commutative },
@@ -39,7 +39,7 @@ RecomputableSCC::RecomputableSCC(
     SCCKind K,
     SCC *s,
     LoopStructure *loop,
-    const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences,
+    const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
     bool commutative)
   : RecomputableSCC{ K, s, loop, loopCarriedDependences, {}, commutative } {
   return;

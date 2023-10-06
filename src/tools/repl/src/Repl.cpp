@@ -285,7 +285,7 @@ void ReplDriver::removeAllFn() {
   }
 
   auto node = instIdMap->at(instId);
-  list<llvm::noelle::DGEdgeBase<Value, Value> *> edgesToRemove;
+  list<llvm::noelle::DGEdge<Value, Value> *> edgesToRemove;
   for (auto &edge : node->getSrcEdges()) {
     edgesToRemove.push_back(edge);
   }

@@ -303,7 +303,7 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction(PDG *pdg, Function &F) {
 }
 
 void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
-  std::set<DGEdgeBase<Value, Value> *> removeEdges;
+  std::set<DGEdge<Value, Value> *> removeEdges;
 
   /*
    * Collect the edges in the PDG that can be safely removed.
@@ -347,8 +347,7 @@ void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
   return;
 }
 
-bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg,
-                                         DGEdgeBase<Value, Value> *edge) {
+bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value, Value> *edge) {
   assert(pdg != nullptr);
   assert(edge != nullptr);
 
@@ -497,7 +496,7 @@ bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg,
 // NOTE: Loads between random parts of separate GVs and both edges between GVs
 // should be removed
 bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency(
-    DGEdgeBase<Value, Value> *edge) {
+    DGEdge<Value, Value> *edge) {
 
   /*
    * Check if this is a memory dependence.
@@ -551,7 +550,7 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency(
   return !loopCarried;
 }
 
-bool PDGAnalysis::isBackedgeIntoSameGlobal(DGEdgeBase<Value, Value> *edge) {
+bool PDGAnalysis::isBackedgeIntoSameGlobal(DGEdge<Value, Value> *edge) {
   auto access1 = allocAA->getPrimitiveArrayAccess(edge->getSrc());
   auto access2 = allocAA->getPrimitiveArrayAccess(edge->getDst());
 
@@ -603,7 +602,7 @@ bool PDGAnalysis::isBackedgeIntoSameGlobal(DGEdgeBase<Value, Value> *edge) {
 }
 
 bool PDGAnalysis::isMemoryAccessIntoDifferentArrays(
-    DGEdgeBase<Value, Value> *edge) {
+    DGEdge<Value, Value> *edge) {
   Value *array1 = allocAA->getPrimitiveArrayAccess(edge->getSrc()).first;
   Value *array2 = allocAA->getPrimitiveArrayAccess(edge->getDst()).first;
   return (array1 && array2 && array1 != array2);
@@ -656,7 +655,7 @@ bool PDGAnalysis::canPrecedeInCurrentIteration(Instruction *from,
 }
 
 bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions(
-    DGEdgeBase<Value, Value> *edge) {
+    DGEdge<Value, Value> *edge) {
 
   /*
    * Check if this is a memory dependence.

@@ -515,8 +515,7 @@ bool ClonableMemoryObject::isThereAMemoryDependenceBetweenLoopIterations(
      * Check if there is a loop-carried memory dependence from @inst to another
      * instruction of the loop.
      */
-    auto functor = [loop](Value *fromValue,
-                          DGEdgeBase<Value, Value> *d) -> bool {
+    auto functor = [loop](Value *fromValue, DGEdge<Value, Value> *d) -> bool {
       /*
        * Check if the source of the dependence is with an instruction.
        */
@@ -598,8 +597,7 @@ bool ClonableMemoryObject::isThereRAWThroughMemoryBetweenLoopIterations(
      * Check if there is a loop-carried memory dependence from @inst to another
      * instruction of the loop.
      */
-    auto functor = [loop](Value *fromValue,
-                          DGEdgeBase<Value, Value> *d) -> bool {
+    auto functor = [loop](Value *fromValue, DGEdge<Value, Value> *d) -> bool {
       /*
        * Check if the source of the dependence is with an instruction.
        */
@@ -683,8 +681,7 @@ bool ClonableMemoryObject::isThereRAWThroughMemoryFromOutsideToLoop(
      * Check if there is a memory dependence from an instruction outside the
      * loop to this inst.
      */
-    auto functor = [loop](Value *fromValue,
-                          DGEdgeBase<Value, Value> *d) -> bool {
+    auto functor = [loop](Value *fromValue, DGEdge<Value, Value> *d) -> bool {
       assert(fromValue != nullptr);
       assert(d != nullptr);
 
@@ -765,8 +762,7 @@ bool ClonableMemoryObject::isThereRAWThroughMemoryFromLoopToOutside(
      * Check if there is a memory dependence from an instruction outside the
      * loop to this inst.
      */
-    auto functor = [loop](Value *fromValue,
-                          DGEdgeBase<Value, Value> *d) -> bool {
+    auto functor = [loop](Value *fromValue, DGEdge<Value, Value> *d) -> bool {
       assert(fromValue != nullptr);
       assert(d != nullptr);
 

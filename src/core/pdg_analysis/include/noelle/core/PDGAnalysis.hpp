@@ -98,8 +98,7 @@ private:
   bool compareEdges(
       PDG *pdg1,
       PDG *pdg2,
-      std::function<void(DGEdgeBase<Value, Value> *dependenceMissingInPdg2)>
-          func);
+      std::function<void(DGEdge<Value, Value> *dependenceMissingInPdg2)> func);
 
   bool hasPDGAsMetadata(Module &);
 
@@ -110,7 +109,7 @@ private:
   void constructEdgesFromMetadata(PDG *,
                                   Function &,
                                   unordered_map<MDNode *, Value *> &);
-  DGEdgeBase<Value, Value> *constructEdgeFromMetadata(
+  DGEdge<Value, Value> *constructEdgeFromMetadata(
       PDG *,
       MDNode *,
       unordered_map<MDNode *, Value *> &);
@@ -122,10 +121,10 @@ private:
   void embedEdgesAsMetadata(PDG *,
                             LLVMContext &,
                             unordered_map<Value *, MDNode *> &);
-  MDNode *getEdgeMetadata(DGEdgeBase<Value, Value> *,
+  MDNode *getEdgeMetadata(DGEdge<Value, Value> *,
                           LLVMContext &,
                           unordered_map<Value *, MDNode *> &);
-  MDNode *getSubEdgesMetadata(DGEdgeBase<Value, Value> *,
+  MDNode *getSubEdgesMetadata(DGEdge<Value, Value> *,
                               LLVMContext &,
                               unordered_map<Value *, MDNode *> &);
 
@@ -187,17 +186,17 @@ private:
                           Value *instI,
                           Value *instJ);
 
-  bool edgeIsNotLoopCarriedMemoryDependency(DGEdgeBase<Value, Value> *edge);
-  bool isBackedgeIntoSameGlobal(DGEdgeBase<Value, Value> *edge);
-  bool isMemoryAccessIntoDifferentArrays(DGEdgeBase<Value, Value> *edge);
+  bool edgeIsNotLoopCarriedMemoryDependency(DGEdge<Value, Value> *edge);
+  bool isBackedgeIntoSameGlobal(DGEdge<Value, Value> *edge);
+  bool isMemoryAccessIntoDifferentArrays(DGEdge<Value, Value> *edge);
 
   bool canPrecedeInCurrentIteration(Instruction *from, Instruction *to);
 
-  bool edgeIsAlongNonMemoryWritingFunctions(DGEdgeBase<Value, Value> *edge);
+  bool edgeIsAlongNonMemoryWritingFunctions(DGEdge<Value, Value> *edge);
 
   bool isInIndependentRegion(Instruction *, Instruction *);
 
-  bool canMemoryEdgeBeRemoved(PDG *pdg, DGEdgeBase<Value, Value> *edge);
+  bool canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value, Value> *edge);
 
   static const StringSet<> externalFuncsHaveNoSideEffectOrHandledBySVF;
 

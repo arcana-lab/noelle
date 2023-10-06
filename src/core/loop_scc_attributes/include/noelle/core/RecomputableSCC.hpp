@@ -42,7 +42,7 @@ protected:
       SCCKind K,
       SCC *s,
       LoopStructure *loop,
-      const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
       const std::set<Instruction *> &values,
       bool commutative);
 
@@ -50,7 +50,7 @@ protected:
       SCCKind K,
       SCC *s,
       LoopStructure *loop,
-      const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
       bool commutative);
 
   void addValue(Instruction *v);

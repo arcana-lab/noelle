@@ -26,7 +26,7 @@ namespace llvm::noelle {
 LoopCarriedUnknownSCC::LoopCarriedUnknownSCC(
     SCC *s,
     LoopStructure *loop,
-    const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences)
+    const std::set<DGEdge<Value, Value> *> &loopCarriedDependences)
   : LoopCarriedSCC{ LOOP_CARRIED_UNKNOWN,
                     s,
                     loop,

@@ -37,7 +37,7 @@ protected:
       SCCKind K,
       SCC *s,
       LoopStructure *loop,
-      const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences);
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences);
 };
 
 } // namespace llvm::noelle

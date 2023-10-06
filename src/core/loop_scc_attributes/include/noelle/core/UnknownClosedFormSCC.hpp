@@ -31,7 +31,7 @@ public:
   UnknownClosedFormSCC(
       SCC *s,
       LoopStructure *loop,
-      const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
       const std::set<Instruction *> &valuesToPropagateAcrossLoopIterations);
 
   static bool classof(const GenericSCC *s);

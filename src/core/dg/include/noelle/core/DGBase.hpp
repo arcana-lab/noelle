@@ -35,11 +35,11 @@ public:
 
   using nodes_iterator = typename std::set<DGNode<T> *>::iterator;
   using nodes_const_iterator = typename std::set<DGNode<T> *>::const_iterator;
-  using edges_iterator = typename std::set<DGEdgeBase<T, T> *>::iterator;
+  using edges_iterator = typename std::set<DGEdge<T, T> *>::iterator;
   using edges_const_iterator =
-      typename std::set<DGEdgeBase<T, T> *>::const_iterator;
+      typename std::set<DGEdge<T, T> *>::const_iterator;
   using node_map_iterator = typename std::map<T *, DGNode<T> *>::iterator;
-  typedef std::map<DGEdgeBase<T, T> *, uint32_t> DepIdReverseMap_t;
+  typedef std::map<DGEdge<T, T> *, uint32_t> DepIdReverseMap_t;
 
   /*
    * Node and Edge Iterators
@@ -148,15 +148,14 @@ public:
   DGNode<T> *fetchNode(T *theT);
   const DGNode<T> *fetchConstNode(T *theT) const;
 
-  DGEdgeBase<T, T> *addEdge(T *from, T *to);
-  std::unordered_set<DGEdgeBase<T, T> *> fetchEdges(DGNode<T> *From,
-                                                    DGNode<T> *To);
-  DGEdgeBase<T, T> *copyAddEdge(DGEdgeBase<T, T> &edgeToCopy);
+  DGEdge<T, T> *addEdge(T *from, T *to);
+  std::unordered_set<DGEdge<T, T> *> fetchEdges(DGNode<T> *From, DGNode<T> *To);
+  DGEdge<T, T> *copyAddEdge(DGEdge<T, T> &edgeToCopy);
 
   /*
    * Deal with the id for each edge and the corresponding map for debugging
    */
-  std::optional<uint32_t> getEdgeID(DGEdgeBase<T, T> *edge) {
+  std::optional<uint32_t> getEdgeID(DGEdge<T, T> *edge) {
     if (depLookupMap && depLookupMap->find(edge) != depLookupMap->end())
       return depLookupMap->at(edge);
     else
@@ -176,7 +175,7 @@ public:
   std::unordered_set<DGNode<T> *> getNextDepthNodes(DGNode<T> *node);
   std::unordered_set<DGNode<T> *> getPreviousDepthNodes(DGNode<T> *node);
   void removeNode(DGNode<T> *node);
-  void removeEdge(DGEdgeBase<T, T> *edge);
+  void removeEdge(DGEdge<T, T> *edge);
   void copyNodesIntoNewGraph(DG<T> &newGraph,
                              std::set<DGNode<T> *> nodesToPartition,
                              DGNode<T> *entryNode);
@@ -184,13 +183,13 @@ public:
 
   raw_ostream &print(raw_ostream &stream);
 
-  static std::vector<DGEdgeBase<T, T> *> sortDependences(
-      const std::set<DGEdgeBase<T, T> *> &set);
+  static std::vector<DGEdge<T, T> *> sortDependences(
+      const std::set<DGEdge<T, T> *> &set);
 
 protected:
   int32_t nodeIdCounter;
   std::set<DGNode<T> *> allNodes;
-  std::set<DGEdgeBase<T, T> *> allEdges;
+  std::set<DGEdge<T, T> *> allEdges;
   DGNode<T> *entryNode;
   std::map<T *, DGNode<T> *> internalNodeMap;
   std::map<T *, DGNode<T> *> externalNodeMap;
@@ -253,10 +252,10 @@ const DGNode<T> *DG<T>::fetchConstNode(T *theT) const {
 }
 
 template <class T>
-DGEdgeBase<T, T> *DG<T>::addEdge(T *from, T *to) {
+DGEdge<T, T> *DG<T>::addEdge(T *from, T *to) {
   auto fromNode = this->fetchNode(from);
   auto toNode = this->fetchNode(to);
-  auto edge = new DGEdgeBase<T, T>(fromNode, toNode);
+  auto edge = new DGEdge<T, T>(fromNode, toNode);
   allEdges.insert(edge);
   fromNode->addOutgoingEdge(edge);
   toNode->addIncomingEdge(edge);
@@ -264,9 +263,9 @@ DGEdgeBase<T, T> *DG<T>::addEdge(T *from, T *to) {
 }
 
 template <class T>
-std::unordered_set<DGEdgeBase<T, T> *> DG<T>::fetchEdges(DGNode<T> *From,
-                                                         DGNode<T> *To) {
-  std::unordered_set<DGEdgeBase<T, T> *> edgeSet;
+std::unordered_set<DGEdge<T, T> *> DG<T>::fetchEdges(DGNode<T> *From,
+                                                     DGNode<T> *To) {
+  std::unordered_set<DGEdge<T, T> *> edgeSet;
 
   for (auto &edge : From->getOutgoingEdges()) {
     if (edge->getDstNode() == To) {
@@ -278,8 +277,8 @@ std::unordered_set<DGEdgeBase<T, T> *> DG<T>::fetchEdges(DGNode<T> *From,
 }
 
 template <class T>
-DGEdgeBase<T, T> *DG<T>::copyAddEdge(DGEdgeBase<T, T> &edgeToCopy) {
-  auto edge = new DGEdgeBase<T, T>(edgeToCopy);
+DGEdge<T, T> *DG<T>::copyAddEdge(DGEdge<T, T> &edgeToCopy) {
+  auto edge = new DGEdge<T, T>(edgeToCopy);
   allEdges.insert(edge);
 
   /*
@@ -447,9 +446,9 @@ void DG<T>::removeNode(DGNode<T> *node) {
   /*
    * Collect edges to operate on before doing deletes
    */
-  std::unordered_set<DGEdgeBase<T, T> *> incomingToNode;
-  std::unordered_set<DGEdgeBase<T, T> *> outgoingFromNode;
-  std::unordered_set<DGEdgeBase<T, T> *> allToAndFromNode;
+  std::unordered_set<DGEdge<T, T> *> incomingToNode;
+  std::unordered_set<DGEdge<T, T> *> outgoingFromNode;
+  std::unordered_set<DGEdge<T, T> *> allToAndFromNode;
   for (auto edge : node->getIncomingEdges())
     incomingToNode.insert(edge);
   for (auto edge : node->getOutgoingEdges())
@@ -473,7 +472,7 @@ void DG<T>::removeNode(DGNode<T> *node) {
 }
 
 template <class T>
-void DG<T>::removeEdge(DGEdgeBase<T, T> *edge) {
+void DG<T>::removeEdge(DGEdge<T, T> *edge) {
   edge->getSrcNode()->removeConnectedEdge(edge);
   edge->getDstNode()->removeConnectedEdge(edge);
   allEdges.erase(edge);
@@ -549,9 +548,9 @@ inline std::string DGNode<Instruction>::toString(void) const {
 }
 
 template <class T>
-std::vector<DGEdgeBase<T, T> *> DG<T>::sortDependences(
-    const std::set<DGEdgeBase<T, T> *> &set) {
-  std::vector<DGEdgeBase<T, T> *> v;
+std::vector<DGEdge<T, T> *> DG<T>::sortDependences(
+    const std::set<DGEdge<T, T> *> &set) {
+  std::vector<DGEdge<T, T> *> v;
 
   /*
    * Fetch all edges.
@@ -564,8 +563,7 @@ std::vector<DGEdgeBase<T, T> *> DG<T>::sortDependences(
   /*
    * Sort
    */
-  auto sortingFunction = [](DGEdgeBase<T, T> *d1,
-                            DGEdgeBase<T, T> *d2) -> bool {
+  auto sortingFunction = [](DGEdge<T, T> *d1, DGEdge<T, T> *d2) -> bool {
     assert(d1 != nullptr);
     assert(d2 != nullptr);
 

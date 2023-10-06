@@ -450,7 +450,7 @@ std::vector<Instruction *> LoopInvariantCodeMotion::
   /*
    * Code to collect dependences.
    */
-  auto collectF = [ls, &s](Value *f, DGEdgeBase<Value, Value> *d) -> bool {
+  auto collectF = [ls, &s](Value *f, DGEdge<Value, Value> *d) -> bool {
     auto fI = dyn_cast<Instruction>(f);
     if (fI == nullptr) {
       return false;

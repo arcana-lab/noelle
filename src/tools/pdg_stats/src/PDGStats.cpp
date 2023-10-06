@@ -334,7 +334,7 @@ uint64_t PDGStats::computePotentialEdges(uint64_t totLoads,
   return tot;
 }
 
-void PDGStats::analyzeDependence(DGEdgeBase<Value, Value> *edge) {
+void PDGStats::analyzeDependence(DGEdge<Value, Value> *edge) {
   this->numberOfEdges++;
 
   /*

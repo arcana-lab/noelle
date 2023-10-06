@@ -68,9 +68,8 @@ public:
    * Return the SCCDAG of the loop.
    */
   SCCDAG *getSCCDAG(void) const;
-  std::pair<
-      std::unordered_map<SCC *, std::unordered_set<SCC *>>,
-      std::unordered_map<SCC *, std::unordered_set<DGEdgeBase<SCC, SCC> *>>>
+  std::pair<std::unordered_map<SCC *, std::unordered_set<SCC *>>,
+            std::unordered_map<SCC *, std::unordered_set<DGEdge<SCC, SCC> *>>>
   computeSCCDAGWhenSCCsAreIgnored(
       std::function<bool(GenericSCC *)> ignoreSCC) const;
 
@@ -82,7 +81,7 @@ public:
   ~SCCDAGAttrs();
 
 private:
-  std::map<SCC *, std::set<DGEdgeBase<Value, Value> *>>
+  std::map<SCC *, std::set<DGEdge<Value, Value> *>>
       sccToLoopCarriedDependencies;
   bool enableFloatAsReal;
   std::unordered_map<SCC *, GenericSCC *> sccToInfo;

@@ -26,7 +26,7 @@ namespace llvm::noelle {
 PeriodicVariableSCC::PeriodicVariableSCC(
     SCC *s,
     LoopStructure *loop,
-    const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences,
+    const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
     DominatorSummary &dom,
     Value *initVal,
     Value *per,

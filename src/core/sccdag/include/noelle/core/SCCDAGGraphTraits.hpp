@@ -52,7 +52,7 @@ struct ElementTraits<GraphType, NodeType, SCC>
     raw_string_ostream ros(edgeStr);
     auto edge = nodeWrapper->outgoingEdgeInstances
                     [nodeIter - nodeWrapper->outgoingNodeInstances.begin()];
-    for (DGEdgeBase<Value, Value> *edge : edge->getSubEdges()) {
+    for (DGEdge<Value, Value> *edge : edge->getSubEdges()) {
       printValueStr(edge->getSrc(), ros);
       printValueStr(edge->getDst(), ros << " -> ");
       ros << " ; ";

@@ -104,7 +104,7 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l) {
    * WAR)
    */
   std::map<std::pair<Instruction *, Instruction *>,
-           SmallVector<DGEdgeBase<Value, Value> *, 3>>
+           SmallVector<DGEdge<Value, Value> *, 3>>
       memDeps;
   for (auto edge : make_range(loopDG->begin_edges(), loopDG->end_edges())) {
 
@@ -282,7 +282,7 @@ void refinePDGWithLIDS(PDG *loopDG,
    */
   auto dfr = computeReachabilityFromInstructions(loopStructure);
 
-  std::unordered_set<DGEdgeBase<Value, Value> *> edgesToRemove;
+  std::unordered_set<DGEdge<Value, Value> *> edgesToRemove;
   for (auto dependency :
        LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(
            *loopStructure,

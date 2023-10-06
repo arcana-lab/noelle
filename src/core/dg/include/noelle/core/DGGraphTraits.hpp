@@ -65,7 +65,7 @@ public:
 
     for (auto node : this->nodes) {
       auto wrapped = node->wrappedNode;
-      std::set<DGEdgeBase<T, T> *> allOutgoingEdges{
+      std::set<DGEdge<T, T> *> allOutgoingEdges{
         wrapped->begin_outgoing_edges(),
         wrapped->end_outgoing_edges()
       };
@@ -126,7 +126,7 @@ public:
 
   DGNode<T> *wrappedNode;
   std::vector<NodeRef> outgoingNodeInstances;
-  std::vector<DGEdgeBase<T, T> *> outgoingEdgeInstances;
+  std::vector<DGEdge<T, T> *> outgoingEdgeInstances;
 };
 
 /***************************************************************************************************

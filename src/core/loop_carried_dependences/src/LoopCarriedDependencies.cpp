@@ -52,7 +52,7 @@ void LoopCarriedDependencies::setLoopCarriedDependencies(
 bool LoopCarriedDependencies::isALoopCarriedDependence(
     LoopTree *loopNode,
     const DominatorSummary &DS,
-    DGEdgeBase<Value, Value> *edge) {
+    DGEdge<Value, Value> *edge) {
 
   /*
    * Fetch the loop.
@@ -219,12 +219,12 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
   return false;
 }
 
-std::set<DGEdgeBase<Value, Value> *> LoopCarriedDependencies::
+std::set<DGEdge<Value, Value> *> LoopCarriedDependencies::
     getLoopCarriedDependenciesForLoop(const LoopStructure &LS,
                                       LoopTree *loopNode,
                                       PDG &LoopDG) {
 
-  std::set<DGEdgeBase<Value, Value> *> LCEdges;
+  std::set<DGEdge<Value, Value> *> LCEdges;
   for (auto edge : LoopDG.getEdges()) {
     if (!edge->isLoopCarriedDependence()) {
       continue;
@@ -243,12 +243,12 @@ std::set<DGEdgeBase<Value, Value> *> LoopCarriedDependencies::
   return LCEdges;
 }
 
-std::set<DGEdgeBase<Value, Value> *> LoopCarriedDependencies::
+std::set<DGEdge<Value, Value> *> LoopCarriedDependencies::
     getLoopCarriedDependenciesForLoop(const LoopStructure &LS,
                                       LoopTree *loopNode,
                                       SCCDAG &sccdag) {
 
-  std::set<DGEdgeBase<Value, Value> *> LCEdges;
+  std::set<DGEdge<Value, Value> *> LCEdges;
 
   for (auto sccNode : sccdag.getNodes()) {
     auto scc = sccNode->getT();

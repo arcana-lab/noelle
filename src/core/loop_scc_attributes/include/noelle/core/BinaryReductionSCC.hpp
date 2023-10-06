@@ -33,14 +33,14 @@ public:
   BinaryReductionSCC(
       SCC *s,
       LoopStructure *loop,
-      const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
       LoopCarriedVariable *variable,
       DominatorSummary &dom);
 
   BinaryReductionSCC(
       SCC *s,
       LoopStructure *loop,
-      const std::set<DGEdgeBase<Value, Value> *> &loopCarriedDependences,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
       Value *initialValue,
       Instruction::BinaryOps reductionOperation,
       PHINode *accumulator,
