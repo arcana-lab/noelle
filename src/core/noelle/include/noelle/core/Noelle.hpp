@@ -27,6 +27,7 @@
 #include "noelle/core/Queue.hpp"
 #include "noelle/core/LoopForest.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/LDGAnalysis.hpp"
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
 #include "noelle/core/HotProfiler.hpp"
@@ -241,6 +242,7 @@ private:
   bool hoistLoopsToMain;
   bool loopAwareDependenceAnalysis;
   PDGAnalysis *pdgAnalysis;
+  LDGAnalysis ldgAnalysis;
   char *filterFileName;
   bool hasReadFilterFile;
   std::map<uint32_t, uint32_t> loopThreads;

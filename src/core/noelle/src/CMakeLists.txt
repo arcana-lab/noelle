@@ -43,6 +43,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../dg/include
   ../../pdg/include
   ../../pdg_analysis/include
+  ../../ldg_analysis/include
   ../../scheduler/include
   ../../cfg_analysis/include
   ../../cfg_transformer/include
