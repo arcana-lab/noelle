@@ -102,10 +102,6 @@ public:
     return !isControl;
   }
 
-  bool isLoopCarriedDependence() const {
-    return isLoopCarried;
-  }
-
   DataDependenceType dataDependenceType() const {
     return dataDepType;
   }
@@ -160,6 +156,8 @@ public:
 
     return;
   }
+
+  bool isLoopCarriedDependence() const ;
 
   void addSubEdge(DGEdge<SubT, SubT> *edge);
 
@@ -344,6 +342,11 @@ T *DGEdge<T, SubT>::getSrc(void) const {
 template <class T, class SubT>
 T *DGEdge<T, SubT>::getDst(void) const {
   return to->getT();
+}
+  
+template <class T, class SubT>
+bool DGEdge<T, SubT>::isLoopCarriedDependence() const {
+  return isLoopCarried;
 }
 
 } // namespace llvm::noelle
