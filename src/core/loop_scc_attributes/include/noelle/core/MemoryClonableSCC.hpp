@@ -33,10 +33,11 @@ public:
   static bool classof(const GenericSCC *s);
 
 protected:
-  MemoryClonableSCC(SCCKind K,
-                    SCC *s,
-                    LoopStructure *loop,
-                    const std::set<DGEdge<Value> *> &loopCarriedDependences);
+  MemoryClonableSCC(
+      SCCKind K,
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences);
 };
 
 } // namespace llvm::noelle

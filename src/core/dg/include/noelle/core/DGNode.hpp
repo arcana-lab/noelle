@@ -25,6 +25,9 @@
 
 namespace llvm::noelle {
 
+template <class T, class SubT>
+class DGEdge;
+
 template <class T>
 class DGNode {
 public:
@@ -32,10 +35,10 @@ public:
 
   T *getT(void) const;
 
-  typedef typename std::vector<DGNode<T> *>::iterator nodes_iterator;
-  typedef typename std::unordered_set<DGEdge<T> *>::iterator edges_iterator;
-  typedef typename std::unordered_set<DGEdge<T> *>::const_iterator
-      edges_const_iterator;
+  using nodes_iterator = typename std::vector<DGNode<T> *>::iterator;
+  using edges_iterator = typename std::unordered_set<DGEdge<T, T> *>::iterator;
+  using edges_const_iterator =
+      typename std::unordered_set<DGEdge<T, T> *>::const_iterator;
 
   edges_iterator begin_outgoing_edges() {
     return outgoingEdges.begin();
@@ -63,32 +66,27 @@ public:
     return incomingEdges.end();
   }
 
-  std::unordered_set<DGEdge<T> *> getAllConnectedEdges() {
-    std::unordered_set<DGEdge<T> *> allConnectedEdges{ outgoingEdges.begin(),
-                                                       outgoingEdges.end() };
-    allConnectedEdges.insert(incomingEdges.begin(), incomingEdges.end());
-    return allConnectedEdges;
-  }
+  std::unordered_set<DGEdge<T, T> *> getAllEdges(void);
 
-  iterator_range<edges_iterator> getOutgoingEdges() {
+  iterator_range<edges_iterator> getOutgoingEdges(void) {
     return make_range(outgoingEdges.begin(), outgoingEdges.end());
   }
 
-  iterator_range<edges_iterator> getIncomingEdges() {
+  iterator_range<edges_iterator> getIncomingEdges(void) {
     return make_range(incomingEdges.begin(), incomingEdges.end());
   }
 
-  uint64_t numberOfConnectedEdges(void) const;
+  uint64_t degree(void) const;
 
   uint64_t outDegree(void) const;
 
   uint64_t inDegree(void) const;
 
-  void addIncomingEdge(DGEdge<T> *edge);
+  void addIncomingEdge(DGEdge<T, T> *edge);
 
-  void addOutgoingEdge(DGEdge<T> *edge);
+  void addOutgoingEdge(DGEdge<T, T> *edge);
 
-  void removeConnectedEdge(DGEdge<T> *edge);
+  void removeConnectedEdge(DGEdge<T, T> *edge);
 
   void removeConnectedNode(DGNode<T> *node);
 
@@ -99,8 +97,8 @@ public:
 protected:
   int32_t ID;
   T *theT;
-  std::unordered_set<DGEdge<T> *> outgoingEdges;
-  std::unordered_set<DGEdge<T> *> incomingEdges;
+  std::unordered_set<DGEdge<T, T> *> outgoingEdges;
+  std::unordered_set<DGEdge<T, T> *> incomingEdges;
 };
 
 template <class T>
@@ -121,32 +119,32 @@ raw_ostream &DGNode<T>::print(raw_ostream &stream) {
 }
 
 template <class T>
-void DGNode<T>::addIncomingEdge(DGEdge<T> *edge) {
+void DGNode<T>::addIncomingEdge(DGEdge<T, T> *edge) {
   this->incomingEdges.insert(edge);
 }
 
 template <class T>
-void DGNode<T>::addOutgoingEdge(DGEdge<T> *edge) {
+void DGNode<T>::addOutgoingEdge(DGEdge<T, T> *edge) {
   this->outgoingEdges.insert(edge);
 }
 
 template <class T>
-void DGNode<T>::removeConnectedEdge(DGEdge<T> *edge) {
+void DGNode<T>::removeConnectedEdge(DGEdge<T, T> *edge) {
   DGNode<T> *node;
   if (outgoingEdges.find(edge) != outgoingEdges.end()) {
     outgoingEdges.erase(edge);
-    node = edge->getIncomingNode();
+    node = edge->getDstNode();
   } else {
     incomingEdges.erase(edge);
-    node = edge->getOutgoingNode();
+    node = edge->getSrcNode();
   }
 }
 
 template <class T>
 void DGNode<T>::removeConnectedNode(DGNode<T> *node) {
-  std::unordered_set<DGEdge<T> *> outgoingEdgesToRemove{};
+  std::unordered_set<DGEdge<T, T> *> outgoingEdgesToRemove{};
   for (auto edge : outgoingEdges) {
-    if (edge->getIncomingNode() == node) {
+    if (edge->getDstNode() == node) {
       outgoingEdgesToRemove.insert(edge);
     }
   }
@@ -154,9 +152,9 @@ void DGNode<T>::removeConnectedNode(DGNode<T> *node) {
     outgoingEdges.erase(edge);
   }
 
-  std::unordered_set<DGEdge<T> *> incomingEdgesToRemove{};
+  std::unordered_set<DGEdge<T, T> *> incomingEdgesToRemove{};
   for (auto edge : incomingEdges) {
-    if (edge->getOutgoingNode() == node) {
+    if (edge->getSrcNode() == node) {
       incomingEdgesToRemove.insert(edge);
     }
   }
@@ -166,7 +164,15 @@ void DGNode<T>::removeConnectedNode(DGNode<T> *node) {
 }
 
 template <class T>
-uint64_t DGNode<T>::numberOfConnectedEdges(void) const {
+std::unordered_set<DGEdge<T, T> *> DGNode<T>::getAllEdges(void) {
+  std::unordered_set<DGEdge<T, T> *> allConnectedEdges{ outgoingEdges.begin(),
+                                                        outgoingEdges.end() };
+  allConnectedEdges.insert(incomingEdges.begin(), incomingEdges.end());
+  return allConnectedEdges;
+}
+
+template <class T>
+uint64_t DGNode<T>::degree(void) const {
   return outgoingEdges.size() + incomingEdges.size();
 }
 

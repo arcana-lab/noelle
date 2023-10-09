@@ -52,7 +52,7 @@ void LoopCarriedDependencies::setLoopCarriedDependencies(
 bool LoopCarriedDependencies::isALoopCarriedDependence(
     LoopTree *loopNode,
     const DominatorSummary &DS,
-    DGEdge<Value> *edge) {
+    DGEdge<Value, Value> *edge) {
 
   /*
    * Fetch the loop.
@@ -65,8 +65,8 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
   /*
    * Fetch the instructions involved in the dependence.
    */
-  auto producer = edge->getOutgoingT();
-  auto consumer = edge->getIncomingT();
+  auto producer = edge->getSrc();
+  auto consumer = edge->getDst();
 
   /*
    * Only dependences between instructions can be loop-carried.
@@ -219,18 +219,18 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
   return false;
 }
 
-std::set<DGEdge<Value> *> LoopCarriedDependencies::
+std::set<DGEdge<Value, Value> *> LoopCarriedDependencies::
     getLoopCarriedDependenciesForLoop(const LoopStructure &LS,
                                       LoopTree *loopNode,
                                       PDG &LoopDG) {
 
-  std::set<DGEdge<Value> *> LCEdges;
+  std::set<DGEdge<Value, Value> *> LCEdges;
   for (auto edge : LoopDG.getEdges()) {
     if (!edge->isLoopCarriedDependence()) {
       continue;
     }
 
-    auto consumer = edge->getIncomingT();
+    auto consumer = edge->getDst();
     auto consumerI = cast<Instruction>(consumer);
     auto consumerLoop = loopNode->getInnermostLoopThatContains(consumerI);
     if (consumerLoop != &LS) {
@@ -243,12 +243,12 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::
   return LCEdges;
 }
 
-std::set<DGEdge<Value> *> LoopCarriedDependencies::
+std::set<DGEdge<Value, Value> *> LoopCarriedDependencies::
     getLoopCarriedDependenciesForLoop(const LoopStructure &LS,
                                       LoopTree *loopNode,
                                       SCCDAG &sccdag) {
 
-  std::set<DGEdge<Value> *> LCEdges;
+  std::set<DGEdge<Value, Value> *> LCEdges;
 
   for (auto sccNode : sccdag.getNodes()) {
     auto scc = sccNode->getT();
@@ -257,14 +257,14 @@ std::set<DGEdge<Value> *> LoopCarriedDependencies::
         continue;
       }
 
-      auto consumer = edge->getIncomingT();
+      auto consumer = edge->getDst();
       auto consumerI = cast<Instruction>(consumer);
       auto consumerLoop = loopNode->getInnermostLoopThatContains(consumerI);
       if (consumerLoop != &LS) {
         continue;
       }
 
-      auto producer = edge->getOutgoingT();
+      auto producer = edge->getSrc();
       auto producerI = dyn_cast<Instruction>(producer);
       if (producerI == NULL) {
         continue;

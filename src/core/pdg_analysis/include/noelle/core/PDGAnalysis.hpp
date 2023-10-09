@@ -104,7 +104,7 @@ private:
   bool compareEdges(
       PDG *pdg1,
       PDG *pdg2,
-      std::function<void(DGEdge<Value> *dependenceMissingInPdg2)> func);
+      std::function<void(DGEdge<Value, Value> *dependenceMissingInPdg2)> func);
 
   bool hasPDGAsMetadata(Module &);
 
@@ -115,9 +115,10 @@ private:
   void constructEdgesFromMetadata(PDG *,
                                   Function &,
                                   unordered_map<MDNode *, Value *> &);
-  DGEdge<Value> *constructEdgeFromMetadata(PDG *,
-                                           MDNode *,
-                                           unordered_map<MDNode *, Value *> &);
+  DGEdge<Value, Value> *constructEdgeFromMetadata(
+      PDG *,
+      MDNode *,
+      unordered_map<MDNode *, Value *> &);
 
   void embedPDGAsMetadata(PDG *);
   void embedNodesAsMetadata(PDG *,
@@ -126,10 +127,10 @@ private:
   void embedEdgesAsMetadata(PDG *,
                             LLVMContext &,
                             unordered_map<Value *, MDNode *> &);
-  MDNode *getEdgeMetadata(DGEdge<Value> *,
+  MDNode *getEdgeMetadata(DGEdge<Value, Value> *,
                           LLVMContext &,
                           unordered_map<Value *, MDNode *> &);
-  MDNode *getSubEdgesMetadata(DGEdge<Value> *,
+  MDNode *getSubEdgesMetadata(DGEdge<Value, Value> *,
                               LLVMContext &,
                               unordered_map<Value *, MDNode *> &);
 
@@ -191,17 +192,17 @@ private:
                           Value *instI,
                           Value *instJ);
 
-  bool edgeIsNotLoopCarriedMemoryDependency(DGEdge<Value> *edge);
-  bool isBackedgeIntoSameGlobal(DGEdge<Value> *edge);
-  bool isMemoryAccessIntoDifferentArrays(DGEdge<Value> *edge);
+  bool edgeIsNotLoopCarriedMemoryDependency(DGEdge<Value, Value> *edge);
+  bool isBackedgeIntoSameGlobal(DGEdge<Value, Value> *edge);
+  bool isMemoryAccessIntoDifferentArrays(DGEdge<Value, Value> *edge);
 
   bool canPrecedeInCurrentIteration(Instruction *from, Instruction *to);
 
-  bool edgeIsAlongNonMemoryWritingFunctions(DGEdge<Value> *edge);
+  bool edgeIsAlongNonMemoryWritingFunctions(DGEdge<Value, Value> *edge);
 
   bool isInIndependentRegion(Instruction *, Instruction *);
 
-  bool canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value> *edge);
+  bool canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value, Value> *edge);
 
   std::pair<bool, bool> isThereThisMemoryDataDependenceType(
       DataDependenceType t,

@@ -252,8 +252,8 @@ Values SCCDAGAttrTestSuite::loopCarriedDependencies(ModulePass &pass,
   Values valueNames{};
   for (auto scc : attrPass.attrs->getSCCsWithLoopCarriedDependencies()) {
     for (auto dep : scc->getLoopCarriedDependences()) {
-      std::string outValue = suite.valueToString(dep->getOutgoingT());
-      std::string inValue = suite.valueToString(dep->getIncomingT());
+      std::string outValue = suite.valueToString(dep->getSrc());
+      std::string inValue = suite.valueToString(dep->getDst());
       valueNames.insert(outValue + suite.orderedValueDelimiter + inValue);
     }
   }

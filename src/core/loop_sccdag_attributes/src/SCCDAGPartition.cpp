@@ -137,7 +137,7 @@ void SCCDAGPartition::mergeSets(std::unordered_set<SCCSet *> sets) {
     auto setNode = this->fetchNode(set);
 
     for (auto edge : setNode->getIncomingEdges()) {
-      auto parentSet = edge->getOutgoingT();
+      auto parentSet = edge->getSrc();
       auto parentNode = this->fetchNode(parentSet);
 
       auto anySCCInParentSet = *parentSet->sccs.begin();
@@ -150,7 +150,7 @@ void SCCDAGPartition::mergeSets(std::unordered_set<SCCSet *> sets) {
     }
 
     for (auto edge : setNode->getOutgoingEdges()) {
-      auto childSet = edge->getIncomingT();
+      auto childSet = edge->getDst();
       auto childNode = this->fetchNode(childSet);
 
       auto anySCCInChildSet = *childSet->sccs.begin();
@@ -267,7 +267,7 @@ std::vector<SCCSet *> SCCDAGPartition::getDepthOrderedSets(void) {
        * NOTE: One of the parents not encountered will re-enqueue this node
        */
       for (auto edge : node->getIncomingEdges()) {
-        auto parentSet = edge->getOutgoingT();
+        auto parentSet = edge->getSrc();
         parentsEncountered &= encountered.find(parentSet) != encountered.end();
       }
       if (!parentsEncountered)
@@ -281,7 +281,7 @@ std::vector<SCCSet *> SCCDAGPartition::getDepthOrderedSets(void) {
     encountered.insert(set);
     depthOrderedSets.push_back(set);
     for (auto edge : node->getOutgoingEdges()) {
-      auto childSet = edge->getIncomingT();
+      auto childSet = edge->getDst();
       setsToCheck.push(childSet);
     }
   }
@@ -448,7 +448,7 @@ bool SCCDAGPartitioner::isAncestor(SCCSet *parentTarget, SCCSet *target) {
       continue;
 
     for (auto edge : node->getIncomingEdges()) {
-      auto parentSet = edge->getOutgoingT();
+      auto parentSet = edge->getSrc();
       if (parentSet == parentTarget)
         return true;
       setToCheck.push(parentSet);
@@ -527,7 +527,7 @@ std::unordered_set<SCCSet *> SCCDAGPartitioner::getDescendants(
       continue;
 
     for (auto edge : node->getOutgoingEdges()) {
-      auto childSet = edge->getIncomingT();
+      auto childSet = edge->getDst();
       if (descendants.find(childSet) != descendants.end())
         continue;
       setToCheck.push(childSet);
@@ -553,7 +553,7 @@ std::unordered_set<SCCSet *> SCCDAGPartitioner::getAncestors(
       continue;
 
     for (auto edge : node->getIncomingEdges()) {
-      auto parentSet = edge->getOutgoingT();
+      auto parentSet = edge->getSrc();
       if (ancestors.find(parentSet) != ancestors.end())
         continue;
       setToCheck.push(parentSet);
@@ -572,7 +572,7 @@ std::unordered_set<SCCSet *> SCCDAGPartitioner::getParents(SCCSet *set) {
   std::unordered_set<SCCSet *> parents;
   auto node = partition->fetchNode(set);
   for (auto edge : node->getIncomingEdges()) {
-    auto parentSet = edge->getOutgoingT();
+    auto parentSet = edge->getSrc();
     parents.insert(parentSet);
   }
 
@@ -583,7 +583,7 @@ std::unordered_set<SCCSet *> SCCDAGPartitioner::getChildren(SCCSet *set) {
   std::unordered_set<SCCSet *> children;
   auto node = partition->fetchNode(set);
   for (auto edge : node->getOutgoingEdges()) {
-    auto childSet = edge->getIncomingT();
+    auto childSet = edge->getDst();
     children.insert(childSet);
   }
 
@@ -697,8 +697,8 @@ void SCCDAGPartitioner::mergeAlongMemoryEdges(void) {
     if (!containsMemoryDependence)
       continue;
 
-    auto producerSCC = edge->getOutgoingT();
-    auto consumerSCC = edge->getIncomingT();
+    auto producerSCC = edge->getSrc();
+    auto consumerSCC = edge->getDst();
     if (!this->partition->isIncludedInPartitioning(producerSCC))
       continue;
     if (!this->partition->isIncludedInPartitioning(consumerSCC))

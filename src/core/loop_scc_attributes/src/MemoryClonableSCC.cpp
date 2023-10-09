@@ -27,7 +27,7 @@ MemoryClonableSCC::MemoryClonableSCC(
     SCCKind K,
     SCC *s,
     LoopStructure *loop,
-    const std::set<DGEdge<Value> *> &loopCarriedDependences)
+    const std::set<DGEdge<Value, Value> *> &loopCarriedDependences)
   : LoopCarriedSCC{ K, s, loop, loopCarriedDependences, false } {
 
   return;

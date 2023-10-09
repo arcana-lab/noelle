@@ -38,18 +38,20 @@ public:
 protected:
   std::set<Instruction *> values;
 
-  RecomputableSCC(SCCKind K,
-                  SCC *s,
-                  LoopStructure *loop,
-                  const std::set<DGEdge<Value> *> &loopCarriedDependences,
-                  const std::set<Instruction *> &values,
-                  bool commutative);
+  RecomputableSCC(
+      SCCKind K,
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+      const std::set<Instruction *> &values,
+      bool commutative);
 
-  RecomputableSCC(SCCKind K,
-                  SCC *s,
-                  LoopStructure *loop,
-                  const std::set<DGEdge<Value> *> &loopCarriedDependences,
-                  bool commutative);
+  RecomputableSCC(
+      SCCKind K,
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+      bool commutative);
 
   void addValue(Instruction *v);
 };

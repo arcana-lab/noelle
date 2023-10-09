@@ -53,8 +53,8 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
   constructEdgesFromControlForFunction(taskFunctionDG, *taskBody, doms->PDT);
 
   auto copyEdgeUsingTaskClonedValues =
-      [&](DGEdge<Value> *originalEdge) -> void {
-    DGEdge<Value> edgeToPointToClones{ *originalEdge };
+      [&](DGEdge<Value, Value> *originalEdge) -> void {
+    DGEdge<Value, Value> edgeToPointToClones{ *originalEdge };
 
     /*
      * Loop carry dependencies will be recomputed
@@ -65,10 +65,10 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
      * Add the edge to the task internal dependence graph
      */
     auto cloneOutgoingInst = helixTask->getCloneOfOriginalInstruction(
-        cast<Instruction>(originalEdge->getOutgoingT()));
+        cast<Instruction>(originalEdge->getSrc()));
     assert(cloneOutgoingInst != nullptr);
     auto cloneIncomingInst = helixTask->getCloneOfOriginalInstruction(
-        cast<Instruction>(originalEdge->getIncomingT()));
+        cast<Instruction>(originalEdge->getDst()));
     assert(cloneIncomingInst != nullptr);
     auto cloneOutgoingNode = taskFunctionDG->fetchNode(cloneOutgoingInst);
     assert(cloneOutgoingNode != nullptr);
@@ -113,8 +113,8 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
        *
        * Check if it is due to lifetime intrinsics.
        */
-      auto srcValue = edge->getIncomingT();
-      auto dstValue = edge->getOutgoingT();
+      auto srcValue = edge->getDst();
+      auto dstValue = edge->getSrc();
       if (auto valueAsCallInst = dyn_cast<CallInst>(srcValue)) {
         if (valueAsCallInst->isLifetimeStartOrEnd()) {
           continue;

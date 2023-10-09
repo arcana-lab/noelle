@@ -70,7 +70,7 @@ private:
       std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
       Function &F);
 
-  void analyzeDependence(DGEdge<Value> *edge);
+  void analyzeDependence(DGEdge<Value, Value> *edge);
 
   bool edgeIsDependenceOf(MDNode *edgeM, EDGE_ATTRIBUTE edgeAttribute);
   void printStats();

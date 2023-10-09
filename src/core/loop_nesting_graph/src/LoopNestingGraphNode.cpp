@@ -67,12 +67,12 @@ void LoopNestingGraphLoopNode::addIncomingEdge(
 }
 
 std::unordered_set<LoopNestingGraphLoopLoopEdge *> LoopNestingGraphLoopNode::
-    getIncomingEdges(void) const {
+    getDstEdges(void) const {
   return this->incomingEdges;
 }
 
 std::unordered_set<LoopNestingGraphLoopLoopEdge *> LoopNestingGraphLoopNode::
-    getOutgoingEdges(void) const {
+    getSrcEdges(void) const {
   return this->outgoingEdges;
 }
 

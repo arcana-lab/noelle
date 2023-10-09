@@ -228,21 +228,21 @@ void ReplDriver::depsFn() {
   } else if (fromId != -1 && toId != -1) { // both specified
     auto fromNode = instIdMap->at(fromId);
     auto toNode = instIdMap->at(toId);
-    for (auto &edge : fromNode->getOutgoingEdges()) {
-      if (edge->getIncomingNode() == toNode) {
+    for (auto &edge : fromNode->getSrcEdges()) {
+      if (edge->getDstNode() == toNode) {
         dumpEdge(id, edge);
         depIdMap->insert(make_pair(id++, edge));
       }
     }
   } else if (fromId != -1) { // from is specified
     auto node = instIdMap->at(fromId);
-    for (auto &edge : node->getOutgoingEdges()) {
+    for (auto &edge : node->getSrcEdges()) {
       dumpEdge(id, edge);
       depIdMap->insert(make_pair(id++, edge));
     }
   } else if (toId != -1) { // to is specified
     auto node = instIdMap->at(toId);
-    for (auto &edge : node->getIncomingEdges()) {
+    for (auto &edge : node->getDstEdges()) {
       dumpEdge(id, edge);
       depIdMap->insert(make_pair(id++, edge));
     }
@@ -285,12 +285,12 @@ void ReplDriver::removeAllFn() {
   }
 
   auto node = instIdMap->at(instId);
-  list<llvm::noelle::DGEdge<Value> *> edgesToRemove;
-  for (auto &edge : node->getOutgoingEdges()) {
+  list<llvm::noelle::DGEdge<Value, Value> *> edgesToRemove;
+  for (auto &edge : node->getSrcEdges()) {
     edgesToRemove.push_back(edge);
   }
 
-  for (auto &edge : node->getIncomingEdges()) {
+  for (auto &edge : node->getDstEdges()) {
     edgesToRemove.push_back(edge);
   }
 

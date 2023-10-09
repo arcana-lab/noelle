@@ -75,7 +75,7 @@ LoopEnvironment::LoopEnvironment(PDG *loopDG,
       /*
        * Fetch the current consumer of the new live-in value.
        */
-      auto consumerOfNewLiveIn = edge->getIncomingT();
+      auto consumerOfNewLiveIn = edge->getDst();
       assert(isa<Instruction>(consumerOfNewLiveIn));
       auto consumerOfNewLiveIn_inst = cast<Instruction>(consumerOfNewLiveIn);
 
@@ -95,7 +95,7 @@ LoopEnvironment::LoopEnvironment(PDG *loopDG,
       if (edge->isMemoryDependence() || edge->isControlDependence()) {
         continue;
       }
-      auto internalValue = edge->getOutgoingT();
+      auto internalValue = edge->getSrc();
       if (!this->isProducer(internalValue)) {
         this->addLiveOutProducer(internalValue);
       }

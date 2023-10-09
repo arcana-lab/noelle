@@ -1280,7 +1280,7 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
     if (outermostLoopsMap.find(calleeFunction) == outermostLoopsMap.end())
       continue;
 
-    for (auto edge : calleeNode->getIncomingEdges()) {
+    for (auto edge : calleeNode->getDstEdges()) {
       for (auto subEdge : edge->getSubEdges()) {
         auto caller = subEdge->getCaller();
         auto callingInst = cast<CallBase>(caller->getInstruction());

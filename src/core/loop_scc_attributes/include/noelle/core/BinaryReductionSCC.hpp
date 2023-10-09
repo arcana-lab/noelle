@@ -30,19 +30,21 @@ namespace llvm::noelle {
 
 class BinaryReductionSCC : public ReductionSCC {
 public:
-  BinaryReductionSCC(SCC *s,
-                     LoopStructure *loop,
-                     const std::set<DGEdge<Value> *> &loopCarriedDependences,
-                     LoopCarriedVariable *variable,
-                     DominatorSummary &dom);
+  BinaryReductionSCC(
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+      LoopCarriedVariable *variable,
+      DominatorSummary &dom);
 
-  BinaryReductionSCC(SCC *s,
-                     LoopStructure *loop,
-                     const std::set<DGEdge<Value> *> &loopCarriedDependences,
-                     Value *initialValue,
-                     Instruction::BinaryOps reductionOperation,
-                     PHINode *accumulator,
-                     Value *identity);
+  BinaryReductionSCC(
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+      Value *initialValue,
+      Instruction::BinaryOps reductionOperation,
+      PHINode *accumulator,
+      Value *identity);
 
   BinaryReductionSCC() = delete;
 

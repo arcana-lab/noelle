@@ -33,11 +33,12 @@ public:
   static bool classof(const GenericSCC *s);
 
 protected:
-  InductionVariableSCC(SCCKind K,
-                       SCC *s,
-                       LoopStructure *loop,
-                       const std::set<DGEdge<Value> *> &loopCarriedDependences,
-                       DominatorSummary &dom);
+  InductionVariableSCC(
+      SCCKind K,
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+      DominatorSummary &dom);
 };
 
 } // namespace llvm::noelle

@@ -48,13 +48,13 @@ protected:
   ReductionSCC(SCCKind K,
                SCC *s,
                LoopStructure *loop,
-               const std::set<DGEdge<Value> *> &loopCarriedDependences,
+               const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
                DominatorSummary &dom);
 
   ReductionSCC(SCCKind K,
                SCC *s,
                LoopStructure *loop,
-               const std::set<DGEdge<Value> *> &loopCarriedDependences,
+               const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
                Value *initialValue,
                PHINode *accumulator,
                Value *identity);

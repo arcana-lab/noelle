@@ -328,13 +328,13 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
    * Remove dependences thank to compilation options.
    */
   if (com->arePRVGsNonDeterministic()) {
-    std::set<DGEdge<Value> *> toDelete;
+    std::set<DGEdge<Value, Value> *> toDelete;
     for (auto edge : loopDG->getEdges()) {
       if (!edge->isMemoryDependence()) {
         continue;
       }
-      auto vo = edge->getOutgoingT();
-      auto vi = edge->getIncomingT();
+      auto vo = edge->getSrc();
+      auto vi = edge->getDst();
       if (!isa<CallBase>(vo)) {
         continue;
       }
@@ -507,7 +507,7 @@ void LoopDependenceInfo::
   /*
    * Identify the dependences to remove.
    */
-  std::unordered_set<DGEdge<Value> *> edgesToRemove;
+  std::unordered_set<DGEdge<Value, Value> *> edgesToRemove;
   for (auto edge :
        LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(*rootLoop,
                                                                   loopNode,
@@ -523,8 +523,8 @@ void LoopDependenceInfo::
     /*
      * Only dependences between instructions can be removed.
      */
-    auto producer = dyn_cast<Instruction>(edge->getOutgoingT());
-    auto consumer = dyn_cast<Instruction>(edge->getIncomingT());
+    auto producer = dyn_cast<Instruction>(edge->getSrc());
+    auto consumer = dyn_cast<Instruction>(edge->getDst());
     if (!producer || !consumer) {
       continue;
     }
@@ -580,7 +580,7 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
   /*
    * Identify opportunities for cloning stack locations.
    */
-  std::unordered_set<DGEdge<Value> *> edgesToRemove;
+  std::unordered_set<DGEdge<Value, Value> *> edgesToRemove;
   for (auto edge : LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(
            *rootLoop,
            loopNode,
@@ -597,8 +597,8 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
      * Only dependences between instructions can be removed by cloning memory
      * objects.
      */
-    auto producer = dyn_cast<Instruction>(edge->getOutgoingT());
-    auto consumer = dyn_cast<Instruction>(edge->getIncomingT());
+    auto producer = dyn_cast<Instruction>(edge->getSrc());
+    auto consumer = dyn_cast<Instruction>(edge->getDst());
     if (!producer || !consumer) {
       continue;
     }
@@ -746,7 +746,7 @@ SCCDAG *LoopDependenceInfo::computeSCCDAGWithOnlyVariableAndControlDependences(
   /*
    * Collect the dependences that we want to ignore.
    */
-  std::unordered_set<DGEdge<Value> *> memDeps{};
+  std::unordered_set<DGEdge<Value, Value> *> memDeps{};
   for (auto currentDependence : loopDG->getSortedDependences()) {
     if (currentDependence->isMemoryDependence()) {
       memDeps.insert(currentDependence);

@@ -71,7 +71,7 @@ private:
      * To pass as a lambda to a dependence iteration function on PDG,
      * we bind isEvolvingValue to this member variable
      */
-    bool isEvolvingValue(Value *toValue, DGEdge<Value> *dep);
+    bool isEvolvingValue(Value *toValue, DGEdge<Value, Value> *dep);
 
     /*
      * For each top level call to isEvolvingValue, track values checked

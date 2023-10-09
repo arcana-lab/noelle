@@ -27,13 +27,13 @@
 namespace llvm::noelle {
 
 MDNode *PDGAnalysis::getEdgeMetadata(
-    DGEdge<Value> *edge,
+    DGEdge<Value, Value> *edge,
     LLVMContext &C,
     unordered_map<Value *, MDNode *> &nodeIDMap) {
   assert(edge != nullptr);
   Metadata *edgeM[] = {
-    nodeIDMap[edge->getOutgoingT()],
-    nodeIDMap[edge->getIncomingT()],
+    nodeIDMap[edge->getSrc()],
+    nodeIDMap[edge->getDst()],
     MDNode::get(
         C,
         MDString::get(C, edge->isMemoryDependence() ? "true" : "false")),
@@ -56,15 +56,15 @@ MDNode *PDGAnalysis::getEdgeMetadata(
 }
 
 MDNode *PDGAnalysis::getSubEdgesMetadata(
-    DGEdge<Value> *edge,
+    DGEdge<Value, Value> *edge,
     LLVMContext &C,
     unordered_map<Value *, MDNode *> &nodeIDMap) {
   vector<Metadata *> subEdgesVec;
 
   for (auto &subEdge : edge->getSubEdges()) {
     Metadata *subEdgeM[] = {
-      nodeIDMap[subEdge->getOutgoingT()],
-      nodeIDMap[subEdge->getIncomingT()],
+      nodeIDMap[subEdge->getSrc()],
+      nodeIDMap[subEdge->getDst()],
       MDNode::get(
           C,
           MDString::get(C, edge->isMemoryDependence() ? "true" : "false")),
@@ -174,7 +174,7 @@ void PDGAnalysis::constructEdgesFromMetadata(
         if (MDNode *subEdgesM = dyn_cast<MDNode>(edgeM->getOperand(8))) {
           for (auto &subOperand : subEdgesM->operands()) {
             if (MDNode *subEdgeM = dyn_cast<MDNode>(subOperand)) {
-              DGEdge<Value> *subEdge =
+              DGEdge<Value, Value> *subEdge =
                   constructEdgeFromMetadata(pdg, subEdgeM, IDNodeMap);
               edge->addSubEdge(subEdge);
             }
@@ -197,17 +197,17 @@ void PDGAnalysis::constructEdgesFromMetadata(
   return;
 }
 
-DGEdge<Value> *PDGAnalysis::constructEdgeFromMetadata(
+DGEdge<Value, Value> *PDGAnalysis::constructEdgeFromMetadata(
     PDG *pdg,
     MDNode *edgeM,
     unordered_map<MDNode *, Value *> &IDNodeMap) {
-  DGEdge<Value> *edge = nullptr;
+  DGEdge<Value, Value> *edge = nullptr;
 
   if (MDNode *fromM = dyn_cast<MDNode>(edgeM->getOperand(0))) {
     if (MDNode *toM = dyn_cast<MDNode>(edgeM->getOperand(1))) {
       Value *from = IDNodeMap[fromM];
       Value *to = IDNodeMap[toM];
-      edge = new DGEdge<Value>(pdg->fetchNode(from), pdg->fetchNode(to));
+      edge = new DGEdge<Value, Value>(pdg->fetchNode(from), pdg->fetchNode(to));
       edge->setEdgeAttributes(
           cast<MDString>(cast<MDNode>(edgeM->getOperand(2))->getOperand(0))
                   ->getString()

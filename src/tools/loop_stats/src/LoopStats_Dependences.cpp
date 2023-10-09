@@ -119,8 +119,8 @@ void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
 
     auto isSCC = false;
     for (auto edge : scc->getEdges()) {
-      if (scc->isInternal(edge->getOutgoingT())
-          && scc->isInternal(edge->getIncomingT())) {
+      if (scc->isInternal(edge->getSrc())
+          && scc->isInternal(edge->getDst())) {
         isSCC = true;
         break;
       }

@@ -138,8 +138,8 @@ bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
               if (dep->isControlDependence()) {
                 continue;
               }
-              auto fromInst = dep->getOutgoingT();
-              auto toInst = dep->getIncomingT();
+              auto fromInst = dep->getSrc();
+              auto toInst = dep->getDst();
               errs() << "DOALL:       " << *fromInst << " ---> " << *toInst;
               if (dep->isMemoryDependence()) {
                 errs() << " via memory\n";

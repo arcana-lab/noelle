@@ -33,14 +33,13 @@ class DG {
 public:
   DG();
 
-  typedef typename std::set<DGNode<T> *>::iterator nodes_iterator;
-  typedef typename std::set<DGNode<T> *>::const_iterator nodes_const_iterator;
-
-  typedef typename std::set<DGEdge<T> *>::iterator edges_iterator;
-  typedef typename std::set<DGEdge<T> *>::const_iterator edges_const_iterator;
-  typedef std::map<DGEdge<T> *, uint32_t> DepIdReverseMap_t;
-
-  typedef typename std::map<T *, DGNode<T> *>::iterator node_map_iterator;
+  using nodes_iterator = typename std::set<DGNode<T> *>::iterator;
+  using nodes_const_iterator = typename std::set<DGNode<T> *>::const_iterator;
+  using edges_iterator = typename std::set<DGEdge<T, T> *>::iterator;
+  using edges_const_iterator =
+      typename std::set<DGEdge<T, T> *>::const_iterator;
+  using node_map_iterator = typename std::map<T *, DGNode<T> *>::iterator;
+  typedef std::map<DGEdge<T, T> *, uint32_t> DepIdReverseMap_t;
 
   /*
    * Node and Edge Iterators
@@ -119,18 +118,10 @@ public:
   bool isExternal(T *theT) const;
   bool isInGraph(T *theT) const;
 
-  unsigned numNodes() const {
-    return allNodes.size();
-  }
-  unsigned numInternalNodes() const {
-    return internalNodeMap.size();
-  }
-  unsigned numExternalNodes() const {
-    return externalNodeMap.size();
-  }
-  unsigned numEdges() const {
-    return allEdges.size();
-  }
+  uint64_t numNodes(void) const;
+  uint64_t numInternalNodes(void) const;
+  uint64_t numExternalNodes(void) const;
+  uint64_t numEdges(void) const;
 
   /*
    * Iterator ranges
@@ -157,14 +148,14 @@ public:
   DGNode<T> *fetchNode(T *theT);
   const DGNode<T> *fetchConstNode(T *theT) const;
 
-  DGEdge<T> *addEdge(T *from, T *to);
-  std::unordered_set<DGEdge<T> *> fetchEdges(DGNode<T> *From, DGNode<T> *To);
-  DGEdge<T> *copyAddEdge(DGEdge<T> &edgeToCopy);
+  DGEdge<T, T> *addEdge(T *from, T *to);
+  std::unordered_set<DGEdge<T, T> *> fetchEdges(DGNode<T> *From, DGNode<T> *To);
+  DGEdge<T, T> *copyAddEdge(DGEdge<T, T> &edgeToCopy);
 
   /*
    * Deal with the id for each edge and the corresponding map for debugging
    */
-  std::optional<uint32_t> getEdgeID(DGEdge<T> *edge) {
+  std::optional<uint32_t> getEdgeID(DGEdge<T, T> *edge) {
     if (depLookupMap && depLookupMap->find(edge) != depLookupMap->end())
       return depLookupMap->at(edge);
     else
@@ -184,7 +175,7 @@ public:
   std::unordered_set<DGNode<T> *> getNextDepthNodes(DGNode<T> *node);
   std::unordered_set<DGNode<T> *> getPreviousDepthNodes(DGNode<T> *node);
   void removeNode(DGNode<T> *node);
-  void removeEdge(DGEdge<T> *edge);
+  void removeEdge(DGEdge<T, T> *edge);
   void copyNodesIntoNewGraph(DG<T> &newGraph,
                              std::set<DGNode<T> *> nodesToPartition,
                              DGNode<T> *entryNode);
@@ -192,19 +183,22 @@ public:
 
   raw_ostream &print(raw_ostream &stream);
 
-  static std::vector<DGEdge<T> *> sortDependences(
-      const std::set<DGEdge<T> *> &set);
+  static std::vector<DGEdge<T, T> *> sortDependences(
+      const std::set<DGEdge<T, T> *> &set);
 
 protected:
   int32_t nodeIdCounter;
   std::set<DGNode<T> *> allNodes;
-  std::set<DGEdge<T> *> allEdges;
+  std::set<DGEdge<T, T> *> allEdges;
   DGNode<T> *entryNode;
   std::map<T *, DGNode<T> *> internalNodeMap;
   std::map<T *, DGNode<T> *> externalNodeMap;
   std::shared_ptr<DepIdReverseMap_t> depLookupMap;
 };
 
+/*
+ * DG<T> class method implementations
+ */
 template <class T>
 DG<T>::DG() : nodeIdCounter{ 0 },
               depLookupMap{ nullptr } {
@@ -212,9 +206,6 @@ DG<T>::DG() : nodeIdCounter{ 0 },
   return;
 }
 
-/*
- * DG<T> class method implementations
- */
 template <class T>
 DGNode<T> *DG<T>::addNode(T *theT, bool inclusion) {
   auto node = new DGNode<T>(nodeIdCounter++, theT);
@@ -261,10 +252,10 @@ const DGNode<T> *DG<T>::fetchConstNode(T *theT) const {
 }
 
 template <class T>
-DGEdge<T> *DG<T>::addEdge(T *from, T *to) {
-  auto fromNode = fetchNode(from);
-  auto toNode = fetchNode(to);
-  auto edge = new DGEdge<T>(fromNode, toNode);
+DGEdge<T, T> *DG<T>::addEdge(T *from, T *to) {
+  auto fromNode = this->fetchNode(from);
+  auto toNode = this->fetchNode(to);
+  auto edge = new DGEdge<T, T>(fromNode, toNode);
   allEdges.insert(edge);
   fromNode->addOutgoingEdge(edge);
   toNode->addIncomingEdge(edge);
@@ -272,12 +263,12 @@ DGEdge<T> *DG<T>::addEdge(T *from, T *to) {
 }
 
 template <class T>
-std::unordered_set<DGEdge<T> *> DG<T>::fetchEdges(DGNode<T> *From,
-                                                  DGNode<T> *To) {
-  std::unordered_set<DGEdge<T> *> edgeSet;
+std::unordered_set<DGEdge<T, T> *> DG<T>::fetchEdges(DGNode<T> *From,
+                                                     DGNode<T> *To) {
+  std::unordered_set<DGEdge<T, T> *> edgeSet;
 
   for (auto &edge : From->getOutgoingEdges()) {
-    if (edge->getIncomingNode() == To) {
+    if (edge->getDstNode() == To) {
       edgeSet.insert(edge);
     }
   }
@@ -286,8 +277,8 @@ std::unordered_set<DGEdge<T> *> DG<T>::fetchEdges(DGNode<T> *From,
 }
 
 template <class T>
-DGEdge<T> *DG<T>::copyAddEdge(DGEdge<T> &edgeToCopy) {
-  auto edge = new DGEdge<T>(edgeToCopy);
+DGEdge<T, T> *DG<T>::copyAddEdge(DGEdge<T, T> &edgeToCopy) {
+  auto edge = new DGEdge<T, T>(edgeToCopy);
   allEdges.insert(edge);
 
   /*
@@ -317,9 +308,8 @@ std::unordered_set<DGNode<T> *> DG<T>::getTopLevelNodes(bool onlyInternal) {
 
     bool noOtherIncoming = true;
     for (auto incomingE : node->getIncomingEdges()) {
-      bool edgeToSelf = (incomingE->getOutgoingNode() == node);
-      bool edgeToExternal =
-          onlyInternal && isExternal(incomingE->getOutgoingT());
+      bool edgeToSelf = (incomingE->getSrcNode() == node);
+      bool edgeToExternal = onlyInternal && isExternal(incomingE->getSrc());
       noOtherIncoming &= edgeToSelf || edgeToExternal;
     }
     if (noOtherIncoming)
@@ -336,7 +326,7 @@ std::unordered_set<DGNode<T> *> DG<T>::getLeafNodes(bool onlyInternal) {
     for (auto selfNode : allNodes) {
       bool noChildNode = true;
       for (auto edge : selfNode->getOutgoingEdges()) {
-        noChildNode &= (edge->getIncomingNode() == selfNode);
+        noChildNode &= (edge->getDstNode() == selfNode);
       }
       if (noChildNode)
         leafNodes.insert(selfNode);
@@ -345,7 +335,7 @@ std::unordered_set<DGNode<T> *> DG<T>::getLeafNodes(bool onlyInternal) {
     for (auto selfNodePair : internalNodePairs()) {
       bool noChildNode = true;
       for (auto edge : selfNodePair.second->getOutgoingEdges()) {
-        noChildNode &= (edge->getIncomingNode() == selfNodePair.second);
+        noChildNode &= (edge->getDstNode() == selfNodePair.second);
       }
       if (noChildNode)
         leafNodes.insert(selfNodePair.second);
@@ -385,9 +375,9 @@ std::vector<std::unordered_set<DGNode<T> *> *> DG<T>::getDisconnectedSubgraphs(
       };
 
       for (auto edge : currentNode->getOutgoingEdges())
-        checkToVisitNode(edge->getIncomingNode());
+        checkToVisitNode(edge->getDstNode());
       for (auto edge : currentNode->getIncomingEdges())
-        checkToVisitNode(edge->getOutgoingNode());
+        checkToVisitNode(edge->getSrcNode());
     }
 
     connectedComponents.push_back(component);
@@ -400,7 +390,7 @@ template <class T>
 std::unordered_set<DGNode<T> *> DG<T>::getNextDepthNodes(DGNode<T> *node) {
   std::unordered_set<DGNode<T> *> incomingNodes;
   for (auto edge : node->getOutgoingEdges())
-    incomingNodes.insert(edge->getIncomingNode());
+    incomingNodes.insert(edge->getDstNode());
 
   std::unordered_set<DGNode<T> *> nextDepthNodes;
   for (auto incoming : incomingNodes) {
@@ -410,8 +400,8 @@ std::unordered_set<DGNode<T> *> DG<T>::getNextDepthNodes(DGNode<T> *node) {
      */
     bool isNextDepth = true;
     for (auto incomingE : incoming->getIncomingEdges()) {
-      isNextDepth &= (incomingNodes.find(incomingE->getOutgoingNode())
-                      == incomingNodes.end());
+      isNextDepth &=
+          (incomingNodes.find(incomingE->getSrcNode()) == incomingNodes.end());
     }
 
     if (!isNextDepth)
@@ -425,7 +415,7 @@ template <class T>
 std::unordered_set<DGNode<T> *> DG<T>::getPreviousDepthNodes(DGNode<T> *node) {
   std::unordered_set<DGNode<T> *> outgoingNodes;
   for (auto edge : node->getIncomingEdges())
-    outgoingNodes.insert(edge->getOutgoingNode());
+    outgoingNodes.insert(edge->getSrcNode());
 
   std::unordered_set<DGNode<T> *> previousDepthNodes;
   for (auto outgoing : outgoingNodes) {
@@ -435,8 +425,8 @@ std::unordered_set<DGNode<T> *> DG<T>::getPreviousDepthNodes(DGNode<T> *node) {
      */
     bool isPrevDepth = true;
     for (auto outgoingE : outgoing->getOutgoingEdges()) {
-      isPrevDepth &= (outgoingNodes.find(outgoingE->getIncomingNode())
-                      == outgoingNodes.end());
+      isPrevDepth &=
+          (outgoingNodes.find(outgoingE->getDstNode()) == outgoingNodes.end());
     }
 
     if (!isPrevDepth)
@@ -456,23 +446,23 @@ void DG<T>::removeNode(DGNode<T> *node) {
   /*
    * Collect edges to operate on before doing deletes
    */
-  std::unordered_set<DGEdge<T> *> incomingToNode;
-  std::unordered_set<DGEdge<T> *> outgoingFromNode;
-  std::unordered_set<DGEdge<T> *> allToAndFromNode;
+  std::unordered_set<DGEdge<T, T> *> incomingToNode;
+  std::unordered_set<DGEdge<T, T> *> outgoingFromNode;
+  std::unordered_set<DGEdge<T, T> *> allToAndFromNode;
   for (auto edge : node->getIncomingEdges())
     incomingToNode.insert(edge);
   for (auto edge : node->getOutgoingEdges())
     outgoingFromNode.insert(edge);
-  for (auto edge : node->getAllConnectedEdges())
+  for (auto edge : node->getAllEdges())
     allToAndFromNode.insert(edge);
 
   /*
    * Delete relations to edges and edges themselves
    */
   for (auto edge : incomingToNode)
-    edge->getOutgoingNode()->removeConnectedNode(node);
+    edge->getSrcNode()->removeConnectedNode(node);
   for (auto edge : outgoingFromNode)
-    edge->getIncomingNode()->removeConnectedNode(node);
+    edge->getDstNode()->removeConnectedNode(node);
   for (auto edge : allToAndFromNode) {
     allEdges.erase(edge);
     delete edge;
@@ -482,9 +472,9 @@ void DG<T>::removeNode(DGNode<T> *node) {
 }
 
 template <class T>
-void DG<T>::removeEdge(DGEdge<T> *edge) {
-  edge->getOutgoingNode()->removeConnectedEdge(edge);
-  edge->getIncomingNode()->removeConnectedEdge(edge);
+void DG<T>::removeEdge(DGEdge<T, T> *edge) {
+  edge->getSrcNode()->removeConnectedEdge(edge);
+  edge->getDstNode()->removeConnectedEdge(edge);
   allEdges.erase(edge);
   delete edge;
 }
@@ -506,7 +496,7 @@ void DG<T>::copyNodesIntoNewGraph(DG<T> &newGraph,
    */
   for (auto node : nodesToPartition) {
     for (auto edgeToCopy : node->getOutgoingEdges()) {
-      auto incomingT = edgeToCopy->getIncomingNode()->getT();
+      auto incomingT = edgeToCopy->getDstNode()->getT();
       if (!newGraph.isInGraph(incomingT))
         continue;
       newGraph.copyAddEdge(*edgeToCopy);
@@ -558,9 +548,9 @@ inline std::string DGNode<Instruction>::toString(void) const {
 }
 
 template <class T>
-std::vector<DGEdge<T> *> DG<T>::sortDependences(
-    const std::set<DGEdge<T> *> &set) {
-  std::vector<DGEdge<T> *> v;
+std::vector<DGEdge<T, T> *> DG<T>::sortDependences(
+    const std::set<DGEdge<T, T> *> &set) {
+  std::vector<DGEdge<T, T> *> v;
 
   /*
    * Fetch all edges.
@@ -573,12 +563,12 @@ std::vector<DGEdge<T> *> DG<T>::sortDependences(
   /*
    * Sort
    */
-  auto sortingFunction = [](DGEdge<T> *d1, DGEdge<T> *d2) -> bool {
+  auto sortingFunction = [](DGEdge<T, T> *d1, DGEdge<T, T> *d2) -> bool {
     assert(d1 != nullptr);
     assert(d2 != nullptr);
 
-    auto src1 = d1->getOutgoingT();
-    auto src2 = d2->getOutgoingT();
+    auto src1 = d1->getSrc();
+    auto src2 = d2->getSrc();
     assert(src1 != nullptr);
     assert(src2 != nullptr);
     if (src1 < src2) {
@@ -589,8 +579,8 @@ std::vector<DGEdge<T> *> DG<T>::sortDependences(
     }
     assert(src1 == src2);
 
-    auto dst1 = d1->getIncomingT();
-    auto dst2 = d2->getIncomingT();
+    auto dst1 = d1->getDst();
+    auto dst2 = d2->getDst();
     assert(dst1 != nullptr);
     assert(dst2 != nullptr);
     if (dst1 < dst2) {
@@ -606,6 +596,26 @@ std::vector<DGEdge<T> *> DG<T>::sortDependences(
   std::sort(v.begin(), v.end(), sortingFunction);
 
   return v;
+}
+
+template <class T>
+uint64_t DG<T>::numNodes(void) const {
+  return allNodes.size();
+}
+
+template <class T>
+uint64_t DG<T>::numInternalNodes(void) const {
+  return internalNodeMap.size();
+}
+
+template <class T>
+uint64_t DG<T>::numExternalNodes(void) const {
+  return externalNodeMap.size();
+}
+
+template <class T>
+uint64_t DG<T>::numEdges(void) const {
+  return allEdges.size();
 }
 
 } // namespace llvm::noelle

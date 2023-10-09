@@ -107,8 +107,8 @@ void SCCDAGNormalizer::mergeSCCsWithExternalInterIterationDependencies(void) {
       if (!edge->isDataDependence())
         continue;
 
-      auto producer = edge->getOutgoingT();
-      auto consumer = edge->getIncomingT();
+      auto producer = edge->getSrc();
+      auto consumer = edge->getDst();
       auto producerSCC = sccdag.sccOfValue(producer);
       if (!producerSCC->isExternal(consumer)) {
         continue;
@@ -169,12 +169,11 @@ void SCCDAGNormalizer::mergeSingleSyntacticSugarInstrs(void) {
     // SCCs.
     DGNode<SCC> *adjacentNode = nullptr;
     if (sccNode->outDegree() == 1) {
-      adjacentNode = (*sccNode->begin_outgoing_edges())->getIncomingNode();
+      adjacentNode = (*sccNode->begin_outgoing_edges())->getDstNode();
     }
 
     if (sccNode->inDegree() == 1) {
-      auto incomingOption =
-          (*sccNode->begin_incoming_edges())->getOutgoingNode();
+      auto incomingOption = (*sccNode->begin_incoming_edges())->getSrcNode();
       if (!adjacentNode) {
         adjacentNode = incomingOption;
       } else {
@@ -324,7 +323,7 @@ void SCCDAGNormalizer::MergeGroups::merge(DGNode<SCC> *sccNode1,
 //     singleSCC->insert(consumerSCC);
 //     singleSCCs.insert(singleSCC);
 //     for (auto edge : consumerNode->getIncomingEdges()) {
-//       auto producerSCC = edge->getOutgoingT();
+//       auto producerSCC = edge->getSrc();
 //       sccToParentMap[consumerSCC].insert(producerSCC);
 //     }
 //   }

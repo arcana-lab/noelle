@@ -36,11 +36,11 @@ public:
                                          const DominatorSummary &DS,
                                          PDG &dgForLoops);
 
-  static std::set<DGEdge<Value> *> getLoopCarriedDependenciesForLoop(
+  static std::set<DGEdge<Value, Value> *> getLoopCarriedDependenciesForLoop(
       const LoopStructure &LS,
       LoopTree *loopNode,
       PDG &LoopDG);
-  static std::set<DGEdge<Value> *> getLoopCarriedDependenciesForLoop(
+  static std::set<DGEdge<Value, Value> *> getLoopCarriedDependenciesForLoop(
       const LoopStructure &LS,
       LoopTree *loopNode,
       SCCDAG &sccdag);
@@ -48,7 +48,7 @@ public:
 private:
   static bool isALoopCarriedDependence(LoopTree *loopNode,
                                        const DominatorSummary &DS,
-                                       DGEdge<Value> *edge);
+                                       DGEdge<Value, Value> *edge);
 
   static bool canBasicBlockReachHeaderBeforeOther(const LoopStructure &LS,
                                                   BasicBlock *I,

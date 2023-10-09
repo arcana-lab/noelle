@@ -104,15 +104,15 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l) {
    * WAR)
    */
   std::map<std::pair<Instruction *, Instruction *>,
-           SmallVector<DGEdge<Value> *, 3>>
+           SmallVector<DGEdge<Value, Value> *, 3>>
       memDeps;
   for (auto edge : make_range(loopDG->begin_edges(), loopDG->end_edges())) {
 
     /*
      * Skip dependences that are not between instructions of the target loop
      */
-    if (!loopDG->isInternal(edge->getIncomingT())
-        || !loopDG->isInternal(edge->getOutgoingT())) {
+    if (!loopDG->isInternal(edge->getDst())
+        || !loopDG->isInternal(edge->getSrc())) {
       continue;
     }
 
@@ -126,11 +126,11 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l) {
     /*
      * Fetch the instructions involved in the dependence.
      */
-    auto pdgValueI = edge->getOutgoingT();
+    auto pdgValueI = edge->getSrc();
     auto i = dyn_cast<Instruction>(pdgValueI);
     assert(i && "Expecting an instruction as the value of a PDG node");
 
-    auto pdgValueJ = edge->getIncomingT();
+    auto pdgValueJ = edge->getDst();
     auto j = dyn_cast<Instruction>(pdgValueJ);
     assert(j && "Expecting an instruction as the value of a PDG node");
 
@@ -282,7 +282,7 @@ void refinePDGWithLIDS(PDG *loopDG,
    */
   auto dfr = computeReachabilityFromInstructions(loopStructure);
 
-  std::unordered_set<DGEdge<Value> *> edgesToRemove;
+  std::unordered_set<DGEdge<Value, Value> *> edgesToRemove;
   for (auto dependency :
        LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(
            *loopStructure,
@@ -295,8 +295,8 @@ void refinePDGWithLIDS(PDG *loopDG,
     if (!dependency->isMemoryDependence())
       continue;
 
-    auto fromInst = dyn_cast<Instruction>(dependency->getOutgoingT());
-    auto toInst = dyn_cast<Instruction>(dependency->getIncomingT());
+    auto fromInst = dyn_cast<Instruction>(dependency->getSrc());
+    auto toInst = dyn_cast<Instruction>(dependency->getDst());
     if (!fromInst || !toInst)
       continue;
 

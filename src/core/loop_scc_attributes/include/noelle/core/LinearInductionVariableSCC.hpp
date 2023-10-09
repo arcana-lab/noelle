@@ -32,7 +32,7 @@ public:
   LinearInductionVariableSCC(
       SCC *s,
       LoopStructure *loop,
-      const std::set<DGEdge<Value> *> &loopCarriedDependences,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
       DominatorSummary &dom,
       const std::set<InductionVariable *> &IVs);
 

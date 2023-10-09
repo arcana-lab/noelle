@@ -125,14 +125,14 @@ std::set<Value *> &InvocationLatency::memoizeExternals(
       attrs->computeSCCDAGWhenSCCsAreIgnored(canBeRematerialized);
   auto &edgesViaClones = newSCCDAGWithoutIgnoredSCCs.second;
   for (auto edge : edgesViaClones[scc]) {
-    auto parent = edge->getIncomingT();
+    auto parent = edge->getDst();
     auto parentInfo = attrs->getSCCAttrs(parent);
     if (canBeRematerialized(parentInfo)) {
       continue;
     }
 
     for (auto subEdge : edge->getSubEdges()) {
-      incomingExternals[scc].insert(subEdge->getIncomingT());
+      incomingExternals[scc].insert(subEdge->getDst());
     }
   }
   return incomingExternals[scc];

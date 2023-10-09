@@ -111,8 +111,8 @@ std::set<GenericSCC *> DSWP::getClonableSCCs(SCCDAGAttrs *sccManager,
         auto topLoop = loopNode->getLoop();
         auto lcFullyContained = true;
         for (auto loopCarriedDependency : lcSCC->getLoopCarriedDependences()) {
-          auto valueFrom = loopCarriedDependency->getOutgoingT();
-          auto valueTo = loopCarriedDependency->getIncomingT();
+          auto valueFrom = loopCarriedDependency->getSrc();
+          auto valueTo = loopCarriedDependency->getDst();
           assert(isa<Instruction>(valueFrom) && isa<Instruction>(valueTo));
           if (loopNode->getInnermostLoopThatContains(
                   cast<Instruction>(valueFrom))

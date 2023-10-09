@@ -120,8 +120,8 @@ Values DGTestSuite::pdgHasAllDGEdgesInProgram(ModulePass &pass,
   DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
   Values valueNames;
   for (auto edge : dgPass.fdg->getEdges()) {
-    std::string outName = suite.valueToString(edge->getOutgoingT());
-    std::string inName = suite.valueToString(edge->getIncomingT());
+    std::string outName = suite.valueToString(edge->getSrc());
+    std::string inName = suite.valueToString(edge->getDst());
     std::string type = edge->isControlDependence()
                            ? "control"
                            : (edge->isMemoryDependence() ? "memory" : "data");

@@ -235,8 +235,8 @@ protected:
 
   using InstIdMap_t = map<unsigned, DGNode<Value> *>;
   using InstIdReverseMap_t = map<DGNode<Value> *, unsigned>;
-  using DepIdMap_t = map<unsigned, DGEdge<Value> *>;
-  using DepIdReverseMap_t = map<DGEdge<Value> *, unsigned>;
+  using DepIdMap_t = map<unsigned, DGEdge<Value, Value> *>;
+  using DepIdReverseMap_t = map<DGEdge<Value, Value> *, unsigned>;
 
   // store the loopID
   map<unsigned, LoopDependenceInfo *> loopIdMap;
@@ -312,9 +312,9 @@ protected:
   }
 
   // helper function for dumping edge
-  void dumpEdge(unsigned depId, DGEdge<Value> *edge) {
-    auto idA = instIdLookupMap->at(edge->getOutgoingNode());
-    auto idB = instIdLookupMap->at(edge->getIncomingNode());
+  void dumpEdge(unsigned depId, DGEdge<Value, Value> *edge) {
+    auto idA = instIdLookupMap->at(edge->getSrcNode());
+    auto idB = instIdLookupMap->at(edge->getDstNode());
     outs() << depId << "\t" << idA << "->" << idB << ":\t" << edge->toString()
            << (edge->isLoopCarriedDependence() ? "(LC)" : "(LL)") << "\n";
   };

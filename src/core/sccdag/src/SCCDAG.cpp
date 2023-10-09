@@ -129,7 +129,7 @@ void SCCDAG::markEdgesAndSubEdges(void) {
    *
    * Iterate across SCCs.
    */
-  std::set<DGEdge<SCC> *> clearedEdges;
+  std::set<DGEdge<SCC, SCC> *> clearedEdges;
   for (auto outgoingSCCNode : this->getNodes()) {
 
     /*
@@ -151,14 +151,14 @@ void SCCDAG::markEdgesAndSubEdges(void) {
       /*
        * Find or create unique edge between the two connected SCC
        */
-      std::unordered_set<DGEdge<SCC> *> edgeSet;
+      std::unordered_set<DGEdge<SCC, SCC> *> edgeSet;
       for (auto edge : outgoingSCCNode->getOutgoingEdges()) {
-        if (edge->getIncomingNode() != incomingSCCNode)
+        if (edge->getDstNode() != incomingSCCNode)
           continue;
         edgeSet.insert(edge);
       }
       for (auto edge : outgoingSCCNode->getIncomingEdges()) {
-        if (edge->getOutgoingNode() != incomingSCCNode)
+        if (edge->getSrcNode() != incomingSCCNode)
           continue;
         edgeSet.insert(edge);
       }
@@ -170,7 +170,7 @@ void SCCDAG::markEdgesAndSubEdges(void) {
        * subedges
        */
       if (clearedEdges.find(sccEdge) == clearedEdges.end()) {
-        sccEdge->clearSubEdges();
+        sccEdge->removeSubEdges();
         clearedEdges.insert(sccEdge);
       }
       for (auto edge : incomingNode->getIncomingEdges())
@@ -385,8 +385,8 @@ void SCCDAG::computeReachabilityAmongSCCs(void) {
    * Populate bitMatrix with all reported dependences among SCC nodes.
    */
   for (auto *SCCEdge : this->getEdges()) {
-    const SCC *srcSCC = SCCEdge->getOutgoingT();
-    const SCC *dstSCC = SCCEdge->getIncomingT();
+    const SCC *srcSCC = SCCEdge->getSrc();
+    const SCC *dstSCC = SCCEdge->getDst();
     ordered.set(sccIndexes[srcSCC], sccIndexes[dstSCC]);
   }
 

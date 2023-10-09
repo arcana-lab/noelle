@@ -27,7 +27,7 @@ SingleAccumulatorRecomputableSCC::SingleAccumulatorRecomputableSCC(
     SCCKind K,
     SCC *s,
     LoopStructure *loop,
-    const std::set<DGEdge<Value> *> &loopCarriedDependences,
+    const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
     DominatorSummary &dom)
   : RecomputableSCC{ K, s, loop, loopCarriedDependences, true },
     accumulator{ nullptr } {
