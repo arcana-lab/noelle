@@ -55,30 +55,45 @@ struct CAT : public ModulePass {
   }
 
   bool runOnModule(Module &M) override {
+    errs() << "Example: Start\n";
 
     /*
      * Fetch NOELLE
      */
+    errs() << "Example:   Fetch NOELLE\n";
     auto &noelle = getAnalysis<Noelle>();
 
     /*
      * Register my data dependence analysis.
      */
+    errs() << "Example:   Register my own data dependence analysis\n";
     MyDependenceAnalysis myDepAnalysis{};
     noelle.addAnalysis(&myDepAnalysis);
 
     /*
      * Fetch the PDG
      */
+    errs() << "Example:   Fetch the PDG\n";
     auto PDG = noelle.getProgramDependenceGraph();
 
     /*
      * Fetch the FDG of "main"
      */
+    errs() << "Example:   Fetch the FDG of \"main\"\n";
     auto fm = noelle.getFunctionsManager();
     auto mainF = fm->getEntryFunction();
     auto FDG = PDG->createFunctionSubgraph(*mainF);
 
+    /*
+     * Fetch the LDG
+     */
+    errs() << "Example:   Fetch the LDG of the hottest loop\n";
+    auto allLoops = noelle.getLoopStructures();
+    noelle.sortByHotness(*allLoops);
+    auto hottestLoop = (*allLoops)[0];
+    auto ldi = noelle.getLoop(hottestLoop);
+
+    errs() << "Example: Exit\n";
     return false;
   }
 
