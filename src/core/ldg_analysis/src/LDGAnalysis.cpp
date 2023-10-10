@@ -72,6 +72,9 @@ void LDGAnalysis::improveDependenceGraph(PDG *loopDG, LoopStructure *loop) {
     /*
      * We only aim to remove memory dependences.
      */
+    if (dep->isControlDependence()) {
+      continue;
+    }
     if (!dep->isMemoryDependence()) {
       continue;
     }
