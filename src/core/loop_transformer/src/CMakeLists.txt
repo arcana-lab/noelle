@@ -46,6 +46,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../alias_analysis_engine/include
   ../../compilation_options_manager/include
   ../../ldg_analysis/include
+  ../../data_dependence_analysis/include
 	../include
 )
 

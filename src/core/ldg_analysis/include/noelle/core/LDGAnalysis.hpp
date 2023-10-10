@@ -23,6 +23,8 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DataDependenceAnalysis.hpp"
+#include "noelle/core/PDG.hpp"
+#include "noelle/core/LoopStructure.hpp"
 
 namespace llvm::noelle {
 
@@ -31,6 +33,8 @@ public:
   LDGAnalysis();
 
   void addAnalysis(DataDependenceAnalysis *a);
+
+  void improveDependenceGraph(PDG *loopDG, LoopStructure *loop);
 
 private:
   std::set<DataDependenceAnalysis *> ddAnalyses;

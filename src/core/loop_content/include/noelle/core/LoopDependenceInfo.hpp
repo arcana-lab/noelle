@@ -34,6 +34,7 @@
 #include "noelle/core/LoopIterationSpaceAnalysis.hpp"
 #include "noelle/core/LoopTransformationsOptions.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
+#include "noelle/core/LDGAnalysis.hpp"
 
 namespace llvm::noelle {
 
@@ -42,14 +43,16 @@ public:
   /*
    * Constructors.
    */
-  LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
+  LoopDependenceInfo(LDGAnalysis &ldgAnalysis,
+                     CompilationOptionsManager *compilationOptionsManager,
                      PDG *fG,
                      LoopTree *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
                      ScalarEvolution &SE);
 
-  LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
+  LoopDependenceInfo(LDGAnalysis &ldgAnalysis,
+                     CompilationOptionsManager *compilationOptionsManager,
                      PDG *fG,
                      LoopTree *loopNode,
                      Loop *l,
@@ -58,6 +61,7 @@ public:
                      uint32_t maxCores);
 
   LoopDependenceInfo(
+      LDGAnalysis &ldgAnalysis,
       CompilationOptionsManager *compilationOptionsManager,
       PDG *fG,
       LoopTree *loopNode,
@@ -67,7 +71,8 @@ public:
       uint32_t maxCores,
       std::unordered_set<LoopDependenceInfoOptimization> optimizations);
 
-  LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
+  LoopDependenceInfo(LDGAnalysis &ldgAnalysis,
+                     CompilationOptionsManager *compilationOptionsManager,
                      PDG *fG,
                      LoopTree *loopNode,
                      Loop *l,
@@ -77,6 +82,7 @@ public:
                      bool enableLoopAwareDependenceAnalyses);
 
   LoopDependenceInfo(
+      LDGAnalysis &ldgAnalysis,
       CompilationOptionsManager *compilationOptionsManager,
       PDG *fG,
       LoopTree *loop,
@@ -88,6 +94,7 @@ public:
       bool enableLoopAwareDependenceAnalyses);
 
   LoopDependenceInfo(
+      LDGAnalysis &ldgAnalysis,
       CompilationOptionsManager *compilationOptionsManager,
       PDG *fG,
       LoopTree *loop,
@@ -196,7 +203,8 @@ private:
    */
   void fetchLoopAndBBInfo(Loop *l, ScalarEvolution &SE);
 
-  std::pair<PDG *, SCCDAG *> createDGsForLoop(CompilationOptionsManager *com,
+  std::pair<PDG *, SCCDAG *> createDGsForLoop(LDGAnalysis &ldgAnalysis,
+                                              CompilationOptionsManager *com,
                                               Loop *l,
                                               LoopTree *loopNode,
                                               PDG *functionDG,

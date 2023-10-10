@@ -77,7 +77,8 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-void refinePDGWithLoopAwareMemDepAnalysis(PDG *loopDG,
+void refinePDGWithLoopAwareMemDepAnalysis(LDGAnalysis &ldgAnalysis,
+                                          PDG *loopDG,
                                           Loop *l,
                                           LoopStructure *loopStructure,
                                           LoopTree *loops,
@@ -87,6 +88,13 @@ void refinePDGWithLoopAwareMemDepAnalysis(PDG *loopDG,
   if (LIDS) {
     refinePDGWithLIDS(loopDG, loopStructure, loops, LIDS);
   }
+
+  /*
+   * Run the loop-centric data dependence analyses.
+   */
+  ldgAnalysis.improveDependenceGraph(loopDG, loopStructure);
+
+  return;
 }
 
 void refinePDGWithSCAF(PDG *loopDG, Loop *l) {

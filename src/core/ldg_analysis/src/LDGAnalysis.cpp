@@ -31,4 +31,86 @@ void LDGAnalysis::addAnalysis(DataDependenceAnalysis *a) {
   this->ddAnalyses.insert(a);
 }
 
+void LDGAnalysis::improveDependenceGraph(PDG *loopDG, LoopStructure *loop) {
+
+  /*
+   * Fetch all dependences.
+   */
+  auto deps = loopDG->getSortedDependences();
+
+  /*
+   * Identify dependences to remove.
+   */
+  std::set<DGEdge<Value, Value> *> toDelete{};
+  for (auto dep : deps) {
+
+    /*
+     * Fetch the two instructions that depend on each other.
+     */
+    auto s = dep->getSrc();
+    auto d = dep->getDst();
+    auto srcInst = dyn_cast<Instruction>(s);
+    auto dstInst = dyn_cast<Instruction>(d);
+    if (srcInst == nullptr) {
+      continue;
+    }
+    if (dstInst == nullptr) {
+      continue;
+    }
+
+    /*
+     * Make sure we only check dependences between instructions that are both
+     * within the loop.
+     */
+    if (!loop->isIncluded(srcInst)) {
+      continue;
+    }
+    if (!loop->isIncluded(dstInst)) {
+      continue;
+    }
+
+    /*
+     * We only aim to remove memory dependences.
+     */
+    if (!dep->isMemoryDependence()) {
+      continue;
+    }
+
+    /*
+     * We only aim to remove memory dependences that are "may"
+     */
+    if (dep->isMustDependence()) {
+      continue;
+    }
+
+    /*
+     * Try to remove the current memory dependence.
+     */
+    for (auto dda : this->ddAnalyses) {
+      if (!dda->canThereBeAMemoryDataDependence(srcInst,
+                                                dstInst,
+                                                Scope::LOOP)) {
+        toDelete.insert(dep);
+        break;
+      }
+      if (!dda->isThereThisMemoryDataDependenceType(dep->dataDependenceType(),
+                                                    srcInst,
+                                                    dstInst,
+                                                    Scope::LOOP)) {
+        toDelete.insert(dep);
+        break;
+      }
+    }
+  }
+
+  /*
+   * Remove dependences.
+   */
+  for (auto dep : toDelete) {
+    loopDG->removeEdge(dep);
+  }
+
+  return;
+}
+
 } // namespace llvm::noelle

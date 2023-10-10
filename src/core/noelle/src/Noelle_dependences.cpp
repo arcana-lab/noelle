@@ -95,6 +95,7 @@ std::vector<SCC *> Noelle::sortByHotness(const std::set<SCC *> &SCCs) {
 
 void Noelle::addAnalysis(DataDependenceAnalysis *a) {
   this->pdgAnalysis->addAnalysis(a);
+  this->ldgAnalysis.addAnalysis(a);
 
   return;
 }

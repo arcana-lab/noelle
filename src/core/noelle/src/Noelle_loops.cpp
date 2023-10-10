@@ -558,7 +558,8 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(Function *function,
       auto &newLI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
       auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
       auto llvmLoop = newLI.getLoopFor(ls->getHeader());
-      auto ldi = new LoopDependenceInfo(this->getCompilationOptionsManager(),
+      auto ldi = new LoopDependenceInfo(this->ldgAnalysis,
+                                        this->getCompilationOptionsManager(),
                                         funcPDG,
                                         loopNode,
                                         llvmLoop,
@@ -759,7 +760,8 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
          */
         LoopDependenceInfo *ldi = nullptr;
         if (!filterLoops) {
-          ldi = new LoopDependenceInfo(this->getCompilationOptionsManager(),
+          ldi = new LoopDependenceInfo(this->ldgAnalysis,
+                                       this->getCompilationOptionsManager(),
                                        funcPDG,
                                        loopNode,
                                        LLVMLoop,
@@ -1317,7 +1319,8 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
   /*
    * Allocate the LDI.
    */
-  auto ldi = new LoopDependenceInfo(this->getCompilationOptionsManager(),
+  auto ldi = new LoopDependenceInfo(this->ldgAnalysis,
+                                    this->getCompilationOptionsManager(),
                                     functionPDG,
                                     loopNode,
                                     loop,
