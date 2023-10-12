@@ -77,7 +77,7 @@ bool DeadFunctionEliminator::runOnModule(Module &M) {
     /*
      * Check how many other functions can invoke @nodeFunction
      */
-    auto callerNodes = node->getDstEdges();
+    auto callerNodes = node->getIncomingEdges();
     if (callerNodes.size() != 1) {
       continue;
     }

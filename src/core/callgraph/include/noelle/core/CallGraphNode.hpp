@@ -66,10 +66,10 @@ public:
 
   void addIncomingEdge(CallGraphFunctionFunctionEdge *edge);
 
-  std::unordered_set<CallGraphFunctionFunctionEdge *> getDstEdges(
+  std::unordered_set<CallGraphFunctionFunctionEdge *> getIncomingEdges(
       void) const;
 
-  std::unordered_set<CallGraphFunctionFunctionEdge *> getSrcEdges(
+  std::unordered_set<CallGraphFunctionFunctionEdge *> getOutgoingEdges(
       void) const;
 
   std::unordered_set<CallGraphFunctionFunctionEdge *> getEdges(void) const;

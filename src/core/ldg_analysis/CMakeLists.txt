@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.13)
-project(LoopDependenceAnalyses)
+project(LDGAnalysis)
 
 # Dependences
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
