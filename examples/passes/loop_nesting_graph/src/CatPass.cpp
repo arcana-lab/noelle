@@ -87,7 +87,7 @@ struct CAT : public ModulePass {
     }
     allNodes.erase(node);
 
-    for (auto child : node->getOutgoingEdges()) {
+    for (auto child : node->getSrcEdges()) {
       bool must = child->isAMustEdge();
       printGraph(child->getChild(),
                  level + 1,
@@ -120,7 +120,7 @@ struct CAT : public ModulePass {
 
     auto allNodes = lng->getLoopNodes();
     for (auto parent : lng->getLoopNodes()) {
-      if (parent->getIncomingEdges().size() == 0) {
+      if (parent->getDstEdges().size() == 0) {
         rootNodes.push_back(parent);
       }
     }

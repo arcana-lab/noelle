@@ -42,7 +42,7 @@ struct CAT : public ModulePass {
     /*
      * Iterate over the dependences
      */
-    auto iterF = [](Value *src, DGEdge<Value> *dep) -> bool {
+    auto iterF = [](Value *src, DGEdge<Value, Value> *dep) -> bool {
       errs() << "   " << *src << " ";
       if (dep->isMustDependence()) {
         errs() << " MUST ";
