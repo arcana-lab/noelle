@@ -2,6 +2,7 @@
 
 import os
 import sys
+import subprocess
 from enum import Enum
 
 # Risky. It works because autotuner.py and filter.py are at the same level in the directoy tree.
@@ -62,10 +63,17 @@ def myCompile(confFile, conf):
 
 
 def myRun(maxExecutionTime = 0):
-  retcode = 0
+  command = None
   if (maxExecutionTime == 0):
-    retcode = os.system(thisPath + "/../scripts/run")
+    command = "bash " + thisPath + "/../scripts/run"
   else:
-    retcode = os.system("timeout " + str(maxExecutionTime) + "s" + " " + thisPath + "/../scripts/run")
+    command = "bash " + "timeout " + str(maxExecutionTime) + "s " + thisPath + "/../scripts/run"
+
+  retcode = 0
+  try:
+    retcode = subprocess.call(command, shell = True)
+  except subprocess.CalledProcessError as e:
+    retcode = e.returncode
 
   return retcode
+
