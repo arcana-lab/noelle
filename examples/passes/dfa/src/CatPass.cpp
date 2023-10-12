@@ -7,109 +7,118 @@
 
 #include "noelle/core/Noelle.hpp"
 
-using namespace llvm::noelle ;
+using namespace llvm::noelle;
 
 namespace {
 
-  struct CAT : public ModulePass {
-    static char ID; 
+struct CAT : public ModulePass {
+  static char ID;
 
-    CAT() : ModulePass(ID) {}
+  CAT() : ModulePass(ID) {}
 
-    bool doInitialization (Module &M) override {
-      return false;
-    }
+  bool doInitialization(Module &M) override {
+    return false;
+  }
 
-    bool runOnModule (Module &M) override {
+  bool runOnModule(Module &M) override {
 
-      /*
-       * Fetch NOELLE
-       */
-      auto& noelle = getAnalysis<Noelle>();
-      errs() << "The program has " << noelle.numberOfProgramInstructions() << " instructions\n";
+    /*
+     * Fetch NOELLE
+     */
+    auto &noelle = getAnalysis<Noelle>();
+    errs() << "The program has " << noelle.numberOfProgramInstructions()
+           << " instructions\n";
 
-      /*
-       * Fetch the entry point.
-       */
-      auto fm = noelle.getFunctionsManager();
-      auto mainF = fm->getEntryFunction();
+    /*
+     * Fetch the entry point.
+     */
+    auto fm = noelle.getFunctionsManager();
+    auto mainF = fm->getEntryFunction();
 
-      /*
-       * Fetch the data flow engine.
-       */
-      auto dfe = noelle.getDataFlowEngine();
+    /*
+     * Fetch the data flow engine.
+     */
+    auto dfe = noelle.getDataFlowEngine();
 
-      /*
-       * Define the data flow equations
-       */
-      auto computeGEN = [](Instruction *i, DataFlowResult *df) {
-        if (!isa<LoadInst>(i)){
-          return ;
-        }
-        auto& gen = df->GEN(i);
-        gen.insert(i);
-        return ;
-      };
-      auto computeKILL = [](Instruction *, DataFlowResult *) {
-        return ;
-      };
-      auto computeOUT = [](std::set<Value *>& OUT, Instruction *succ, DataFlowResult *df) {
-        auto& inS = df->IN(succ);
-        OUT.insert(inS.begin(), inS.end());
-        return ;
-      } ;
-      auto computeIN = [](std::set<Value *>& IN, Instruction *inst, DataFlowResult *df) {
-        auto& genI = df->GEN(inst);
-        auto& outI = df->OUT(inst);
-        IN.insert(outI.begin(), outI.end());
-        IN.insert(genI.begin(), genI.end());
-        return ;
-      };
-
-      /*
-       * Run the data flow analysis
-       */
-      auto customDfr = dfe.applyBackward(
-        mainF,
-        computeGEN, 
-        computeKILL, 
-        computeIN, 
-        computeOUT
-        );
-
-      /*
-       * Print
-       */
-      for (auto& inst : instructions(mainF)){
-        if (!isa<LoadInst>(&inst)){
-          continue ;
-        }
-        auto insts = customDfr->OUT(&inst);
-        errs() << " Next are the " << insts.size() << " instructions ";
-        errs() << "that could read the value loaded by " << inst << "\n";
-        for (auto possibleInst : insts){
-          errs() << "   " << *possibleInst << "\n";
-        }
+    /*
+     * Define the data flow equations
+     */
+    auto computeGEN = [](Instruction *i, DataFlowResult *df) {
+      if (!isa<LoadInst>(i)) {
+        return;
       }
+      auto &gen = df->GEN(i);
+      gen.insert(i);
+      return;
+    };
+    auto computeKILL = [](Instruction *, DataFlowResult *) { return; };
+    auto computeOUT = [](Instruction *inst,
+                         Instruction *successor,
+                         std::set<Value *> &OUT,
+                         DataFlowResult *df) {
+      auto &inS = df->IN(successor);
+      OUT.insert(inS.begin(), inS.end());
+      return;
+    };
+    auto computeIN =
+        [](Instruction *inst, std::set<Value *> &IN, DataFlowResult *df) {
+          auto &genI = df->GEN(inst);
+          auto &outI = df->OUT(inst);
+          IN.insert(outI.begin(), outI.end());
+          IN.insert(genI.begin(), genI.end());
+          return;
+        };
 
-      return false;
+    /*
+     * Run the data flow analysis
+     */
+    auto customDfr = dfe.applyBackward(mainF,
+                                       computeGEN,
+                                       computeKILL,
+                                       computeIN,
+                                       computeOUT);
+
+    /*
+     * Print
+     */
+    for (auto &inst : instructions(mainF)) {
+      if (!isa<LoadInst>(&inst)) {
+        continue;
+      }
+      auto insts = customDfr->OUT(&inst);
+      errs() << " Next are the " << insts.size() << " instructions ";
+      errs() << "that could read the value loaded by " << inst << "\n";
+      for (auto possibleInst : insts) {
+        errs() << "   " << *possibleInst << "\n";
+      }
     }
 
-    void getAnalysisUsage(AnalysisUsage &AU) const override {
-      AU.addRequired<Noelle>();
-    }
-  };
-}
+    return false;
+  }
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+    AU.addRequired<Noelle>();
+  }
+};
+} // namespace
 
 // Next there is code to register your pass to "opt"
 char CAT::ID = 0;
 static RegisterPass<CAT> X("CAT", "Simple user of the Noelle framework");
 
 // Next there is code to register your pass to "clang"
-static CAT * _PassMaker = NULL;
+static CAT *_PassMaker = NULL;
 static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new CAT());}}); // ** for -Ox
-static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new CAT()); }}); // ** for -O0
+                                        [](const PassManagerBuilder &,
+                                           legacy::PassManagerBase &PM) {
+                                          if (!_PassMaker) {
+                                            PM.add(_PassMaker = new CAT());
+                                          }
+                                        }); // ** for -Ox
+static RegisterStandardPasses _RegPass2(
+    PassManagerBuilder::EP_EnabledOnOptLevel0,
+    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
+      if (!_PassMaker) {
+        PM.add(_PassMaker = new CAT());
+      }
+    }); // ** for -O0

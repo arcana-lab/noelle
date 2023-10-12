@@ -7,128 +7,138 @@
 
 #include "noelle/core/Noelle.hpp"
 
-using namespace llvm::noelle ;
+using namespace llvm::noelle;
 
 namespace {
 
-  struct CAT : public ModulePass {
-    static char ID; 
+struct CAT : public ModulePass {
+  static char ID;
 
-    CAT() : ModulePass(ID) {}
+  CAT() : ModulePass(ID) {}
 
-    bool doInitialization (Module &M) override {
-      return false;
-    }
+  bool doInitialization(Module &M) override {
+    return false;
+  }
 
-    bool runOnModule (Module &M) override {
+  bool runOnModule(Module &M) override {
+
+    /*
+     * Fetch NOELLE
+     */
+    auto &noelle = getAnalysis<Noelle>();
+
+    /*
+     * Fetch the entry point.
+     */
+    auto fm = noelle.getFunctionsManager();
+    auto mainF = fm->getEntryFunction();
+
+    /*
+     * Call graph.
+     */
+    auto pcf = fm->getProgramCallGraph();
+    for (auto node : pcf->getFunctionNodes()) {
 
       /*
-       * Fetch NOELLE
+       * Fetch the next program's function.
        */
-      auto& noelle = getAnalysis<Noelle>();
+      auto f = node->getFunction();
+      if (f->empty()) {
+        continue;
+      }
 
       /*
-       * Fetch the entry point.
+       * Fetch the outgoing edges.
        */
-      auto fm = noelle.getFunctionsManager();
-      auto mainF = fm->getEntryFunction();
+      auto outEdges = node->getSrcEdges();
+      if (outEdges.size() == 0) {
+        errs() << " The function \"" << f->getName() << "\" has no calls\n";
+        continue;
+      }
 
       /*
-       * Call graph.
+       * Print the outgoing edges.
        */
-      auto pcf = fm->getProgramCallGraph();
-      for (auto node : pcf->getFunctionNodes()){
+      if (pcf->doesItBelongToASCC(f)) {
+        errs() << " The function \"" << f->getName()
+               << "\" is involved in an SCC\n";
+      }
+      errs() << " The function \"" << f->getName() << "\"";
+      errs() << " invokes the following functions:\n";
+      for (auto callEdge : outEdges) {
+        auto calleeNode = callEdge->getCallee();
+        auto calleeF = calleeNode->getFunction();
+        errs() << "   [";
+        if (callEdge->isAMustCall()) {
+          errs() << "must";
+        } else {
+          errs() << "may";
+        }
+        errs() << "] \"" << calleeF->getName() << "\"\n";
 
         /*
-         * Fetch the next program's function.
+         * Print the sub-edges.
          */
-        auto f = node->getFunction();
-        if (f->empty()){
-          continue ;
-        }
-
-        /*
-         * Fetch the outgoing edges.
-         */
-        auto outEdges = node->getOutgoingEdges();
-        if (outEdges.size() == 0){
-          errs() << " The function \"" << f->getName() << "\" has no calls\n";
-          continue ;
-        }
-
-        /*
-         * Print the outgoing edges.
-         */
-        if (pcf->doesItBelongToASCC(f)){
-          errs() << " The function \"" << f->getName() << "\" is involved in an SCC\n";
-        }
-        errs() << " The function \"" << f->getName() << "\"";
-        errs() << " invokes the following functions:\n";
-        for (auto callEdge : outEdges){
-          auto calleeNode = callEdge->getCallee();
-          auto calleeF = calleeNode->getFunction();
-          errs() << "   [" ;
-          if (callEdge->isAMustCall()){
+        for (auto subEdge : callEdge->getSubEdges()) {
+          auto callerSubEdge = subEdge->getCaller();
+          errs() << "     [";
+          if (subEdge->isAMustCall()) {
             errs() << "must";
           } else {
             errs() << "may";
           }
-          errs() << "] \"" << calleeF->getName() << "\"\n";
-
-          /*
-           * Print the sub-edges.
-           */
-          for (auto subEdge : callEdge->getSubEdges()){
-            auto callerSubEdge = subEdge->getCaller();
-            errs() << "     [";
-            if (subEdge->isAMustCall()){
-              errs() << "must";
-            } else {
-              errs() << "may";
-            }
-            errs() << "] " << *callerSubEdge->getInstruction() << "\n";
-          }
+          errs() << "] " << *callerSubEdge->getInstruction() << "\n";
         }
       }
+    }
 
-      /*
-       * Fetch the islands.
-       */
-      errs() << "Islands of the program call graph\n";
-      auto islands = pcf->getIslands();
-      auto islandOfMain = islands[mainF];
-      for (auto& F : M){
-        auto islandOfF = islands[&F];
-        if (islandOfF != islandOfMain){
-          errs() << " Function " << F.getName() << " is not in the same island of main\n";
-        }
+    /*
+     * Fetch the islands.
+     */
+    errs() << "Islands of the program call graph\n";
+    auto islands = pcf->getIslands();
+    auto islandOfMain = islands[mainF];
+    for (auto &F : M) {
+      auto islandOfF = islands[&F];
+      if (islandOfF != islandOfMain) {
+        errs() << " Function " << F.getName()
+               << " is not in the same island of main\n";
       }
-
-      /*
-       * Fetch the SCCCAG
-       */
-      auto sccCAG = pcf->getSCCCAG();
-      auto mainNode = pcf->getFunctionNode(mainF);
-      auto sccOfMain = sccCAG->getNode(mainNode);
-
-      return false;
     }
 
-    void getAnalysisUsage(AnalysisUsage &AU) const override {
-      AU.addRequired<Noelle>();
-    }
-  };
-}
+    /*
+     * Fetch the SCCCAG
+     */
+    auto sccCAG = pcf->getSCCCAG();
+    auto mainNode = pcf->getFunctionNode(mainF);
+    auto sccOfMain = sccCAG->getNode(mainNode);
+
+    return false;
+  }
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override {
+    AU.addRequired<Noelle>();
+  }
+};
+} // namespace
 
 // Next there is code to register your pass to "opt"
 char CAT::ID = 0;
 static RegisterPass<CAT> X("CAT", "Simple user of the Noelle framework");
 
 // Next there is code to register your pass to "clang"
-static CAT * _PassMaker = NULL;
+static CAT *_PassMaker = NULL;
 static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new CAT());}}); // ** for -Ox
-static RegisterStandardPasses _RegPass2(PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder&, legacy::PassManagerBase& PM) {
-        if(!_PassMaker){ PM.add(_PassMaker = new CAT()); }}); // ** for -O0
+                                        [](const PassManagerBuilder &,
+                                           legacy::PassManagerBase &PM) {
+                                          if (!_PassMaker) {
+                                            PM.add(_PassMaker = new CAT());
+                                          }
+                                        }); // ** for -Ox
+static RegisterStandardPasses _RegPass2(
+    PassManagerBuilder::EP_EnabledOnOptLevel0,
+    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
+      if (!_PassMaker) {
+        PM.add(_PassMaker = new CAT());
+      }
+    }); // ** for -O0
