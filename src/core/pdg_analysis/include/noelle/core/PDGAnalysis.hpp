@@ -207,7 +207,8 @@ private:
   std::pair<bool, bool> isThereThisMemoryDataDependenceType(
       DataDependenceType t,
       Instruction *fromInst,
-      Instruction *toInst);
+      Instruction *toInst,
+      Function &F);
 
   static const StringSet<> externalFuncsHaveNoSideEffectOrHandledBySVF;
 

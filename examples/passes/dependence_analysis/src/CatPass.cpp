@@ -19,16 +19,35 @@ public:
 
   bool canThereBeAMemoryDataDependence(Instruction *fromInst,
                                        Instruction *toInst,
-                                       Scope s) override {
-    auto f = fromInst->getFunction();
+                                       Function &f) override {
     errs() << this->prefix << "canThereBeAMemoryDataDependence: Function "
-           << f->getName() << "\n";
+           << f.getName() << "\n";
     errs() << this->prefix << "canThereBeAMemoryDataDependence:   From "
            << *fromInst << "\n";
     errs() << this->prefix << "canThereBeAMemoryDataDependence:   To "
            << *toInst << "\n";
-    errs() << this->prefix << "canThereBeAMemoryDataDependence:   Scope " << s
-           << "\n";
+    errs() << this->prefix << "canThereBeAMemoryDataDependence:\n";
+
+    c++;
+
+    return true;
+  }
+
+  bool canThereBeAMemoryDataDependence(Instruction *fromInst,
+                                       Instruction *toInst,
+                                       LoopStructure &loop) override {
+    auto entryInst = loop.getEntryInstruction();
+    auto f = fromInst->getFunction();
+    errs() << this->prefix
+           << "canThereBeAMemoryDataDependence: Loop at nesting level "
+           << loop.getNestingLevel() << ": " << *entryInst << "\n";
+    errs() << this->prefix << "canThereBeAMemoryDataDependence:   In function "
+           << f->getName() << "\n";
+    errs()
+        << this->prefix << "canThereBeAMemoryDataDependence:   Dependence from "
+        << *fromInst << "\n";
+    errs() << this->prefix << "canThereBeAMemoryDataDependence:   to "
+           << *toInst << "\n";
     errs() << this->prefix << "canThereBeAMemoryDataDependence:\n";
 
     c++;

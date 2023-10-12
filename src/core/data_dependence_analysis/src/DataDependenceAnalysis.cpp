@@ -34,12 +34,55 @@ std::string DataDependenceAnalysis::getName(void) const {
   return this->analysisName;
 }
 
+bool DataDependenceAnalysis::canThereBeAMemoryDataDependence(
+    Instruction *fromInst,
+    Instruction *toInst) {
+  return true;
+}
+
+bool DataDependenceAnalysis::canThereBeAMemoryDataDependence(
+    Instruction *fromInst,
+    Instruction *toInst,
+    Function &function) {
+  return true;
+}
+
+bool DataDependenceAnalysis::canThereBeAMemoryDataDependence(
+    Instruction *fromInst,
+    Instruction *toInst,
+    LoopStructure &loop) {
+  return true;
+}
+
+MemoryDataDependenceStrength DataDependenceAnalysis::
+    isThereThisMemoryDataDependenceType(DataDependenceType t,
+                                        Instruction *fromInst,
+                                        Instruction *toInst) {
+  return MAY_EXIST;
+}
+
 MemoryDataDependenceStrength DataDependenceAnalysis::
     isThereThisMemoryDataDependenceType(DataDependenceType t,
                                         Instruction *fromInst,
                                         Instruction *toInst,
-                                        Scope s) {
+                                        Function &function) {
   return MAY_EXIST;
+}
+
+MemoryDataDependenceStrength DataDependenceAnalysis::
+    isThereThisMemoryDataDependenceType(DataDependenceType t,
+                                        Instruction *fromInst,
+                                        Instruction *toInst,
+                                        LoopStructure &loop) {
+  return MAY_EXIST;
+}
+
+bool DataDependenceAnalysis::canThisMemoryDependenceBeLoopCarried(
+    DataDependenceType t,
+    Instruction *fromInst,
+    Instruction *toInst,
+    LoopStructure &loop) {
+  return true;
 }
 
 } // namespace llvm::noelle

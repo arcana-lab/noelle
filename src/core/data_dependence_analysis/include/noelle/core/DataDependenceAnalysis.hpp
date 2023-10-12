@@ -23,11 +23,11 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DGBase.hpp"
+#include "noelle/core/LoopStructure.hpp"
 
 namespace llvm::noelle {
 
 enum MemoryDataDependenceStrength { CANNOT_EXIST, MAY_EXIST, MUST_EXIST };
-enum Scope { PROGRAM, FUNCTION, LOOP };
 
 class DataDependenceAnalysis {
 public:
@@ -36,14 +36,37 @@ public:
   std::string getName(void) const;
 
   virtual bool canThereBeAMemoryDataDependence(Instruction *fromInst,
+                                               Instruction *toInst);
+
+  virtual bool canThereBeAMemoryDataDependence(Instruction *fromInst,
                                                Instruction *toInst,
-                                               Scope s) = 0;
+                                               Function &function);
+
+  virtual bool canThereBeAMemoryDataDependence(Instruction *fromInst,
+                                               Instruction *toInst,
+                                               LoopStructure &loop);
+
+  virtual MemoryDataDependenceStrength isThereThisMemoryDataDependenceType(
+      DataDependenceType t,
+      Instruction *fromInst,
+      Instruction *toInst);
 
   virtual MemoryDataDependenceStrength isThereThisMemoryDataDependenceType(
       DataDependenceType t,
       Instruction *fromInst,
       Instruction *toInst,
-      Scope s);
+      Function &function);
+
+  virtual MemoryDataDependenceStrength isThereThisMemoryDataDependenceType(
+      DataDependenceType t,
+      Instruction *fromInst,
+      Instruction *toInst,
+      LoopStructure &loop);
+
+  virtual bool canThisMemoryDependenceBeLoopCarried(DataDependenceType t,
+                                                    Instruction *fromInst,
+                                                    Instruction *toInst,
+                                                    LoopStructure &loop);
 
 private:
   std::string analysisName;

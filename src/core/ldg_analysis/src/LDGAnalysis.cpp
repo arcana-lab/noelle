@@ -33,6 +33,11 @@ void LDGAnalysis::addAnalysis(DataDependenceAnalysis *a) {
 
 void LDGAnalysis::improveDependenceGraph(PDG *loopDG, LoopStructure *loop) {
 
+  this->removeDependences(loopDG, loop);
+}
+
+void LDGAnalysis::removeDependences(PDG *loopDG, LoopStructure *loop) {
+
   /*
    * Fetch all dependences.
    */
@@ -90,16 +95,14 @@ void LDGAnalysis::improveDependenceGraph(PDG *loopDG, LoopStructure *loop) {
      * Try to remove the current memory dependence.
      */
     for (auto dda : this->ddAnalyses) {
-      if (!dda->canThereBeAMemoryDataDependence(srcInst,
-                                                dstInst,
-                                                Scope::LOOP)) {
+      if (!dda->canThereBeAMemoryDataDependence(srcInst, dstInst, *loop)) {
         toDelete.insert(dep);
         break;
       }
       if (!dda->isThereThisMemoryDataDependenceType(dep->dataDependenceType(),
                                                     srcInst,
                                                     dstInst,
-                                                    Scope::LOOP)) {
+                                                    *loop)) {
         toDelete.insert(dep);
         break;
       }
@@ -111,6 +114,78 @@ void LDGAnalysis::improveDependenceGraph(PDG *loopDG, LoopStructure *loop) {
    */
   for (auto dep : toDelete) {
     loopDG->removeEdge(dep);
+  }
+
+  return;
+}
+
+void LDGAnalysis::removeLoopCarriedDependences(PDG *loopDG,
+                                               LoopStructure *loop) {
+
+  /*
+   * Fetch all dependences.
+   */
+  auto deps = loopDG->getSortedDependences();
+
+  /*
+   * Identify dependences to remove.
+   */
+  for (auto dep : deps) {
+
+    /*
+     * Fetch the two instructions that depend on each other.
+     */
+    auto s = dep->getSrc();
+    auto d = dep->getDst();
+    auto srcInst = dyn_cast<Instruction>(s);
+    auto dstInst = dyn_cast<Instruction>(d);
+    if (srcInst == nullptr) {
+      continue;
+    }
+    if (dstInst == nullptr) {
+      continue;
+    }
+
+    /*
+     * Make sure we only check dependences between instructions that are both
+     * within the loop.
+     */
+    if (!loop->isIncluded(srcInst)) {
+      continue;
+    }
+    if (!loop->isIncluded(dstInst)) {
+      continue;
+    }
+
+    /*
+     * We only target memory dependences.
+     */
+    if (dep->isControlDependence()) {
+      continue;
+    }
+    if (!dep->isMemoryDependence()) {
+      continue;
+    }
+
+    /*
+     * We only target loop-carried dependences.
+     */
+    if (!dep->isLoopCarriedDependence()) {
+      continue;
+    }
+
+    /*
+     * Try to disprove the loop-carried property of the dependence.
+     */
+    for (auto dda : this->ddAnalyses) {
+      if (!dda->canThisMemoryDependenceBeLoopCarried(dep->dataDependenceType(),
+                                                     srcInst,
+                                                     dstInst,
+                                                     *loop)) {
+        dep->setLoopCarried(false);
+        break;
+      }
+    }
   }
 
   return;

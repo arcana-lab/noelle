@@ -38,6 +38,9 @@ public:
 
 private:
   std::set<DataDependenceAnalysis *> ddAnalyses;
+
+  void removeDependences(PDG *loopDG, LoopStructure *loop);
+  void removeLoopCarriedDependences(PDG *loopDG, LoopStructure *loop);
 };
 
 } // namespace llvm::noelle
