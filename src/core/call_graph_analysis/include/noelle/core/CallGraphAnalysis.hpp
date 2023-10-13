@@ -35,6 +35,9 @@ public:
 
   std::string getName(void) const;
 
+  virtual CallStrength canThisFunctionBeACallee(Function &caller,
+                                        Function &potentialCallee);
+
   virtual CallStrength canThisFunctionBeACallee(CallBase *caller,
                                         Function &potentialCallee);
 

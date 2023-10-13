@@ -37,5 +37,9 @@ std::string CallGraphAnalysis::getName(void) const {
 CallStrength CallGraphAnalysis::canThisFunctionBeACallee(CallBase *caller, Function &potentialCallee){
   return CallStrength::CS_MAY_EXIST;
 }
+  
+CallStrength CallGraphAnalysis::canThisFunctionBeACallee(Function &caller, Function &potentialCallee){
+  return CallStrength::CS_MAY_EXIST;
+}
 
 } // namespace llvm::noelle
