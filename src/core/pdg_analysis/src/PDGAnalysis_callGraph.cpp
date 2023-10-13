@@ -28,8 +28,73 @@
 namespace llvm::noelle {
 
 noelle::CallGraph *PDGAnalysis::getProgramCallGraph(void) {
+
+  /*
+   * Compute the call graph.
+   */
   if (this->noelleCG == nullptr) {
     this->noelleCG = NoelleSVFIntegration::getProgramCallGraph(*M);
+  }
+
+  /*
+   * Check if external call graph analyses have been registered.
+   */
+  if (this->cgAnalyses.size() > 0){
+
+    /*
+     * Improve the call graph using external call graph analyses.
+     */
+    for (auto node : this->noelleCG->getFunctionNodes()){
+      for (auto outgoingEdge : node->getOutgoingEdges()){
+        
+        /*
+         * We can only improve may edges.
+         */
+        if (outgoingEdge->isAMustCall()){
+          continue ;
+        }
+
+        /*
+         * Fetch the callee.
+         */
+        auto calleeNode = outgoingEdge->getCallee();
+        auto callee = calleeNode->getFunction();
+
+        /*
+         * The current edge is a function->function edge.
+         * We need to iterate over the sub-edges to see the instructions that are responsible to this edge.
+         */
+        std::set<CallGraphInstructionFunctionEdge *> toDelete{};
+        CallGraphInstructionFunctionEdge *mustSubEdge = nullptr;
+        auto subedges = outgoingEdge->getSubEdges();
+        for (auto subedge : subedges){
+          assert(!subedge->isAMustCall());
+
+          /*
+           * Fetch the caller of this specific sub-edge.
+           */
+          auto callerNode = subedge->getCaller();
+          auto caller = cast<CallBase>(callerNode->getInstruction());
+
+          /*
+           * Query the external analyses.
+           */
+          for (auto cga : this->cgAnalyses){
+            auto queryResult = cga->canThisFunctionBeACallee(caller, *callee);
+            if (queryResult == CS_CANNOT_EXIST){
+              toDelete.insert(subedge);
+              break ;
+            } else if (queryResult == CS_MUST_EXIST){
+              mustSubEdge = subedge;
+              break ;
+            }
+          }
+          if (toDelete.size() > 0){
+            assert(mustSubEdge == nullptr);
+          }
+        }
+      }
+    }
   }
 
   return this->noelleCG;

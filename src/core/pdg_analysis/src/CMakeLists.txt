@@ -43,6 +43,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_structure/include
   ../../alias_analysis_engine/include
   ../../data_dependence_analysis/include
+  ../../call_graph_analysis/include
   ${CMAKE_INSTALL_PREFIX}/include
   ${CMAKE_INSTALL_PREFIX}/include/svf
   )

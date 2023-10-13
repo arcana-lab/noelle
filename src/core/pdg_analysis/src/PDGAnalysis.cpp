@@ -765,6 +765,10 @@ void PDGAnalysis::addAnalysis(DataDependenceAnalysis *a) {
   return;
 }
 
+void PDGAnalysis::addAnalysis(CallGraphAnalysis *a){
+  this->cgAnalyses.insert(a);
+}
+
 PDGAnalysis::~PDGAnalysis() {
   if (this->programDependenceGraph) {
     delete this->programDependenceGraph;

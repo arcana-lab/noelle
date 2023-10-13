@@ -1,13 +1,13 @@
 # Sources
 set(Srcs 
-  FunctionsManager.cpp
+  CallGraphAnalysis.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "FunctionsManager")
+set(PassName "CallGraphAnalysis")
 
 # configure LLVM 
 find_package(LLVM 9 REQUIRED CONFIG)
@@ -22,24 +22,9 @@ include(AddLLVM)
 message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
-  ../include 
-  ../../basic_utilities/include
-  ../../callgraph/include
-  ../../hotprofiler/include
-  ../../pdg/include
-  ../../dg/include
-  ../../pdg_analysis/include
-  ../../data_dependence_analysis/include
-  ../../call_graph_analysis/include
-  ../../pdg_printer/include
-  ../../sccdag/include
-  ../../alloc_aa/include
-  ../../talkdown/include
-  ../../alias_analysis_engine/include
-  ../../loop_structure/include
-  ../../dataflow/include
-  ../../types_manager/include
-  ../../may_points_to_analysis/include
+  ../../basic_utilities/include 
+  ../include
+  ./
   ${CMAKE_INSTALL_PREFIX}/include
   )
 
