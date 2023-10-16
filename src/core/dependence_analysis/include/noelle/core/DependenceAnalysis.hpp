@@ -29,9 +29,9 @@ namespace llvm::noelle {
 
 enum MemoryDataDependenceStrength { CANNOT_EXIST, MAY_EXIST, MUST_EXIST };
 
-class DataDependenceAnalysis {
+class DependenceAnalysis {
 public:
-  DataDependenceAnalysis(const std::string &name);
+  DependenceAnalysis(const std::string &name);
 
   std::string getName(void) const;
 
@@ -63,10 +63,8 @@ public:
       Instruction *toInst,
       LoopStructure &loop);
 
-  virtual bool canThisMemoryDependenceBeLoopCarried(DataDependenceType t,
-                                                    Instruction *fromInst,
-                                                    Instruction *toInst,
-                                                    LoopStructure &loop);
+  virtual bool canThisDependenceBeLoopCarried(DGEdge<Value, Value> *dep,
+                                              LoopStructure &loop);
 
 private:
   std::string analysisName;

@@ -11,10 +11,10 @@ using namespace llvm::noelle;
 
 namespace {
 
-class MyDependenceAnalysis : public DataDependenceAnalysis {
+class MyDependenceAnalysis : public DependenceAnalysis {
 public:
   MyDependenceAnalysis()
-    : DataDependenceAnalysis("Example of data dependence analysis"),
+    : DependenceAnalysis("Example of data dependence analysis"),
       c{ 0 } {}
 
   bool canThereBeAMemoryDataDependence(Instruction *fromInst,

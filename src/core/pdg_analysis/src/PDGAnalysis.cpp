@@ -759,13 +759,13 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions(
   return false;
 }
 
-void PDGAnalysis::addAnalysis(DataDependenceAnalysis *a) {
+void PDGAnalysis::addAnalysis(DependenceAnalysis *a) {
   this->ddAnalyses.insert(a);
 
   return;
 }
 
-void PDGAnalysis::addAnalysis(CallGraphAnalysis *a){
+void PDGAnalysis::addAnalysis(CallGraphAnalysis *a) {
   this->cgAnalyses.insert(a);
 }
 

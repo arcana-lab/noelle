@@ -42,7 +42,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_induction_variables/include
   ../../alias_analysis_engine/include
   ../../ldg_analysis/include
-  ../../data_dependence_analysis/include
+  ../../dependence_analysis/include
   ../include/ 
   ./ 
   ${CMAKE_INSTALL_PREFIX}/include

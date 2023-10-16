@@ -27,7 +27,7 @@ LDGAnalysis::LDGAnalysis() {
   return;
 }
 
-void LDGAnalysis::addAnalysis(DataDependenceAnalysis *a) {
+void LDGAnalysis::addAnalysis(DependenceAnalysis *a) {
   this->ddAnalyses.insert(a);
 }
 
@@ -158,16 +158,6 @@ void LDGAnalysis::removeLoopCarriedDependences(PDG *loopDG,
     }
 
     /*
-     * We only target memory dependences.
-     */
-    if (dep->isControlDependence()) {
-      continue;
-    }
-    if (!dep->isMemoryDependence()) {
-      continue;
-    }
-
-    /*
      * We only target loop-carried dependences.
      */
     if (!dep->isLoopCarriedDependence()) {
@@ -178,10 +168,7 @@ void LDGAnalysis::removeLoopCarriedDependences(PDG *loopDG,
      * Try to disprove the loop-carried property of the dependence.
      */
     for (auto dda : this->ddAnalyses) {
-      if (!dda->canThisMemoryDependenceBeLoopCarried(dep->dataDependenceType(),
-                                                     srcInst,
-                                                     dstInst,
-                                                     *loop)) {
+      if (!dda->canThisDependenceBeLoopCarried(dep, *loop)) {
         dep->setLoopCarried(false);
         break;
       }

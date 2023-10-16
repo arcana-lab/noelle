@@ -44,7 +44,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_sccdag_attributes/include
   ../../loop_carried_dependences/include
   ../../may_points_to_analysis/include
-  ../../data_dependence_analysis/include
+  ../../dependence_analysis/include
   ../include
   ./
   ${CMAKE_INSTALL_PREFIX}/include

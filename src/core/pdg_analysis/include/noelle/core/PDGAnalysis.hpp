@@ -30,7 +30,7 @@
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
 #include "noelle/core/MayPointsToAnalysis.hpp"
-#include "noelle/core/DataDependenceAnalysis.hpp"
+#include "noelle/core/DependenceAnalysis.hpp"
 #include "noelle/core/CallGraphAnalysis.hpp"
 
 namespace llvm::noelle {
@@ -51,7 +51,7 @@ public:
 
   bool runOnModule(Module &M) override;
 
-  void addAnalysis(DataDependenceAnalysis *a);
+  void addAnalysis(DependenceAnalysis *a);
 
   void addAnalysis(CallGraphAnalysis *a);
 
@@ -85,7 +85,7 @@ private:
   bool disableRA;
   PDGPrinter printer;
   noelle::CallGraph *noelleCG;
-  std::set<DataDependenceAnalysis *> ddAnalyses;
+  std::set<DependenceAnalysis *> ddAnalyses;
   std::set<CallGraphAnalysis *> cgAnalyses;
   std::unordered_set<const Function *> internalFuncs;
   std::unordered_set<const Function *> unhandledExternalFuncs;

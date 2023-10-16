@@ -44,7 +44,7 @@
 #include "noelle/core/Linker.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
 #include "noelle/core/MayPointsToAnalysis.hpp"
-#include "noelle/core/DataDependenceAnalysis.hpp"
+#include "noelle/core/DependenceAnalysis.hpp"
 #include "noelle/core/CallGraphAnalysis.hpp"
 
 namespace llvm::noelle {
@@ -186,7 +186,7 @@ public:
 
   Hot *getProfiles(void);
 
-  void addAnalysis(DataDependenceAnalysis *a);
+  void addAnalysis(DependenceAnalysis *a);
 
   void addAnalysis(CallGraphAnalysis *a);
 

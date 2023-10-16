@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.13)
-project(DataDependenceAnalysis)
+project(DependenceAnalysis)
 
 # Dependences
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
@@ -11,7 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/noelle/core/DataDependenceAnalysis.hpp
+  include/noelle/core/DependenceAnalysis.hpp
   DESTINATION 
   include/noelle/core
   )

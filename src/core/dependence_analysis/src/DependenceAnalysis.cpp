@@ -21,47 +21,44 @@
  */
 #pragma once
 
-#include "noelle/core/DataDependenceAnalysis.hpp"
+#include "noelle/core/DependenceAnalysis.hpp"
 
 namespace llvm::noelle {
 
-DataDependenceAnalysis::DataDependenceAnalysis(const std::string &name)
+DependenceAnalysis::DependenceAnalysis(const std::string &name)
   : analysisName{ name } {
   return;
 }
 
-std::string DataDependenceAnalysis::getName(void) const {
+std::string DependenceAnalysis::getName(void) const {
   return this->analysisName;
 }
 
-bool DataDependenceAnalysis::canThereBeAMemoryDataDependence(
-    Instruction *fromInst,
-    Instruction *toInst) {
+bool DependenceAnalysis::canThereBeAMemoryDataDependence(Instruction *fromInst,
+                                                         Instruction *toInst) {
   return true;
 }
 
-bool DataDependenceAnalysis::canThereBeAMemoryDataDependence(
-    Instruction *fromInst,
-    Instruction *toInst,
-    Function &function) {
+bool DependenceAnalysis::canThereBeAMemoryDataDependence(Instruction *fromInst,
+                                                         Instruction *toInst,
+                                                         Function &function) {
   return true;
 }
 
-bool DataDependenceAnalysis::canThereBeAMemoryDataDependence(
-    Instruction *fromInst,
-    Instruction *toInst,
-    LoopStructure &loop) {
+bool DependenceAnalysis::canThereBeAMemoryDataDependence(Instruction *fromInst,
+                                                         Instruction *toInst,
+                                                         LoopStructure &loop) {
   return true;
 }
 
-MemoryDataDependenceStrength DataDependenceAnalysis::
+MemoryDataDependenceStrength DependenceAnalysis::
     isThereThisMemoryDataDependenceType(DataDependenceType t,
                                         Instruction *fromInst,
                                         Instruction *toInst) {
   return MAY_EXIST;
 }
 
-MemoryDataDependenceStrength DataDependenceAnalysis::
+MemoryDataDependenceStrength DependenceAnalysis::
     isThereThisMemoryDataDependenceType(DataDependenceType t,
                                         Instruction *fromInst,
                                         Instruction *toInst,
@@ -69,7 +66,7 @@ MemoryDataDependenceStrength DataDependenceAnalysis::
   return MAY_EXIST;
 }
 
-MemoryDataDependenceStrength DataDependenceAnalysis::
+MemoryDataDependenceStrength DependenceAnalysis::
     isThereThisMemoryDataDependenceType(DataDependenceType t,
                                         Instruction *fromInst,
                                         Instruction *toInst,
@@ -77,10 +74,8 @@ MemoryDataDependenceStrength DataDependenceAnalysis::
   return MAY_EXIST;
 }
 
-bool DataDependenceAnalysis::canThisMemoryDependenceBeLoopCarried(
-    DataDependenceType t,
-    Instruction *fromInst,
-    Instruction *toInst,
+bool DependenceAnalysis::canThisDependenceBeLoopCarried(
+    DGEdge<Value, Value> *dep,
     LoopStructure &loop) {
   return true;
 }

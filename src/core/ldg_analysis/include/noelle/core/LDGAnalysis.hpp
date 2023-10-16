@@ -22,7 +22,7 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/DataDependenceAnalysis.hpp"
+#include "noelle/core/DependenceAnalysis.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/LoopStructure.hpp"
 
@@ -32,12 +32,12 @@ class LDGAnalysis {
 public:
   LDGAnalysis();
 
-  void addAnalysis(DataDependenceAnalysis *a);
+  void addAnalysis(DependenceAnalysis *a);
 
   void improveDependenceGraph(PDG *loopDG, LoopStructure *loop);
 
 private:
-  std::set<DataDependenceAnalysis *> ddAnalyses;
+  std::set<DependenceAnalysis *> ddAnalyses;
 
   void removeDependences(PDG *loopDG, LoopStructure *loop);
   void removeLoopCarriedDependences(PDG *loopDG, LoopStructure *loop);
