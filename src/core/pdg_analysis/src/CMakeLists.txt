@@ -37,7 +37,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../alloc_aa/include 
   ../../talkdown/include 
   ../../dataflow/include
-  ../../callgraph/include
+  ../../call_graph/include
   ../../dg/include
   ../../pdg/include
   ../../alias_analysis_engine/include

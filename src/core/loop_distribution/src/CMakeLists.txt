@@ -31,7 +31,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../hotprofiler/include 
   ../../talkdown/include
   ../../dataflow/include
-  ../../callgraph/include
+  ../../call_graph/include
   ../../loop_induction_variables/include
   ../include/ 
   ./ 

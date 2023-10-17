@@ -26,7 +26,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../basic_utilities/include 
   ../../dominators/include 
   ../../transformations/include
-  ../../callgraph/include
+  ../../call_graph/include
   ../../dataflow/include
   ../../architecture/include 
   ../../alloc_aa/include 

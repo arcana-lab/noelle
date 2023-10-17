@@ -34,7 +34,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../talkdown/include
   ../../loop_content/include
   ../../dataflow/include
-  ../../callgraph/include
+  ../../call_graph/include
   ../../scheduler/include
   ${CMAKE_INSTALL_PREFIX}/include
   )
