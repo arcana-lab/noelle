@@ -491,7 +491,7 @@ CallGraphFunctionFunctionEdge *CallGraph::fetchOrCreateEdge(
   }
 
   /*
-   * The edge from @fromNode to @toNode already exists.
+   * The edge from @fromNode to @toNode exists at this point.
    *
    * Check if we need to change its flag to must.
    */
