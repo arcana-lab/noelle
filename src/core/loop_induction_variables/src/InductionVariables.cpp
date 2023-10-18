@@ -138,7 +138,6 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
           if (subloop->getLoopExitBasicBlocks().size() != 1)
             continue;
 
-<<<<<<< HEAD
           /*
            * Note: a BranchInst is expected to terminate the loop header.
            * Do-while loops may not be handled.
@@ -149,14 +148,6 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
               continue;
 
             auto subloopExitCond = cast<CmpInst>(subloopExitBr->getCondition());
-=======
-          if (auto subloopHeaderTerminator =
-                  dyn_cast<BranchInst>(subloop->getHeader()->getTerminator())) {
-            assert(isa<CmpInst>(subloopHeaderTerminator->getCondition())
-                   && "subloop loop exit condition not CmpInst!\n");
-            auto subloopExitCond =
-                cast<CmpInst>(subloopHeaderTerminator->getCondition());
->>>>>>> c4497242 (stepPHIs abstraction added)
             auto subloopExitCondL = subloopExitCond->getOperand(0);
             auto subloopExitCondR = subloopExitCond->getOperand(1);
 
@@ -190,7 +181,6 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
             assert(subloopIV->getSCEVType() == SCEVTypes::scAddRecExpr);
             auto subloopIVSCEV = cast<SCEVAddRecExpr>(subloopIV);
 
-<<<<<<< HEAD
             auto subloopExitBBs = subloop->getLoopExitBasicBlocks();
             bool exitsOnTrue = false;
             if (std::find(subloopExitBBs.begin(),
@@ -200,8 +190,6 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
               exitsOnTrue = true;
             }
 
-=======
->>>>>>> c4497242 (stepPHIs abstraction added)
             if (auto startSCEVConstant =
                     dyn_cast<SCEVConstant>(subloopIVSCEV->getStart())) {
               auto subloopStartValue =
@@ -212,7 +200,6 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
                     stepSCEVConstant->getValue()->getSExtValue();
                 auto negativeStep = stepSCEVConstant->getValue()->isNegative();
 
-<<<<<<< HEAD
                 /*
                  * We ignore the combinations that don't make sense for IVs.
                  * Example: an increasing IV that exits when it is < C.
@@ -266,8 +253,6 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
                                   subloopStepSize);
                 stepMultiplier = d.quot + (d.rem ? 1 : 0);
 
-=======
->>>>>>> c4497242 (stepPHIs abstraction added)
                 IV = new InductionVariable(
                     loop,
                     IVM,

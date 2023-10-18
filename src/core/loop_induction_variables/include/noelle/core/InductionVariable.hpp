@@ -46,16 +46,6 @@ public:
                     LoopEnvironment &loopEnvironment,
                     ScalarEvolutionReferentialExpander &referentialExpander);
 
-  InductionVariable(LoopStructure *LS,
-                    InvariantManager &IVM,
-                    ScalarEvolution &SE,
-                    int64_t stepMultiplier,
-                    PHINode *loopEntryPHI,
-                    std::unordered_set<PHINode *> stepPHIs,
-                    SCC &scc,
-                    LoopEnvironment &loopEnvironment,
-                    ScalarEvolutionReferentialExpander &referentialExpander);
-
   // For LLVM IVs
   InductionVariable(LoopStructure *LS,
                     InvariantManager &IVM,
@@ -160,23 +150,7 @@ private:
    */
   Value *singleStepValue;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
   int64_t stepMultiplier;
-=======
-  int stepMultiplier;
->>>>>>> 94efbc6e (new IV algorithm)
-=======
-  int64_t stepMultiplier;
->>>>>>> a95150b4 (comments added and code cleaned)
-=======
-  int stepMultiplier;
->>>>>>> 94efbc6e (new IV algorithm)
-=======
-  int64_t stepMultiplier;
->>>>>>> a95150b4 (comments added and code cleaned)
 
   /*
    * The values, in order of execution, used to compute the step recurrence
@@ -214,38 +188,11 @@ private:
   void deriveStepValue(LoopStructure *LS,
                        ScalarEvolution &SE,
                        ScalarEvolutionReferentialExpander &referentialExpander,
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
                        int64_t multiplier);
 
   void deriveStepValueFromSCEVConstant(const SCEVConstant *scev,
                                        int64_t multiplier);
-=======
-                       int stepMultiplier);
 
-  void deriveStepValueFromSCEVConstant(const SCEVConstant *scev,
-                                       int multiplier);
->>>>>>> 94efbc6e (new IV algorithm)
-=======
-                       int64_t multiplier);
-
-  void deriveStepValueFromSCEVConstant(const SCEVConstant *scev,
-                                       int64_t multiplier);
->>>>>>> a95150b4 (comments added and code cleaned)
-=======
-                       int stepMultiplier);
-
-  void deriveStepValueFromSCEVConstant(const SCEVConstant *scev,
-                                       int multiplier);
->>>>>>> 94efbc6e (new IV algorithm)
-=======
-                       int64_t multiplier);
-
-  void deriveStepValueFromSCEVConstant(const SCEVConstant *scev,
-                                       int64_t multiplier);
->>>>>>> a95150b4 (comments added and code cleaned)
   void deriveStepValueFromSCEVUnknown(const SCEVUnknown *scev,
                                       LoopStructure *LS);
   bool deriveStepValueFromCompositeSCEV(
