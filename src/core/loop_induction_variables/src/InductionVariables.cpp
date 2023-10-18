@@ -89,7 +89,9 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
        * First, let's check if the PHI node can be analyzed by the SCEV
        * analysis.
        */
+      auto sccContainingIV = sccdag.sccOfValue(&phi);
       auto noelleDeterminedValidIV = true;
+      InductionVariable *IV = nullptr;
       if (!SE.isSCEVable(phi.getType())) {
         noelleDeterminedValidIV = false;
 
@@ -100,21 +102,192 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
          * variable.
          */
         auto scev = SE.getSCEV(&phi);
-        if (!scev || scev->getSCEVType() != SCEVTypes::scAddRecExpr) {
+        if (!scev) {
           noelleDeterminedValidIV = false;
+        }
+        /*
+         * For a PHI that has a SCEV that is not an AddRecExpr, it may still be
+         * an IV that is being updated in a subloop if the proceeding conditions
+         * are met.
+         */
+        else if (scev->getSCEVType() != SCEVTypes::scAddRecExpr) {
+          noelleDeterminedValidIV = false;
+          int64_t stepMultiplier = 1;
+
+          /*
+           * 1. In the PHI's SCC, there is one PHI that has an AddRecExpr
+           * SCEV and is contained in the subloop of the original loop.
+           */
+          bool foundOnePHI = false;
+          PHINode *internalPHI = nullptr;
+
+          sccContainingIV->iterateOverInstructions([&](Instruction *I) -> bool {
+            if (isa<PHINode>(I) && I != &phi
+                && SE.getSCEV(I)->getSCEVType() == SCEVTypes::scAddRecExpr
+                && this->loop->isIncludedInItsSubLoops(I)) {
+              if (!foundOnePHI) {
+                foundOnePHI = true;
+                internalPHI = cast<PHINode>(I);
+              } else {
+                foundOnePHI = false;
+                return true;
+              }
+            }
+            return false;
+          });
+
+          if (!foundOnePHI)
+            continue;
+
+          /*
+           * 2. The subloop has only one exit condition, which compares
+           * the subloop's governing IV to a constant.
+           */
+          auto subloop = this->loop->getInnermostLoopThatContains(internalPHI);
+          if (subloop->getLoopExitBasicBlocks().size() != 1)
+            continue;
+
+          /*
+           * Note: a BranchInst is expected to terminate the loop header.
+           * Do-while loops may not be handled.
+           */
+          if (auto subloopExitBr =
+                  dyn_cast<BranchInst>(subloop->getHeader()->getTerminator())) {
+            if (!isa<CmpInst>(subloopExitBr->getCondition()))
+              continue;
+
+            auto subloopExitCond = cast<CmpInst>(subloopExitBr->getCondition());
+            auto subloopExitCondL = subloopExitCond->getOperand(0);
+            auto subloopExitCondR = subloopExitCond->getOperand(1);
+
+            const SCEV *subloopIV = nullptr;
+            const SCEV *subloopExitSCEV = nullptr;
+            if (SE.getSCEV(subloopExitCondL)->getSCEVType()
+                    == SCEVTypes::scAddRecExpr
+                && SE.getSCEV(subloopExitCondR)->getSCEVType()
+                       == SCEVTypes::scConstant) {
+              subloopIV = SE.getSCEV(subloopExitCondL);
+              subloopExitSCEV = SE.getSCEV(subloopExitCondR);
+            } else if (SE.getSCEV(subloopExitCondR)->getSCEVType()
+                           == SCEVTypes::scAddRecExpr
+                       && SE.getSCEV(subloopExitCondL)->getSCEVType()
+                              == SCEVTypes::scConstant) {
+              subloopIV = SE.getSCEV(subloopExitCondR);
+              subloopExitSCEV = SE.getSCEV(subloopExitCondL);
+            }
+
+            if (subloopExitSCEV == nullptr || subloopIV == nullptr)
+              continue;
+
+            /*
+             * If all conditions are met, calculate the number of inner loop
+             * iterations (step multiplier) and allocate the IV.
+             */
+            assert(subloopExitSCEV->getSCEVType() == SCEVTypes::scConstant);
+            auto subloopExitConstant =
+                cast<SCEVConstant>(subloopExitSCEV)->getValue()->getSExtValue();
+
+            assert(subloopIV->getSCEVType() == SCEVTypes::scAddRecExpr);
+            auto subloopIVSCEV = cast<SCEVAddRecExpr>(subloopIV);
+
+            auto subloopExitBBs = subloop->getLoopExitBasicBlocks();
+            bool exitsOnTrue = false;
+            if (std::find(subloopExitBBs.begin(),
+                          subloopExitBBs.end(),
+                          subloopExitBr->getSuccessor(0))
+                != subloopExitBBs.end()) {
+              exitsOnTrue = true;
+            }
+
+            if (auto startSCEVConstant =
+                    dyn_cast<SCEVConstant>(subloopIVSCEV->getStart())) {
+              auto subloopStartValue =
+                  startSCEVConstant->getValue()->getSExtValue();
+              if (auto stepSCEVConstant = dyn_cast<SCEVConstant>(
+                      subloopIVSCEV->getStepRecurrence(SE))) {
+                auto subloopStepSize =
+                    stepSCEVConstant->getValue()->getSExtValue();
+                auto negativeStep = stepSCEVConstant->getValue()->isNegative();
+
+                /*
+                 * We ignore the combinations that don't make sense for IVs.
+                 * Example: an increasing IV that exits when it is < C.
+                 * In this case, if the start value is < C, the loop wouldn't
+                 * execute. Otherwise, it will never be < C and run infinitely.
+                 */
+                bool unhandledCmp = false;
+                switch (subloopExitCond->getPredicate()) {
+                  case CmpInst::Predicate::ICMP_EQ:
+                    if (!exitsOnTrue)
+                      unhandledCmp = true;
+                    break;
+                  case CmpInst::Predicate::ICMP_NE:
+                    if (exitsOnTrue)
+                      unhandledCmp = true;
+                    break;
+                  case CmpInst::Predicate::ICMP_UGT:
+                  case CmpInst::Predicate::ICMP_SGT:
+                    if (negativeStep == exitsOnTrue)
+                      unhandledCmp = true;
+                    if (!negativeStep)
+                      subloopExitConstant += 1;
+                    break;
+                  case CmpInst::Predicate::ICMP_SGE:
+                  case CmpInst::Predicate::ICMP_UGE:
+                    if (negativeStep == exitsOnTrue)
+                      unhandledCmp = true;
+                    if (negativeStep)
+                      subloopExitConstant += 1;
+                    break;
+                  case CmpInst::Predicate::ICMP_SLT:
+                  case CmpInst::Predicate::ICMP_ULT:
+                    if (negativeStep != exitsOnTrue)
+                      unhandledCmp = true;
+                    if (negativeStep)
+                      subloopExitConstant += 1;
+                    break;
+                  case CmpInst::Predicate::ICMP_SLE:
+                  case CmpInst::Predicate::ICMP_ULE:
+                    if (negativeStep != exitsOnTrue)
+                      unhandledCmp = true;
+                    if (!negativeStep)
+                      subloopExitConstant += 1;
+                    break;
+                }
+
+                if (unhandledCmp)
+                  continue;
+
+                auto d = std::div(subloopExitConstant - subloopStartValue,
+                                  subloopStepSize);
+                stepMultiplier = d.quot + (d.rem ? 1 : 0);
+
+                IV = new InductionVariable(
+                    loop,
+                    IVM,
+                    SE,
+                    stepMultiplier,
+                    &phi,
+                    std::unordered_set<PHINode *>({ internalPHI }),
+                    *sccContainingIV,
+                    loopEnv,
+                    referentialExpander);
+              }
+            }
+          }
         }
       }
 
       /*
        * Allocate the induction variable.
        */
-      InductionVariable *IV = nullptr;
-      auto sccContainingIV = sccdag.sccOfValue(&phi);
       if (noelleDeterminedValidIV) {
         IV = new InductionVariable(loop,
                                    IVM,
                                    SE,
+                                   1,
                                    &phi,
+                                   std::unordered_set<PHINode *>({ &phi }),
                                    *sccContainingIV,
                                    loopEnv,
                                    referentialExpander);

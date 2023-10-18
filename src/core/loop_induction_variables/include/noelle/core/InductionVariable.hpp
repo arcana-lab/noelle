@@ -39,7 +39,9 @@ public:
   InductionVariable(LoopStructure *LS,
                     InvariantManager &IVM,
                     ScalarEvolution &SE,
+                    int64_t stepMultiplier,
                     PHINode *loopEntryPHI,
+                    std::unordered_set<PHINode *> stepPHIs,
                     SCC &scc,
                     LoopEnvironment &loopEnvironment,
                     ScalarEvolutionReferentialExpander &referentialExpander);
@@ -57,6 +59,8 @@ public:
   SCC *getSCC(void) const;
 
   PHINode *getLoopEntryPHI(void) const;
+
+  std::unordered_set<PHINode *> getPHIsInvolvedInComputingIVStep(void) const;
 
   std::unordered_set<PHINode *> getPHIs(void) const;
 
@@ -99,6 +103,12 @@ private:
   PHINode *loopEntryPHI;
 
   /*
+   * The PHINodes that are involved in the calculation of the step of the IV.
+   * Note: we currently only catch IVs that have one such PHINode.
+   */
+  std::unordered_set<PHINode *> stepPHIs;
+
+  /*
    * All PHIs, whether intermediate or the loop entry PHI
    */
   std::unordered_set<PHINode *> PHIs;
@@ -135,6 +145,11 @@ private:
   Value *singleStepValue;
 
   /*
+   * Multiplier for the step of an IV that only gets updated in a subloop
+   */
+  int64_t stepMultiplier;
+
+  /*
    * The values, in order of execution, used to compute the step recurrence
    * The last value is the step value between iterations
    * NOTE: these values expand the step SCEV so that all uses in the values are
@@ -169,9 +184,11 @@ private:
 
   void deriveStepValue(LoopStructure *LS,
                        ScalarEvolution &SE,
-                       ScalarEvolutionReferentialExpander &referentialExpander);
+                       ScalarEvolutionReferentialExpander &referentialExpander,
+                       int64_t multiplier);
 
-  void deriveStepValueFromSCEVConstant(const SCEVConstant *scev);
+  void deriveStepValueFromSCEVConstant(const SCEVConstant *scev,
+                                       int64_t multiplier);
   void deriveStepValueFromSCEVUnknown(const SCEVUnknown *scev,
                                       LoopStructure *LS);
   bool deriveStepValueFromCompositeSCEV(
