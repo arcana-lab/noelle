@@ -83,6 +83,34 @@ void CallGraphFunctionFunctionEdge::addSubEdge(
   return;
 }
 
+void CallGraphFunctionFunctionEdge::removeSubEdge(
+    CallGraphInstructionFunctionEdge *subEdge) {
+
+  /*
+   * Remove the sub-edge from the set.
+   */
+  assert(this->subEdges.find(subEdge) != this->subEdges.end());
+  this->subEdges.erase(subEdge);
+
+  /*
+   * Remove the sub-edge from the map.
+   */
+  auto caller = subEdge->getCaller();
+  auto callInst = caller->getInstruction();
+  this->subEdgesMap.erase(callInst);
+
+  /*
+   * Destroy the sub-edge.
+   */
+  delete subEdge;
+
+  return;
+}
+
+uint64_t CallGraphFunctionFunctionEdge::getNumberOfSubEdges(void) const {
+  return this->subEdges.size();
+}
+
 std::unordered_set<CallGraphInstructionFunctionEdge *>
 CallGraphFunctionFunctionEdge::getSubEdges(void) const {
   return this->subEdges;

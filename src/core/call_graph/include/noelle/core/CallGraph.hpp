@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020 Simone Campanoni
+ * Copyright 2019 - 2023 Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -66,6 +66,9 @@ public:
       CallGraphFunctionNode *node) const;
 
   std::unordered_set<CallGraphFunctionFunctionEdge *> getEdges(void) const;
+
+  void removeSubEdge(CallGraphFunctionFunctionEdge *e,
+                     CallGraphInstructionFunctionEdge *se);
 
 private:
   Module &m;
