@@ -106,11 +106,13 @@ struct CAT : public ModulePass {
     /*
      * Fetch the LDG
      */
-    errs() << "Example:   Fetch the LDG of the hottest loop\n";
     auto allLoops = noelle.getLoopStructures();
-    noelle.sortByHotness(*allLoops);
-    auto hottestLoop = (*allLoops)[0];
-    auto ldi = noelle.getLoop(hottestLoop);
+    if (allLoops->size() > 0) {
+      errs() << "Example:   Fetch the LDG of the hottest loop\n";
+      noelle.sortByHotness(*allLoops);
+      auto hottestLoop = (*allLoops)[0];
+      auto ldi = noelle.getLoop(hottestLoop);
+    }
 
     errs() << "Example: Exit\n";
     return false;
