@@ -100,10 +100,6 @@ std::unordered_set<CallGraphFunctionNode *> CallGraph::getFunctionNodes(
   return s;
 }
 
-std::unordered_set<CallGraphEdge *> CallGraph::getEdges(void) const {
-  return this->edges;
-}
-
 CallGraphFunctionNode *CallGraph::getEntryNode(void) const {
   Function *f = m.getFunction("main");
   return this->getFunctionNode(f);
@@ -382,7 +378,7 @@ void CallGraph::identifyCallGraphIslandsByCallInstructions(
       /*
        * Iterate over the edges.
        */
-      for (auto edge : currentNode->getEdges()) {
+      for (auto edge : this->getEdges(currentNode)) {
 
         /*
          * Fetch the calleer.
@@ -465,7 +461,7 @@ CallGraphFunctionFunctionEdge *CallGraph::fetchOrCreateEdge(
   /*
    * Check if the edge already exists.
    */
-  auto existingEdge = fromNode->getCallEdgeTo(toNode);
+  auto existingEdge = this->getEdge(fromNode, toNode);
   if (existingEdge == nullptr) {
 
     /*
@@ -474,25 +470,27 @@ CallGraphFunctionFunctionEdge *CallGraph::fetchOrCreateEdge(
      * Create a new edge.
      */
     auto newEdge = new CallGraphFunctionFunctionEdge(fromNode, toNode, isMust);
-    this->edges.insert(newEdge);
 
     /*
      * Add the new edge.
      */
-    fromNode->addOutgoingEdge(newEdge);
-    toNode->addIncomingEdge(newEdge);
+    auto &tmp = this->outgoingEdges[fromNode];
+    tmp[toNode] = newEdge;
+    auto &tmp2 = this->incomingEdges[toNode];
+    tmp2[fromNode] = newEdge;
 
-    /*
-     * Add the sub-edge.
-     */
-    newEdge->addSubEdge(subEdge);
-
-    return newEdge;
+    existingEdge = newEdge;
   }
+  assert(existingEdge != nullptr);
 
   /*
    * The edge from @fromNode to @toNode exists at this point.
    *
+   * Add the sub-edge.
+   */
+  existingEdge->addSubEdge(subEdge);
+
+  /*
    * Check if we need to change its flag to must.
    */
   if (isMust) {
@@ -502,11 +500,6 @@ CallGraphFunctionFunctionEdge *CallGraph::fetchOrCreateEdge(
      */
     existingEdge->setMust();
   }
-
-  /*
-   * Add the sub-edge.
-   */
-  existingEdge->addSubEdge(subEdge);
 
   return existingEdge;
 }
@@ -563,6 +556,68 @@ bool CallGraph::canFunctionEscape(Function *f) const {
   }
 
   return true;
+}
+
+CallGraphFunctionFunctionEdge *CallGraph::getEdge(
+    CallGraphFunctionNode *from,
+    CallGraphFunctionNode *to) const {
+
+  /*
+   * Fetch the set of edges from @from.
+   */
+  if (this->outgoingEdges.find(from) == this->outgoingEdges.end()) {
+    return nullptr;
+  }
+  auto &tmp = this->outgoingEdges.at(from);
+
+  /*
+   * Fetch the edge to @to
+   */
+  if (tmp.find(to) == tmp.end()) {
+    return nullptr;
+  }
+  auto e = tmp.at(to);
+
+  return e;
+}
+
+std::unordered_set<CallGraphFunctionFunctionEdge *> CallGraph::getIncomingEdges(
+    CallGraphFunctionNode *node) const {
+  std::unordered_set<CallGraphFunctionFunctionEdge *> s;
+
+  if (this->incomingEdges.find(node) == this->incomingEdges.end()) {
+    return s;
+  }
+  auto &tmp = this->incomingEdges.at(node);
+  for (auto p : tmp) {
+    s.insert(p.second);
+  }
+
+  return s;
+}
+
+std::unordered_set<CallGraphFunctionFunctionEdge *> CallGraph::getOutgoingEdges(
+    CallGraphFunctionNode *node) const {
+  std::unordered_set<CallGraphFunctionFunctionEdge *> s;
+
+  if (this->outgoingEdges.find(node) == this->outgoingEdges.end()) {
+    return s;
+  }
+  auto &tmp = this->outgoingEdges.at(node);
+  for (auto p : tmp) {
+    s.insert(p.second);
+  }
+
+  return s;
+}
+
+std::unordered_set<CallGraphFunctionFunctionEdge *> CallGraph::getEdges(
+    CallGraphFunctionNode *node) const {
+  auto s0 = this->getIncomingEdges(node);
+  auto s1 = this->getOutgoingEdges(node);
+  s0.insert(s1.begin(), s1.end());
+
+  return s0;
 }
 
 } // namespace llvm::noelle

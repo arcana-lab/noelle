@@ -127,7 +127,7 @@ unordered_set<Function *> functionsInvokedFrom(Noelle &noelle,
   auto insertMyCallees = [&](Function *caller,
                              queue<Function *> &funcsToTraverse) {
     auto funcNode = pcf->getFunctionNode(caller);
-    for (auto callEdge : funcNode->getOutgoingEdges()) {
+    for (auto callEdge : pcf->getOutgoingEdges(funcNode)) {
       for (auto subEdge : callEdge->getSubEdges()) {
         auto calleeFunc = subEdge->getCallee()->getFunction();
         if (!calleeFunc || calleeFunc->empty()) {
