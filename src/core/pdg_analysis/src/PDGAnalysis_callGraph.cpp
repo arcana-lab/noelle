@@ -39,19 +39,19 @@ noelle::CallGraph *PDGAnalysis::getProgramCallGraph(void) {
   /*
    * Check if external call graph analyses have been registered.
    */
-  if (this->cgAnalyses.size() > 0){
+  if (this->cgAnalyses.size() > 0) {
 
     /*
      * Improve the call graph using external call graph analyses.
      */
-    for (auto node : this->noelleCG->getFunctionNodes()){
-      for (auto outgoingEdge : node->getOutgoingEdges()){
-        
+    for (auto node : this->noelleCG->getFunctionNodes()) {
+      for (auto outgoingEdge : this->noelleCG->getOutgoingEdges(node)) {
+
         /*
          * We can only improve may edges.
          */
-        if (outgoingEdge->isAMustCall()){
-          continue ;
+        if (outgoingEdge->isAMustCall()) {
+          continue;
         }
 
         /*
@@ -62,12 +62,13 @@ noelle::CallGraph *PDGAnalysis::getProgramCallGraph(void) {
 
         /*
          * The current edge is a function->function edge.
-         * We need to iterate over the sub-edges to see the instructions that are responsible to this edge.
+         * We need to iterate over the sub-edges to see the instructions that
+         * are responsible to this edge.
          */
         std::set<CallGraphInstructionFunctionEdge *> toDelete{};
         CallGraphInstructionFunctionEdge *mustSubEdge = nullptr;
         auto subedges = outgoingEdge->getSubEdges();
-        for (auto subedge : subedges){
+        for (auto subedge : subedges) {
           assert(!subedge->isAMustCall());
 
           /*
@@ -79,17 +80,17 @@ noelle::CallGraph *PDGAnalysis::getProgramCallGraph(void) {
           /*
            * Query the external analyses.
            */
-          for (auto cga : this->cgAnalyses){
+          for (auto cga : this->cgAnalyses) {
             auto queryResult = cga->canThisFunctionBeACallee(caller, *callee);
-            if (queryResult == CS_CANNOT_EXIST){
+            if (queryResult == CS_CANNOT_EXIST) {
               toDelete.insert(subedge);
-              break ;
-            } else if (queryResult == CS_MUST_EXIST){
+              break;
+            } else if (queryResult == CS_MUST_EXIST) {
               mustSubEdge = subedge;
-              break ;
+              break;
             }
           }
-          if (toDelete.size() > 0){
+          if (toDelete.size() > 0) {
             assert(mustSubEdge == nullptr);
           }
         }
