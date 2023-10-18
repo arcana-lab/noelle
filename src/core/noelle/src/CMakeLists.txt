@@ -39,7 +39,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_content/include
   ../../loop_forest/include
   ../../loop_nesting_graph/include
-  ../../callgraph/include
+  ../../call_graph/include
   ../../dg/include
   ../../pdg/include
   ../../pdg_analysis/include

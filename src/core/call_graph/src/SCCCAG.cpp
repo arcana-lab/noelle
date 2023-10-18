@@ -86,7 +86,7 @@ SCCCAG::SCCCAG(CallGraph *cg) {
         thisIsAnSCC = true;
 
       } else {
-        for (auto edge : singleCGNode->getOutgoingEdges()) {
+        for (auto edge : cg->getOutgoingEdges(singleCGNode)) {
           if (edge->getCallee() == singleCGNode) {
             thisIsAnSCC = true;
             break;

@@ -41,8 +41,6 @@ public:
 
   std::unordered_set<CallGraphFunctionNode *> getFunctionNodes(void) const;
 
-  std::unordered_set<CallGraphEdge *> getEdges(void) const;
-
   CallGraphFunctionNode *getEntryNode(void) const;
 
   CallGraphFunctionNode *getFunctionNode(Function *f) const;
@@ -55,12 +53,33 @@ public:
 
   bool doesItBelongToASCC(Function *f);
 
+  CallGraphFunctionFunctionEdge *getEdge(CallGraphFunctionNode *from,
+                                         CallGraphFunctionNode *to) const;
+
+  std::unordered_set<CallGraphFunctionFunctionEdge *> getIncomingEdges(
+      CallGraphFunctionNode *node) const;
+
+  std::unordered_set<CallGraphFunctionFunctionEdge *> getOutgoingEdges(
+      CallGraphFunctionNode *node) const;
+
+  std::unordered_set<CallGraphFunctionFunctionEdge *> getEdges(
+      CallGraphFunctionNode *node) const;
+
+  std::unordered_set<CallGraphFunctionFunctionEdge *> getEdges(void) const;
+
 private:
   Module &m;
   std::unordered_map<Function *, CallGraphFunctionNode *> functions;
   std::unordered_map<Instruction *, CallGraphInstructionNode *>
       instructionNodes;
-  std::unordered_set<CallGraphEdge *> edges;
+  std::unordered_map<CallGraphFunctionNode *,
+                     std::unordered_map<CallGraphFunctionNode *,
+                                        CallGraphFunctionFunctionEdge *>>
+      outgoingEdges;
+  std::unordered_map<CallGraphFunctionNode *,
+                     std::unordered_map<CallGraphFunctionNode *,
+                                        CallGraphFunctionFunctionEdge *>>
+      incomingEdges;
   SCCCAG *scccag;
 
   CallGraph(Module &M);

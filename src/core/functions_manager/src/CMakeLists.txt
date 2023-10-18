@@ -24,7 +24,7 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 include_directories(${LLVM_INCLUDE_DIRS} 
   ../include 
   ../../basic_utilities/include
-  ../../callgraph/include
+  ../../call_graph/include
   ../../hotprofiler/include
   ../../pdg/include
   ../../dg/include

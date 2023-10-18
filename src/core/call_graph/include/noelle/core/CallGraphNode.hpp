@@ -22,10 +22,8 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/CallGraphEdge.hpp"
 
 namespace llvm::noelle {
-class CallGraphFunctionFunctionEdge;
 
 class CallGraphNode {
 public:
@@ -56,36 +54,12 @@ public:
 
   Function *getFunction(void) const;
 
-  CallGraphFunctionFunctionEdge *getCallEdgeTo(
-      CallGraphFunctionNode *callee) const;
-
-  CallGraphFunctionFunctionEdge *getCallEdgeFrom(
-      CallGraphFunctionNode *caller) const;
-
-  void addOutgoingEdge(CallGraphFunctionFunctionEdge *edge);
-
-  void addIncomingEdge(CallGraphFunctionFunctionEdge *edge);
-
-  std::unordered_set<CallGraphFunctionFunctionEdge *> getIncomingEdges(
-      void) const;
-
-  std::unordered_set<CallGraphFunctionFunctionEdge *> getOutgoingEdges(
-      void) const;
-
-  std::unordered_set<CallGraphFunctionFunctionEdge *> getEdges(void) const;
-
   void print(void) override;
 
   virtual ~CallGraphFunctionNode();
 
 private:
   Function &f;
-  std::unordered_set<CallGraphFunctionFunctionEdge *> outgoingEdges;
-  std::unordered_set<CallGraphFunctionFunctionEdge *> incomingEdges;
-  std::unordered_map<CallGraphFunctionNode *, CallGraphFunctionFunctionEdge *>
-      outgoingEdgesMap;
-  std::unordered_map<CallGraphFunctionNode *, CallGraphFunctionFunctionEdge *>
-      incomingEdgesMap;
 };
 
 } // namespace llvm::noelle
