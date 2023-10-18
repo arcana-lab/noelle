@@ -113,7 +113,7 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
          */
         else if (scev->getSCEVType() != SCEVTypes::scAddRecExpr) {
           noelleDeterminedValidIV = false;
-          auto stepMultiplier = 0;
+          int64_t stepMultiplier = 1;
 
           /*
            * 1. In the PHI's SCC, there is one PHI that has an AddRecExpr
@@ -148,12 +148,16 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
           if (subloop->getLoopExitBasicBlocks().size() != 1)
             continue;
 
-          if (auto subloopHeaderTerminator =
+          /*
+           * Note: a BranchInst is expected to terminate the loop header.
+           * Do-while loops may not be handled.
+           */
+          if (auto subloopExitBr =
                   dyn_cast<BranchInst>(subloop->getHeader()->getTerminator())) {
-            assert(isa<CmpInst>(subloopHeaderTerminator->getCondition())
-                   && "subloop loop exit condition not CmpInst!\n");
-            auto subloopExitCond =
-                cast<CmpInst>(subloopHeaderTerminator->getCondition());
+            if (!isa<CmpInst>(subloopExitBr->getCondition()))
+              continue;
+
+            auto subloopExitCond = cast<CmpInst>(subloopExitBr->getCondition());
             auto subloopExitCondL = subloopExitCond->getOperand(0);
             auto subloopExitCondR = subloopExitCond->getOperand(1);
 
@@ -187,6 +191,15 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
             assert(subloopIV->getSCEVType() == SCEVTypes::scAddRecExpr);
             auto subloopIVSCEV = cast<SCEVAddRecExpr>(subloopIV);
 
+            auto subloopExitBBs = subloop->getLoopExitBasicBlocks();
+            bool exitsOnTrue = false;
+            if (std::find(subloopExitBBs.begin(),
+                          subloopExitBBs.end(),
+                          subloopExitBr->getSuccessor(0))
+                != subloopExitBBs.end()) {
+              exitsOnTrue = true;
+            }
+
             if (auto startSCEVConstant =
                     dyn_cast<SCEVConstant>(subloopIVSCEV->getStart())) {
               auto subloopStartValue =
@@ -195,8 +208,60 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
                       subloopIVSCEV->getStepRecurrence(SE))) {
                 auto subloopStepSize =
                     stepSCEVConstant->getValue()->getSExtValue();
-                stepMultiplier =
-                    (subloopExitConstant - subloopStartValue) / subloopStepSize;
+                auto negativeStep = stepSCEVConstant->getValue()->isNegative();
+
+                /*
+                 * We ignore the combinations that don't make sense for IVs.
+                 * Example: an increasing IV that exits when it is < C.
+                 * In this case, if the start value is < C, the loop wouldn't
+                 * execute. Otherwise, it will never be < C and run infinitely.
+                 */
+                bool unhandledCmp = false;
+                switch (subloopExitCond->getPredicate()) {
+                  case CmpInst::Predicate::ICMP_EQ:
+                    if (!exitsOnTrue)
+                      unhandledCmp = true;
+                    break;
+                  case CmpInst::Predicate::ICMP_NE:
+                    if (exitsOnTrue)
+                      unhandledCmp = true;
+                    break;
+                  case CmpInst::Predicate::ICMP_UGT:
+                  case CmpInst::Predicate::ICMP_SGT:
+                    if (negativeStep == exitsOnTrue)
+                      unhandledCmp = true;
+                    if (!negativeStep)
+                      subloopExitConstant += 1;
+                    break;
+                  case CmpInst::Predicate::ICMP_SGE:
+                  case CmpInst::Predicate::ICMP_UGE:
+                    if (negativeStep == exitsOnTrue)
+                      unhandledCmp = true;
+                    if (negativeStep)
+                      subloopExitConstant += 1;
+                    break;
+                  case CmpInst::Predicate::ICMP_SLT:
+                  case CmpInst::Predicate::ICMP_ULT:
+                    if (negativeStep != exitsOnTrue)
+                      unhandledCmp = true;
+                    if (negativeStep)
+                      subloopExitConstant += 1;
+                    break;
+                  case CmpInst::Predicate::ICMP_SLE:
+                  case CmpInst::Predicate::ICMP_ULE:
+                    if (negativeStep != exitsOnTrue)
+                      unhandledCmp = true;
+                    if (!negativeStep)
+                      subloopExitConstant += 1;
+                    break;
+                }
+
+                if (unhandledCmp)
+                  continue;
+
+                auto d = std::div(subloopExitConstant - subloopStartValue,
+                                  subloopStepSize);
+                stepMultiplier = d.quot + (d.rem ? 1 : 0);
 
                 IV = new InductionVariable(
                     loop,
