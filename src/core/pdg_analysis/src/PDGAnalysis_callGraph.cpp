@@ -48,13 +48,6 @@ noelle::CallGraph *PDGAnalysis::getProgramCallGraph(void) {
       for (auto outgoingEdge : this->noelleCG->getOutgoingEdges(node)) {
 
         /*
-         * We can only improve may edges.
-         */
-        if (outgoingEdge->isAMustCall()) {
-          continue;
-        }
-
-        /*
          * Fetch the callee.
          */
         auto calleeNode = outgoingEdge->getCallee();
@@ -69,7 +62,13 @@ noelle::CallGraph *PDGAnalysis::getProgramCallGraph(void) {
         CallGraphInstructionFunctionEdge *mustSubEdge = nullptr;
         auto subedges = outgoingEdge->getSubEdges();
         for (auto subedge : subedges) {
-          assert(!subedge->isAMustCall());
+
+          /*
+           * We can only improve may edges.
+           */
+          if (subedge->isAMustCall()) {
+            continue;
+          }
 
           /*
            * Fetch the caller of this specific sub-edge.
@@ -91,7 +90,22 @@ noelle::CallGraph *PDGAnalysis::getProgramCallGraph(void) {
             }
           }
           if (toDelete.size() > 0) {
+
+            /*
+             * External analyses have identified the current sub-edge to be
+             * removable.
+             */
             assert(mustSubEdge == nullptr);
+            this->noelleCG->removeSubEdge(outgoingEdge, subedge);
+          }
+          if (mustSubEdge != nullptr) {
+
+            /*
+             * External analyses have identified the current sub-edge to be a
+             * must edge.
+             */
+            subedge->setMust();
+            outgoingEdge->setMust();
           }
         }
       }
