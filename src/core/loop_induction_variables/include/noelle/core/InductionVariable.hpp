@@ -39,14 +39,6 @@ public:
   InductionVariable(LoopStructure *LS,
                     InvariantManager &IVM,
                     ScalarEvolution &SE,
-                    PHINode *loopEntryPHI,
-                    SCC &scc,
-                    LoopEnvironment &loopEnvironment,
-                    ScalarEvolutionReferentialExpander &referentialExpander);
-
-  InductionVariable(LoopStructure *LS,
-                    InvariantManager &IVM,
-                    ScalarEvolution &SE,
                     int64_t stepMultiplier,
                     PHINode *loopEntryPHI,
                     std::unordered_set<PHINode *> stepPHIs,
@@ -68,7 +60,7 @@ public:
 
   PHINode *getLoopEntryPHI(void) const;
 
-  std::unordered_set<PHINode *> getStepPHIs(void) const;
+  std::unordered_set<PHINode *> getPHIsInvolvedInComputingIVStep(void) const;
 
   std::unordered_set<PHINode *> getPHIs(void) const;
 

@@ -102,7 +102,7 @@ bool LoopIterationSpaceAnalysis::
 
   auto getLoopsForIV =
       [&](InductionVariable *iv) -> std::unordered_set<LoopStructure *> {
-    auto stepPHIs = iv->getStepPHIs();
+    auto stepPHIs = iv->getPHIsInvolvedInComputingIVStep();
     std::unordered_set<LoopStructure *> loopsForIV;
     for (std::unordered_set<PHINode *>::iterator it = stepPHIs.begin();
          it != stepPHIs.end();

@@ -60,44 +60,6 @@ InductionVariable::InductionVariable(
     LoopStructure *LS,
     InvariantManager &IVM,
     ScalarEvolution &SE,
-    PHINode *loopEntryPHI,
-    SCC &scc,
-    LoopEnvironment &loopEnv,
-    ScalarEvolutionReferentialExpander &referentialExpander)
-  : scc{ scc },
-    loopEntryPHI{ loopEntryPHI },
-    stepPHIs{ std::unordered_set<PHINode *>({ loopEntryPHI }) },
-    startValue{ nullptr },
-    loopEntryPHIType{ loopEntryPHI->getType() },
-    stepSCEV{ nullptr },
-    stepMultiplier{ 1 },
-    computationOfStepValue{},
-    isComputedStepValueLoopInvariant{ false } {
-
-  /*
-   * Fetch initial value of induction variable
-   */
-  auto bbs = LS->getBasicBlocks();
-  for (auto i = 0; i < loopEntryPHI->getNumIncomingValues(); ++i) {
-    auto incomingBB = loopEntryPHI->getIncomingBlock(i);
-    if (bbs.find(incomingBB) == bbs.end()) {
-      this->startValue = loopEntryPHI->getIncomingValue(i);
-      break;
-    }
-  }
-
-  traverseCycleThroughLoopEntryPHIToGetAllIVInstructions(LS);
-  traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions(LS, IVM, SE);
-  collectValuesInternalAndExternalToLoopAndSCC(LS, loopEnv);
-  deriveStepValue(LS, SE, referentialExpander, stepMultiplier);
-
-  return;
-}
-
-InductionVariable::InductionVariable(
-    LoopStructure *LS,
-    InvariantManager &IVM,
-    ScalarEvolution &SE,
     int64_t stepMultiplier,
     PHINode *loopEntryPHI,
     std::unordered_set<PHINode *> stepPHIs,
@@ -517,7 +479,8 @@ PHINode *InductionVariable::getLoopEntryPHI(void) const {
   return loopEntryPHI;
 }
 
-std::unordered_set<PHINode *> InductionVariable::getStepPHIs(void) const {
+std::unordered_set<PHINode *> InductionVariable::
+    getPHIsInvolvedInComputingIVStep(void) const {
   return stepPHIs;
 }
 
