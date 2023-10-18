@@ -83,6 +83,60 @@ void CallGraphFunctionFunctionEdge::addSubEdge(
   return;
 }
 
+void CallGraphFunctionFunctionEdge::removeSubEdge(
+    CallGraphInstructionFunctionEdge *subEdge) {
+
+  /*
+   * Remove the sub-edge from the set.
+   */
+  assert(this->subEdges.find(subEdge) != this->subEdges.end());
+  this->subEdges.erase(subEdge);
+
+  /*
+   * Remove the sub-edge from the map.
+   */
+  auto caller = subEdge->getCaller();
+  auto callInst = caller->getInstruction();
+  this->subEdgesMap.erase(callInst);
+
+  /*
+   * Update the attribute of the edge.
+   */
+  if (subEdge->isAMustCall()) {
+
+    /*
+     * Check if there is another sub-edge that is a must edge.
+     * In this way, the edge can stay as a must edge; otherwise, it cannot.
+     */
+    assert(this->isAMustCall());
+    auto found = false;
+    for (auto anotherSubEdge : this->subEdges) {
+      if (anotherSubEdge->isAMustCall()) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+
+      /*
+       * The edge doesn't have a must-sub-edge anymore.
+       */
+      this->unsetMust();
+    }
+  }
+
+  /*
+   * Destroy the sub-edge.
+   */
+  delete subEdge;
+
+  return;
+}
+
+uint64_t CallGraphFunctionFunctionEdge::getNumberOfSubEdges(void) const {
+  return this->subEdges.size();
+}
+
 std::unordered_set<CallGraphInstructionFunctionEdge *>
 CallGraphFunctionFunctionEdge::getSubEdges(void) const {
   return this->subEdges;

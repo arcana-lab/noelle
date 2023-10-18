@@ -620,4 +620,44 @@ std::unordered_set<CallGraphFunctionFunctionEdge *> CallGraph::getEdges(
   return s0;
 }
 
+void CallGraph::removeSubEdge(CallGraphFunctionFunctionEdge *e,
+                              CallGraphInstructionFunctionEdge *se) {
+
+  /*
+   * Remove the subedge
+   */
+  e->removeSubEdge(se);
+
+  /*
+   * Check if the edge is now empty
+   */
+  if (e->getNumberOfSubEdges() == 0) {
+
+    /*
+     * This edge is meaningless as it has no sub-edges.
+     *
+     * Remove it from the outgoingEdges map.
+     */
+    auto caller = e->getCaller();
+    auto callee = e->getCallee();
+    auto &tmp = this->outgoingEdges.at(caller);
+    assert(tmp.at(callee) == e);
+    tmp.erase(callee);
+
+    /*
+     * Remove it from the incomingEdges map.
+     */
+    auto &tmp2 = this->incomingEdges.at(callee);
+    assert(tmp2.at(caller) == e);
+    tmp2.erase(caller);
+
+    /*
+     * Destroy the edge.
+     */
+    delete e;
+  }
+
+  return;
+}
+
 } // namespace llvm::noelle
