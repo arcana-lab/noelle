@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -24,12 +24,7 @@
 namespace llvm::noelle {
 
 HELIXTask::HELIXTask(FunctionType *taskSignature, Module &M)
-  : Task{ 0, taskSignature, M } {
-
-  return;
-}
-
-void HELIXTask::extractFuncArgs(void) {
+  : Task{ taskSignature, M } {
 
   /*
    * Fetch the arguments of the function that implements the task.
@@ -51,4 +46,4 @@ void HELIXTask::extractFuncArgs(void) {
   return;
 }
 
-}
+} // namespace llvm::noelle

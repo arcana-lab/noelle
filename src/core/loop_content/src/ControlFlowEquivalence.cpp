@@ -24,10 +24,9 @@
 using namespace llvm;
 using namespace llvm::noelle;
 
-ControlFlowEquivalence::ControlFlowEquivalence(
-    const DominatorSummary *ds,
-    StayConnectedNestedLoopForestNode *loops,
-    Function &F) {
+ControlFlowEquivalence::ControlFlowEquivalence(const DominatorSummary *ds,
+                                               LoopTree *loops,
+                                               Function &F) {
   auto functionEntry = &F.getEntryBlock();
   startBBs.insert(functionEntry);
   calculateControlFlowEquivalences(ds, loops);
@@ -35,7 +34,7 @@ ControlFlowEquivalence::ControlFlowEquivalence(
 
 ControlFlowEquivalence::ControlFlowEquivalence(
     const DominatorSummary *ds,
-    StayConnectedNestedLoopForestNode *loops,
+    LoopTree *loops,
     const LoopStructure *loopStructure) {
   startBBs.insert(loopStructure->getHeader());
   auto exitBlocks = loopStructure->getLoopExitBasicBlocks();
@@ -49,7 +48,7 @@ ControlFlowEquivalence::ControlFlowEquivalence(
  */
 void ControlFlowEquivalence::calculateControlFlowEquivalences(
     const DominatorSummary *DS,
-    StayConnectedNestedLoopForestNode *loops) {
+    LoopTree *loops) {
 
   /*
    * Create trivial equivalence sets

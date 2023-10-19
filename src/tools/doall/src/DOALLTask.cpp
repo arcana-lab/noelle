@@ -19,23 +19,28 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DOALLTask.hpp"
+#include "noelle/tools/DOALLTask.hpp"
 
 namespace llvm::noelle {
 
 DOALLTask::DOALLTask(FunctionType *taskSignature, Module &M)
-  : Task{ 0, taskSignature, M } {
+  : Task{ taskSignature, M } {
 
-  return;
-}
-
-void DOALLTask::extractFuncArgs(void) {
+  /*
+   * Fetch the arguments.
+   */
   auto argIter = this->F->arg_begin();
   this->envArg = (Value *)&*(argIter++);
-  this->coreArg = (Value *)&*(argIter++);
-  this->numCoresArg = (Value *)&*(argIter++);
+  this->taskInstanceID = (Value *)&*(argIter++);
+  this->numTaskInstances = (Value *)&*(argIter++);
   this->chunkSizeArg = (Value *)&*(argIter++);
-  this->instanceIndexV = coreArg;
+
+  this->instanceIndexV = taskInstanceID;
+
+  this->envArg->setName("env");
+  this->taskInstanceID->setName("taskInstanceID");
+  this->numTaskInstances->setName("numTaskInstances");
+  this->chunkSizeArg->setName("chunkSize");
 
   return;
 }

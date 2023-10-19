@@ -24,25 +24,24 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"
-#include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
-#include "noelle/core/StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/LoopIterationSpaceAnalysis.hpp"
+#include "noelle/core/LoopForest.hpp"
 
 namespace llvm::noelle {
 
 // Perform loop-aware memory dependence analysis to refine the loop PDG
-void refinePDGWithLoopAwareMemDepAnalysis(
-    PDG *loopDG,
-    Loop *l,
-    LoopStructure *loopStructure,
-    StayConnectedNestedLoopForestNode *loops,
-    LoopIterationDomainSpaceAnalysis *LIDS);
+void refinePDGWithLoopAwareMemDepAnalysis(PDG *loopDG,
+                                          Loop *l,
+                                          LoopStructure *loopStructure,
+                                          LoopTree *loops,
+                                          LoopIterationSpaceAnalysis *LIDS);
 
 // Refine the loop PDG with SCAF
 void refinePDGWithSCAF(PDG *loopDG, Loop *l);
 
 void refinePDGWithLIDS(PDG *loopDG,
                        LoopStructure *loopStructure,
-                       StayConnectedNestedLoopForestNode *loops,
-                       LoopIterationDomainSpaceAnalysis *LIDS);
+                       LoopTree *loops,
+                       LoopIterationSpaceAnalysis *LIDS);
 
 } // namespace llvm::noelle

@@ -261,7 +261,7 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs(LoopDependenceInfo const &LDI) {
 }
 
 bool SCEVSimplification::simplifyIVRelatedSCEVs(
-    StayConnectedNestedLoopForestNode *rootLoopNode,
+    LoopTree *rootLoopNode,
     InvariantManager *invariantManager,
     InductionVariableManager *ivManager) {
   if (noelle.getVerbosity() != Verbosity::Disabled) {
@@ -346,10 +346,9 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs(
   return modified;
 }
 
-void SCEVSimplification::cacheIVInfo(
-    IVCachedInfo &ivCache,
-    StayConnectedNestedLoopForestNode *rootLoopNode,
-    InductionVariableManager *ivManager) {
+void SCEVSimplification::cacheIVInfo(IVCachedInfo &ivCache,
+                                     LoopTree *rootLoopNode,
+                                     InductionVariableManager *ivManager) {
 
   /*
    * Fetch the loop
@@ -363,11 +362,12 @@ void SCEVSimplification::cacheIVInfo(
    */
   auto allLoops = rootLoopNode->getLoops();
   for (auto loop : allLoops) {
-    auto loopGoverningIVAttr = ivManager->getLoopGoverningIVAttribution(*loop);
+    auto loopGoverningIVAttr =
+        ivManager->getLoopGoverningInductionVariable(*loop);
     if (!loopGoverningIVAttr)
       continue;
 
-    auto loopGoverningIV = &loopGoverningIVAttr->getInductionVariable();
+    auto loopGoverningIV = loopGoverningIVAttr->getInductionVariable();
     ivCache.loopGoverningAttrByIV.insert(
         std::make_pair(loopGoverningIV, loopGoverningIVAttr));
 
@@ -505,7 +505,7 @@ void SCEVSimplification::searchForInstructionsDerivedFromMultipleIVs(
  */
 bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP(
     IVCachedInfo &ivCache,
-    StayConnectedNestedLoopForestNode *rootLoopNode,
+    LoopTree *rootLoopNode,
     InductionVariableManager *ivManager,
     InvariantManager *invariantManager,
     std::unordered_set<GEPIndexDerivation *> gepDerivations) {
@@ -530,15 +530,17 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP(
   /*
    * Get loop governing IV that will need their loop guards updated
    */
-  std::unordered_set<LoopGoverningIVAttribution *> loopGoverningAttrsToUpdate;
+  std::unordered_set<LoopGoverningInductionVariable *>
+      loopGoverningAttrsToUpdate;
   for (auto gepDerivation : gepDerivations) {
     for (auto IV : gepDerivation->derivingIVs) {
       auto header = IV->getLoopEntryPHI()->getParent();
       auto loop = headerToLoopMap.at(header);
-      auto loopGoverningAttr = ivManager->getLoopGoverningIVAttribution(*loop);
+      auto loopGoverningAttr =
+          ivManager->getLoopGoverningInductionVariable(*loop);
       if (!loopGoverningAttr)
         continue;
-      auto loopGoverningIV = &loopGoverningAttr->getInductionVariable();
+      auto loopGoverningIV = loopGoverningAttr->getInductionVariable();
       if (loopGoverningIV != IV)
         continue;
       loopGoverningAttrsToUpdate.insert(loopGoverningAttr);

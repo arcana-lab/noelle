@@ -12,7 +12,7 @@ set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC"
 set(PassName "LoopEnvironment")
 
 # configure LLVM 
-find_package(LLVM REQUIRED CONFIG)
+find_package(LLVM 9 REQUIRED CONFIG)
 
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
 set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
@@ -29,9 +29,12 @@ include_directories(
   ../../basic_utilities/include 
   ../../architecture/include 
   ../../alloc_aa/include 
+  ../../dg/include 
   ../../pdg/include 
   ../../hotprofiler/include 
   ../../loop_structure/include
+  ../../loop_scc_attributes/include
+  ../../loop_forest/include
   ${CMAKE_INSTALL_PREFIX}/include
   )
 

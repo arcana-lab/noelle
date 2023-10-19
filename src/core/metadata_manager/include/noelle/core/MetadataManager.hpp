@@ -128,6 +128,14 @@ public:
                       const std::string &metadataName,
                       const std::string &metadataValue);
 
+  void removePDGMetadata(void);
+
+  std::set<std::string> getSourceCodeAnnotations(Function *f) const;
+
+  std::set<std::string> getSourceCodeAnnotations(AllocaInst *var) const;
+
+  std::set<std::string> getSourceCodeAnnotations(GlobalVariable *g) const;
+
 private:
   Module &program;
   std::unordered_map<LoopStructure *,
@@ -135,6 +143,10 @@ private:
       metadata;
 
   void addMetadata(LoopStructure *loop, const std::string &metadataName);
+
+  std::map<Function *, std::set<std::string>> functionMetadata;
+  std::map<AllocaInst *, std::set<std::string>> varMetadata;
+  std::map<GlobalVariable *, std::set<std::string>> globalMetadata;
 };
 
 } // namespace llvm::noelle

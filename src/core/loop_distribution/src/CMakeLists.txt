@@ -11,7 +11,7 @@ set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC"
 set(PassName "LoopDistribution")
 
 # configure LLVM 
-find_package(LLVM REQUIRED CONFIG)
+find_package(LLVM 9 REQUIRED CONFIG)
 
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
 set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
@@ -31,8 +31,8 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../hotprofiler/include 
   ../../talkdown/include
   ../../dataflow/include
-  ../../callgraph/include
-  ../../induction_variables/include
+  ../../call_graph/include
+  ../../loop_induction_variables/include
   ../include/ 
   ./ 
   ${CMAKE_INSTALL_PREFIX}/include

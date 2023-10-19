@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -33,11 +33,10 @@
 #include "noelle/tools/ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "noelle/tools/SequentialSegment.hpp"
 #include "noelle/tools/HELIXTask.hpp"
+#include "noelle/tools/SpilledLoopCarriedDependence.hpp"
 #include "HeuristicsPass.hpp"
 
 namespace llvm::noelle {
-
-class SpilledLoopCarriedDependency;
 
 class HELIX
   : public ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences {
@@ -53,8 +52,7 @@ public:
                           Heuristics *h) const override;
 
   PDG *constructTaskInternalDependenceGraphFromOriginalLoopDG(
-      LoopDependenceInfo *LDI,
-      PostDominatorTree &postDomTreeOfTaskFunction);
+      LoopDependenceInfo *LDI);
 
   Function *getTaskFunction(void) const;
 
@@ -63,45 +61,54 @@ public:
 
   bool doesHaveASequentialPrologue(LoopDependenceInfo *LDI) const;
 
+  uint32_t getMinimumNumberOfIdleCores(void) const override;
+
+  std::string getName(void) const override;
+
+  Transformation getParallelizationID(void) const override;
+
   virtual ~HELIX();
 
 protected:
-  virtual void createParallelizableTask(LoopDependenceInfo *LDI, Heuristics *h);
+  virtual HELIXTask *createParallelizableTask(LoopDependenceInfo *LDI,
+                                              Heuristics *h);
 
-  virtual bool synchronizeTask(LoopDependenceInfo *LDI, Heuristics *h);
+  virtual bool synchronizeTask(LoopDependenceInfo *LDI,
+                               Heuristics *h,
+                               HELIXTask *helixTask);
 
-  virtual void addChunkFunctionExecutionAsideOriginalLoop(
-      LoopDependenceInfo *LDI,
-      uint64_t numberOfSequentialSegments);
+  virtual void invokeParallelizedLoop(LoopDependenceInfo *LDI,
+                                      uint64_t numberOfSequentialSegments);
 
   void spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
-                                        DataFlowResult *reachabilityDFR);
+                                        DataFlowResult *reachabilityDFR,
+                                        HELIXTask *helixTask);
 
   void createLoadsAndStoresToSpilledLCD(
       LoopDependenceInfo *LDI,
       DataFlowResult *reachabilityDFR,
       std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-      SpilledLoopCarriedDependency *spill,
+      SpilledLoopCarriedDependence *spill,
       Value *spillEnvPtr);
 
   void insertStoresToSpilledLCD(
       LoopDependenceInfo *LDI,
       std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-      SpilledLoopCarriedDependency *spill,
+      SpilledLoopCarriedDependence *spill,
       Value *spillEnvPtr);
 
   void defineFrontierForLoadsToSpilledLCD(
       LoopDependenceInfo *LDI,
       DataFlowResult *reachabilityDFR,
       std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-      SpilledLoopCarriedDependency *spill,
+      SpilledLoopCarriedDependence *spill,
       DominatorSummary *originalLoopDS,
       std::unordered_set<BasicBlock *> &originalFrontierBlocks);
 
   void replaceUsesOfSpilledPHIWithLoads(
       LoopDependenceInfo *LDI,
       std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
-      SpilledLoopCarriedDependency *spill,
+      SpilledLoopCarriedDependence *spill,
       Value *spillEnvPtr,
       DominatorSummary *originalLoopDS,
       std::unordered_set<BasicBlock *> &originalFrontierBlocks);
@@ -109,7 +116,8 @@ protected:
   std::vector<SequentialSegment *> identifySequentialSegments(
       LoopDependenceInfo *originalLDI,
       LoopDependenceInfo *LDI,
-      DataFlowResult *reachabilityDFR);
+      DataFlowResult *reachabilityDFR,
+      HELIXTask *helixTask);
 
   void squeezeSequentialSegments(LoopDependenceInfo *LDI,
                                  std::vector<SequentialSegment *> *sss,
@@ -120,7 +128,8 @@ protected:
                                   DataFlowResult *reachabilityDFR);
 
   void addSynchronizations(LoopDependenceInfo *LDI,
-                           std::vector<SequentialSegment *> *sss);
+                           std::vector<SequentialSegment *> *sss,
+                           HELIXTask *helixTask);
 
   virtual CallInst *injectWaitCall(IRBuilder<> &builder, uint32_t ssID);
 
@@ -153,7 +162,7 @@ protected:
   Function *waitSSCall, *signalSSCall;
   LoopDependenceInfo *originalLDI;
   LoopEnvironmentBuilder *loopCarriedLoopEnvironmentBuilder;
-  std::unordered_set<SpilledLoopCarriedDependency *> spills;
+  std::unordered_set<SpilledLoopCarriedDependence *> spills;
   std::unordered_map<Instruction *, Instruction *>
       lastIterationExecutionDuplicateMap;
   BasicBlock *lastIterationExecutionBlock;
@@ -170,15 +179,6 @@ private:
   std::string prefixString;
   std::vector<Value *> ssPastPtrs;
   std::vector<Value *> ssFuturePtrs;
-};
-
-class SpilledLoopCarriedDependency {
-public:
-  PHINode *originalLoopCarriedPHI;
-  PHINode *loopCarriedPHI;
-  Value *clonedInitialValue;
-  std::unordered_set<LoadInst *> environmentLoads;
-  std::unordered_set<StoreInst *> environmentStores;
 };
 
 } // namespace llvm::noelle

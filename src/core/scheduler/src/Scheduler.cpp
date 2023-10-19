@@ -451,7 +451,7 @@ std::set<Value *> Scheduler::getAllOutgoingDependences(
    * Set up lambda iterator for PDG
    */
   auto Iterator = [&OutgoingDependences](Value *Outgoing,
-                                         DGEdge<Value> *dep) -> bool {
+                                         DGEdge<Value, Value> *dep) -> bool {
     // errs() << "   D: " << *Outgoing << "\n";
 
     /*
@@ -492,7 +492,7 @@ std::set<Instruction *> Scheduler::getOutgoingDependencesInParentBasicBlock(
    * Set up lambda iterator for PDG
    */
   auto Iterator = [I, &OutgoingDependences](Value *Outgoing,
-                                            DGEdge<Value> *dep) -> bool {
+                                            DGEdge<Value, Value> *dep) -> bool {
     // errs() << "   D: " << *Outgoing << "\n";
 
     /*

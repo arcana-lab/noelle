@@ -88,20 +88,30 @@ private:
 };
 
 #ifdef RUNTIME_PROFILE
-pthread_spinlock_t printLock;
 uint64_t clocks_starts[64];
 uint64_t clocks_ends[64];
 uint64_t clocks_dispatch_starts[64];
 uint64_t clocks_dispatch_ends[64];
 #endif
 
+/*
+ * Synchronize printing
+ */
+#ifdef RUNTIME_PROFILE
+#  define RUNTIME_PRINT_LOCK
+#endif
+#ifdef RUNTIME_PRINT
+#  define RUNTIME_PRINT_LOCK
+#endif
+#ifdef RUNTIME_PRINT_LOCK
+pthread_spinlock_t printLock;
+#endif
+
 static NoelleRuntime runtime{};
 
 extern "C" {
 
-/******************************************** NOELLE APIs
- * ***********************************************/
-
+/************************************ NOELLE public APIs **************/
 class DispatcherInfo {
 public:
   int32_t numberOfThreadsUsed;
@@ -109,7 +119,7 @@ public:
 };
 
 /*
- * Dispatch threads to run a DOALL loop.
+ * Dispatch tasks to run a DOALL loop.
  */
 DispatcherInfo NOELLE_DOALLDispatcher(
     void (*parallelizedLoop)(void *, int64_t, int64_t, int64_t),
@@ -117,6 +127,42 @@ DispatcherInfo NOELLE_DOALLDispatcher(
     int64_t maxNumberOfCores,
     int64_t chunkSize);
 
+/*
+ * Dispatch tasks to run a HELIX loop.
+ */
+DispatcherInfo NOELLE_HELIX_dispatcher_sequentialSegments(
+    void (*parallelizedLoop)(void *,
+                             void *,
+                             void *,
+                             void *,
+                             int64_t,
+                             int64_t,
+                             uint64_t *),
+    void *env,
+    void *loopCarriedArray,
+    int64_t numCores,
+    int64_t numOfsequentialSegments);
+
+DispatcherInfo NOELLE_HELIX_dispatcher_criticalSections(
+    void (*parallelizedLoop)(void *,
+                             void *,
+                             void *,
+                             void *,
+                             int64_t,
+                             int64_t,
+                             uint64_t *),
+    void *env,
+    void *loopCarriedArray,
+    int64_t numCores,
+    int64_t numOfsequentialSegments);
+
+DispatcherInfo NOELLE_DSWPDispatcher(void *env,
+                                     int64_t *queueSizes,
+                                     void *stages,
+                                     int64_t numberOfStages,
+                                     int64_t numberOfQueues);
+
+/******************************************* Utils ********************/
 #ifdef RUNTIME_PROFILE
 static __inline__ int64_t rdtsc_s(void) {
   unsigned a, d;
@@ -132,9 +178,7 @@ static __inline__ int64_t rdtsc_e(void) {
 }
 #endif
 
-/******************************************** NOELLE API implementations
- * ***********************************************/
-
+/************************************* NOELLE API implementations ***/
 typedef void (*stageFunctionPtr_t)(void *, void *);
 
 void printReachedS(std::string s) {
@@ -262,8 +306,10 @@ DispatcherInfo NOELLE_DOALLDispatcher(
    */
   auto numCores = runtime.reserveCores(maxNumberOfCores);
 #ifdef RUNTIME_PRINT
-  std::cerr << "Starting dispatcher: num cores " << numCores
-            << ", chunk size: " << chunkSize << std::endl;
+  std::cerr << "DOALL: Dispatcher: Start" << std::endl;
+  std::cerr << "DOALL: Dispatcher:   Number of cores: " << numCores
+            << std::endl;
+  std::cerr << "DOALL: Dispatcher:   Chunk size: " << chunkSize << std::endl;
 #endif
 
   /*
@@ -298,12 +344,10 @@ DispatcherInfo NOELLE_DOALLDispatcher(
 #ifdef RUNTIME_PROFILE
     clocks_dispatch_ends[i] = rdtsc_s();
 #endif
-#ifdef RUNTIME_PRINT
-    std::cerr << "Submitted DOALL task on core " << i << std::endl;
-#endif
   }
 #ifdef RUNTIME_PRINT
-  std::cerr << "Submitted pool" << std::endl;
+  std::cerr << "DOALL: Dispatcher:   Submitted " << numCores
+            << " task instances" << std::endl;
 #endif
 #ifdef RUNTIME_PROFILE
   auto clocks_after_fork = rdtsc_e();
@@ -324,7 +368,8 @@ DispatcherInfo NOELLE_DOALLDispatcher(
     pthread_spin_lock(&(argsForAllCores[i].endLock));
   }
 #ifdef RUNTIME_PRINT
-  std::cerr << "All tasks completed" << std::endl;
+  std::cerr << "DOALL: Dispatcher:   All task instances have completed"
+            << std::endl;
 #endif
 #ifdef RUNTIME_PROFILE
   auto clocks_after_join = rdtsc_e();
@@ -396,13 +441,12 @@ DispatcherInfo NOELLE_DOALLDispatcher(
 
   pthread_spin_unlock(&printLock);
 #endif
+#ifdef RUNTIME_PRINT
+  std::cerr << "DOALL: Dispatcher: Exit" << std::endl;
+#endif
 
   return dispatcherInfo;
 }
-
-#ifdef RUNTIME_PRINT
-void *mySSGlobal = nullptr;
-#endif
 
 /**********************************************************************
  *                HELIX
@@ -489,13 +533,6 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
     int64_t maxNumberOfCores,
     int64_t numOfsequentialSegments,
     bool LIO) {
-#ifdef RUNTIME_PRINT
-  std::cerr << "HELIX: dispatcher: Start" << std::endl;
-  std::cerr << "HELIX: dispatcher:  Number of sequential segments = "
-            << numOfsequentialSegments << std::endl;
-  std::cerr << "HELIX: dispatcher:  Number of cores = " << numCores
-            << std::endl;
-#endif
 
   /*
    * Assumptions.
@@ -515,6 +552,16 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
   auto numCores = runtime.reserveCores(maxNumberOfCores);
   assert(numCores >= 1);
 
+#ifdef RUNTIME_PRINT
+  pthread_spin_lock(&printLock);
+  std::cerr << "HELIX: dispatcher: Start" << std::endl;
+  std::cerr << "HELIX: dispatcher:   Number of sequential segments = "
+            << numOfsequentialSegments << std::endl;
+  std::cerr << "HELIX: dispatcher:   Number of cores = " << numCores
+            << std::endl;
+  pthread_spin_unlock(&printLock);
+#endif
+
   /*
    * Allocate the sequential segment arrays.
    * We need numCores - 1 arrays.
@@ -523,7 +570,7 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
   if (!LIO) {
     numOfSSArrays = 1;
   }
-  void *ssArrays = NULL;
+  void *ssArrays = nullptr;
   auto ssSize = CACHE_LINE_SIZE;
   auto ssArraySize = ssSize * numOfsequentialSegments;
   if (numOfsequentialSegments > 0) {
@@ -533,10 +580,8 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
      */
     posix_memalign(&ssArrays, CACHE_LINE_SIZE, ssArraySize * numOfSSArrays);
     if (ssArrays == NULL) {
-      fprintf(
-          stderr,
-          "HELIX: dispatcher: ERROR = not enough memory to allocate %lld sequential segment arrays\n",
-          (long long)numCores);
+      std::cerr << "HELIX: dispatcher: ERROR = not enough memory to allocate "
+                << numCores << " sequential segment arrays" << std::endl;
       abort();
     }
 
@@ -576,10 +621,6 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
     }
   }
 
-#ifdef RUNTIME_PRINT
-  mySSGlobal = ssArrays;
-#endif
-
   /*
    * Allocate the arguments for the cores.
    */
@@ -594,9 +635,6 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
   uint64_t loopIsOverFlag = 0;
   cpu_set_t cores;
   for (auto i = 0; i < (numCores - 1); ++i) {
-#ifdef RUNTIME_PRINT
-    fprintf(stderr, "HelixDispatcher: Creating future for core %d\n", i);
-#endif
 
     /*
      * Identify the past and future sequential segment arrays.
@@ -611,10 +649,19 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
     auto ssArrayFuture =
         (void *)(((uint64_t)ssArrays) + (futureID * ssArraySize));
 #ifdef RUNTIME_PRINT
-    fprintf(stderr,
-            "HelixDispatcher: defined ss past and future arrays: %ld %ld\n",
-            (int *)ssArrayPast - (int *)mySSGlobal,
-            (int *)ssArrayFuture - (int *)mySSGlobal);
+    pthread_spin_lock(&printLock);
+    auto pastDelta = (int *)ssArrayPast - (int *)ssArrays;
+    auto futureDelta = (int *)ssArrayFuture - (int *)ssArrays;
+    std::cerr << "HELIX: dispatcher:   Task instance " << i << std::endl;
+    std::cerr << "HELIX: dispatcher:     SS arrays: " << ssArrays << std::endl;
+    std::cerr << "HELIX: dispatcher:       SS past: " << ssArrayPast
+              << std::endl;
+    std::cerr << "HELIX: dispatcher:       SS future: " << ssArrayFuture
+              << std::endl;
+    std::cerr
+        << "HELIX: dispatcher:       SS past and future arrays: " << pastDelta
+        << " " << futureDelta << std::endl;
+    pthread_spin_unlock(&printLock);
 #endif
 
     /*
@@ -659,7 +706,9 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
     ));*/
   }
 #ifdef RUNTIME_PRINT
-  std::cerr << "Submitted pool\n";
+  pthread_spin_lock(&printLock);
+  std::cerr << "HELIX: dispatcher:   Submitted all task instances" << std::endl;
+  pthread_spin_unlock(&printLock);
   int futureGotten = 0;
 #endif
 
@@ -685,7 +734,10 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
     pthread_spin_lock(&(argsForAllCores[i].endLock));
   }
 #ifdef RUNTIME_PRINT
-  std::cerr << "Got all futures\n";
+  pthread_spin_lock(&printLock);
+  std::cerr << "HELIX: dispatcher:   All task instances have completed"
+            << std::endl;
+  pthread_spin_unlock(&printLock);
 #endif
 
   /*
@@ -698,6 +750,15 @@ static DispatcherInfo NOELLE_HELIX_dispatcher(
    */
   free(argsForAllCores);
   free(ssArrays);
+
+  /*
+   * Exit
+   */
+#ifdef RUNTIME_PRINT
+  pthread_spin_lock(&printLock);
+  std::cerr << "HELIX: dispatcher: Exit" << std::endl;
+  pthread_spin_unlock(&printLock);
+#endif
 
   DispatcherInfo dispatcherInfo;
   dispatcherInfo.numberOfThreadsUsed = numCores;
@@ -753,9 +814,10 @@ void HELIX_wait(void *sequentialSegment) {
 
 #ifdef RUNTIME_PRINT
   assert(ss != NULL);
-  fprintf(stderr,
-          "HelixDispatcher: Waiting on sequential segment: %ld\n",
-          (int *)sequentialSegment - (int *)mySSGlobal);
+  pthread_spin_lock(&printLock);
+  std::cerr << "HELIX: Waiting on sequential segment " << sequentialSegment
+            << std::endl;
+  pthread_spin_unlock(&printLock);
 #endif
 
   /*
@@ -764,9 +826,10 @@ void HELIX_wait(void *sequentialSegment) {
   pthread_spin_lock(ss);
 
 #ifdef RUNTIME_PRINT
-  fprintf(stderr,
-          "HelixDispatcher: Waited on sequential segment: %ld\n",
-          (int *)sequentialSegment - (int *)mySSGlobal);
+  pthread_spin_lock(&printLock);
+  std::cerr << "HELIX: Waited on sequential segment " << sequentialSegment
+            << std::endl;
+  pthread_spin_unlock(&printLock);
 #endif
 
   return;
@@ -781,9 +844,10 @@ void HELIX_signal(void *sequentialSegment) {
 
 #ifdef RUNTIME_PRINT
   assert(ss != NULL);
-  fprintf(stderr,
-          "HelixDispatcher: Signaling on sequential segment: %ld\n",
-          (int *)sequentialSegment - (int *)mySSGlobal);
+  pthread_spin_lock(&printLock);
+  std::cerr << "HELIX: Signaling on sequential segment " << sequentialSegment
+            << std::endl;
+  pthread_spin_unlock(&printLock);
 #endif
 
   /*
@@ -792,9 +856,10 @@ void HELIX_signal(void *sequentialSegment) {
   pthread_spin_unlock(ss);
 
 #ifdef RUNTIME_PRINT
-  fprintf(stderr,
-          "HelixDispatcher: Signaled on sequential segment: %ld\n",
-          (int *)sequentialSegment - (int *)mySSGlobal);
+  pthread_spin_lock(&printLock);
+  std::cerr << "HELIX: Signaled on sequential segment " << sequentialSegment
+            << std::endl;
+  pthread_spin_unlock(&printLock);
 #endif
 
   return;
@@ -965,7 +1030,9 @@ DispatcherInfo NOELLE_DSWPDispatcher(void *env,
 }
 
 uint32_t NOELLE_getAvailableCores(void) {
-  return runtime.getAvailableCores();
+  auto idleCores = runtime.getAvailableCores();
+
+  return idleCores;
 }
 }
 
@@ -975,7 +1042,7 @@ NoelleRuntime::NoelleRuntime() {
 
   pthread_spin_init(&this->spinLock, 0);
   pthread_spin_init(&this->doallMemoryLock, 0);
-#ifdef RUNTIME_PROFILE
+#ifdef RUNTIME_PRINT_LOCK
   pthread_spin_init(&printLock, 0);
 #endif
 
@@ -1098,7 +1165,7 @@ uint32_t NoelleRuntime::getMaximumNumberOfCores(void) {
      */
     auto envVar = getenv("NOELLE_CORES");
     if (envVar == nullptr) {
-      cores = (std::thread::hardware_concurrency() / 2) - 1;
+      cores = (std::thread::hardware_concurrency() / 2);
     } else {
       cores = atoi(envVar);
     }

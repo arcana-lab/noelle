@@ -34,8 +34,8 @@ DataFlowResult *DataFlowEngine::applyForward(
     std::function<void(Instruction *inst, std::set<Value *> &OUT)>
         initializeOUT,
     std::function<void(Instruction *inst,
-                       std::set<Value *> &IN,
                        Instruction *predecessor,
+                       std::set<Value *> &IN,
                        DataFlowResult *df)> computeIN,
     std::function<void(Instruction *inst,
                        std::set<Value *> &OUT,
@@ -68,8 +68,8 @@ DataFlowResult *DataFlowEngine::applyForward(
     std::function<void(Instruction *inst, std::set<Value *> &OUT)>
         initializeOUT,
     std::function<void(Instruction *inst,
-                       std::set<Value *> &IN,
                        Instruction *predecessor,
+                       std::set<Value *> &IN,
                        DataFlowResult *df)> computeIN,
     std::function<void(Instruction *inst,
                        std::set<Value *> &OUT,
@@ -109,11 +109,12 @@ DataFlowResult *DataFlowEngine::applyForward(
 DataFlowResult *DataFlowEngine::applyBackward(
     Function *f,
     std::function<void(Instruction *, DataFlowResult *)> computeGEN,
-    std::function<void(std::set<Value *> &IN,
-                       Instruction *inst,
+    std::function<void(Instruction *inst,
+                       std::set<Value *> &IN,
                        DataFlowResult *df)> computeIN,
-    std::function<void(std::set<Value *> &OUT,
+    std::function<void(Instruction *inst,
                        Instruction *successor,
+                       std::set<Value *> &OUT,
                        DataFlowResult *df)> computeOUT) {
 
   /*
@@ -134,11 +135,12 @@ DataFlowResult *DataFlowEngine::applyBackward(
     Function *f,
     std::function<void(Instruction *, DataFlowResult *)> computeGEN,
     std::function<void(Instruction *, DataFlowResult *)> computeKILL,
-    std::function<void(std::set<Value *> &IN,
-                       Instruction *inst,
+    std::function<void(Instruction *inst,
+                       std::set<Value *> &IN,
                        DataFlowResult *df)> computeIN,
-    std::function<void(std::set<Value *> &OUT,
+    std::function<void(Instruction *inst,
                        Instruction *successor,
+                       std::set<Value *> &OUT,
                        DataFlowResult *df)> computeOUT) {
 
   /*
@@ -194,19 +196,19 @@ DataFlowResult *DataFlowEngine::applyBackward(
       /*
        * Compute OUT[inst]
        */
-      computeOUT(outSetOfInst, successorInst, df);
+      computeOUT(inst, successorInst, outSetOfInst, df);
     }
 
     /*
      * Compute IN[inst]
      */
     auto oldSize = inSetOfInst.size();
-    computeIN(inSetOfInst, inst, df);
+    computeIN(inst, inSetOfInst, df);
 
     /*
      * Check if IN[inst] changed.
      */
-    if (false || (inSetOfInst.size() > oldSize)
+    if ((inSetOfInst.size() > oldSize)
         || (computedOnce.find(bb) == computedOnce.end())) {
 
       /*
@@ -236,13 +238,13 @@ DataFlowResult *DataFlowEngine::applyBackward(
          * Compute OUT[i]
          */
         auto &outSetOfI = df->OUT(i);
-        computeOUT(outSetOfI, succI, df);
+        computeOUT(i, succI, outSetOfI, df);
 
         /*
          * Compute IN[i]
          */
         auto &inSetOfI = df->IN(i);
-        computeIN(inSetOfI, i, df);
+        computeIN(i, inSetOfI, df);
 
         /*
          * Update the successor.
@@ -289,8 +291,8 @@ DataFlowResult *DataFlowEngine::applyCustomizableForwardAnalysis(
     std::function<void(Instruction *inst, std::set<Value *> &OUT)>
         initializeOUT,
     std::function<void(Instruction *inst,
-                       std::set<Value *> &IN,
                        Instruction *predecessor,
+                       std::set<Value *> &IN,
                        DataFlowResult *df)> computeIN,
     std::function<void(Instruction *inst,
                        std::set<Value *> &OUT,
@@ -372,7 +374,7 @@ DataFlowResult *DataFlowEngine::applyCustomizableForwardAnalysis(
       /*
        * Compute IN[inst]
        */
-      computeIN(inst, inSetOfInst, predecessorInst, df);
+      computeIN(inst, predecessorInst, inSetOfInst, df);
     }
 
     /*
@@ -405,7 +407,7 @@ DataFlowResult *DataFlowEngine::applyCustomizableForwardAnalysis(
          * Compute IN[i]
          */
         auto &inSetOfI = df->IN(i);
-        computeIN(i, inSetOfI, predI, df);
+        computeIN(i, predI, inSetOfI, df);
 
         /*
          * Compute OUT[i]

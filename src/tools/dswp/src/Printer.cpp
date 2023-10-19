@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/SCCDAG.hpp"
-#include "DSWP.hpp"
+#include "noelle/tools/DSWP.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -185,10 +185,8 @@ void DSWP::writeStageGraphsAsDot(LoopDependenceInfo &LDI) const {
   }
 
   for (auto sccEdge : sccdag->getEdges()) {
-    auto outgoingDesc =
-        sccToDescriptionMap.at(sccEdge->getOutgoingNode())->getT();
-    auto incomingDesc =
-        sccToDescriptionMap.at(sccEdge->getIncomingNode())->getT();
+    auto outgoingDesc = sccToDescriptionMap.at(sccEdge->getSrcNode())->getT();
+    auto incomingDesc = sccToDescriptionMap.at(sccEdge->getDstNode())->getT();
     stageGraph.addEdge(outgoingDesc, incomingDesc);
   }
 

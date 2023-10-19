@@ -19,7 +19,9 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DOALL.hpp"
+#include "noelle/core/LoopCarriedUnknownSCC.hpp"
+#include "noelle/core/UnknownClosedFormSCC.hpp"
+#include "noelle/tools/DOALL.hpp"
 
 namespace llvm::noelle {
 
@@ -37,31 +39,15 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
    * Iterate over SCCs with loop-carried data dependences
    */
   auto nonDOALLSCCs = sccManager->getSCCsWithLoopCarriedDataDependencies();
-  for (auto scc : nonDOALLSCCs) {
+  for (auto sccInfo : nonDOALLSCCs) {
 
     /*
-     * Fetch the SCC metadata.
+     * The only SCC with loop-carried dependences that we don't know how to
+     * handle are the LoopCarriedUnknownSCC and the recomputable SCC with
+     * unknown closed form.
      */
-    auto sccInfo = sccManager->getSCCAttrs(scc);
-
-    /*
-     * If the SCC is reducable, then it does not block the loop to be a DOALL.
-     */
-    if (sccInfo->canExecuteReducibly()) {
-      continue;
-    }
-
-    /*
-     * If the SCC can be cloned, then it does not block the loop to be a DOALL.
-     */
-    if (sccInfo->canBeCloned()) {
-      continue;
-    }
-
-    /*
-     * If the SCC can be removed by cloning objects, then we can ignore it.
-     */
-    if (sccInfo->canBeClonedUsingLocalMemoryLocations()) {
+    if ((!isa<LoopCarriedUnknownSCC>(sccInfo))
+        && (!isa<UnknownClosedFormSCC>(sccInfo))) {
       continue;
     }
 
@@ -70,29 +56,28 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
      * between iterations, then DOALL can ignore them
      */
     auto areAllDataLCDsFromDisjointMemoryAccesses = true;
-    auto domainSpaceAnalysis = LDI->getLoopIterationDomainSpaceAnalysis();
-    sccManager->iterateOverLoopCarriedDataDependences(
-        scc,
-        [&areAllDataLCDsFromDisjointMemoryAccesses,
-         domainSpaceAnalysis](DGEdge<Value> *dep) -> bool {
-          if (dep->isControlDependence())
-            return false;
+    auto domainSpaceAnalysis = LDI->getLoopIterationSpaceAnalysis();
+    for (auto dep : sccInfo->getLoopCarriedDependences()) {
+      if (dep->isControlDependence()) {
+        continue;
+      }
+      if (!dep->isMemoryDependence()) {
+        areAllDataLCDsFromDisjointMemoryAccesses = false;
+        break;
+      }
 
-          if (!dep->isMemoryDependence()) {
-            areAllDataLCDsFromDisjointMemoryAccesses = false;
-            return true;
-          }
-
-          auto fromInst = dyn_cast<Instruction>(dep->getOutgoingT());
-          auto toInst = dyn_cast<Instruction>(dep->getIncomingT());
-          areAllDataLCDsFromDisjointMemoryAccesses &=
-              fromInst && toInst
-              && domainSpaceAnalysis
-                     ->areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(
-                         fromInst,
-                         toInst);
-          return !areAllDataLCDsFromDisjointMemoryAccesses;
-        });
+      auto fromInst = dyn_cast<Instruction>(dep->getSrc());
+      auto toInst = dyn_cast<Instruction>(dep->getDst());
+      areAllDataLCDsFromDisjointMemoryAccesses &=
+          fromInst && toInst
+          && domainSpaceAnalysis
+                 ->areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(
+                     fromInst,
+                     toInst);
+      if (!areAllDataLCDsFromDisjointMemoryAccesses) {
+        break;
+      }
+    }
     if (areAllDataLCDsFromDisjointMemoryAccesses) {
       continue;
     }
@@ -100,6 +85,7 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
     /*
      * We found an SCC that blocks DOALL to be applicable.
      */
+    auto scc = sccInfo->getSCC();
     sccs.insert(scc);
   }
 

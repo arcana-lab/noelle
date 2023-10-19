@@ -11,7 +11,7 @@ set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC"
 set(PassName "LoopTransformer")
 
 # configure LLVM
-find_package(LLVM REQUIRED CONFIG)
+find_package(LLVM 9 REQUIRED CONFIG)
 
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
 set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
@@ -28,10 +28,12 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../transformations/include
   ../../loop_structure/include 
   ../../loop_environment/include 
-  ../../forest/include
+  ../../loop_forest/include
+  ../../dg/include
   ../../pdg/include
-  ../../invariants/include
-  ../../induction_variables/include
+  ../../sccdag/include
+  ../../loop_invariants/include
+  ../../loop_induction_variables/include
   ../../loop_content/include
   ../../scheduler/include
   ../../loop_whilifier/include
@@ -39,6 +41,11 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_distribution/include
   ../../loop_carried_dependences/include
   ../../loop_scc_attributes/include
+  ../../loop_sccdag_attributes/include
+  ../../memory_cloning_analysis/include
+  ../../alias_analysis_engine/include
+  ../../compilation_options_manager/include
+  ../../ldg_analysis/include
 	../include
 )
 

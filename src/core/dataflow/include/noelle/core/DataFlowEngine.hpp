@@ -42,8 +42,8 @@ public:
       std::function<void(Instruction *inst, std::set<Value *> &OUT)>
           initializeOUT,
       std::function<void(Instruction *inst,
-                         std::set<Value *> &IN,
                          Instruction *predecessor,
+                         std::set<Value *> &IN,
                          DataFlowResult *df)> computeIN,
       std::function<void(Instruction *inst,
                          std::set<Value *> &OUT,
@@ -57,8 +57,8 @@ public:
       std::function<void(Instruction *inst, std::set<Value *> &OUT)>
           initializeOUT,
       std::function<void(Instruction *inst,
-                         std::set<Value *> &IN,
                          Instruction *predecessor,
+                         std::set<Value *> &IN,
                          DataFlowResult *df)> computeIN,
       std::function<void(Instruction *inst,
                          std::set<Value *> &OUT,
@@ -68,21 +68,23 @@ public:
       Function *f,
       std::function<void(Instruction *, DataFlowResult *)> computeGEN,
       std::function<void(Instruction *, DataFlowResult *)> computeKILL,
-      std::function<void(std::set<Value *> &IN,
-                         Instruction *inst,
+      std::function<void(Instruction *inst,
+                         std::set<Value *> &IN,
                          DataFlowResult *df)> computeIN,
-      std::function<void(std::set<Value *> &OUT,
+      std::function<void(Instruction *inst,
                          Instruction *successor,
+                         std::set<Value *> &OUT,
                          DataFlowResult *df)> computeOUT);
 
   DataFlowResult *applyBackward(
       Function *f,
       std::function<void(Instruction *, DataFlowResult *)> computeGEN,
-      std::function<void(std::set<Value *> &IN,
-                         Instruction *inst,
+      std::function<void(Instruction *inst,
+                         std::set<Value *> &IN,
                          DataFlowResult *df)> computeIN,
-      std::function<void(std::set<Value *> &OUT,
+      std::function<void(Instruction *inst,
                          Instruction *successor,
+                         std::set<Value *> &OUT,
                          DataFlowResult *df)> computeOUT);
 
 protected:
@@ -102,8 +104,8 @@ private:
       std::function<void(Instruction *inst, std::set<Value *> &OUT)>
           initializeOUT,
       std::function<void(Instruction *inst,
-                         std::set<Value *> &IN,
                          Instruction *predecessor,
+                         std::set<Value *> &IN,
                          DataFlowResult *df)> computeIN,
       std::function<void(Instruction *inst,
                          std::set<Value *> &OUT,

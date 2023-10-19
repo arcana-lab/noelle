@@ -55,11 +55,7 @@ public:
    */
   PDG(std::vector<Value *> &values);
 
-  /*
-   * Constructor:
-   * Empty graph.
-   */
-  PDG();
+  PDG() = delete;
 
   /*
    * Return the number of instructions included in the PDG.
@@ -75,7 +71,8 @@ public:
   /*
    * Fetch dependences between two values/instructions.
    */
-  std::unordered_set<DGEdge<Value> *> getDependences(Value *v1, Value *v2);
+  std::unordered_set<DGEdge<Value, Value> *> getDependences(Value *v1,
+                                                            Value *v2);
 
   /*
    * Iterator: iterate over the instructions that depend on @param fromValue
@@ -94,7 +91,7 @@ public:
       bool includeControlDependences,
       bool includeMemoryDataDependences,
       bool includeRegisterDataDependences,
-      std::function<bool(Value *to, DGEdge<Value> *dependence)>
+      std::function<bool(Value *to, DGEdge<Value, Value> *dependence)>
           functionToInvokePerDependence);
 
   /*
@@ -114,13 +111,13 @@ public:
       bool includeControlDependences,
       bool includeMemoryDataDependences,
       bool includeRegisterDataDependences,
-      std::function<bool(Value *fromValue, DGEdge<Value> *dependence)>
+      std::function<bool(Value *fromValue, DGEdge<Value, Value> *dependence)>
           functionToInvokePerDependence);
 
   /*
    * Add the edge from "from" to "to" to the PDG.
    */
-  DGEdge<Value> *addEdge(Value *from, Value *to);
+  DGEdge<Value, Value> *addEdge(Value *from, Value *to);
 
   /*
    * Creating Program Dependence Subgraphs
@@ -133,11 +130,11 @@ public:
   PDG *createSubgraphFromValues(
       std::vector<Value *> &valueList,
       bool linkToExternal,
-      std::unordered_set<DGEdge<Value> *> edgesToIgnore);
+      std::unordered_set<DGEdge<Value, Value> *> edgesToIgnore);
 
   std::vector<Value *> getSortedValues(void);
 
-  std::vector<DGEdge<Value> *> getSortedDependences(void);
+  std::vector<DGEdge<Value, Value> *> getSortedDependences(void);
 
   /*
    * Destructor
@@ -151,9 +148,10 @@ protected:
 
   void copyEdgesInto(PDG *newPDG, bool linkToExternal);
 
-  void copyEdgesInto(PDG *newPDG,
-                     bool linkToExternal,
-                     std::unordered_set<DGEdge<Value> *> const &edgesToIgnore);
+  void copyEdgesInto(
+      PDG *newPDG,
+      bool linkToExternal,
+      std::unordered_set<DGEdge<Value, Value> *> const &edgesToIgnore);
 };
 
 } // namespace llvm::noelle

@@ -1,18 +1,21 @@
 # Sources
 set(Srcs 
   HELIX.cpp
+  HELIX_applicabilityGuard.cpp
+  HELIX_parallelization.cpp
+  HELIX_lastIteration.cpp
+  HELIX_prologue.cpp
+  HELIX_synchronization.cpp
+  HELIX_spiller.cpp
+  HELIX_scheduler.cpp
+  HELIX_inliner.cpp
+  HELIX_dependences.cpp
+  HELIX_inductionVariableStepper.cpp
+  HELIX_sequentialSegments.cpp
+  HELIX_sequentialSegment.cpp
+  HELIX_linker.cpp
   HELIXTask.cpp
-  HELIXTaskInternalDependenceGraph.cpp
-  Linker.cpp
-  Spiller.cpp
-  InductionVariableStepper.cpp
-  SequentialSegments.cpp
-  SequentialSegment.cpp
-  Scheduler.cpp
-  Synchronization.cpp
-  Inliner.cpp
-  HELIXPreamble.cpp
-  HELIXLastIteration.cpp
+  SpilledLoopCarriedDependence.cpp
 )
 
 # Compilation flags
@@ -22,7 +25,7 @@ set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC"
 set(PassName "HELIX")
 
 # configure LLVM 
-find_package(LLVM REQUIRED CONFIG)
+find_package(LLVM 9 REQUIRED CONFIG)
 
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
 set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)

@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "SmallestSizePartitionAnalysis.hpp"
+#include "noelle/tools/SmallestSizePartitionAnalysis.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -28,7 +28,10 @@ using namespace llvm::noelle;
  * Prioritize merge that best lowers overall cost without yielding a too costly
  * partitioner
  */
-void SmallestSizePartitionAnalysis::checkIfShouldMerge(SCCSet *sA, SCCSet *sB) {
+void SmallestSizePartitionAnalysis::checkIfShouldMerge(
+    SCCSet *sA,
+    SCCSet *sB,
+    std::function<bool(GenericSCC *scc)> canBeRematerialized) {
 
   // TODO:
   return;

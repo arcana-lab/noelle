@@ -37,7 +37,7 @@ void LoopStats::collectStatsOnNoelleIVs(Hot *profiles,
     statsForLoop->numberOfDynamicIVs += profiles->getTotalInstructions(phiNode);
   }
 
-  auto GIV = ivManager->getLoopGoverningIVAttribution(*loopStructure);
+  auto GIV = ivManager->getLoopGoverningInductionVariable(*loopStructure);
   if (GIV != nullptr) {
     statsForLoop->isGovernedByIV = 1;
     statsForLoop->numberOfDynamicGovernedIVs = profiles->getTotalInstructions(

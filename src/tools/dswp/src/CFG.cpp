@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DSWP.hpp"
+#include "noelle/tools/DSWP.hpp"
 
 namespace llvm::noelle {
 
@@ -60,7 +60,7 @@ void DSWP::generateLoopSubsetForStage(LoopDependenceInfo *LDI, int taskIndex) {
     }
   }
 
-  this->cloneSequentialLoopSubset(LDI, task->getID(), subset);
+  this->cloneSequentialLoopSubset(LDI, taskIndex, subset);
 
   /*
    * Create an empty basic block for all basic blocks in the loop to be

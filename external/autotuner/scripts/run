@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "AUTOTUNER: run" ;
+
+# Get args (TODO add sanity check)
+parallelizedBinary="${autotunerPARALLELIZED_BINARY}" ;
+inputToRunWith="${autotunerINPUT}" ;
+executionTime="${autotunerEXECUTION_TIME}" ;
+
+# Run parallel binary
+cmd="/usr/bin/time -f %e -o ${executionTime} ./${parallelizedBinary} `cat ${inputToRunWith}`" ;
+echo ${cmd} ;
+eval ${cmd} ;
+

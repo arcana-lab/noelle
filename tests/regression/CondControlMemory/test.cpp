@@ -3,18 +3,20 @@
 #include <math.h>
 
 int dont = 0;
-void iPreventTheBlockFromCollapsingAlso () ;
+void iPreventTheBlockFromCollapsingAlso();
 void iPreventTheBlockFromCollapsing() {
-  if (dont) iPreventTheBlockFromCollapsingAlso();
+  if (dont)
+    iPreventTheBlockFromCollapsingAlso();
 }
 void iPreventTheBlockFromCollapsingAlso() {
-  if (dont) iPreventTheBlockFromCollapsing();
+  if (dont)
+    iPreventTheBlockFromCollapsing();
 }
 
 int *z;
-int main (int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
 
-  if (argc < 2){
+  if (argc < 2) {
     fprintf(stderr, "USAGE: %s ITERATIONS\n", argv[0]);
     return -1;
   }
@@ -22,7 +24,7 @@ int main (int argc, char *argv[]) {
   auto iterations = atoi(argv[1]);
 
   int x = 3;
-  z = (int *)calloc(1, sizeof(int32_t));
+  z = (int *)calloc(2, sizeof(int32_t));
   for (int i = 0; i < iterations; ++i) {
     int xPlus;
     if (x < argc * 3) {
@@ -48,4 +50,3 @@ int main (int argc, char *argv[]) {
 
   return 0;
 }
-

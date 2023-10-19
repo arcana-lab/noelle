@@ -12,7 +12,7 @@ set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC"
 set(PassName "LoopNestingGraph")
 
 # configure LLVM 
-find_package(LLVM REQUIRED CONFIG)
+find_package(LLVM 9 REQUIRED CONFIG)
 
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
 set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
@@ -26,18 +26,19 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 include_directories(${LLVM_INCLUDE_DIRS} 
   ../../basic_utilities/include 
   ../../transformations/include
-  ../../callgraph/include
+  ../../call_graph/include
   ../../dataflow/include
   ../../architecture/include 
   ../../alloc_aa/include 
+  ../../dg/include 
   ../../pdg/include 
   ../../hotprofiler/include 
   ../../loop_structure/include 
   ../../loop_environment/include 
-  ../../forest/include
+  ../../loop_forest/include
   ../../talkdown/include
-  ../../invariants/include
-  ../../induction_variables/include
+  ../../loop_invariants/include
+  ../../loop_induction_variables/include
   ../../loop_content/include
   ../include 
   ${CMAKE_INSTALL_PREFIX}/include

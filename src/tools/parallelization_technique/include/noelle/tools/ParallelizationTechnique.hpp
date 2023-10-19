@@ -41,6 +41,14 @@ public:
    */
   ParallelizationTechnique(Noelle &n);
 
+  Value *getEnvArray(void) const;
+
+  uint32_t getIndexOfEnvironmentVariable(uint32_t id) const;
+
+  BasicBlock *getParLoopEntryPoint(void) const;
+
+  BasicBlock *getParLoopExitPoint(void) const;
+
   /*
    * Apply the parallelization technique to the loop LDI.
    */
@@ -53,13 +61,11 @@ public:
   virtual bool canBeAppliedToLoop(LoopDependenceInfo *LDI,
                                   Heuristics *h) const = 0;
 
-  Value *getEnvArray(void) const;
+  virtual uint32_t getMinimumNumberOfIdleCores(void) const = 0;
 
-  uint32_t getIndexOfEnvironmentVariable(uint32_t id) const;
+  virtual std::string getName(void) const = 0;
 
-  BasicBlock *getParLoopEntryPoint(void) const;
-
-  BasicBlock *getParLoopExitPoint(void) const;
+  virtual Transformation getParallelizationID(void) const = 0;
 
   /*
    * Destructor.
@@ -158,10 +164,6 @@ protected:
       bool isReduced,
       DominatorSummary &taskDS);
 
-  void adjustDataFlowToUseClones(LoopDependenceInfo *LDI, int taskIndex);
-
-  void adjustDataFlowToUseClones(Instruction *cloneI, int taskIndex);
-
   void setReducableVariablesToBeginAtIdentityValue(LoopDependenceInfo *LDI,
                                                    int taskIndex);
 
@@ -184,8 +186,15 @@ protected:
    */
   void doNestedInlineOfCalls(Function *F, std::set<CallInst *> &calls);
 
-  float computeSequentialFractionOfExecution(LoopDependenceInfo *LDI,
-                                             Noelle &par) const;
+  float computeSequentialFractionOfExecution(LoopDependenceInfo *LDI) const;
+
+  float computeSequentialFractionOfExecution(
+      LoopDependenceInfo *LDI,
+      std::function<bool(GenericSCC *scc)> doesItRunSequentially) const;
+
+  virtual void makePRVGsReentrant(void);
+
+  Value *fetchCloneInTask(Task *t, Value *original);
 
   /*
    * Fields
@@ -200,6 +209,7 @@ protected:
   BasicBlock *entryPointOfParallelizedLoop, *exitPointOfParallelizedLoop;
   std::vector<Task *> tasks;
   uint32_t numTaskInstances;
+  std::map<uint64_t, uint64_t> fromTaskIDToUserID;
 };
 
 } // namespace llvm::noelle

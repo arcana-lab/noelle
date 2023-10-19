@@ -19,9 +19,10 @@ fi
 
 
 ########### Transformations
-TRANSFORMATIONS_BEFORE_PARALLELIZATION="${AA_BASE} ${WPAPASS} -mem2reg -tbaa -early-cse-memssa -licm -simplifycfg -simplifycfg-sink-common=false -instcombine -tailcallelim -loop-simplify -lcssa -licm -loop-unswitch -globalopt -instcombine -ipsccp -dce -gvn -dse -adce -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars ${WPAPASSINV} -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa --functionattrs --rpo-functionattrs"
+TRANSFORMATIONS_BEFORE_PARALLELIZATION="${AA_BASE} ${WPAPASS} -mem2reg -tbaa -early-cse-memssa -licm -simplifycfg -simplifycfg-sink-common=false -instcombine -tailcallelim -loop-simplify -lcssa -licm -loop-unswitch -globalopt -instcombine -ipsccp -dce -gvn -dse -adce -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars ${WPAPASSINV} -lowerswitch -sroa -mergereturn --break-crit-edges -loop-simplify -lcssa --functionattrs --rpo-functionattrs"
 
+
+# Simplify the code
 cmdToExecute="${OPT} ${TRANSFORMATIONS_BEFORE_PARALLELIZATION} $@"
 echo $cmdToExecute ;
-
 eval $cmdToExecute 

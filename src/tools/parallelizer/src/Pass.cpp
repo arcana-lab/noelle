@@ -36,6 +36,16 @@ static cl::opt<bool> ForceNoSCCPartition(
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Force no SCC merging when parallelizing"));
+static cl::list<int> LoopIndexesWhiteList(
+    "noelle-loops-white-list",
+    cl::ZeroOrMore,
+    cl::CommaSeparated,
+    cl::desc("Parallelize only a subset of loops"));
+static cl::list<int> LoopIndexesBlackList(
+    "noelle-loops-black-list",
+    cl::ZeroOrMore,
+    cl::CommaSeparated,
+    cl::desc("Don't parallelize a subset of loops"));
 
 Parallelizer::Parallelizer()
   : ModulePass{ ID },
@@ -48,6 +58,8 @@ Parallelizer::Parallelizer()
 bool Parallelizer::doInitialization(Module &M) {
   this->forceParallelization = (ForceParallelization.getNumOccurrences() > 0);
   this->forceNoSCCPartition = (ForceNoSCCPartition.getNumOccurrences() > 0);
+  this->loopIndexesWhiteList = LoopIndexesWhiteList;
+  this->loopIndexesBlackList = LoopIndexesBlackList;
 
   return false;
 }
@@ -62,155 +74,20 @@ bool Parallelizer::runOnModule(Module &M) {
   auto heuristics = getAnalysis<HeuristicsPass>().getHeuristics(noelle);
 
   /*
-   * Fetch the profiles.
+   * Parallelize the loops of the target program.
    */
-  auto profiles = noelle.getProfiles();
+  auto modified = this->parallelizeLoops(noelle, heuristics);
 
-  /*
-   * Fetch the verbosity level.
-   */
-  auto verbosity = noelle.getVerbosity();
-
-  /*
-   * Collect information about C++ code we link parallelized loops with.
-   */
-  errs() << "Parallelizer:  Analyzing the module " << M.getName() << "\n";
-  if (!collectThreadPoolHelperFunctionsAndTypes(M, noelle)) {
-    errs()
-        << "Parallelizer:    ERROR: I could not find the runtime within the module\n";
-    return false;
-  }
-
-  /*
-   * Fetch all the loops we want to parallelize.
-   */
-  errs() << "Parallelizer:  Fetching the program loops\n";
-  auto forest = noelle.getLoopNestingForest();
-  if (forest->getNumberOfLoops() == 0) {
-    errs() << "Parallelizer:    There is no loop to consider\n";
-
-    /*
-     * Free the memory.
-     */
-    delete forest;
-
-    errs() << "Parallelizer: Exit\n";
-    return false;
-  }
-  errs() << "Parallelizer:    There are " << forest->getNumberOfLoops()
-         << " loops in the program we are going to consider\n";
-
-  /*
-   * Determine the parallelization order from the metadata.
-   */
-  auto mm = noelle.getMetadataManager();
-  std::map<uint32_t, LoopDependenceInfo *> loopParallelizationOrder;
-  for (auto tree : forest->getTrees()) {
-    auto selector = [&noelle, &mm, &loopParallelizationOrder](
-                        StayConnectedNestedLoopForestNode *n,
-                        uint32_t treeLevel) -> bool {
-      auto ls = n->getLoop();
-      if (!mm->doesHaveMetadata(ls, "noelle.parallelizer.looporder")) {
-        return false;
-      }
-      auto parallelizationOrderIndex =
-          std::stoi(mm->getMetadata(ls, "noelle.parallelizer.looporder"));
-      auto optimizations = {
-        LoopDependenceInfoOptimization::MEMORY_CLONING_ID,
-        LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID
-      };
-      auto ldi = noelle.getLoop(ls, optimizations);
-      loopParallelizationOrder[parallelizationOrderIndex] = ldi;
-      return false;
-    };
-    tree->visitPreOrder(selector);
-  }
-
-  /*
-   * Parallelize the loops in order.
-   */
-  auto modified = false;
-  std::unordered_map<BasicBlock *, bool> modifiedBBs{};
-  for (auto indexLoopPair : loopParallelizationOrder) {
-    auto ldi = indexLoopPair.second;
-
-    /*
-     * Check if we can parallelize this loop.
-     */
-    auto ls = ldi->getLoopStructure();
-    auto safe = true;
-    for (auto bb : ls->getBasicBlocks()) {
-      if (modifiedBBs[bb]) {
-        safe = false;
-        break;
-      }
-    }
-
-    /*
-     * Get loop ID.
-     */
-    auto loopIDOpt = ls->getID();
-
-    if (!safe) {
-      errs() << "Parallelizer:    Loop ";
-      // Parent loop has been parallelized, so basic blocks have been modified
-      // and we might not have a loop ID for the child loop. If we have it we
-      // print it, otherwise we don't.
-      if (loopIDOpt) {
-        auto loopID = loopIDOpt.value();
-        errs() << loopID;
-      }
-      errs()
-          << " cannot be parallelized because one of its parent has been parallelized already\n";
-      continue;
-    }
-
-    /*
-     * Parallelize the current loop.
-     */
-    auto loopIsParallelized = this->parallelizeLoop(ldi, noelle, heuristics);
-
-    /*
-     * Keep track of the parallelization.
-     */
-    if (loopIsParallelized) {
-      errs()
-          << "Parallelizer:    Keep track of basic blocks being modified by the parallelization\n";
-      modified = true;
-      for (auto bb : ls->getBasicBlocks()) {
-        modifiedBBs[bb] = true;
-      }
-    }
-  }
-
-  /*
-   * Free the memory.
-   */
-  for (auto indexLoopPair : loopParallelizationOrder) {
-    delete indexLoopPair.second;
-  }
-
-  errs() << "Parallelizer: Exit\n";
   return modified;
 }
 
 void Parallelizer::getAnalysisUsage(AnalysisUsage &AU) const {
 
   /*
-   * Analyses.
-   */
-  AU.addRequired<LoopInfoWrapperPass>();
-  AU.addRequired<ScalarEvolutionWrapperPass>();
-  AU.addRequired<DominatorTreeWrapperPass>();
-  AU.addRequired<PostDominatorTreeWrapperPass>();
-
-  /*
    * Noelle.
    */
   AU.addRequired<Noelle>();
   AU.addRequired<HeuristicsPass>();
-
-  return;
 }
 
 } // namespace llvm::noelle

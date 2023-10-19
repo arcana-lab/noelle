@@ -27,7 +27,7 @@ namespace llvm::noelle {
 std::vector<LoopDependenceInfo *> TimeSaved::selectTheOrderOfLoopsToParallelize(
     Noelle &noelle,
     Hot *profiles,
-    noelle::StayConnectedNestedLoopForestNode *tree,
+    noelle::LoopTree *tree,
     uint64_t &maxTimeSaved,
     uint64_t &maxTimeSavedWithDOALLOnly) {
   std::vector<LoopDependenceInfo *> selectedLoops{};
@@ -44,10 +44,11 @@ std::vector<LoopDependenceInfo *> TimeSaved::selectTheOrderOfLoopsToParallelize(
   std::map<LoopDependenceInfo *, uint64_t> timeSavedLoops;
   std::map<LoopStructure *, bool> doallLoops;
   std::map<LoopStructure *, uint64_t> timeSavedPerLoop;
-  auto selector =
-      [&noelle, &timeSavedLoops, &timeSavedPerLoop, profiles, &doallLoops](
-          StayConnectedNestedLoopForestNode *n,
-          uint32_t treeLevel) -> bool {
+  auto selector = [&noelle,
+                   &timeSavedLoops,
+                   &timeSavedPerLoop,
+                   profiles,
+                   &doallLoops](LoopTree *n, uint32_t treeLevel) -> bool {
     /*
      * Fetch the loop.
      */

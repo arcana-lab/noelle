@@ -36,6 +36,13 @@ echo "NOELLE: FixedPoint:   Normalize the code" ;
 cmdToExecute="noelle-norm $IRFileInput -o $IRFileOutput" ;
 echo $cmdToExecute ;
 eval $cmdToExecute ;
+
+# Check if we got an error
+if test $? -ne 0 ; then
+  echo "NOELLE: FixedPoint: ERROR: ${cmdToExecute}" ;
+  exit 1;
+fi
+
 cp $IRFileOutput $IRFileInput ;
 
 # Invoke the enablers
@@ -54,18 +61,46 @@ while true ; do
     echo "ERROR" ;
     exit 1;
   fi
+  if ! test -f $IRFileOutput ; then
+    echo "ERROR" ;
+    exit 1;
+  fi
+  if ! test -s $IRFileOutput ; then
+    echo "ERROR" ;
+    exit 1;
+  fi
 
   # Check if the bitcode has been modified
   # - Step 1: fetch the code size and loop code of the input bitcode
   noelle-codesize $IRFileInput > $codeSize ;
+  # Check if we got an error
+  if test $? -ne 0 ; then
+    echo "NOELLE: FixedPoint: ERROR: noelle-codesize ${IRFileInput}" ;
+    exit 1;
+  fi
   inputCodeLines=`tail -n 1 $codeSize | awk '{print $1}'` ;
   noelle-loopsize $IRFileInput > $codeSize ;
+  # Check if we got an error
+  if test $? -ne 0 ; then
+    echo "NOELLE: FixedPoint: ERROR: noelle-loopsize ${IRFileInput}" ;
+    exit 1;
+  fi
   inputLoopLines=`tail -n 1 $codeSize | awk '{print $1}'` ;
 
   # - Step 2: fetch the code size and loop code of the output bitcode
   noelle-codesize $IRFileOutput > $codeSize ;
+  # Check if we got an error
+  if test $? -ne 0 ; then
+    echo "NOELLE: FixedPoint: ERROR: noelle-codesize ${IRFileOutput}" ;
+    exit 1;
+  fi
   outputCodeLines=`tail -n 1 $codeSize | awk '{print $1}'` ;
   noelle-loopsize $IRFileOutput > $codeSize ;
+  # Check if we got an error
+  if test $? -ne 0 ; then
+    echo "NOELLE: FixedPoint: ERROR: noelle-loopsize ${IRFileOutput}" ;
+    exit 1;
+  fi
   outputLoopLines=`tail -n 1 $codeSize | awk '{print $1}'` ;
 
   # - Step 3: compare the results
@@ -84,6 +119,11 @@ while true ; do
   cmdToExecute="noelle-norm $IRFileOutput -o $IRFileOutput"
   echo $cmdToExecute ;
   eval $cmdToExecute ;
+  # Check if we got an error
+  if test $? -ne 0 ; then
+    echo "NOELLE: FixedPoint: ERROR: ${cmdToExecute}" ;
+    exit 1;
+  fi
 
   # Copy the output to the input
   cp $IRFileOutput $IRFileInput ;

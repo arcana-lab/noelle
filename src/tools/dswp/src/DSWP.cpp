@@ -19,13 +19,16 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DSWP.hpp"
+#include "noelle/tools/DSWP.hpp"
+#include "noelle/core/Architecture.hpp"
+#include "noelle/core/LoopIterationSCC.hpp"
 
 namespace llvm::noelle {
 
 DSWP::DSWP(Noelle &n, bool forceParallelization, bool enableSCCMerging)
   : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{ n,
                                                                     forceParallelization },
+    minCores{ 0 },
     enableMergingSCC{ enableSCCMerging },
     queues{},
     queueArrayType{ nullptr },
@@ -68,6 +71,8 @@ bool DSWP::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   auto doesSequentialSCCExist = false;
   uint64_t biggestSCC = 0;
   auto sccManager = LDI->getSCCManager();
+  auto clonableSCCs =
+      this->getClonableSCCs(sccManager, LDI->getLoopHierarchyStructures());
   for (auto nodePair : sccManager->getSCCDAG()->internalNodePairs()) {
 
     /*
@@ -86,11 +91,9 @@ bool DSWP::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
     assert(biggestSCC >= currentSCCTotalInsts);
 
     /*
-     * Check if the current SCC can be removed (e.g., because it is due to
-     * induction variables). If it is, then this SCC has already been assigned
-     * to every dependent partition.
+     * Check if this will run sequentially.
      */
-    if (currentSCCInfo->canBeCloned()) {
+    if (clonableSCCs.find(currentSCCInfo) != clonableSCCs.end()) {
       continue;
     }
 
@@ -151,8 +154,12 @@ bool DSWP::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   auto averageInstructionThreshold = 20;
   bool hasLittleExecution = averageInstructions < averageInstructionThreshold;
   auto minimumSequentialFraction = .5;
+  auto skipSCC = [this, sccManager](GenericSCC *scc) -> bool {
+    auto skip = this->canBeCloned(scc);
+    return skip;
+  };
   auto sequentialFraction =
-      this->computeSequentialFractionOfExecution(LDI, this->noelle);
+      this->computeSequentialFractionOfExecution(LDI, skipSCC);
   bool hasProportionallyInsignificantSequentialExecution =
       sequentialFraction < minimumSequentialFraction;
   if (hasLittleExecution && hasProportionallyInsignificantSequentialExecution) {
@@ -186,6 +193,18 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DSWP: Start\n";
   }
+
+  /*
+   * Fetch the managers.
+   */
+  auto cm = this->noelle.getConstantsManager();
+  auto tm = this->noelle.getTypesManager();
+
+  /*
+   * Compute the set of SCCs that can be cloned.
+   */
+  this->clonableSCCs = this->getClonableSCCs(LDI->getSCCManager(),
+                                             LDI->getLoopHierarchyStructures());
 
   /*
    * Fetch the header.
@@ -265,14 +284,12 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   /*
    * Helper declarations
    */
-  this->zeroIndexForBaseArray =
-      cast<Value>(ConstantInt::get(this->noelle.int64, 0));
+  this->zeroIndexForBaseArray = cm->getIntegerConstant(0, 64);
+  auto int8Type = tm->getIntegerType(8);
   this->queueArrayType =
-      ArrayType::get(PointerType::getUnqual(this->noelle.int8),
-                     this->queues.size());
+      ArrayType::get(PointerType::getUnqual(int8Type), this->queues.size());
   this->stageArrayType =
-      ArrayType::get(PointerType::getUnqual(this->noelle.int8),
-                     this->tasks.size());
+      ArrayType::get(PointerType::getUnqual(int8Type), this->tasks.size());
 
   /*
    * Create the pipeline stages (technique tasks)
@@ -331,10 +348,7 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
      * cloned instructions to refer to the other cloned instructions. Currently,
      * they still refer to the original loop's instructions.
      */
-    adjustDataFlowToUseClones(LDI, i);
-    if (this->verbose >= Verbosity::Maximal) {
-      errs() << "DSWP:  Adjusted data flow between cloned instructions\n";
-    }
+    task->adjustDataAndControlFlowToUseClones();
 
     /*
      * Add the unconditional branch from the entry basic block to the header of
@@ -342,12 +356,6 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
      */
     IRBuilder<> entryBuilder(task->getEntry());
     entryBuilder.CreateBr(task->getCloneOfOriginalBasicBlock(loopHeader));
-
-    /*
-     * Add the return instruction at the end of the exit basic block.
-     */
-    IRBuilder<> exitBuilder(task->getExit());
-    exitBuilder.CreateRetVoid();
 
     /*
      * Store final results to loop live-out variables.
@@ -386,12 +394,30 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   delete this->originalFunctionDS;
 
   /*
+   * Set the minimum number of cores.
+   */
+  this->minCores = this->tasks.size();
+
+  /*
    * Exit
    */
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DSWP: Exit\n";
   }
   return true;
+}
+
+uint32_t DSWP::getMinimumNumberOfIdleCores(void) const {
+  return Architecture::getNumberOfPhysicalCores();
+  return this->minCores;
+}
+
+std::string DSWP::getName(void) const {
+  return "DSWP";
+}
+
+Transformation DSWP::getParallelizationID(void) const {
+  return Transformation::DSWP_ID;
 }
 
 } // namespace llvm::noelle

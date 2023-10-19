@@ -24,18 +24,18 @@
 #include <memory>
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Dominators.hpp"
-#include "noelle/core/StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/LoopForest.hpp"
 
 namespace llvm::noelle {
 
 class ControlFlowEquivalence {
 public:
   ControlFlowEquivalence(const DominatorSummary *ds,
-                         StayConnectedNestedLoopForestNode *loops,
+                         LoopTree *loops,
                          Function &F);
 
   ControlFlowEquivalence(const DominatorSummary *ds,
-                         StayConnectedNestedLoopForestNode *loops,
+                         LoopTree *loops,
                          const LoopStructure *loopStructure);
 
   std::unordered_set<BasicBlock *> getEquivalences(BasicBlock *bb) const;
@@ -43,9 +43,8 @@ public:
   raw_ostream &print(raw_ostream &stream, std::string prefixToUse = "") const;
 
 private:
-  void calculateControlFlowEquivalences(
-      const DominatorSummary *DS,
-      StayConnectedNestedLoopForestNode *loops);
+  void calculateControlFlowEquivalences(const DominatorSummary *DS,
+                                        LoopTree *loops);
 
   void createEquivalenceSet(BasicBlock *singleB);
 

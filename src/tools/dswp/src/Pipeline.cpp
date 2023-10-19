@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,10 +19,9 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DSWP.hpp"
+#include "noelle/tools/DSWP.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 void DSWP::generateStagesFromPartitionedSCCs(LoopDependenceInfo *LDI) {
   assert(LDI != nullptr);
@@ -37,7 +36,7 @@ void DSWP::generateStagesFromPartitionedSCCs(LoopDependenceInfo *LDI) {
    */
   std::vector<Task *> techniqueTasks;
   auto depthOrdered = this->partitioner->getDepthOrderedSets();
-  auto taskID = 0;
+  auto currentUserID = 0;
 
   /*
    * Create the tasks.
@@ -60,8 +59,9 @@ void DSWP::generateStagesFromPartitionedSCCs(LoopDependenceInfo *LDI) {
     /*
      * Create task (stage), populating its SCCs
      */
-    auto task = new DSWPTask(taskID, taskSignature, *program);
-    taskID++;
+    auto task = new DSWPTask(taskSignature, *program);
+    this->fromTaskIDToUserID[task->getID()] = currentUserID;
+    currentUserID++;
     techniqueTasks.push_back(task);
     for (auto scc : subset->sccs) {
       task->stageSCCs.insert(scc);
@@ -94,12 +94,12 @@ void DSWP::addClonableSCCsToStages(LoopDependenceInfo *LDI) {
        * Collect clonable SCCs with outgoing edges to SCCs in the task
        */
       for (auto sccEdge : depSCCNode->getIncomingEdges()) {
-        auto fromSCCNode = sccEdge->getOutgoingNode();
+        auto fromSCCNode = sccEdge->getSrcNode();
         auto fromSCC = fromSCCNode->getT();
         if (visitedNodes.find(fromSCCNode) != visitedNodes.end())
           continue;
         auto fromSCCInfo = sccManager->getSCCAttrs(fromSCC);
-        if (fromSCCInfo->canBeCloned()) {
+        if (this->canBeCloned(fromSCCInfo)) {
           task->clonableSCCs.insert(fromSCC);
         }
 
@@ -130,7 +130,8 @@ bool DSWP::isCompleteAndValidStageStructure(LoopDependenceInfo *LDI) const {
 
   auto sccManager = LDI->getSCCManager();
   for (auto node : sccManager->getSCCDAG()->getNodes()) {
-    if (sccManager->getSCCAttrs(node->getT())->canBeCloned()) {
+    auto sccAttrs = sccManager->getSCCAttrs(node->getT());
+    if (this->canBeCloned(sccAttrs)) {
       continue;
     }
 
@@ -144,6 +145,11 @@ bool DSWP::isCompleteAndValidStageStructure(LoopDependenceInfo *LDI) const {
 }
 
 void DSWP::createPipelineFromStages(LoopDependenceInfo *LDI, Noelle &par) {
+
+  /*
+   * Fetch the managers.
+   */
+  auto cm = par.getConstantsManager();
 
   /*
    * Fetch the loop function.
@@ -180,10 +186,8 @@ void DSWP::createPipelineFromStages(LoopDependenceInfo *LDI, Noelle &par) {
    * Call the stage dispatcher with the environment, queues array, and stages
    * array
    */
-  auto queuesCount =
-      cast<Value>(ConstantInt::get(par.int64, this->queues.size()));
-  auto stagesCount =
-      cast<Value>(ConstantInt::get(par.int64, this->numTaskInstances));
+  auto queuesCount = cm->getIntegerConstant(this->queues.size(), 64);
+  auto stagesCount = cm->getIntegerConstant(this->numTaskInstances, 64);
 
   /*
    * Add the call to the task dispatcher
@@ -209,13 +213,20 @@ void DSWP::createPipelineFromStages(LoopDependenceInfo *LDI, Noelle &par) {
 Value *DSWP::createStagesArrayFromStages(LoopDependenceInfo *LDI,
                                          IRBuilder<> funcBuilder,
                                          Noelle &par) {
+
+  /*
+   * Fetch the managers.
+   */
+  auto cm = par.getConstantsManager();
+  auto tm = par.getTypesManager();
+
   auto stagesAlloca =
       cast<Value>(funcBuilder.CreateAlloca(this->stageArrayType));
   auto stageCastType =
       PointerType::getUnqual(this->tasks[0]->getTaskBody()->getType());
   for (int i = 0; i < this->numTaskInstances; ++i) {
     auto stage = this->tasks[i];
-    auto stageIndex = cast<Value>(ConstantInt::get(par.int64, i));
+    auto stageIndex = cm->getIntegerConstant(i, 64);
     auto stagePtr = funcBuilder.CreateInBoundsGEP(
         stagesAlloca,
         ArrayRef<Value *>({ this->zeroIndexForBaseArray, stageIndex }));
@@ -223,29 +234,41 @@ Value *DSWP::createStagesArrayFromStages(LoopDependenceInfo *LDI,
     funcBuilder.CreateStore(stage->getTaskBody(), stageCast);
   }
 
+  auto int8Type = tm->getIntegerType(8);
+
   return cast<Value>(
       funcBuilder.CreateBitCast(stagesAlloca,
-                                PointerType::getUnqual(par.int8)));
+                                PointerType::getUnqual(int8Type)));
 }
 
 Value *DSWP::createQueueSizesArrayFromStages(LoopDependenceInfo *LDI,
                                              IRBuilder<> funcBuilder,
                                              Noelle &par) {
+
+  /*
+   * Fetch the managers.
+   */
+  auto cm = par.getConstantsManager();
+  auto tm = par.getTypesManager();
+
+  auto int64Type = tm->getIntegerType(64);
   auto queuesAlloca = cast<Value>(
-      funcBuilder.CreateAlloca(ArrayType::get(par.int64, this->queues.size())));
+      funcBuilder.CreateAlloca(ArrayType::get(int64Type, this->queues.size())));
   for (int i = 0; i < this->queues.size(); ++i) {
     auto &queue = this->queues[i];
-    auto queueIndex = cast<Value>(ConstantInt::get(par.int64, i));
+    auto queueIndex = cm->getIntegerConstant(i, 64);
     auto queuePtr = funcBuilder.CreateInBoundsGEP(
         queuesAlloca,
         ArrayRef<Value *>({ this->zeroIndexForBaseArray, queueIndex }));
     auto queueCast =
-        funcBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(par.int64));
-    funcBuilder.CreateStore(ConstantInt::get(par.int64, queue->bitLength),
+        funcBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(int64Type));
+    funcBuilder.CreateStore(cm->getIntegerConstant(queue->bitLength, 64),
                             queueCast);
   }
 
   return cast<Value>(
       funcBuilder.CreateBitCast(queuesAlloca,
-                                PointerType::getUnqual(par.int64)));
+                                PointerType::getUnqual(int64Type)));
 }
+
+} // namespace llvm::noelle

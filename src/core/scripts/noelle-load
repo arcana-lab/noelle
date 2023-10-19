@@ -4,6 +4,11 @@ installDir
 
 OPT="opt" ;
 
+# Check the inputs
+if test $# -lt 1 ; then
+  echo "USAGE: `basename $0` OPT-OPTIONS" ;
+  exit 1;
+fi
 
 ###########     LLVM alias analyses
 AA="-disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa"
@@ -31,15 +36,15 @@ fi
 
 
 ########### NOELLE analyses
-PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/TalkDown.so -load ${installDir}/lib/CallGraph.so -load ${installDir}/lib/PDGAnalysis.so"
+PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/AliasAnalysisEngine.so -load ${installDir}/lib/TalkDown.so -load ${installDir}/lib/CallGraph.so -load ${installDir}/lib/DG.so -load ${installDir}/lib/PDG.so -load ${installDir}/lib/SCCDAG.so -load ${installDir}/lib/PDGPrinter.so -load ${installDir}/lib/MayPointsToAnalysis.so -load ${installDir}/lib/PDGAnalysis.so -load ${installDir}/lib/MemoryCloningAnalysis.so"
 
 
 ########### All analyses
-ANALYSES="${AA} ${LOOPAA} -scalar-evolution -loops -domtree -postdomtree ${EXTRA_AA}"
+ANALYSES="${AA} ${LOOPAA} -scalar-evolution -loops -domtree -postdomtree ${EXTRA_AA} -load ${installDir}/lib/LDGAnalysis.so"
 
 
 ########### Transformations
-OPTPASSES="-load ${installDir}/lib/CallGraph.so  ${WPAPASS} ${SCAFPASS} ${PDGPASS} -load ${installDir}/lib/Architecture.so -load ${installDir}/lib/BasicUtilities.so -load ${installDir}/lib/Dominators.so -load ${installDir}/lib/Task.so -load ${installDir}/lib/DataFlow.so -load ${installDir}/lib/HotProfiler.so -load ${installDir}/lib/LoopStructure.so -load ${installDir}/lib/LoopEnvironment.so -load ${installDir}/lib/Forest.so -load ${installDir}/lib/Invariants.so -load ${installDir}/lib/InductionVariables.so -load ${installDir}/lib/LoopCarriedDependencies.so -load ${installDir}/lib/LoopSCCAttributes.so -load ${installDir}/lib/LoopContent.so -load ${installDir}/lib/LoopNestingGraph.so -load ${installDir}/lib/Scheduler.so -load ${installDir}/lib/OutlinerPass.so -load ${installDir}/lib/MetadataManager.so -load ${installDir}/lib/LoopTransformer.so -load ${installDir}/lib/CFGAnalysis.so  -load ${installDir}/lib/CFGTransformer.so -load ${installDir}/lib/Noelle.so"
+OPTPASSES="-load ${installDir}/lib/CallGraph.so  ${WPAPASS} ${SCAFPASS} ${PDGPASS} -load ${installDir}/lib/Architecture.so -load ${installDir}/lib/BasicUtilities.so -load ${installDir}/lib/TypesManager.so -load ${installDir}/lib/GlobalsManager.so -load ${installDir}/lib/FunctionsManager.so -load ${installDir}/lib/ConstantsManager.so -load ${installDir}/lib/Linker.so -load ${installDir}/lib/Dominators.so -load ${installDir}/lib/Task.so -load ${installDir}/lib/DataFlow.so -load ${installDir}/lib/HotProfiler.so -load ${installDir}/lib/LoopStructure.so -load ${installDir}/lib/LoopEnvironment.so -load ${installDir}/lib/Forest.so -load ${installDir}/lib/Invariants.so -load ${installDir}/lib/InductionVariables.so -load ${installDir}/lib/LoopCarriedDependencies.so -load ${installDir}/lib/LoopSCCAttributes.so -load ${installDir}/lib/LoopSCCDAGAttributes.so -load ${installDir}/lib/LoopSCCDAGNormalizer.so -load ${installDir}/lib/LoopContent.so -load ${installDir}/lib/LoopNestingGraph.so -load ${installDir}/lib/Scheduler.so -load ${installDir}/lib/OutlinerPass.so -load ${installDir}/lib/MetadataManager.so -load ${installDir}/lib/LoopUnroll.so -load ${installDir}/lib/LoopTransformer.so -load ${installDir}/lib/CFGAnalysis.so  -load ${installDir}/lib/CFGTransformer.so -load ${installDir}/lib/CompilationOptionsManager.so -load ${installDir}/lib/Noelle.so"
 
 
 # Set the command to execute
@@ -47,4 +52,8 @@ cmdToExecute="${OPT} ${OPTPASSES} ${ANALYSES} ${@}"
 
 # Execute the command
 echo $cmdToExecute
-eval $cmdToExecute 
+eval $cmdToExecute
+
+if test $? -ne 0 ; then
+  exit 1;
+fi

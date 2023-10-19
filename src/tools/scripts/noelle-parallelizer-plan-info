@@ -1,0 +1,21 @@
+#!/bin/bash
+
+installDir
+
+# Check the inputs
+if test $# -lt 1 ; then
+  echo "USAGE: `basename $0` IR_FILE [OPTIONS]..."
+  echo
+  echo "Print information about loops in an embedded parallel plan."
+  echo
+  echo "IR_FILE                     Input bitcode with an embedded parallel plan."
+  echo
+  echo "Options:"
+  echo "--info-print-all-headers    Print the header of every loop."
+  echo "--info-print-headers        Print the headers of some loops."
+  exit 1
+fi
+
+cmdToExecute="noelle-load -noelle-verbose=0 -load ${installDir}/lib/ParallelizerPlanInfo.so -ParallelizerPlanInfo -disable-output $@" 
+echo $cmdToExecute
+eval $cmdToExecute 

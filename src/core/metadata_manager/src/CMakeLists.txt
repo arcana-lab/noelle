@@ -4,6 +4,8 @@ set(Srcs
   MetadataManager.cpp
   MetadataManager_Module.cpp
   MetadataManager_Instruction.cpp
+  MetadataManager_annotations.cpp
+  MetadataManager_PDG.cpp
 )
 
 # Compilation flags
@@ -13,7 +15,7 @@ set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC"
 set(PassName "MetadataManager")
 
 # configure LLVM 
-find_package(LLVM REQUIRED CONFIG)
+find_package(LLVM 9 REQUIRED CONFIG)
 
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
 set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)

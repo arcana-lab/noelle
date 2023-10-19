@@ -36,7 +36,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
   auto header = loopStructure->getHeader();
   auto preHeader = loopStructure->getPreHeader();
   auto loopFunction = header->getParent();
-  errs() << "LICM:  Loop \"" << *header->getFirstNonPHI() << "\"\n";
+  errs() << "LICM:   Loop \"" << *header->getFirstNonPHI() << "\"\n";
 
   /*
    * Compute the dominators.
@@ -47,6 +47,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
    * Identify the instructions to hoist outside the loop.
    */
   std::vector<Instruction *> instructionsToHoistToPreheader{};
+  std::map<Instruction *, std::set<Instruction *>> conditionalHoisting{};
   std::unordered_set<PHINode *> phisToRemove{};
   for (auto B : loopStructure->getBasicBlocks()) {
     for (auto &I : *B) {
@@ -57,7 +58,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
       if (!invariantManager->isLoopInvariant(&I)) {
         continue;
       }
-      errs() << "LICM:    Invariant = \"" << I << "\n";
+      errs() << "LICM:     Invariant = \"" << I << "\n";
 
       /*
        * Check if the instruction can generate unwanted side-effects if there is
@@ -71,6 +72,48 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
       auto mayWriteToMemory = false;
       if (isa<StoreInst>(&I)) {
         mayWriteToMemory = true;
+      }
+      if (auto callInst = dyn_cast<CallBase>(&I)) {
+
+        /*
+         * Check if the callee is known
+         */
+        auto calleeFunction = callInst->getCalledFunction();
+        if (calleeFunction == nullptr) {
+
+          /*
+           * The callee is unknown.
+           * Hence, we must be conservative and assume that callee will write to
+           * memory.
+           * TODO: this can be improved by using the call graph of NOELLE to
+           * check all possible callees.
+           */
+          mayWriteToMemory = true;
+
+        } else {
+
+          /*
+           * The callee is known and there is only one possible callee.
+           *
+           * Check if the callee is a library function.
+           */
+          if (!calleeFunction->empty()) {
+
+            /*
+             * The callee is not a library function
+             */
+            mayWriteToMemory = true;
+
+          } else {
+
+            /*
+             * The callee is a library function
+             */
+            if (!PDGAnalysis::isTheLibraryFunctionPure(calleeFunction)) {
+              mayWriteToMemory = true;
+            }
+          }
+        }
       }
       if (mayWriteToMemory) {
         errs()
@@ -90,8 +133,9 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
           this->getSourceDependenceInstructionsFrom(LDI, I);
       auto isSafe = true;
       errs() << "LICM:       Checking dependences\n";
+      std::set<Instruction *> dependentInvariantsInLoop{};
       for (auto depI : dependenceInstructions) {
-        errs() << "LICM:        Dependent instruction = \"" << *depI << "\n";
+        errs() << "LICM:         Dependent instruction = \"" << *depI << "\n";
 
         /*
          * We can skip instructions that are outside the target loop.
@@ -107,23 +151,42 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
           isSafe = false;
           break;
         }
+
+        /*
+         * Keep track of the other invariants that have to be hoisted.
+         */
+        dependentInvariantsInLoop.insert(depI);
       }
       if (!isSafe) {
         continue;
       }
-      errs() << "LICM:       The instruction can be hoisted\n";
+      if (dependentInvariantsInLoop.size() == 0) {
+        errs() << "LICM:       The instruction can be hoisted\n";
+
+      } else {
+        errs()
+            << "LICM:       The instruction is conditionally hoisted if the next invariants are hoisted as well:\n";
+        for (auto depI : dependentInvariantsInLoop) {
+          errs() << "LICM:       " << *depI << "\n";
+        }
+      }
 
       /*
        * The instruction @I is invariant and it is safe to hoist it.
+       *
+       * Handle non-phi instructions separately.
        */
-      modified = true;
       auto phi = dyn_cast<PHINode>(&I);
       if (!phi) {
         if (std::find(instructionsToHoistToPreheader.begin(),
                       instructionsToHoistToPreheader.end(),
                       &I)
             == instructionsToHoistToPreheader.end()) {
-          instructionsToHoistToPreheader.push_back(&I);
+          if (dependentInvariantsInLoop.size() == 0) {
+            instructionsToHoistToPreheader.push_back(&I);
+          } else {
+            conditionalHoisting[&I] = dependentInvariantsInLoop;
+          }
         }
         continue;
       }
@@ -136,13 +199,15 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
       Value *valueToReplacePHI = nullptr;
       for (auto i = 0; i < phi->getNumIncomingValues(); ++i) {
         auto incomingBlock = phi->getIncomingBlock(i);
-        if (!DS->DT.dominates(incomingBlock, B))
+        if (!DS->DT.dominates(incomingBlock, B)) {
           continue;
+        }
         valueToReplacePHI = phi->getIncomingValue(i);
         break;
       }
-      if (!valueToReplacePHI)
+      if (!valueToReplacePHI) {
         continue;
+      }
 
       /*
        * Note, the users are modified, so we must cache them first
@@ -150,6 +215,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
       std::unordered_set<User *> users(phi->user_begin(), phi->user_end());
       for (auto user : users) {
         user->replaceUsesOfWith(phi, valueToReplacePHI);
+        modified = true;
       }
       phisToRemove.insert(phi);
 
@@ -163,10 +229,146 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
                         instructionsToHoistToPreheader.end(),
                         instToReplacePHI)
               == instructionsToHoistToPreheader.end()) {
-            instructionsToHoistToPreheader.push_back(instToReplacePHI);
+            if (dependentInvariantsInLoop.size() == 0) {
+              instructionsToHoistToPreheader.push_back(instToReplacePHI);
+            } else {
+              conditionalHoisting[instToReplacePHI] = dependentInvariantsInLoop;
+            }
           }
         }
       }
+    }
+  }
+
+  /*
+   * Evaluate the invariants that can only conditionally be hoisted.
+   */
+  errs() << "LICM:     Check invariants that can be hoisted conditionally\n";
+  auto conditionsAreModified = true;
+  while (conditionsAreModified) {
+    conditionsAreModified = false;
+
+    /*
+     * Check the invariants that can only conditionally be hoisted.
+     */
+    errs() << "LICM:       Check the invariants\n";
+    for (auto p : conditionalHoisting) {
+
+      /*
+       * Fetch the invariant.
+       */
+      auto instToHoist = p.first;
+      assert(loopStructure->isIncluded(instToHoist));
+
+      /*
+       * Check if the invariant is already tagged as safe to be hoisted.
+       */
+      if (std::find(instructionsToHoistToPreheader.begin(),
+                    instructionsToHoistToPreheader.end(),
+                    instToHoist)
+          != instructionsToHoistToPreheader.end()) {
+        continue;
+      }
+
+      /*
+       * Check conditions
+       */
+      errs() << "LICM:         Invariant " << *instToHoist << "\n";
+      auto areConditionsMet = true;
+      auto &conditions = p.second;
+      for (auto cond : conditions) {
+        assert(loopStructure->isIncluded(cond));
+
+        /*
+         * Check if the current condition is matched.
+         */
+        if (std::find(instructionsToHoistToPreheader.begin(),
+                      instructionsToHoistToPreheader.end(),
+                      cond)
+            != instructionsToHoistToPreheader.end()) {
+
+          /*
+           * The instruction that represents a condition to hoist @instToHoist
+           * will be hoisted.
+           */
+          continue;
+        }
+
+        /*
+         * Check if the current condition to hoist @instToHoist depends on
+         * another condition.
+         */
+        if (conditionalHoisting.find(cond) == conditionalHoisting.end()) {
+
+          /*
+           * There is at least one other invariant that depends on the current
+           * one that cannot be hoisted. Hence, the current one cannot be
+           * hoisted.
+           */
+          areConditionsMet = false;
+          break;
+        }
+      }
+
+      if (!areConditionsMet) {
+
+        /*
+         * The conditions are not met.
+         * We cannot hoist the current invariant.
+         */
+        errs() << "LICM:           It cannot be hoisted\n";
+
+        /*
+         * Remove the current invariant from the list of instructions that could
+         * be hoisted.
+         */
+        assert(std::find(instructionsToHoistToPreheader.begin(),
+                         instructionsToHoistToPreheader.end(),
+                         instToHoist)
+               == instructionsToHoistToPreheader.end());
+        conditionalHoisting.erase(instToHoist);
+        conditionsAreModified = true;
+
+        /*
+         * Remove all other invariants that their hoisting was conditioned to
+         * this one.
+         */
+        std::set<Instruction *> toDelete{};
+        for (auto p2 : conditionalHoisting) {
+          auto removed = false;
+          for (auto cond2 : p2.second) {
+            if (cond2 != instToHoist) {
+              continue;
+            }
+            removed = true;
+            auto it = std::find(instructionsToHoistToPreheader.begin(),
+                                instructionsToHoistToPreheader.end(),
+                                p2.first);
+            if (it != instructionsToHoistToPreheader.end()) {
+              errs() << "LICM:             Remove " << *cond2
+                     << " as well as it was conditioned to this one\n";
+              instructionsToHoistToPreheader.erase(it);
+            }
+            break;
+          }
+          if (removed) {
+            toDelete.insert(p2.first);
+          }
+        }
+        for (auto inst : toDelete) {
+          conditionalHoisting.erase(inst);
+        }
+
+        break;
+      }
+
+      /*
+       * The conditions are met.
+       * We can hoist the current invariant.
+       */
+      errs() << "LICM:           It can be hoisted\n";
+      instructionsToHoistToPreheader.push_back(instToHoist);
+      modified = true;
     }
   }
 
@@ -175,6 +377,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
    */
   for (auto phi : phisToRemove) {
     phi->eraseFromParent();
+    modified = true;
   }
 
   /*
@@ -211,9 +414,12 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
   for (auto I : instructionsToHoistToPreheader) {
     I->removeFromParent();
     preHeaderBuilder.Insert(I);
+    modified = true;
   }
   if (modified) {
-    errs() << "LICM:  The loop has been modified\n";
+    errs() << "LICM:   The loop has been modified\n";
+  } else {
+    errs() << "LICM:   The loop has not been modified\n";
   }
 
   /*
@@ -244,7 +450,7 @@ std::vector<Instruction *> LoopInvariantCodeMotion::
   /*
    * Code to collect dependences.
    */
-  auto collectF = [ls, &s](Value *f, DGEdge<Value> *d) -> bool {
+  auto collectF = [ls, &s](Value *f, DGEdge<Value, Value> *d) -> bool {
     auto fI = dyn_cast<Instruction>(f);
     if (fI == nullptr) {
       return false;

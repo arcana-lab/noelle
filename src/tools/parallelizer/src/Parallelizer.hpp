@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,25 +21,6 @@
  */
 #pragma once
 
-#include "llvm/Pass.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/DerivedUser.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
-#include "llvm/Transforms/Utils/Cloning.h"
-#include "llvm/Transforms/Utils/LoopUtils.h"
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Analysis/ScalarEvolution.h"
-#include "llvm/Analysis/ScalarEvolutionExpressions.h"
-#include "llvm/IR/Dominators.h"
-#include "llvm/Analysis/AssumptionCache.h"
-#include "llvm/IR/Mangler.h"
-#include "llvm/IR/IRBuilder.h"
-
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
 #include "noelle/core/PDG.hpp"
@@ -47,10 +28,10 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/MetadataManager.hpp"
-#include "HeuristicsPass.hpp"
-#include "DSWP.hpp"
-#include "DOALL.hpp"
+#include "noelle/tools/DOALL.hpp"
 #include "noelle/tools/HELIX.hpp"
+#include "HeuristicsPass.hpp"
+#include "noelle/tools/DSWP.hpp"
 
 namespace llvm::noelle {
 
@@ -75,11 +56,15 @@ private:
    */
   bool forceParallelization;
   bool forceNoSCCPartition;
+  std::vector<int> loopIndexesWhiteList;
+  std::vector<int> loopIndexesBlackList;
 
   /*
    * Methods
    */
   bool parallelizeLoop(LoopDependenceInfo *LDI, Noelle &par, Heuristics *h);
+
+  bool parallelizeLoops(Noelle &noelle, Heuristics *heuristics);
 
   std::vector<LoopDependenceInfo *> getLoopsToParallelize(Module &M,
                                                           Noelle &par);

@@ -24,13 +24,12 @@
 
 namespace llvm::noelle {
 
-LoopCarriedVariable::LoopCarriedVariable(
-    const LoopStructure &loop,
-    StayConnectedNestedLoopForestNode *loopNode,
-    PDG &loopDG,
-    SCCDAG &sccdag,
-    SCC &sccContainingVariable,
-    PHINode *declarationPHI)
+LoopCarriedVariable::LoopCarriedVariable(const LoopStructure &loop,
+                                         LoopTree *loopNode,
+                                         PDG &loopDG,
+                                         SCCDAG &sccdag,
+                                         SCC &sccContainingVariable,
+                                         PHINode *declarationPHI)
   : outermostLoopOfVariable{ loop },
     declarationValue{ declarationPHI },
     isValid{ false } {
@@ -59,16 +58,17 @@ LoopCarriedVariable::LoopCarriedVariable(
                                                                  loopNode,
                                                                  sccdag);
 
-  std::unordered_set<DGEdge<Value> *> edgesThatExist;
-  std::unordered_set<DGEdge<Value> *> edgesToRemove;
+  std::unordered_set<DGEdge<Value, Value> *> edgesThatExist;
+  std::unordered_set<DGEdge<Value, Value> *> edgesToRemove;
 
   std::unordered_set<Value *> loopCarriedValues{};
-  std::unordered_set<DGEdge<Value> *> loopCarriedDependenciesNotOfVariable{};
+  std::unordered_set<DGEdge<Value, Value> *>
+      loopCarriedDependenciesNotOfVariable{};
 
   for (auto dependency : loopCarriedDependencies) {
-    auto consumer = dependency->getIncomingT();
+    auto consumer = dependency->getDst();
     if (consumer == declarationValue) {
-      auto producer = dependency->getOutgoingT();
+      auto producer = dependency->getSrc();
       loopCarriedValues.insert(producer);
     } else {
       loopCarriedDependenciesNotOfVariable.insert(dependency);
@@ -320,7 +320,7 @@ std::unordered_set<Value *> LoopCarriedVariable::getConsumersOfVariable(
 
     auto node = externalNodePair.second;
     for (auto edge : node->getIncomingEdges()) {
-      auto producer = edge->getOutgoingT();
+      auto producer = edge->getSrc();
       if (sccOfVariableOnly->isExternal(producer))
         continue;
 

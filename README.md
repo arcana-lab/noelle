@@ -37,7 +37,7 @@ The only documentation available for NOELLE is:
 - [the wiki](https://github.com/arcana-lab/noelle/wiki) of the project
 
 ## Version
-The latest stable version is 9.9.1 (tag = `v9.9.1`).
+The latest stable version is 9.10.1 (tag = `v9.10.1`).
 
 ### Version Numbering Scheme
 The version number is in the form of \[v _Major.Minor.Revision_ \]
@@ -95,6 +95,13 @@ cd THE_TEST_YOU_ARE_INTERESTED ;
 ```
 where `regression_42` is the sub-directory of the configuration you are interested and `THE_TEST_YOU_ARE_INTERESTED` is the test you care.
 
+To run only the autotuned performance tests using Condor, invoke the following commands:
+```
+make clean ;
+cd tests ;
+make condor_autotuner ;
+```
+The speedup results will be collected in the tests/performance/speedups_autotuner.txt file.
 
 ## Repository structure
 The directory `src` includes sources of the noelle framework.

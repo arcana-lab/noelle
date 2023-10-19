@@ -1,0 +1,23 @@
+#!/bin/bash
+
+echo "AUTOTUNER: compile" ;
+
+# Get args (TODO add sanity check)
+args="${autotunerARGS}" ;
+outputbc="${autotunerOUTPUTBC}" ;
+libs="${autotunerLIBS}" ;
+parallelizedBinary="${autotunerPARALLELIZED_BINARY}" ;
+
+cpp="clang" ;
+optlevel="-O3" ;
+
+# Generate parallel optimized bitcode 
+cmd="noelle-parallelizer ${args}" ;
+echo ${cmd} ;
+eval ${cmd} ;
+
+# Generate binary
+cmd="${cpp} -std=c++14 -pthreads ${optlevel} ${outputbc} ${libs} -o ${parallelizedBinary}" ;
+echo ${cmd} ;
+eval ${cmd} ;
+

@@ -41,6 +41,10 @@ static cl::opt<int> MaximumCores(
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Maximum number of logical cores that Noelle can use"));
+static cl::opt<bool> ND_PRVGs("noelle-nondeterministic-prvgs",
+                              cl::ZeroOrMore,
+                              cl::Hidden,
+                              cl::desc("Consider PRVGs nondeterministic"));
 static cl::opt<bool> DisableFloatAsReal(
     "noelle-disable-float-as-real",
     cl::ZeroOrMore,
@@ -139,31 +143,24 @@ bool Noelle::doInitialization(Module &M) {
   if (DisableInliner.getNumOccurrences() > 0) {
     this->enabledTransformations.erase(INLINER_ID);
   }
-  if (InlinerDisableHoistToMain.getNumOccurrences() == 0) {
-    this->hoistLoopsToMain = true;
-  }
   if (DisableLoopAwareDependenceAnalyses.getNumOccurrences() == 0) {
     this->loopAwareDependenceAnalysis = true;
-  }
-  if (DisableFloatAsReal.getNumOccurrences() > 0) {
-    this->enableFloatAsReal = false;
   }
 
   /*
    * Allocate the managers.
    */
-  this->om = new CompilationOptionsManager(M, optMaxCores);
+  this->om = new CompilationOptionsManager(
+      M,
+      optMaxCores,
+      (ND_PRVGs.getNumOccurrences() > 0),
+      (DisableFloatAsReal.getNumOccurrences() == 0),
+      (InlinerDisableHoistToMain.getNumOccurrences() > 0));
 
   /*
    * Store the module.
    */
   this->program = &M;
-
-  int1 = IntegerType::get(M.getContext(), 1);
-  int8 = IntegerType::get(M.getContext(), 8);
-  int16 = IntegerType::get(M.getContext(), 16);
-  int32 = IntegerType::get(M.getContext(), 32);
-  int64 = IntegerType::get(M.getContext(), 64);
 
   return false;
 }

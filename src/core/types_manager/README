@@ -1,0 +1,2 @@
+This is the top-level pass for the NOELLE core.
+All NOELLE's abstractions are reachable from here (directly or indirectly).

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni, Brian Homerding
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,16 +22,18 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/CompilationOptionsManager.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/Invariants.hpp"
-#include "noelle/core/LoopGoverningIVAttribution.hpp"
+#include "noelle/core/LoopGoverningInductionVariable.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
 #include "noelle/core/LoopEnvironmentBuilder.hpp"
 #include "noelle/core/SCCDAGAttrs.hpp"
-#include "noelle/core/LoopIterationDomainSpaceAnalysis.hpp"
+#include "noelle/core/LoopIterationSpaceAnalysis.hpp"
 #include "noelle/core/LoopTransformationsOptions.hpp"
+#include "noelle/core/AliasAnalysisEngine.hpp"
 
 namespace llvm::noelle {
 
@@ -40,58 +42,59 @@ public:
   /*
    * Constructors.
    */
-  LoopDependenceInfo(PDG *fG,
-                     StayConnectedNestedLoopForestNode *loopNode,
+  LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
+                     PDG *fG,
+                     LoopTree *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
                      ScalarEvolution &SE);
 
-  LoopDependenceInfo(PDG *fG,
-                     StayConnectedNestedLoopForestNode *loopNode,
+  LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
+                     PDG *fG,
+                     LoopTree *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
                      ScalarEvolution &SE,
-                     uint32_t maxCores,
-                     bool enableFloatAsReal);
+                     uint32_t maxCores);
 
   LoopDependenceInfo(
+      CompilationOptionsManager *compilationOptionsManager,
       PDG *fG,
-      StayConnectedNestedLoopForestNode *loopNode,
+      LoopTree *loopNode,
       Loop *l,
       DominatorSummary &DS,
       ScalarEvolution &SE,
       uint32_t maxCores,
-      bool enableFloatAsReal,
       std::unordered_set<LoopDependenceInfoOptimization> optimizations);
 
-  LoopDependenceInfo(PDG *fG,
-                     StayConnectedNestedLoopForestNode *loopNode,
+  LoopDependenceInfo(CompilationOptionsManager *compilationOptionsManager,
+                     PDG *fG,
+                     LoopTree *loopNode,
                      Loop *l,
                      DominatorSummary &DS,
                      ScalarEvolution &SE,
                      uint32_t maxCores,
-                     bool enableFloatAsReal,
                      bool enableLoopAwareDependenceAnalyses);
 
   LoopDependenceInfo(
+      CompilationOptionsManager *compilationOptionsManager,
       PDG *fG,
-      StayConnectedNestedLoopForestNode *loop,
+      LoopTree *loop,
       Loop *l,
       DominatorSummary &DS,
       ScalarEvolution &SE,
       uint32_t maxCores,
-      bool enableFloatAsReal,
       std::unordered_set<LoopDependenceInfoOptimization> optimizations,
       bool enableLoopAwareDependenceAnalyses);
 
   LoopDependenceInfo(
+      CompilationOptionsManager *compilationOptionsManager,
       PDG *fG,
-      StayConnectedNestedLoopForestNode *loop,
+      LoopTree *loop,
       Loop *l,
       DominatorSummary &DS,
       ScalarEvolution &SE,
       uint32_t maxCores,
-      bool enableFloatAsReal,
       std::unordered_set<LoopDependenceInfoOptimization> optimizations,
       bool enableLoopAwareDependenceAnalyses,
       uint32_t chunkSize);
@@ -102,7 +105,7 @@ public:
    * Return the object containing all loop structures at and nested within this
    * loop
    */
-  StayConnectedNestedLoopForestNode *getLoopHierarchyStructures(void) const;
+  LoopTree *getLoopHierarchyStructures(void) const;
 
   /*
    * Return the object that describes the loop in terms of induction variables,
@@ -132,14 +135,6 @@ public:
   bool iterateOverSubLoopsRecursively(
       std::function<bool(const LoopStructure &child)> funcToInvoke);
 
-  /*
-   * Return true if @param scc is fully contained in a subloop.
-   * Return false otherwise.
-   */
-  bool isSCCContainedInSubloop(SCC *scc) const;
-
-  LoopGoverningIVAttribution *getLoopGoverningIVAttribution(void) const;
-
   InductionVariableManager *getInductionVariableManager(void) const;
 
   SCCDAGAttrs *getSCCManager(void) const;
@@ -150,8 +145,7 @@ public:
 
   LoopEnvironment *getEnvironment(void) const;
 
-  LoopIterationDomainSpaceAnalysis *getLoopIterationDomainSpaceAnalysis(
-      void) const;
+  LoopIterationSpaceAnalysis *getLoopIterationSpaceAnalysis(void) const;
 
   MemoryCloningAnalysis *getMemoryCloningAnalysis(void) const;
 
@@ -164,11 +158,13 @@ public:
    */
   ~LoopDependenceInfo();
 
+  static std::set<AliasAnalysisEngine *> getLoopAliasAnalysisEngines(void);
+
 private:
   /*
    * Fields
    */
-  StayConnectedNestedLoopForestNode *loop;
+  LoopTree *loop;
 
   LoopEnvironment *environment;
 
@@ -181,9 +177,7 @@ private:
 
   InvariantManager *invariantManager;
 
-  LoopGoverningIVAttribution *loopGoverningIVAttribution;
-
-  LoopIterationDomainSpaceAnalysis *domainSpaceAnalysis;
+  LoopIterationSpaceAnalysis *domainSpaceAnalysis;
 
   MemoryCloningAnalysis *memoryCloningAnalysis;
 
@@ -195,27 +189,29 @@ private:
 
   LoopTransformationsManager *loopTransformationsManager;
 
+  CompilationOptionsManager *com;
+
   /*
    * Methods
    */
   void fetchLoopAndBBInfo(Loop *l, ScalarEvolution &SE);
 
-  std::pair<PDG *, SCCDAG *> createDGsForLoop(
-      Loop *l,
-      StayConnectedNestedLoopForestNode *loopNode,
-      PDG *functionDG,
-      DominatorSummary &DS,
-      ScalarEvolution &SE);
+  std::pair<PDG *, SCCDAG *> createDGsForLoop(CompilationOptionsManager *com,
+                                              Loop *l,
+                                              LoopTree *loopNode,
+                                              PDG *functionDG,
+                                              DominatorSummary &DS,
+                                              ScalarEvolution &SE);
 
   uint64_t computeTripCounts(Loop *l, ScalarEvolution &SE);
 
   void removeUnnecessaryDependenciesThatCloningMemoryNegates(
-      StayConnectedNestedLoopForestNode *loopNode,
+      LoopTree *loopNode,
       PDG *loopInternalDG,
       DominatorSummary &DS);
 
   void removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions(
-      StayConnectedNestedLoopForestNode *loopNode,
+      LoopTree *loopNode,
       PDG *loopDG,
       DominatorSummary &DS);
 

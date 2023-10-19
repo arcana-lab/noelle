@@ -2,11 +2,7 @@
 set(Srcs 
   ControlFlowEquivalence.cpp
   LoopAwareMemDepAnalysis.cpp
-  LoopIterationDomainSpaceAnalysis.cpp
-  SCCDAGAttrs.cpp
-  SCCDAGNormalizer.cpp
   LoopDependenceInfo.cpp
-  SCCDAGPartition.cpp
   LoopTransformationsOptions.cpp
 )
 
@@ -17,7 +13,7 @@ set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC"
 set(PassName "LoopContent")
 
 # configure LLVM 
-find_package(LLVM REQUIRED CONFIG)
+find_package(LLVM 9 REQUIRED CONFIG)
 
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
 set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
@@ -32,19 +28,29 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../basic_utilities/include 
   ../../dominators/include 
   ../../transformations/include
-  ../../callgraph/include
+  ../../call_graph/include
   ../../dataflow/include
   ../../architecture/include 
   ../../alloc_aa/include 
+  ../../dg/include 
   ../../pdg/include 
+  ../../pdg_analysis/include 
+  ../../pdg_printer/include
+  ../../sccdag/include
   ../../hotprofiler/include 
   ../../loop_structure/include 
   ../../loop_environment/include 
-  ../../forest/include
+  ../../loop_forest/include
   ../../talkdown/include
-  ../../invariants/include
-  ../../induction_variables/include
+  ../../loop_invariants/include
+  ../../loop_induction_variables/include
   ../../loop_scc_attributes/include
+  ../../loop_sccdag_attributes/include
+  ../../loop_carried_dependences/include
+  ../../alias_analysis_engine/include
+  ../../ldg_analysis/include
+  ../../compilation_options_manager/include
+  ../../may_points_to_analysis/include
   ../include
   ./
   ${CMAKE_INSTALL_PREFIX}/include

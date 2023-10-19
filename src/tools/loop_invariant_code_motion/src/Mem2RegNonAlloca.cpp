@@ -20,9 +20,9 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Mem2RegNonAlloca.hpp"
+#include "noelle/core/LoopCarriedUnknownSCC.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 Mem2RegNonAlloca::Mem2RegNonAlloca(LoopDependenceInfo const &LDI,
                                    Noelle &noelle)
@@ -102,12 +102,6 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister(void) {
       errs() << "\n";
     }
 
-    // if (hoistMemoryInstructionsRelyingOnExistingRegisterValues(memorySCC,
-    // memoryInst)) {
-    //   modified = true;
-    //   continue;
-    // }
-
     /*
      * Promote the single memory location used in the current SCC to variables.
      */
@@ -152,14 +146,12 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations(
     auto scc = sccNode->getT();
     auto sccInfo = sccManager->getSCCAttrs(scc);
 
-    // scc->printMinimal(errs() << "SCC: \n"); errs() << "\n";
-    // for (auto edge : scc->getEdges()) {
-    //   auto value = edge->getOutgoingT();
-    //   // if (isa<GetElementPtrInst>(value) || isa<StoreInst>(value) ||
-    //   isa<LoadInst>(value)) {
-    //   //   edge->print(errs() << "Edge:\n"); errs() << "\n";
-    //   // }
-    // }
+    /*
+     * Skip SCCs that do not sequentialize the execution.
+     */
+    if (!isa<LoopCarriedUnknownSCC>(sccInfo)) {
+      continue;
+    }
 
     /*
      * Analyze the SCC to make sure all instructions within can only access the
@@ -174,11 +166,14 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations(
        * Check if the current instruction cannot access memory and therefore it
        * can be safely skipped
        *
-       * TODO: Expand understanding of instructions that won't interfere
+       * TODO: Expand understanding of instructions that won't interfere by
+       * including call instructions using the call graph
        */
       if (isa<BinaryOperator>(value) || isa<CmpInst>(value)
           || isa<BranchInst>(value) || isa<SelectInst>(value)
-          || isa<CastInst>(value) || isa<PHINode>(value)) {
+          || isa<SwitchInst>(value) || isa<CastInst>(value)
+          || isa<GetElementPtrInst>(value) || isa<IndirectBrInst>(value)
+          || isa<PHINode>(value)) {
         continue;
       }
 
@@ -228,9 +223,9 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations(
     for (auto nodePair : scc->internalNodePairs()) {
       auto node = nodePair.second;
 
-      for (auto edge : node->getAllConnectedEdges()) {
-        auto producer = edge->getOutgoingT();
-        auto consumer = edge->getIncomingT();
+      for (auto edge : node->getAllEdges()) {
+        auto producer = edge->getSrc();
+        auto consumer = edge->getDst();
         if (scc->isInternal(consumer) && scc->isInternal(producer))
           continue;
         if (!edge->isMemoryDependence())
@@ -724,3 +719,5 @@ void Mem2RegNonAlloca::dumpLogs(void) {
   // DGPrinter::writeGraph<SubCFGs, BasicBlock>("mem2reg-current-loop-" + loopId
   // + ".dot", new SubCFGs(basicBlocksSet));
 }
+
+} // namespace llvm::noelle

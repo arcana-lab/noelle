@@ -43,12 +43,35 @@ BasicBlock *CFGTransformer::branchToANewBasicBlockAndBack(
    * Create a new basic block
    */
   auto newBB = BasicBlock::Create(f->getContext(), newBasicBlockName, f);
-  IRBuilder<> newBBBuilder(newBB);
+
+  /*
+   * Perform the transformation.
+   */
+  this->branchToTargetBasicBlockAndBack(splitPoint,
+                                        *newBB,
+                                        joinBasicBlockName,
+                                        addConditionalBranch);
+
+  return newBB;
+}
+
+void CFGTransformer::branchToTargetBasicBlockAndBack(
+    Instruction *splitPoint,
+    BasicBlock &targetBB,
+    std::string joinBasicBlockName,
+    std::function<void(BasicBlock *newBB, BasicBlock *newJoinBB)>
+        addConditionalBranch) {
+
+  /*
+   * Fetch the function
+   */
+  auto f = splitPoint->getFunction();
 
   /*
    * Split the last basic block to inject the condition to jump to the new last
    * basic block
    */
+  IRBuilder<> newBBBuilder(&targetBB);
   auto bb = splitPoint->getParent();
   auto newLastBB = bb->splitBasicBlock(splitPoint, joinBasicBlockName);
   assert(newLastBB != nullptr);
@@ -60,9 +83,9 @@ BasicBlock *CFGTransformer::branchToANewBasicBlockAndBack(
   /*
    * Add the conditional branch
    */
-  addConditionalBranch(newBB, newLastBB);
+  addConditionalBranch(&targetBB, newLastBB);
 
-  return newBB;
+  return;
 }
 
 } // namespace llvm::noelle

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,6 @@
  */
 #include "Parallelizer.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
-
 namespace llvm::noelle {
 
 bool Parallelizer::collectThreadPoolHelperFunctionsAndTypes(Module &M,
@@ -36,6 +33,12 @@ bool Parallelizer::collectThreadPoolHelperFunctionsAndTypes(Module &M,
                              "queuePop16",
                              "queuePop32",
                              "queuePop64" };
+
+  /*
+   * Fetch the managers.
+   */
+  auto tm = par.getTypesManager();
+
   for (auto pusher : pushers) {
     auto pushFunction = M.getFunction(pusher);
     if (pushFunction == nullptr) {
@@ -60,8 +63,12 @@ bool Parallelizer::collectThreadPoolHelperFunctionsAndTypes(Module &M,
   par.queues.queueSizeToIndex = unordered_map<int, int>(
       { { 1, 0 }, { 8, 0 }, { 16, 1 }, { 32, 2 }, { 64, 3 } });
   par.queues.queueElementTypes =
-      std::vector<Type *>({ par.int8, par.int16, par.int32, par.int64 });
+      std::vector<Type *>({ tm->getIntegerType(8),
+                            tm->getIntegerType(16),
+                            tm->getIntegerType(32),
+                            tm->getIntegerType(64) });
 
   return true;
 }
+
 } // namespace llvm::noelle

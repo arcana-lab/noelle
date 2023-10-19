@@ -197,7 +197,7 @@ LastLiveOutPeeler::LastLiveOutPeeler(LoopDependenceInfo const &LDI,
 //   loopCarriedDependencies->getLoopCarriedDependenciesForLoop(*loopStructure);
 //   std::unordered_set<Value *> loopCarriedConsumers{};
 //   for (auto dependency : outermostLoopCarriedDependencies) {
-//     auto consumer = dependency->getIncomingT();
+//     auto consumer = dependency->getDst();
 //     this->loopCarriedConsumers.insert(consumer);
 //   }
 
@@ -282,7 +282,7 @@ LastLiveOutPeeler::LastLiveOutPeeler(LoopDependenceInfo const &LDI,
 //     computationOfLastLiveOut.insert(scc);
 
 //     for (auto edge : sccNode->getIncomingEdges()) {
-//       auto producerSCCNode = edge->getOutgoingNode();
+//       auto producerSCCNode = edge->getSrcNode();
 //       if (visited.find(producerSCCNode) != visited.end()) continue;
 //       queueOfLastLiveOutComputation.push(producerSCCNode);
 //       visited.insert(producerSCCNode);

@@ -14,6 +14,7 @@ install(
   include/noelle/tools/HELIX.hpp 
   include/noelle/tools/HELIXTask.hpp 
   include/noelle/tools/SequentialSegment.hpp 
+  include/noelle/tools/SpilledLoopCarriedDependence.hpp
   DESTINATION 
   include/noelle/tools
   )

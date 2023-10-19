@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -31,8 +31,7 @@
 
 #include "noelle/core/PDG.hpp"
 
-using namespace llvm;
-using namespace llvm::noelle;
+namespace llvm::noelle {
 
 PDG::PDG(Module &M) {
 
@@ -99,10 +98,6 @@ PDG::PDG(std::vector<Value *> &values) {
   return;
 }
 
-PDG::PDG() {
-  return;
-}
-
 void PDG::addNodesOf(Function &F) {
   for (auto &arg : F.args()) {
     addNode(cast<Value>(&arg), /*inclusion=*/true);
@@ -121,7 +116,7 @@ void PDG::setEntryPointAt(Function &F) {
   assert(entryNode != nullptr);
 }
 
-DGEdge<Value> *PDG::addEdge(Value *from, Value *to) {
+DGEdge<Value, Value> *PDG::addEdge(Value *from, Value *to) {
   return this->DG<Value>::addEdge(from, to);
 }
 
@@ -171,7 +166,7 @@ PDG *PDG::createSubgraphFromValues(std::vector<Value *> &valueList,
 PDG *PDG::createSubgraphFromValues(
     std::vector<Value *> &valueList,
     bool linkToExternal,
-    std::unordered_set<DGEdge<Value> *> edgesToIgnore) {
+    std::unordered_set<DGEdge<Value, Value> *> edgesToIgnore) {
   if (valueList.empty())
     return nullptr;
   auto newPDG = new PDG(valueList);
@@ -190,7 +185,7 @@ void PDG::copyEdgesInto(PDG *newPDG, bool linkToExternal) {
 void PDG::copyEdgesInto(
     PDG *newPDG,
     bool linkToExternal,
-    std::unordered_set<DGEdge<Value> *> const &edgesToIgnore) {
+    std::unordered_set<DGEdge<Value, Value> *> const &edgesToIgnore) {
   for (auto *oldEdge : allEdges) {
     if (edgesToIgnore.find(oldEdge) != edgesToIgnore.end()) {
       continue;
@@ -240,7 +235,7 @@ bool PDG::iterateOverDependencesFrom(
     bool includeControlDependences,
     bool includeMemoryDataDependences,
     bool includeRegisterDataDependences,
-    std::function<bool(Value *to, DGEdge<Value> *dependence)>
+    std::function<bool(Value *to, DGEdge<Value, Value> *dependence)>
         functionToInvokePerDependence) {
 
   /*
@@ -262,7 +257,7 @@ bool PDG::iterateOverDependencesFrom(
      * Fetch the destination value.
      */
     auto edge = *edgeIt;
-    auto destValue = edge->getIncomingT();
+    auto destValue = edge->getDst();
 
     /*
      * Check if this is a control dependence.
@@ -305,7 +300,7 @@ bool PDG::iterateOverDependencesTo(
     bool includeControlDependences,
     bool includeMemoryDataDependences,
     bool includeRegisterDataDependences,
-    std::function<bool(Value *fromValue, DGEdge<Value> *dependence)>
+    std::function<bool(Value *fromValue, DGEdge<Value, Value> *dependence)>
         functionToInvokePerDependence) {
 
   /*
@@ -327,7 +322,7 @@ bool PDG::iterateOverDependencesTo(
      * Fetch the destination value.
      */
     auto edge = *edgeIt;
-    auto srcValue = edge->getOutgoingT();
+    auto srcValue = edge->getSrc();
 
     /*
      * Check if this is a control dependence.
@@ -384,7 +379,7 @@ std::vector<Value *> PDG::getSortedValues(void) {
   return s;
 }
 
-std::vector<DGEdge<Value> *> PDG::getSortedDependences(void) {
+std::vector<DGEdge<Value, Value> *> PDG::getSortedDependences(void) {
 
   /*
    * Sort the edges.
@@ -394,8 +389,8 @@ std::vector<DGEdge<Value> *> PDG::getSortedDependences(void) {
   return v;
 }
 
-std::unordered_set<DGEdge<Value> *> PDG::getDependences(Value *from,
-                                                        Value *to) {
+std::unordered_set<DGEdge<Value, Value> *> PDG::getDependences(Value *from,
+                                                               Value *to) {
 
   /*
    * Fetch the nodes.
@@ -422,3 +417,5 @@ PDG::~PDG() {
     if (node)
       delete node;
 }
+
+} // namespace llvm::noelle

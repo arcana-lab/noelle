@@ -1,7 +1,7 @@
-UTILS=transformations basic_utilities dominators task induction_variables loop_carried_dependences loop_scc_attributes loop_content loop_nesting_graph architecture clean_metadata callgraph scheduler metadata_manager loop_transformer
-ANALYSIS=pdg talkdown alloc_aa dataflow loop_structure loop_environment forest invariants
+UTILS=transformations basic_utilities types_manager globals_manager functions_manager constants_manager compilation_options_manager linker dominators task loop_induction_variables loop_carried_dependences may_points_to_analysis memory_cloning_analysis loop_scc_attributes loop_sccdag_attributes loop_sccdag_normalizer ldg_analysis loop_content loop_nesting_graph architecture metadata_cleaner call_graph scheduler metadata_manager loop_transformer alias_analysis_engine codesize
+ANALYSIS=dg pdg sccdag pdg_printer pdg_analysis talkdown alloc_aa dataflow loop_structure loop_environment loop_forest loop_invariants
 ENABLERS=loop_distribution loop_unroll loop_whilifier outliner cfg_analysis cfg_transformer
-ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) hotprofiler unique_ir_marker noelle scripts
+ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) loop_metadata hotprofiler unique_ir_marker noelle scripts
 
 all: $(ALL)
 
@@ -14,7 +14,13 @@ noelle:
 metadata_manager:
 	cd $@ ; ../../scripts/run_me.sh
 
+alias_analysis_engine:
+	cd $@ ; ../../scripts/run_me.sh
+
 dominators:
+	cd $@ ; ../../scripts/run_me.sh
+
+compilation_options_manager:
 	cd $@ ; ../../scripts/run_me.sh
 
 loop_transformer:
@@ -26,7 +32,7 @@ cfg_analysis:
 cfg_transformer:
 	cd $@ ; ../../scripts/run_me.sh
 
-invariants:
+loop_invariants:
 	cd $@ ; ../../scripts/run_me.sh
 
 unique_ir_marker:
@@ -41,6 +47,21 @@ dataflow:
 hotprofiler:
 	cd $@ ; ../../scripts/run_me.sh
 
+globals_manager:
+	cd $@ ; ../../scripts/run_me.sh
+
+functions_manager:
+	cd $@ ; ../../scripts/run_me.sh
+
+types_manager:
+	cd $@ ; ../../scripts/run_me.sh
+
+linker:
+	cd $@ ; ../../scripts/run_me.sh
+
+constants_manager:
+	cd $@ ; ../../scripts/run_me.sh
+
 basic_utilities:
 	cd $@ ; ../../scripts/run_me.sh
 
@@ -53,7 +74,7 @@ loop_structure:
 loop_environment:
 	cd $@ ; ../../scripts/run_me.sh
 
-forest:
+loop_forest:
 	cd $@ ; ../../scripts/run_me.sh
 
 task:
@@ -62,13 +83,25 @@ task:
 scheduler:
 	cd $@ ; ../../scripts/run_me.sh
 
-induction_variables:
+loop_induction_variables:
 	cd $@ ; ../../scripts/run_me.sh
 
 loop_carried_dependences:
 	cd $@ ; ../../scripts/run_me.sh
 
+may_points_to_analysis:
+	cd $@ ; ../../scripts/run_me.sh
+
+memory_cloning_analysis:
+	cd $@ ; ../../scripts/run_me.sh
+
 loop_scc_attributes:
+	cd $@ ; ../../scripts/run_me.sh
+
+loop_sccdag_normalizer:
+	cd $@ ; ../../scripts/run_me.sh
+
+loop_sccdag_attributes:
 	cd $@ ; ../../scripts/run_me.sh
 
 loop_content:
@@ -77,10 +110,25 @@ loop_content:
 architecture:
 	cd $@ ; ../../scripts/run_me.sh
 
+dg:
+	cd $@ ; ../../scripts/run_me.sh
+
 pdg:
 	cd $@ ; ../../scripts/run_me.sh
 
-callgraph:
+sccdag:
+	cd $@ ; ../../scripts/run_me.sh
+
+pdg_printer:
+	cd $@ ; ../../scripts/run_me.sh
+
+pdg_analysis:
+	cd $@ ; ../../scripts/run_me.sh
+
+ldg_analysis:
+	cd $@ ; ../../scripts/run_me.sh
+
+call_graph:
 	cd $@ ; ../../scripts/run_me.sh
 
 alloc_aa:
@@ -101,7 +149,13 @@ loop_unroll:
 loop_nesting_graph:
 	cd $@ ; ../../scripts/run_me.sh
 
-clean_metadata:
+loop_metadata:
+	cd $@ ; ../../scripts/run_me.sh
+
+metadata_cleaner:
+	cd $@ ; ../../scripts/run_me.sh
+
+codesize:
 	cd $@ ; ../../scripts/run_me.sh
 
 clean:

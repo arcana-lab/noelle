@@ -55,25 +55,22 @@ private:
 
   void collectStatsForNodes(Function &F);
   void collectStatsForPotentialEdges(
-      std::unordered_map<Function *, StayConnectedNestedLoopForest *>
-          &programLoops,
+      std::unordered_map<Function *, LoopForest *> &programLoops,
       Function &F);
 
   void printRefinedLoopGraphsForFunction(
       Noelle &noelle,
-      std::unordered_map<Function *, StayConnectedNestedLoopForest *>
-          &programLoops,
+      std::unordered_map<Function *, LoopForest *> &programLoops,
       std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
       Function &F);
 
   void collectStatsForLoopEdges(
       Noelle &noelle,
-      std::unordered_map<Function *, StayConnectedNestedLoopForest *>
-          &programLoops,
+      std::unordered_map<Function *, LoopForest *> &programLoops,
       std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
       Function &F);
 
-  void analyzeDependence(DGEdge<Value> *edge);
+  void analyzeDependence(DGEdge<Value, Value> *edge);
 
   bool edgeIsDependenceOf(MDNode *edgeM, EDGE_ATTRIBUTE edgeAttribute);
   void printStats();

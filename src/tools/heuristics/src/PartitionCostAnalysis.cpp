@@ -19,18 +19,20 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "PartitionCostAnalysis.hpp"
+#include "noelle/tools/PartitionCostAnalysis.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
 
 const std::string PartitionCostAnalysis::prefix = "Heuristic:   PCA: ";
 
-PartitionCostAnalysis::PartitionCostAnalysis(InvocationLatency &il,
-                                             SCCDAGPartitioner &p,
-                                             SCCDAGAttrs &attrs,
-                                             int cores,
-                                             Verbosity v)
+PartitionCostAnalysis::PartitionCostAnalysis(
+    InvocationLatency &il,
+    SCCDAGPartitioner &p,
+    SCCDAGAttrs &attrs,
+    int cores,
+    std::function<bool(GenericSCC *scc)> canBeRematerialized,
+    Verbosity v)
   : costIfAllSetsRunOnSeparateCores{ 0 },
     totalInstructionCount{ 0 },
     IL{ il },
@@ -38,6 +40,7 @@ PartitionCostAnalysis::PartitionCostAnalysis(InvocationLatency &il,
     partitioner{ p },
     dagAttrs{ attrs },
     numCores{ cores },
+    canBeRematerialized{ canBeRematerialized },
     verbose{ v } {
 
   /*
@@ -52,7 +55,8 @@ PartitionCostAnalysis::PartitionCostAnalysis(InvocationLatency &il,
       sccToInstructionCountMap.insert(std::make_pair(scc, instCount));
     }
   }
-  costIfAllSetsRunOnSeparateCores = IL.latencyPerInvocation(&dagAttrs, allSets);
+  costIfAllSetsRunOnSeparateCores =
+      IL.latencyPerInvocation(&dagAttrs, allSets, this->canBeRematerialized);
 }
 
 void PartitionCostAnalysis::traverseAllPartitionSubsets() {
@@ -77,7 +81,7 @@ void PartitionCostAnalysis::traverseAllPartitionSubsets() {
      * Traverse them in turn
      */
     for (auto child : children) {
-      checkIfShouldMerge(sub, child);
+      checkIfShouldMerge(sub, child, this->canBeRematerialized);
       if (alreadyChecked.find(child) == alreadyChecked.end()) {
         subToCheck.push(child);
         alreadyChecked.insert(child);
@@ -93,14 +97,15 @@ void PartitionCostAnalysis::resetCandidateSubsetInfo() {
   numInstructionsInSetsBeingMerged = UINT64_MAX;
 }
 
-bool PartitionCostAnalysis::mergeCandidateSubsets() {
+bool PartitionCostAnalysis::mergeCandidateSubsets(void) {
   if (minSetsToMerge.size() == 0)
     return false;
 
   partitioner.getPartitionGraph()->mergeSetsAndCollapseResultingCycles(
       minSetsToMerge);
   auto allSets = partitioner.getSets();
-  costIfAllSetsRunOnSeparateCores = IL.latencyPerInvocation(&dagAttrs, allSets);
+  costIfAllSetsRunOnSeparateCores =
+      IL.latencyPerInvocation(&dagAttrs, allSets, this->canBeRematerialized);
   return true;
 }
 

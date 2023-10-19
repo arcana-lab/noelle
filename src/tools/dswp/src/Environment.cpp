@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DSWP.hpp"
+#include "noelle/tools/DSWP.hpp"
 
 namespace llvm::noelle {
 
@@ -60,7 +60,7 @@ void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
        */
       auto consumerSCC = sccdag->sccOfValue(consumer);
       auto consumerSCCAttrs = sccManager->getSCCAttrs(consumerSCC);
-      if (consumerSCCAttrs->canBeCloned()) {
+      if (this->canBeCloned(consumerSCCAttrs)) {
         for (auto i = 0; i < tasks.size(); ++i) {
           auto task = (DSWPTask *)tasks[i];
           if (task->clonableSCCs.find(consumerSCC) == task->clonableSCCs.end())
@@ -77,7 +77,8 @@ void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
       assert(this->sccToStage.find(consumerSCC) != this->sccToStage.end());
       auto task = this->sccToStage.at(consumerSCC);
       auto id = task->getID();
-      envBuilder->getUser(id)->addLiveIn(envID);
+      auto userID = this->fromTaskIDToUserID.at(id);
+      envBuilder->getUser(userID)->addLiveIn(envID);
     }
   }
 
@@ -111,7 +112,7 @@ void DSWP::collectLiveOutEnvInfo(LoopDependenceInfo *LDI) {
      */
     auto producerSCC = sccdag->sccOfValue(producer);
     auto producerSCCAttrs = sccManager->getSCCAttrs(producerSCC);
-    if (producerSCCAttrs->canBeCloned()) {
+    if (this->canBeCloned(producerSCCAttrs)) {
       for (auto i = 0; i < tasks.size(); ++i) {
         auto task = (DSWPTask *)tasks[i];
         if (task->clonableSCCs.find(producerSCC) == task->clonableSCCs.end())
@@ -130,7 +131,8 @@ void DSWP::collectLiveOutEnvInfo(LoopDependenceInfo *LDI) {
     assert(this->sccToStage.find(producerSCC) != this->sccToStage.end());
     auto task = this->sccToStage.at(producerSCC);
     auto id = task->getID();
-    envBuilder->getUser(id)->addLiveOut(envID);
+    auto userID = this->fromTaskIDToUserID.at(id);
+    envBuilder->getUser(userID)->addLiveOut(envID);
   }
 }
 

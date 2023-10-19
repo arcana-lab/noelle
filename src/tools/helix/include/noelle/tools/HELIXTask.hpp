@@ -45,7 +45,7 @@ public:
   /*
    * Clone of original IV loop, new outer loop
    */
-  SCCAttrs *originalIVAttrs;
+  GenericSCC *originalIVAttrs;
   PHINode *originalIVClone;
   PHINode *outermostLoopIV;
 
@@ -54,7 +54,6 @@ public:
    */
   std::set<CallInst *> waits;
   std::set<CallInst *> signals;
-
-  void extractFuncArgs() override;
 };
+
 } // namespace llvm::noelle

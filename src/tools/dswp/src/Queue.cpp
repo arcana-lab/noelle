@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "DSWP.hpp"
+#include "noelle/tools/DSWP.hpp"
 
 using namespace llvm;
 using namespace llvm::noelle;
@@ -105,9 +105,10 @@ void DSWP::collectControlQueueInfo(LoopDependenceInfo *LDI, Noelle &par) {
       if (!controlEdge->isControlDependence())
         continue;
 
-      auto controlNode = controlEdge->getOutgoingNode();
+      auto controlNode = controlEdge->getSrcNode();
       auto controlSCC = sccdag->sccOfValue(controlNode->getT());
-      if (sccManager->getSCCAttrs(controlSCC)->canBeCloned())
+      auto sccAttrs = sccManager->getSCCAttrs(controlSCC);
+      if (this->canBeCloned(sccAttrs))
         continue;
 
       /*
@@ -144,9 +145,10 @@ void DSWP::collectControlQueueInfo(LoopDependenceInfo *LDI, Noelle &par) {
       if (conditionToBranchDependency->isControlDependence())
         continue;
 
-      auto condition = conditionToBranchDependency->getOutgoingT();
+      auto condition = conditionToBranchDependency->getSrc();
       auto conditionSCC = sccdag->sccOfValue(condition);
-      if (sccManager->getSCCAttrs(conditionSCC)->canBeCloned())
+      auto conditionSCCAttrs = sccManager->getSCCAttrs(conditionSCC);
+      if (this->canBeCloned(conditionSCCAttrs))
         continue;
 
       conditionsOfConditionalBranch.insert(cast<Instruction>(condition));
@@ -204,7 +206,8 @@ std::set<Task *> DSWP::collectTransitivelyControlledTasks(
   auto sccManager = LDI->getSCCManager();
   SCCDAG *sccdag = sccManager->getSCCDAG();
   auto getTaskOfNode = [this, sccManager, sccdag](DGNode<SCC> *node) -> Task * {
-    if (sccManager->getSCCAttrs(node->getT())->canBeCloned())
+    auto sccAttrs = sccManager->getSCCAttrs(node->getT());
+    if (this->canBeCloned(sccAttrs))
       return nullptr;
     return this->sccToStage.at(node->getT());
   };
@@ -228,7 +231,7 @@ std::set<Task *> DSWP::collectTransitivelyControlledTasks(
      * Enqueue dependent instructions in tasks not already visited
      */
     for (auto dependencyEdge : node->getOutgoingEdges()) {
-      auto dependentNode = dependencyEdge->getIncomingNode();
+      auto dependentNode = dependencyEdge->getDstNode();
       queuedNodes.push(dependentNode);
 
       Task *dependentTask = getTaskOfNode(dependentNode);
@@ -258,9 +261,9 @@ void DSWP::collectDataAndMemoryQueueInfo(LoopDependenceInfo *LDI, Noelle &par) {
     for (auto scc : allSCCs) {
       for (auto sccEdge :
            sccManager->getSCCDAG()->fetchNode(scc)->getIncomingEdges()) {
-        auto fromSCC = sccEdge->getOutgoingT();
+        auto fromSCC = sccEdge->getSrc();
         auto fromSCCInfo = sccManager->getSCCAttrs(fromSCC);
-        if (fromSCCInfo->canBeCloned()) {
+        if (this->canBeCloned(fromSCCInfo)) {
           continue;
         }
 
@@ -276,8 +279,8 @@ void DSWP::collectDataAndMemoryQueueInfo(LoopDependenceInfo *LDI, Noelle &par) {
           if (instructionEdge->isControlDependence())
             continue;
 
-          auto producer = cast<Instruction>(instructionEdge->getOutgoingT());
-          auto consumer = cast<Instruction>(instructionEdge->getIncomingT());
+          auto producer = cast<Instruction>(instructionEdge->getSrc());
+          auto consumer = cast<Instruction>(instructionEdge->getDst());
 
           /*
            * TODO: Handle memory dependencies and enable synchronization queues
@@ -332,6 +335,12 @@ bool DSWP::areQueuesAcyclical() const {
 }
 
 void DSWP::generateLoadsOfQueuePointers(Noelle &par, int taskIndex) {
+
+  /*
+   * Fetch the managers.
+   */
+  auto cm = par.getConstantsManager();
+
   auto task = (DSWPTask *)this->tasks[taskIndex];
   IRBuilder<> entryBuilder(task->getEntry());
   auto queuesArray =
@@ -343,7 +352,7 @@ void DSWP::generateLoadsOfQueuePointers(Noelle &par, int taskIndex) {
    */
   auto loadQueuePtrFromIndex = [&](int queueIndex) -> void {
     auto queueInfo = this->queues[queueIndex].get();
-    auto queueIndexValue = cast<Value>(ConstantInt::get(par.int64, queueIndex));
+    auto queueIndexValue = cm->getIntegerConstant(queueIndex, 64);
     auto queuePtr = entryBuilder.CreateInBoundsGEP(
         queuesArray,
         ArrayRef<Value *>({ this->zeroIndexForBaseArray, queueIndexValue }));

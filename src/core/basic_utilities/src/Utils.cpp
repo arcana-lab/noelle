@@ -32,6 +32,14 @@ bool Utils::isActualCode(Instruction *inst) {
     return false;
   }
 
+  auto callee = callInst->getCalledFunction();
+  if (callee != nullptr) {
+    auto calleeName = callee->getName();
+    if (calleeName.startswith("llvm.dbg.")) {
+      return false;
+    }
+  }
+
   return true;
 }
 

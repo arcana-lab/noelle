@@ -1,12 +1,12 @@
 # Project
-cmake_minimum_required(VERSION 3.4.3)
+cmake_minimum_required(VERSION 3.13)
 project(Parallelization)
 
 # Programming languages to use
 enable_language(C CXX)
 
 # Find and link with LLVM
-find_package(LLVM REQUIRED CONFIG)
+find_package(LLVM 9 REQUIRED CONFIG)
 
 add_definitions(${LLVM_DEFINITIONS})
 add_definitions(

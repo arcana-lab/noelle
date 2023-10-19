@@ -34,24 +34,16 @@ PDG *Noelle::getProgramDependenceGraph(void) {
 PDG *Noelle::getFunctionDependenceGraph(Function *f) {
 
   /*
-   * Check if we have computed the PDG already
+   * Get the PDG
+   * The FDG is a subset of it.
    */
-  if (this->programDependenceGraph != nullptr) {
-
-    /*
-     * We have the PDG
-     *
-     * The FDG is a subset of it.
-     */
-    auto pdg = this->getProgramDependenceGraph();
-    auto fdg = pdg->createFunctionSubgraph(*f);
-    return fdg;
-  }
+  auto pdg = this->getProgramDependenceGraph();
 
   /*
-   * We do not have the PDG.
+   * Create the function dependence graph (FDG).
    */
-  auto fdg = this->pdgAnalysis->getFunctionPDG(*f);
+  auto fdg = pdg->createFunctionSubgraph(*f);
+
   return fdg;
 }
 

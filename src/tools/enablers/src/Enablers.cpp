@@ -20,6 +20,8 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "EnablersManager.hpp"
+#include "noelle/core/LoopCarriedUnknownSCC.hpp"
+#include "noelle/tools/DOALL.hpp"
 
 namespace llvm::noelle {
 
@@ -110,12 +112,21 @@ bool EnablersManager::applyLoopWhilifier(LoopDependenceInfo *LDI,
    * Check if we need to whilify the loop.
    */
   auto loopStructure = LDI->getLoopStructure();
-  auto loopGoverningIVAttr = LDI->getLoopGoverningIVAttribution();
-  if (true && (loopGoverningIVAttr != nullptr)
+  auto IVManager = LDI->getInductionVariableManager();
+  auto loopGoverningIVAttr = IVManager->getLoopGoverningInductionVariable();
+  if ((loopGoverningIVAttr != nullptr)
       && (loopStructure->numberOfExitBasicBlocks() == 1)) {
 
     /*
      * The prologue is empty and the loop is in while form already.
+     */
+    return false;
+  }
+  DOALL doall{ par };
+  if (doall.canBeAppliedToLoop(LDI, nullptr)) {
+
+    /*
+     * This is a DOALL loop, so the prologue is empty.
      */
     return false;
   }
@@ -163,9 +174,7 @@ bool EnablersManager::applyLoopDistribution(LoopDependenceInfo *LDI,
      * induction variables). If it is, then we do not need to remove it from the
      * loop to be parallelized.
      */
-    if (false || (!sccInfo->mustExecuteSequentially())
-        || (sccInfo->canBeCloned())
-        || (sccInfo->canBeClonedUsingLocalMemoryLocations())) {
+    if (!isa<LoopCarriedUnknownSCC>(sccInfo)) {
       return false;
     }
 

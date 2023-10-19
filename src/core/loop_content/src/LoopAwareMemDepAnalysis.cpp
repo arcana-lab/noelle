@@ -21,6 +21,8 @@
  */
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
+#include "noelle/core/LoopAliasAnalysisEngine.hpp"
+#include "noelle/core/LoopDependenceInfo.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
 
 /*
@@ -75,12 +77,11 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-void refinePDGWithLoopAwareMemDepAnalysis(
-    PDG *loopDG,
-    Loop *l,
-    LoopStructure *loopStructure,
-    StayConnectedNestedLoopForestNode *loops,
-    LoopIterationDomainSpaceAnalysis *LIDS) {
+void refinePDGWithLoopAwareMemDepAnalysis(PDG *loopDG,
+                                          Loop *l,
+                                          LoopStructure *loopStructure,
+                                          LoopTree *loops,
+                                          LoopIterationSpaceAnalysis *LIDS) {
   refinePDGWithSCAF(loopDG, l);
 
   if (LIDS) {
@@ -103,15 +104,15 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l) {
    * WAR)
    */
   std::map<std::pair<Instruction *, Instruction *>,
-           SmallVector<DGEdge<Value> *, 3>>
+           SmallVector<DGEdge<Value, Value> *, 3>>
       memDeps;
   for (auto edge : make_range(loopDG->begin_edges(), loopDG->end_edges())) {
 
     /*
      * Skip dependences that are not between instructions of the target loop
      */
-    if (!loopDG->isInternal(edge->getIncomingT())
-        || !loopDG->isInternal(edge->getOutgoingT())) {
+    if (!loopDG->isInternal(edge->getDst())
+        || !loopDG->isInternal(edge->getSrc())) {
       continue;
     }
 
@@ -125,11 +126,11 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l) {
     /*
      * Fetch the instructions involved in the dependence.
      */
-    auto pdgValueI = edge->getOutgoingT();
+    auto pdgValueI = edge->getSrc();
     auto i = dyn_cast<Instruction>(pdgValueI);
     assert(i && "Expecting an instruction as the value of a PDG node");
 
-    auto pdgValueJ = edge->getIncomingT();
+    auto pdgValueJ = edge->getDst();
     auto j = dyn_cast<Instruction>(pdgValueJ);
     assert(j && "Expecting an instruction as the value of a PDG node");
 
@@ -231,8 +232,9 @@ DataFlowResult *computeReachabilityFromInstructions(
     gen.insert(i);
     return;
   };
-  auto computeOUT = [loopHeader](std::set<Value *> &OUT,
+  auto computeOUT = [loopHeader](Instruction *inst,
                                  Instruction *succ,
+                                 std::set<Value *> &OUT,
                                  DataFlowResult *df) {
     assert(succ != nullptr);
     assert(df != nullptr);
@@ -256,7 +258,7 @@ DataFlowResult *computeReachabilityFromInstructions(
     return;
   };
   auto computeIN =
-      [](std::set<Value *> &IN, Instruction *inst, DataFlowResult *df) {
+      [](Instruction *inst, std::set<Value *> &IN, DataFlowResult *df) {
         assert(inst != nullptr);
         assert(df != nullptr);
 
@@ -272,15 +274,15 @@ DataFlowResult *computeReachabilityFromInstructions(
 
 void refinePDGWithLIDS(PDG *loopDG,
                        LoopStructure *loopStructure,
-                       StayConnectedNestedLoopForestNode *loops,
-                       LoopIterationDomainSpaceAnalysis *LIDS) {
+                       LoopTree *loops,
+                       LoopIterationSpaceAnalysis *LIDS) {
 
   /*
    * Compute the reachability of instructions within the loop.
    */
   auto dfr = computeReachabilityFromInstructions(loopStructure);
 
-  std::unordered_set<DGEdge<Value> *> edgesToRemove;
+  std::unordered_set<DGEdge<Value, Value> *> edgesToRemove;
   for (auto dependency :
        LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(
            *loopStructure,
@@ -293,8 +295,8 @@ void refinePDGWithLIDS(PDG *loopDG,
     if (!dependency->isMemoryDependence())
       continue;
 
-    auto fromInst = dyn_cast<Instruction>(dependency->getOutgoingT());
-    auto toInst = dyn_cast<Instruction>(dependency->getIncomingT());
+    auto fromInst = dyn_cast<Instruction>(dependency->getSrc());
+    auto toInst = dyn_cast<Instruction>(dependency->getDst());
     if (!fromInst || !toInst)
       continue;
 
@@ -352,6 +354,19 @@ bool NoelleSCAFIntegration::runOnModule(Module &M) {
 #endif
 
   return false;
+}
+
+std::set<AliasAnalysisEngine *> LoopDependenceInfo::getLoopAliasAnalysisEngines(
+    void) {
+  std::set<AliasAnalysisEngine *> s;
+
+#ifdef ENABLE_SCAF
+  assert(NoelleSCAFAA != nullptr);
+  auto aa = new LoopAliasAnalysisEngine("SCAF", NoelleSCAFAA);
+  s.insert(aa);
+#endif
+
+  return s;
 }
 
 } // namespace llvm::noelle

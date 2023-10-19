@@ -95,7 +95,7 @@ Instruction *LoopStructure::getEntryInstruction(void) const {
   return firstInst;
 }
 
-BasicBlock *LoopStructure::getFirstLoopBasicBlockAfterTheHeader(void) const {
+BasicBlock *LoopStructure::getSuccessorWithinLoopOfTheHeader(void) const {
 
   /*
    * Fetch the header.

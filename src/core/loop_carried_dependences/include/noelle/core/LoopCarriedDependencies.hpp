@@ -26,31 +26,29 @@
 #include "noelle/core/DGBase.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
-#include "noelle/core/StayConnectedNestedLoopForest.hpp"
+#include "noelle/core/LoopForest.hpp"
 
 namespace llvm::noelle {
 
 class LoopCarriedDependencies {
 public:
-  static void setLoopCarriedDependencies(
-      StayConnectedNestedLoopForestNode *loopNode,
-      const DominatorSummary &DS,
-      PDG &dgForLoops);
+  static void setLoopCarriedDependencies(LoopTree *loopNode,
+                                         const DominatorSummary &DS,
+                                         PDG &dgForLoops);
 
-  static std::set<DGEdge<Value> *> getLoopCarriedDependenciesForLoop(
+  static std::set<DGEdge<Value, Value> *> getLoopCarriedDependenciesForLoop(
       const LoopStructure &LS,
-      StayConnectedNestedLoopForestNode *loopNode,
+      LoopTree *loopNode,
       PDG &LoopDG);
-  static std::set<DGEdge<Value> *> getLoopCarriedDependenciesForLoop(
+  static std::set<DGEdge<Value, Value> *> getLoopCarriedDependenciesForLoop(
       const LoopStructure &LS,
-      StayConnectedNestedLoopForestNode *loopNode,
+      LoopTree *loopNode,
       SCCDAG &sccdag);
 
 private:
-  static bool isALoopCarriedDependence(
-      StayConnectedNestedLoopForestNode *loopNode,
-      const DominatorSummary &DS,
-      DGEdge<Value> *edge);
+  static bool isALoopCarriedDependence(LoopTree *loopNode,
+                                       const DominatorSummary &DS,
+                                       DGEdge<Value, Value> *edge);
 
   static bool canBasicBlockReachHeaderBeforeOther(const LoopStructure &LS,
                                                   BasicBlock *I,

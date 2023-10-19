@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -26,10 +26,9 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Hot.hpp"
 
-using namespace llvm;
-
 namespace llvm::noelle {
-struct HotProfiler : public ModulePass {
+
+class HotProfiler : public ModulePass {
 public:
   static char ID;
 
@@ -48,4 +47,5 @@ private:
 
   void analyzeProfiles(Module &M);
 };
+
 } // namespace llvm::noelle
