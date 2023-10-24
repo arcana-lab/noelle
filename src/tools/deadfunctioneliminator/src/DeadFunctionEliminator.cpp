@@ -148,7 +148,10 @@ bool DeadFunctionEliminator::runOnModule(Module &M) {
     errs() << this->prefix << "    Inline " << *callInst << " into "
            << callInst->getFunction()->getName() << "\n";
     InlineFunctionInfo IFI;
-    modified |= InlineFunction(callInst, IFI);
+    auto inlineResult = InlineFunction(*callInst, IFI);
+    if (inlineResult.isSuccess()) {
+      modified = true;
+    }
   }
   if (modified) {
     errs() << this->prefix << "Exit\n";
