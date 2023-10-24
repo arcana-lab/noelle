@@ -70,6 +70,8 @@ private:
   Value *visitUMinExpr(const SCEVUMinExpr *S);
   Value *visitUnknown(const SCEVUnknown *S);
   Value *visitCouldNotCompute(const SCEVCouldNotCompute *S);
+  Value *visitSequentialUMinExpr(const SCEVSequentialUMinExpr *S);
+  Value *visitPtrToIntExpr(const SCEVPtrToIntExpr *S);
 
   std::pair<Value *, Value *> visitTwoOperands(const SCEVNAryExpr *S);
 
@@ -105,6 +107,8 @@ private:
   SCEVReference *visitUMinExpr(const SCEVUMinExpr *S);
   SCEVReference *visitUnknown(const SCEVUnknown *S);
   SCEVReference *visitCouldNotCompute(const SCEVCouldNotCompute *S);
+  SCEVReference *visitSequentialUMinExpr(const SCEVSequentialUMinExpr *S);
+  SCEVReference *visitPtrToIntExpr(const SCEVPtrToIntExpr *S);
 
   Value *mapToSingleInScopeValue(const SCEV *S);
   SCEVReference *createReferenceOfSingleInScopeValue(const SCEV *S);
@@ -148,4 +152,5 @@ private:
   const SCEV *scev;
   std::vector<SCEVReference *> childReferences;
 };
+
 } // namespace llvm

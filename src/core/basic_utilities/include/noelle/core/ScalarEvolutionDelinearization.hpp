@@ -156,6 +156,8 @@ public:
   void visitUMinExpr(const SCEVUMinExpr *Numerator) {}
   void visitUnknown(const SCEVUnknown *Numerator) {}
   void visitCouldNotCompute(const SCEVCouldNotCompute *Numerator) {}
+  void visitPtrToIntExpr(const SCEVPtrToIntExpr *Numerator) {}
+  void visitSequentialUMinExpr(const SCEVSequentialUMinExpr *Numerator) {}
 
   // CUSTOM ADDITION: Divide operand of cast, ignoring cast
   void visitTruncateExpr(const SCEVTruncateExpr *Numerator) {
@@ -284,17 +286,16 @@ public:
       return cannotDivide(Numerator);
 
     // The Remainder is obtained by replacing Denominator by 0 in Numerator.
-    ValueToValueMap RewriteMap;
+    ValueToSCEVMapTy RewriteMap;
     RewriteMap[cast<SCEVUnknown>(Denominator)->getValue()] =
-        cast<SCEVConstant>(Zero)->getValue();
-    Remainder = SCEVParameterRewriter::rewrite(Numerator, SE, RewriteMap, true);
+        cast<SCEVConstant>(Zero);
+    Remainder = SCEVParameterRewriter::rewrite(Numerator, SE, RewriteMap);
 
     if (Remainder->isZero()) {
       // The Quotient is obtained by replacing Denominator by 1 in Numerator.
       RewriteMap[cast<SCEVUnknown>(Denominator)->getValue()] =
-          cast<SCEVConstant>(One)->getValue();
-      Quotient =
-          SCEVParameterRewriter::rewrite(Numerator, SE, RewriteMap, true);
+          cast<SCEVConstant>(One);
+      Quotient = SCEVParameterRewriter::rewrite(Numerator, SE, RewriteMap);
       return;
     }
 

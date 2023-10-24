@@ -48,11 +48,6 @@ LoopUnrollResult LoopTransformer::unrollLoop(LoopDependenceInfo *loop,
   auto lsFunction = ls->getFunction();
 
   /*
-   * Fetch the trip count.
-   */
-  auto loopTripCount = (uint32_t)loop->getCompileTimeTripCount();
-
-  /*
    * Fetch the LLVM loop abstractions.
    */
   auto &LLVMLoops = getAnalysis<LoopInfoWrapperPass>(*lsFunction).getLoopInfo();
@@ -73,18 +68,15 @@ LoopUnrollResult LoopTransformer::unrollLoop(LoopDependenceInfo *loop,
    */
   UnrollLoopOptions opts;
   opts.Count = unrollFactor;
-  opts.TripCount = loopTripCount;
   opts.Force = false;
-  opts.AllowRuntime = false;
+  opts.Runtime = false;
   opts.AllowExpensiveTripCount = true;
-  opts.PreserveCondBr = false;
-  opts.TripMultiple = SE.getSmallConstantTripMultiple(llvmLoop);
-  opts.PeelCount = 0;
   opts.UnrollRemainder = false;
   opts.ForgetAllSCEV = true;
   OptimizationRemarkEmitter ORE(lsFunction);
+  TargetTransformInfo TTI(lsFunction->getParent()->getDataLayout());
   auto unrolled =
-      UnrollLoop(llvmLoop, opts, &LLVMLoops, &SE, &DT, &AC, &ORE, true);
+      UnrollLoop(llvmLoop, opts, &LLVMLoops, &SE, &DT, &AC, &TTI, &ORE, true);
 
   return unrolled;
 }

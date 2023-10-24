@@ -180,6 +180,15 @@ Value *ReferenceTreeExpander::visitUnknown(const SCEVUnknown *S) {
   return nullptr;
 }
 
+Value *ReferenceTreeExpander::visitSequentialUMinExpr(
+    const SCEVSequentialUMinExpr *S) {
+  return nullptr;
+}
+
+Value *ReferenceTreeExpander::visitPtrToIntExpr(const SCEVPtrToIntExpr *S) {
+  return nullptr;
+}
+
 Value *ReferenceTreeExpander::visitCouldNotCompute(
     const SCEVCouldNotCompute *S) {
   return nullptr;

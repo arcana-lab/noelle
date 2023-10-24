@@ -529,7 +529,7 @@ bool CallGraph::canFunctionEscape(Function *f) const {
        * Check what the reference of @f is used for.
        */
       auto canEscape = false;
-      for (auto argID = 0u; argID < callInst->getNumArgOperands(); argID++) {
+      for (auto argID = 0u; argID < callInst->arg_size(); argID++) {
         auto arg = callInst->getArgOperand(argID);
         if (arg == f) {
           canEscape = true;

@@ -180,6 +180,11 @@ SCEVReference *ReferenceTreeBuilder::visitUDivExpr(const SCEVUDivExpr *S) {
   return uDivReference;
 }
 
+SCEVReference *ReferenceTreeBuilder::visitPtrToIntExpr(
+    const SCEVPtrToIntExpr *S) {
+  return createReferenceOfSingleInScopeValue(S);
+}
+
 SCEVReference *ReferenceTreeBuilder::visitAddRecExpr(const SCEVAddRecExpr *S) {
   return createReferenceOfNArySCEV(S);
 }
@@ -197,6 +202,11 @@ SCEVReference *ReferenceTreeBuilder::visitSMinExpr(const SCEVSMinExpr *S) {
 }
 
 SCEVReference *ReferenceTreeBuilder::visitUMinExpr(const SCEVUMinExpr *S) {
+  return createReferenceOfNArySCEV(S);
+}
+
+SCEVReference *ReferenceTreeBuilder::visitSequentialUMinExpr(
+    const SCEVSequentialUMinExpr *S) {
   return createReferenceOfNArySCEV(S);
 }
 

@@ -69,17 +69,14 @@ bool LoopUnroll::fullyUnrollLoop(LoopDependenceInfo const &LDI,
    */
   UnrollLoopOptions opts;
   opts.Count = tripCount;
-  opts.TripCount = tripCount;
   opts.Force = false;
-  opts.AllowRuntime = false;
+  opts.Runtime = false;
   opts.AllowExpensiveTripCount = true;
-  opts.PreserveCondBr = false;
-  opts.TripMultiple = SE.getSmallConstantTripMultiple(llvmLoop);
-  opts.PeelCount = 0;
   opts.UnrollRemainder = false;
   opts.ForgetAllSCEV = false;
   OptimizationRemarkEmitter ORE(loopFunction);
-  auto unrolled = UnrollLoop(llvmLoop, opts, &LI, &SE, &DT, &AC, &ORE, true);
+  TargetTransformInfo TTI(loopFunction->getParent()->getDataLayout());
+  auto unrolled = UnrollLoop(llvmLoop, opts, &LI, &SE, &DT, &AC, &TTI, &ORE, true);
 
   /*
    * Check if the loop unrolled.

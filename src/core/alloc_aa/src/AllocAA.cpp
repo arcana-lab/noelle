@@ -191,12 +191,12 @@ bool AllocAA::areIdenticalGEPAccessesInSameLoop(GetElementPtrInst *gep1,
 }
 
 bool AllocAA::isReadOnly(StringRef functionName) {
-  return readOnlyFunctionNames.find(functionName)
+  return readOnlyFunctionNames.find(functionName.str())
          != readOnlyFunctionNames.end();
 }
 
 bool AllocAA::isMemoryless(StringRef functionName) {
-  return memorylessFunctionNames.find(functionName)
+  return memorylessFunctionNames.find(functionName.str())
          != memorylessFunctionNames.end();
 }
 
@@ -258,8 +258,12 @@ void AllocAA::collectFunctionCallsTo(CallGraph &callGraph,
       auto F = callRecord.second->getFunction();
       if (called.find(F) == called.end())
         continue;
-      if (auto call = dyn_cast<CallInst>(&*callRecord.first)) {
-        calls.insert(call);
+      auto vO = &*callRecord.first;
+      if (vO) {
+        auto v = *vO;
+        if (auto call = dyn_cast<CallInst>(v)) {
+          calls.insert(call);
+        }
       }
     }
   }
@@ -342,7 +346,7 @@ bool AllocAA::isPrimitiveArrayPointer(
         if (!callF) {
           return false;
         }
-        if (allocatorFunctionNames.find(callF->getName())
+        if (allocatorFunctionNames.find(callF->getName().str())
             != allocatorFunctionNames.end()) {
           if (storedCall->hasOneUse())
             continue;
@@ -394,7 +398,8 @@ bool AllocAA::isPrimitiveArray(Value *V,
       auto calleeFn = callUser->getCalledFunction();
       if (calleeFn != nullptr) {
         auto fnName = calleeFn->getName();
-        if (readOnlyFunctionNames.find(fnName) != readOnlyFunctionNames.end())
+        if (readOnlyFunctionNames.find(fnName.str())
+            != readOnlyFunctionNames.end())
           continue;
       }
     }
@@ -535,7 +540,7 @@ void AllocAA::collectMemorylessFunctions(Module &M) {
     // TODO(angelo): Trigger a recheck of functions using this function
     // in case they are then found to be memoryless
     if (isMemoryless) {
-      memorylessFunctionNames.insert(F->getName());
+      memorylessFunctionNames.insert(F->getName().str());
       if (verbose >= AllocAAVerbosity::Minimal) {
         errs()
             << "AllocAA:  Memoryless function found: " << F->getName() << "\n";

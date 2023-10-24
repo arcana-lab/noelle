@@ -27,7 +27,7 @@
 /*
  * SVF headers
  */
-#define ENABLE_SVF
+//#define ENABLE_SVF
 #ifdef ENABLE_SVF
 #  include "WPA/WPAPass.h"
 #  include "Util/SVFModule.h"
