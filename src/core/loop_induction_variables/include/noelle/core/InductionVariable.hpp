@@ -21,7 +21,6 @@
  */
 #pragma once
 
-#include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "llvm/Analysis/IVDescriptors.h"
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/ScalarEvolutionReferencer.hpp"
