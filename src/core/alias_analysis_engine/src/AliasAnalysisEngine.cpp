@@ -13,5 +13,9 @@ AliasAnalysisEngine::AliasAnalysisEngine(const std::string &name, void *ptr)
 void *AliasAnalysisEngine::getRawPointer(void) const {
   return this->rawPtr;
 }
+  
+AliasAnalysisEngine::~AliasAnalysisEngine(){
+  return ;
+}
 
 } // namespace llvm::noelle
