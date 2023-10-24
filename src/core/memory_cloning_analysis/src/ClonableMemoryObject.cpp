@@ -1066,7 +1066,7 @@ bool ClonableMemoryObject::isOverrideSetFullyCoveringTheAllocationSpace(
       if (!bytesStoredConst)
         continue;
 
-      auto bitsStored = bytesStoredConst->getValue().getSExtValue() * 8;
+      auto bitsStored = bytesStoredConst->getValue().getZExtValue() * 8;
       if (this->sizeInBits == bitsStored) {
         return true;
       }
