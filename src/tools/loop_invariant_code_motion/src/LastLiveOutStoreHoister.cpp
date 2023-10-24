@@ -137,7 +137,9 @@ bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut(
       cast<StoreInst>(value)->eraseFromParent();
     }
 
-    auto initialValue = preHeaderBuilder.CreateLoad(pointerOperand);
+    auto initialValue = preHeaderBuilder.CreateLoad(
+        pointerOperand->getType()->getPointerElementType(),
+        pointerOperand);
 
     /*
      * Create PHI to track last value in loop entry
