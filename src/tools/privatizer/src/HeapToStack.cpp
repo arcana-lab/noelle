@@ -239,8 +239,10 @@ bool Privatizer::transformH2S(Noelle &noelle, LiveMemorySummary liveMemSum) {
       AllocaInst *allocaInst =
           entryBuilder.CreateAlloca(oneByteType, arraySize, "calloc2alloca");
 
-      CallInst *memSetInst =
-          entryBuilder.CreateMemSet(allocaInst, zeroVal, arraySize, 1);
+      CallInst *memSetInst = entryBuilder.CreateMemSet(allocaInst,
+                                                       zeroVal,
+                                                       allocationSize,
+                                                       allocaInst->getAlign());
 
       errs() << prefix << "Replace @malloc: " << *heapAllocInst << "\n";
       errs() << emptyPrefix << "with allocaInst: " << *allocaInst << "\n";
