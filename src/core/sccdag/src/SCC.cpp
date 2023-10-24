@@ -241,6 +241,7 @@ std::set<Instruction *> SCC::getInstructions(void) {
     s.insert(i);
     return false;
   };
+  this->iterateOverInstructions(f);
 
   return s;
 }
