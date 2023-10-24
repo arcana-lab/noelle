@@ -11,7 +11,7 @@ if test $# -lt 1 ; then
 fi
 
 ###########     LLVM alias analyses
-AA="-disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa"
+AA="-disable-basic-aa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa"
 EXTRA_AA=""
 
 
@@ -48,7 +48,7 @@ OPTPASSES="-load ${installDir}/lib/CallGraph.so  ${WPAPASS} ${SCAFPASS} ${PDGPAS
 
 
 # Set the command to execute
-cmdToExecute="${OPT} ${OPTPASSES} ${ANALYSES} ${@}"
+cmdToExecute="${OPT} -enable-new-pm=0 ${OPTPASSES} ${ANALYSES} ${@}"
 
 # Execute the command
 echo $cmdToExecute

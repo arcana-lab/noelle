@@ -5,7 +5,7 @@ installDir
 OPT="opt" ;
 
 ########### LLVM analyses
-AA_BASE="-basicaa"
+AA_BASE="-basic-aa"
 
 
 ###########     SVF
@@ -19,7 +19,7 @@ fi
 
 
 ########### Transformations
-TRANSFORMATIONS_BEFORE_PARALLELIZATION="${AA_BASE} ${WPAPASS} -mem2reg -tbaa -early-cse-memssa -licm -simplifycfg -simplifycfg-sink-common=false -instcombine -tailcallelim -loop-simplify -lcssa -licm -loop-unswitch -globalopt -instcombine -ipsccp -dce -gvn -dse -adce -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars ${WPAPASSINV} -lowerswitch -sroa -mergereturn --break-crit-edges -loop-simplify -lcssa --functionattrs --rpo-functionattrs"
+TRANSFORMATIONS_BEFORE_PARALLELIZATION="${AA_BASE} ${WPAPASS} -mem2reg -tbaa -early-cse-memssa -licm -simplifycfg -simplifycfg-sink-common=false -instcombine -tailcallelim -loop-simplify -lcssa -licm -globalopt -instcombine -ipsccp -dce -gvn -dse -adce -loop-simplify -lcssa -indvars -loop-deletion -instcombine -indvars ${WPAPASSINV} -lowerswitch -sroa -mergereturn --break-crit-edges -loop-simplify -lcssa --function-attrs --rpo-function-attrs"
 
 
 # Simplify the code

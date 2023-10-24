@@ -5,7 +5,7 @@ installDir
 OPT="opt" ;
 
 ########### LLVM analyses
-AA_BASE="-basicaa" ;
+AA_BASE="-basic-aa" ;
 
 ########### SVF
 if test -f "${installDir}/lib/libSvf.so" ; then
@@ -17,7 +17,7 @@ else
 fi
 
 ########### Transformations
-NORMALIZATION_PASSES="${AA_BASE} ${WPAPASS} -mem2reg -simplifycfg-sink-common=false ${WPAPASSINV} -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa -indvars --functionattrs --rpo-functionattrs" ;
+NORMALIZATION_PASSES="${AA_BASE} ${WPAPASS} -mem2reg -simplifycfg-sink-common=false ${WPAPASSINV} -lowerswitch -mergereturn --break-crit-edges -loop-simplify -lcssa -indvars --function-attrs --rpo-function-attrs" ;
 
 cmdToExecute="${OPT} ${NORMALIZATION_PASSES} $@" ;
 echo $cmdToExecute ;
