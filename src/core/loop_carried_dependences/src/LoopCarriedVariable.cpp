@@ -31,8 +31,8 @@ LoopCarriedVariable::LoopCarriedVariable(const LoopStructure &loop,
                                          SCC &sccContainingVariable,
                                          PHINode *declarationPHI)
   : outermostLoopOfVariable{ loop },
-    declarationValue{ declarationPHI },
-    isValid{ false } {
+    isValid{ false },
+    declarationValue{ declarationPHI } {
 
   assert(sccContainingVariable.isInternal(declarationPHI)
          && "Declaration PHI node is not internal to the SCC provided!");
@@ -52,7 +52,6 @@ LoopCarriedVariable::LoopCarriedVariable(const LoopStructure &loop,
    * Collect all other loop carried dependencies as well
    *  These will be ignored when constructing the variable's data/memory SCC
    */
-  auto declarationNode = sccContainingVariable.fetchNode(declarationValue);
   auto loopCarriedDependencies =
       LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(loop,
                                                                  loopNode,
@@ -372,7 +371,7 @@ bool LoopCarriedVariable::areValuesPropagatingVariableIntermediatesOutsideLoop(
         return false;
 
       Value *singleIncomingValue = nullptr;
-      for (int32_t i = 0; i < phi->getNumIncomingValues(); ++i) {
+      for (auto i = 0u; i < phi->getNumIncomingValues(); ++i) {
         auto incomingBlock = phi->getIncomingBlock(i);
         auto incomingValue = phi->getIncomingValue(i);
         // incomingValue->print(errs() << "Checking incoming value: "); errs()

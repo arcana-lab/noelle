@@ -48,7 +48,6 @@ void Linker::linkTransformedLoopToOriginalFunction(
    * Create the constants.
    */
   auto integerType = this->tm->getIntegerType(32);
-  auto const0 = ConstantInt::get(integerType, 0);
   auto minIdleCoresValue = ConstantInt::get(integerType, minIdleCores);
 
   /*
@@ -102,7 +101,7 @@ void Linker::linkTransformedLoopToOriginalFunction(
                                  integerType,
                                  /*isSigned=*/false);
     auto exitSwitch = endBuilder.CreateSwitch(exitEnvCast, loopExitBlocks[0]);
-    for (int i = 1; i < loopExitBlocks.size(); ++i) {
+    for (auto i = 1u; i < loopExitBlocks.size(); ++i) {
       auto constantInt = cast<ConstantInt>(ConstantInt::get(integerType, i));
       exitSwitch->addCase(constantInt, loopExitBlocks[i]);
     }
@@ -188,7 +187,7 @@ void Linker::substituteOriginalLoopWithTransformedLoop(
                                  integerType,
                                  /*isSigned=*/false);
     auto exitSwitch = endBuilder.CreateSwitch(exitEnvCast, loopExitBlocks[0]);
-    for (int i = 1; i < loopExitBlocks.size(); ++i) {
+    for (auto i = 1u; i < loopExitBlocks.size(); ++i) {
       auto constantInt = cast<ConstantInt>(ConstantInt::get(integerType, i));
       exitSwitch->addCase(constantInt, loopExitBlocks[i]);
     }
