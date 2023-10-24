@@ -353,7 +353,8 @@ void DSWP::generateLoadsOfQueuePointers(Noelle &par, int taskIndex) {
   auto loadQueuePtrFromIndex = [&](int queueIndex) -> void {
     auto queueInfo = this->queues[queueIndex].get();
     auto queueIndexValue = cm->getIntegerConstant(queueIndex, 64);
-    auto queuePtr = entryBuilder.CreateInBoundsGEP(
+    auto queuePtr = entryBuilder.CreateGEP(
+        queuesArray->getType()->getPointerElementType(),
         queuesArray,
         ArrayRef<Value *>({ this->zeroIndexForBaseArray, queueIndexValue }));
     auto parQueueIndex = par.queues.queueSizeToIndex[queueInfo->bitLength];
@@ -363,7 +364,9 @@ void DSWP::generateLoadsOfQueuePointers(Noelle &par, int taskIndex) {
         entryBuilder.CreateBitCast(queuePtr, PointerType::getUnqual(queueType));
 
     auto queueInstrs = std::make_unique<QueueInstrs>();
-    queueInstrs->queuePtr = entryBuilder.CreateLoad(queueCast);
+    queueInstrs->queuePtr =
+        entryBuilder.CreateLoad(queueCast->getType()->getPointerElementType(),
+                                queueCast);
     queueInstrs->alloca = entryBuilder.CreateAlloca(queueInfo->dependentType);
     queueInstrs->allocaCast =
         entryBuilder.CreateBitCast(queueInstrs->alloca,
@@ -399,7 +402,9 @@ void DSWP::popValueQueues(LoopDependenceInfo *LDI, Noelle &par, int taskIndex) {
         par.queues.queuePops[par.queues.queueSizeToIndex[queueInfo->bitLength]];
     queueInstrs->queueCall =
         builder.CreateCall(queuePopFunction, queueCallArgs);
-    queueInstrs->load = builder.CreateLoad(queueInstrs->alloca);
+    queueInstrs->load = builder.CreateLoad(
+        queueInstrs->alloca->getType()->getPointerElementType(),
+        queueInstrs->alloca);
 
     /*
      * Map from producer to queue load

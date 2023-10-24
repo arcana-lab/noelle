@@ -109,10 +109,10 @@ private:
   void pushValueQueues(LoopDependenceInfo *LDI, Noelle &par, int taskIndex);
   void createPipelineFromStages(LoopDependenceInfo *LDI, Noelle &par);
   Value *createStagesArrayFromStages(LoopDependenceInfo *LDI,
-                                     IRBuilder<> funcBuilder,
+                                     IRBuilder<> &funcBuilder,
                                      Noelle &par);
   Value *createQueueSizesArrayFromStages(LoopDependenceInfo *LDI,
-                                         IRBuilder<> funcBuilder,
+                                         IRBuilder<> &funcBuilder,
                                          Noelle &par);
 
   bool canBeCloned(GenericSCC *scc) const;

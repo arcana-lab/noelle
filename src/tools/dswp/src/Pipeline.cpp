@@ -211,7 +211,7 @@ void DSWP::createPipelineFromStages(LoopDependenceInfo *LDI, Noelle &par) {
 }
 
 Value *DSWP::createStagesArrayFromStages(LoopDependenceInfo *LDI,
-                                         IRBuilder<> funcBuilder,
+                                         IRBuilder<> &funcBuilder,
                                          Noelle &par) {
 
   /*
@@ -227,7 +227,8 @@ Value *DSWP::createStagesArrayFromStages(LoopDependenceInfo *LDI,
   for (int i = 0; i < this->numTaskInstances; ++i) {
     auto stage = this->tasks[i];
     auto stageIndex = cm->getIntegerConstant(i, 64);
-    auto stagePtr = funcBuilder.CreateInBoundsGEP(
+    auto stagePtr = funcBuilder.CreateGEP(
+        stagesAlloca->getType()->getPointerElementType(),
         stagesAlloca,
         ArrayRef<Value *>({ this->zeroIndexForBaseArray, stageIndex }));
     auto stageCast = funcBuilder.CreateBitCast(stagePtr, stageCastType);
@@ -242,7 +243,7 @@ Value *DSWP::createStagesArrayFromStages(LoopDependenceInfo *LDI,
 }
 
 Value *DSWP::createQueueSizesArrayFromStages(LoopDependenceInfo *LDI,
-                                             IRBuilder<> funcBuilder,
+                                             IRBuilder<> &funcBuilder,
                                              Noelle &par) {
 
   /*
@@ -257,7 +258,8 @@ Value *DSWP::createQueueSizesArrayFromStages(LoopDependenceInfo *LDI,
   for (int i = 0; i < this->queues.size(); ++i) {
     auto &queue = this->queues[i];
     auto queueIndex = cm->getIntegerConstant(i, 64);
-    auto queuePtr = funcBuilder.CreateInBoundsGEP(
+    auto queuePtr = funcBuilder.CreateGEP(
+        queuesAlloca->getType()->getPointerElementType(),
         queuesAlloca,
         ArrayRef<Value *>({ this->zeroIndexForBaseArray, queueIndex }));
     auto queueCast =
