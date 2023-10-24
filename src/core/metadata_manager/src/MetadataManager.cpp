@@ -68,7 +68,7 @@ MetadataManager::MetadataManager(Module &M) : program{ M } {
           continue;
         }
         if (data->isString()) {
-          this->varMetadata[var].insert(data->getAsString());
+          this->varMetadata[var].insert(data->getAsString().str());
         }
       }
     }
@@ -117,7 +117,7 @@ MetadataManager::MetadataManager(Module &M) : program{ M } {
         auto annotatedFunction = dyn_cast<Function>(
             globalArrayEntryOperandStruct->getOperand(0)->getOperand(0));
         if (annotatedFunction != nullptr) {
-          this->functionMetadata[annotatedFunction].insert(AS);
+          this->functionMetadata[annotatedFunction].insert(AS.str());
           continue;
         }
 
@@ -127,7 +127,7 @@ MetadataManager::MetadataManager(Module &M) : program{ M } {
         auto annotatedGlobal = dyn_cast<GlobalVariable>(
             globalArrayEntryOperandStruct->getOperand(0)->getOperand(0));
         if (annotatedGlobal != nullptr) {
-          this->globalMetadata[annotatedGlobal].insert(AS);
+          this->globalMetadata[annotatedGlobal].insert(AS.str());
           continue;
         }
       }
@@ -177,7 +177,7 @@ bool MetadataManager::doesHaveMetadata(LoopStructure *loop,
    */
   auto metaString = cast<MDString>(metaNode->getOperand(0))->getString();
   this->metadata[loop][metadataName] =
-      new MetadataEntry(metadataName, metaString);
+      new MetadataEntry(metadataName, metaString.str());
 
   return true;
 }
@@ -329,7 +329,7 @@ void MetadataManager::addMetadata(LoopStructure *loop,
    * Add the metadata.
    */
   auto loopEntries = this->metadata[loop];
-  loopEntries[metadataName] = new MetadataEntry(metadataName, metaString);
+  loopEntries[metadataName] = new MetadataEntry(metadataName, metaString.str());
 
   return;
 }

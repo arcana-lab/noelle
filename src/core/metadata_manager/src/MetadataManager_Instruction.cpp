@@ -56,7 +56,7 @@ std::string MetadataManager::getMetadata(Instruction *inst,
    */
   auto metaString = cast<MDString>(metaNode->getOperand(0))->getString();
 
-  return metaString;
+  return metaString.str();
 }
 
 void MetadataManager::addMetadata(Instruction *inst,
