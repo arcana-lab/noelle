@@ -44,7 +44,7 @@ void LoopEnvironmentUser::setEnvironmentArray(Value *envArr) {
 }
 
 Instruction *LoopEnvironmentUser::createEnvironmentVariablePointer(
-    IRBuilder<> builder,
+    IRBuilder<> &builder,
     uint32_t envID,
     Type *type) {
 
@@ -99,7 +99,7 @@ Instruction *LoopEnvironmentUser::createEnvironmentVariablePointer(
   return ptrInst;
 }
 
-void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> builder,
+void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> &builder,
                                                 uint32_t envID,
                                                 Type *type,
                                                 uint32_t reducerCount,

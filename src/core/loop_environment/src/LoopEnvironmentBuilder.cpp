@@ -254,7 +254,7 @@ void LoopEnvironmentBuilder::addVariableToEnvironment(uint64_t varID,
   return;
 }
 
-void LoopEnvironmentBuilder::allocateEnvironmentArray(IRBuilder<> builder) {
+void LoopEnvironmentBuilder::allocateEnvironmentArray(IRBuilder<> &builder) {
 
   /*
    * Check that we have an environment.
@@ -274,7 +274,7 @@ void LoopEnvironmentBuilder::allocateEnvironmentArray(IRBuilder<> builder) {
   return;
 }
 
-void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> builder) {
+void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> &builder) {
 
   /*
    * Check the environment array.
@@ -304,8 +304,9 @@ void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> builder) {
     /*
      * Compute the address of the variable with index "envIndex".
      */
-    auto envPtr =
-        builder.CreateGEP(arr->getType()->getPointerElementType(), arr, ArrayRef<Value *>({ zeroV, indValue }));
+    auto envPtr = builder.CreateGEP(arr->getType()->getPointerElementType(),
+                                    arr,
+                                    ArrayRef<Value *>({ zeroV, indValue }));
 
     /*
      * Cast the pointer to the proper data type.
@@ -390,7 +391,7 @@ void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> builder) {
 
 BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
     BasicBlock *bb,
-    IRBuilder<> builder,
+    IRBuilder<> &builder,
     const std::unordered_map<uint32_t, BinaryReductionSCC *> &reductions,
     Value *numberOfThreadsExecuted,
     std::function<Value *(ReductionSCC *scc)> castingInitialValue) {
@@ -518,8 +519,10 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
     /*
      * Load the next value that needs to be accumulated.
      */
-    auto envVar =
-        loopBodyBuilder.CreateLoad(effectiveAddressOfReducedVarProperlyCasted->getType()->getPointerElementType(), effectiveAddressOfReducedVarProperlyCasted);
+    auto envVar = loopBodyBuilder.CreateLoad(
+        effectiveAddressOfReducedVarProperlyCasted->getType()
+            ->getPointerElementType(),
+        effectiveAddressOfReducedVarProperlyCasted);
     loadedValues.push_back(envVar);
   }
 
