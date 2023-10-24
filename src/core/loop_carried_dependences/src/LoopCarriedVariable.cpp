@@ -30,8 +30,8 @@ LoopCarriedVariable::LoopCarriedVariable(const LoopStructure &loop,
                                          SCCDAG &sccdag,
                                          SCC &sccContainingVariable,
                                          PHINode *declarationPHI)
-  : outermostLoopOfVariable{ loop },
-    isValid{ false },
+  : isValid{ false },
+    outermostLoopOfVariable{ loop },
     declarationValue{ declarationPHI } {
 
   assert(sccContainingVariable.isInternal(declarationPHI)

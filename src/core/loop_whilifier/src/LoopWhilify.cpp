@@ -55,11 +55,6 @@ bool LoopWhilifier::whilifyLoopDriver(LoopStructure *const LS,
   auto Transformed = false;
 
   /*
-   * Fetch the function that contains the loop.
-   */
-  auto ParentFunc = LS->getFunction();
-
-  /*
    * Get necessary info to invoke scheduler
    */
   auto firstInst = LS->getEntryInstruction();

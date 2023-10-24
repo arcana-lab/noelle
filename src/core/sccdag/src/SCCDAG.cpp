@@ -204,7 +204,7 @@ void SCCDAG::mergeSCCs(std::set<DGNode<SCC> *> &sccSet) {
    * Reassign values to the SCC they are now in
    * Recreate all edges from SCCs to the newly merged SCC
    */
-  auto mergeSCCNode = this->addNode(mergeSCC, /*inclusion=*/true);
+  this->addNode(mergeSCC, /*inclusion=*/true);
   for (auto sccNode : sccSet)
     this->removeNode(sccNode);
   this->markValuesInSCC();
