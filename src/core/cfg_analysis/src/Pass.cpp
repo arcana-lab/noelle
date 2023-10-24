@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/CFGAnalysis.hpp"
+#include "llvm/Analysis/PostDominators.h"
 
 namespace llvm::noelle {
 
