@@ -456,7 +456,8 @@ bool Inliner::inlineFunctionCall(Hot *p,
    * Inline the call.
    */
   InlineFunctionInfo IFI;
-  if (InlineFunction(call, IFI)) {
+  auto inlineResult = InlineFunction(*call, IFI);
+  if (inlineResult.isSuccess()) {
     fnsAffected.insert(F);
     adjustLoopOrdersAfterInline(F, childF, loopIndAfterCall);
     adjustFnGraphAfterInline(F, childF, callInd);
@@ -614,7 +615,7 @@ void Inliner::collectFnCallsAndCalled(llvm::CallGraph &CG, Function *parentF) {
   std::set<CallInst *> unorderedCalls;
   auto funcCGNode = CG[parentF];
   for (auto &callRecord : make_range(funcCGNode->begin(), funcCGNode->end())) {
-    auto weakVH = callRecord.first;
+    auto weakVH = *callRecord.first;
     if (!weakVH.pointsToAliveValue() || !isa<CallInst>(&*weakVH))
       continue;
     auto call = (CallInst *)(&*weakVH);
