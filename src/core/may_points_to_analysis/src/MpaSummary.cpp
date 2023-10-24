@@ -98,7 +98,7 @@ MpaSummary::MpaSummary(Function *currentF) : currentF(currentF) {
             break;
           default:
             insertPointer(callInst);
-            for (auto &arg : callInst->arg_operands()) {
+            for (auto &arg : callInst->args()) {
               auto operand = callInst->getArgOperand(arg.getOperandNo());
               insertPointer(operand);
             }
