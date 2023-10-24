@@ -12,6 +12,8 @@ public:
 
   virtual std::string getName(void) const = 0;
 
+  virtual ~AliasAnalysisEngine();
+
 protected:
   std::string n;
   void *rawPtr;

@@ -42,7 +42,6 @@ public:
 
 private:
   Module &program;
-  TypesManager *tm;
 };
 
 } // namespace llvm::noelle
