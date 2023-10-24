@@ -305,7 +305,7 @@ void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> builder) {
      * Compute the address of the variable with index "envIndex".
      */
     auto envPtr =
-        builder.CreateInBoundsGEP(arr, ArrayRef<Value *>({ zeroV, indValue }));
+        builder.CreateGEP(arr->getType()->getPointerElementType(), arr, ArrayRef<Value *>({ zeroV, indValue }));
 
     /*
      * Cast the pointer to the proper data type.
@@ -502,15 +502,16 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
     auto baseAddressOfReducedVar =
         this->envIndexToVectorOfReducableVar.at(envIndex);
     auto zeroV = cast<Value>(ConstantInt::get(int32Type, 0));
-    auto effectiveAddressOfReducedVar = loopBodyBuilder.CreateInBoundsGEP(
+    auto varType = envTypes[envIndex];
+    auto ptrType = PointerType::getUnqual(varType);
+    auto effectiveAddressOfReducedVar = loopBodyBuilder.CreateGEP(
+        baseAddressOfReducedVar->getType()->getPointerElementType(),
         baseAddressOfReducedVar,
         ArrayRef<Value *>({ zeroV, offsetValue }));
 
     /*
      * Finally, cast the effective address to the correct LLVM type.
      */
-    auto varType = envTypes[envIndex];
-    auto ptrType = PointerType::getUnqual(varType);
     auto effectiveAddressOfReducedVarProperlyCasted =
         loopBodyBuilder.CreateBitCast(effectiveAddressOfReducedVar, ptrType);
 
@@ -518,7 +519,7 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
      * Load the next value that needs to be accumulated.
      */
     auto envVar =
-        loopBodyBuilder.CreateLoad(effectiveAddressOfReducedVarProperlyCasted);
+        loopBodyBuilder.CreateLoad(effectiveAddressOfReducedVarProperlyCasted->getType()->getPointerElementType(), effectiveAddressOfReducedVarProperlyCasted);
     loadedValues.push_back(envVar);
   }
 

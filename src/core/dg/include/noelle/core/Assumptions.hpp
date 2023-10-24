@@ -2,7 +2,6 @@
 #define LLVM_LIBERTY_ASSUMPTIONS_H
 
 #include "llvm/Pass.h"
-#include "llvm/IR/CallSite.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/Analysis/AliasAnalysis.h"
