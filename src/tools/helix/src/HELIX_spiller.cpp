@@ -464,9 +464,10 @@ void HELIX::replaceUsesOfSpilledPHIWithLoads(
     }
 
     IRBuilder<> spillValueBuilder(insertPoint);
-    auto spillLoad =
-        spillValueBuilder.CreateLoad(spillEnvPtr,
-                                     "noelle.helix.spilled_variable");
+    auto spillLoad = spillValueBuilder.CreateLoad(
+        spillEnvPtr->getType()->getPointerElementType(),
+        spillEnvPtr,
+        "noelle.helix.spilled_variable");
     spill->environmentLoads.insert(spillLoad);
 
     /*
