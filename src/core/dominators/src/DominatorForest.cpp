@@ -38,7 +38,7 @@ DominatorForest::DominatorForest(llvm::PostDominatorTree &PDT)
 DominatorForest::DominatorForest(std::set<DTAliases::Node *> nodeSubset)
   : nodes{},
     bbNodeMap{} {
-  this->cloneNodes<DTAliases::Node>(nodeSubset);
+  this->cloneLLVMNodes(nodeSubset);
   return;
 }
 
@@ -74,8 +74,7 @@ template <typename TreeType>
 std::set<DTAliases::Node *> DominatorForest::collectNodesOfTree(TreeType &T) {
   std::set<DTAliases::Node *> nodes;
   std::vector<DTAliases::Node *> worklist;
-  auto &rootBlocks = T.getRoots();
-  for (BasicBlock *b : rootBlocks)
+  for (BasicBlock *b : T.roots())
     worklist.push_back(T.getNode(b));
 
   /*
@@ -88,8 +87,7 @@ std::set<DTAliases::Node *> DominatorForest::collectNodesOfTree(TreeType &T) {
     auto node = worklist.back();
     worklist.pop_back();
     nodes.insert(node);
-    auto children = node->getChildren();
-    for (auto child : children)
+    for (auto child : *node)
       worklist.push_back(child);
   }
 
@@ -106,6 +104,44 @@ std::set<DominatorNode *> DominatorForest::filterNodes(
     }
   }
   return nodesSubset;
+}
+
+void DominatorForest::cloneLLVMNodes(
+    std::set<DTAliases::Node *> &nodesToClone) {
+
+  /*
+   * Clone nodes using DomNodeSummary constructors. Track cloned pairs in map
+   */
+  std::unordered_map<DTAliases::Node *, DominatorNode *> nodeMap;
+  for (auto node : nodesToClone) {
+    auto summary = new DominatorNode(*node);
+    nodeMap[node] = summary;
+    this->nodes.insert(summary);
+    this->bbNodeMap[summary->B] = summary;
+  }
+
+  /*
+   * Populate parent, child relations between cloned nodes.
+   * Note the optional nature of these connections. It is possible
+   * that only a subset of the tree is being cloned
+   */
+  for (auto node : nodesToClone) {
+    auto summary = nodeMap[node];
+    auto iDom = node->getIDom();
+    if (nodeMap.find(iDom) != nodeMap.end()) {
+      summary->iDom = nodeMap[iDom];
+    }
+
+    for (auto child : node->children()) {
+      if (nodeMap.find(child) == nodeMap.end())
+        continue;
+      auto childSummary = nodeMap[child];
+      childSummary->parent = summary;
+      summary->children.push_back(childSummary);
+    }
+  }
+
+  return;
 }
 
 template <typename NodeType>
@@ -134,8 +170,7 @@ void DominatorForest::cloneNodes(std::set<NodeType *> &nodesToClone) {
       summary->iDom = nodeMap[iDom];
     }
 
-    auto children = node->getChildren();
-    for (auto child : children) {
+    for (auto child : node->getChildren()) {
       if (nodeMap.find(child) == nodeMap.end())
         continue;
       auto childSummary = nodeMap[child];

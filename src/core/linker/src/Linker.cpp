@@ -91,16 +91,19 @@ void Linker::linkTransformedLoopToOriginalFunction(
         Architecture::getCacheLineBytes() / sizeof(int64_t);
 
     auto int64 = this->tm->getIntegerType(64);
-    auto exitEnvPtr = endBuilder.CreateInBoundsGEP(
+    auto exitEnvPtr = endBuilder.CreateGEP(
+        envArray->getType()->getPointerElementType(),
         envArray,
         ArrayRef<Value *>({ cast<Value>(ConstantInt::get(int64, 0)),
                             endBuilder.CreateMul(
                                 envIndexForExitVariable,
                                 ConstantInt::get(int64, valuesInCacheLine)) }));
-    auto exitEnvCast =
-        endBuilder.CreateIntCast(endBuilder.CreateLoad(exitEnvPtr),
-                                 integerType,
-                                 /*isSigned=*/false);
+    auto newLoad =
+        endBuilder.CreateLoad(exitEnvPtr->getType()->getPointerElementType(),
+                              exitEnvPtr);
+    auto exitEnvCast = endBuilder.CreateIntCast(newLoad,
+                                                integerType,
+                                                /*isSigned=*/false);
     auto exitSwitch = endBuilder.CreateSwitch(exitEnvCast, loopExitBlocks[0]);
     for (int i = 1; i < loopExitBlocks.size(); ++i) {
       auto constantInt = cast<ConstantInt>(ConstantInt::get(integerType, i));
@@ -176,17 +179,20 @@ void Linker::substituteOriginalLoopWithTransformedLoop(
         Architecture::getCacheLineBytes() / sizeof(int64_t);
 
     auto int64 = this->tm->getIntegerType(64);
-    auto exitEnvPtr = endBuilder.CreateInBoundsGEP(
+    auto exitEnvPtr = endBuilder.CreateGEP(
+        envArray->getType()->getPointerElementType(),
         envArray,
         ArrayRef<Value *>({ cast<Value>(ConstantInt::get(int64, 0)),
                             endBuilder.CreateMul(
                                 envIndexForExitVariable,
                                 ConstantInt::get(int64, valuesInCacheLine)) }));
     auto integerType = this->tm->getIntegerType(32);
-    auto exitEnvCast =
-        endBuilder.CreateIntCast(endBuilder.CreateLoad(exitEnvPtr),
-                                 integerType,
-                                 /*isSigned=*/false);
+    auto newLoad =
+        endBuilder.CreateLoad(exitEnvPtr->getType()->getPointerElementType(),
+                              exitEnvPtr);
+    auto exitEnvCast = endBuilder.CreateIntCast(newLoad,
+                                                integerType,
+                                                /*isSigned=*/false);
     auto exitSwitch = endBuilder.CreateSwitch(exitEnvCast, loopExitBlocks[0]);
     for (int i = 1; i < loopExitBlocks.size(); ++i) {
       auto constantInt = cast<ConstantInt>(ConstantInt::get(integerType, i));

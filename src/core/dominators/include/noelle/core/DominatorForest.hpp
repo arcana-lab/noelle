@@ -76,6 +76,9 @@ private:
                                         std::set<BasicBlock *> &bbSubset);
   template <typename NodeType>
   void cloneNodes(std::set<NodeType *> &nodes);
+
+  void cloneLLVMNodes(std::set<DTAliases::Node *> &nodesToClone);
+
   void addDescendants(DominatorNode *n, std::set<BasicBlock *> &ds) const;
 };
 
