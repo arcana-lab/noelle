@@ -171,10 +171,6 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
   }
 
   if (producerI == consumerI || !DS.DT.dominates(producerI, consumerI)) {
-    auto producerLevel = producerLoop->getNestingLevel();
-    auto consumerLevel = consumerLoop->getNestingLevel();
-    auto isMemoryDependenceThusCanCrossLoops = edge->isMemoryDependence();
-    auto isControlDependence = edge->isControlDependence();
 
     /*
      * Check if the dependence is data and via variable.

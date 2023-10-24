@@ -42,7 +42,7 @@ void Task::adjustDataAndControlFlowToUseClones(Instruction *cloneI) {
    * Adjust basic block references of terminators and PHI nodes
    */
   if (cloneI->isTerminator()) {
-    for (int i = 0; i < cloneI->getNumSuccessors(); ++i) {
+    for (auto i = 0u; i < cloneI->getNumSuccessors(); ++i) {
       auto succBB = cloneI->getSuccessor(i);
 
       /*
@@ -73,7 +73,7 @@ void Task::adjustDataAndControlFlowToUseClones(Instruction *cloneI) {
    * Handle PHI instructions.
    */
   if (auto phi = dyn_cast<PHINode>(cloneI)) {
-    for (int i = 0; i < phi->getNumIncomingValues(); ++i) {
+    for (auto i = 0u; i < phi->getNumIncomingValues(); ++i) {
       auto incomingBB = phi->getIncomingBlock(i);
 
       /*
