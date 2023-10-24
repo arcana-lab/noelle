@@ -420,9 +420,9 @@ bool ClonableMemoryObject::identifyStoresAndOtherUsers(LoopStructure *loop,
          */
         auto isMemCpy = ClonableMemoryObject::isMemCpyInstrinsicCall(call);
         auto isUseTheDestinationOp =
-            (call->getNumArgOperands() == 4) && (call->getArgOperand(0) == I);
+            (call->arg_size() == 4) && (call->getArgOperand(0) == I);
         auto isUseTheSourceOp =
-            (call->getNumArgOperands() == 4) && (call->getArgOperand(1) == I);
+            (call->arg_size() == 4) && (call->getArgOperand(1) == I);
         if (isMemCpy && isUseTheDestinationOp) {
           storingInstructions.insert(call);
 
