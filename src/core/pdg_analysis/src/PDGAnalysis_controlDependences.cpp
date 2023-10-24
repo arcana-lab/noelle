@@ -23,6 +23,7 @@
 #include "noelle/core/TalkDown.hpp"
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
+#include "llvm/Analysis/PostDominators.h"
 
 namespace llvm::noelle {
 

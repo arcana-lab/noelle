@@ -22,6 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/PDGPrinter.hpp"
+#include "llvm/Analysis/PostDominators.h"
 
 namespace llvm::noelle {
 

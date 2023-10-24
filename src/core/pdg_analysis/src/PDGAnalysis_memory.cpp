@@ -465,7 +465,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
     assert(objectFreed != nullptr);
     auto doesAlias =
         this->doTheyAlias(pdg, F, AA, objectAllocated, objectFreed);
-    if (doesAlias == NoAlias) {
+    if (doesAlias == AliasResult::NoAlias) {
       return;
     }
   }
@@ -843,12 +843,12 @@ void PDGAnalysis::addEdgeFromMemoryAlias(
    */
   auto must = false;
   switch (aaResult) {
-    case NoAlias:
+    case AliasResult::NoAlias:
       return;
-    case PartialAlias:
-    case MayAlias:
+    case AliasResult::PartialAlias:
+    case AliasResult::MayAlias:
       break;
-    case MustAlias:
+    case AliasResult::MustAlias:
       must = true;
       break;
   }
@@ -883,7 +883,7 @@ AliasResult PDGAnalysis::doTheyAlias(PDG *pdg,
   /*
    * Query the LLVM alias analyses.
    */
-  AliasResult aaResult;
+  AliasResult aaResult{AliasResult::MayAlias};
   if (haveMemoryLocations) {
     aaResult = AA.alias(MemoryLocation::get(instIAsInst),
                         MemoryLocation::get(instJAsInst));
@@ -891,13 +891,13 @@ AliasResult PDGAnalysis::doTheyAlias(PDG *pdg,
     aaResult = AA.alias(instI, instJ);
   }
   switch (aaResult) {
-    case NoAlias:
-      return NoAlias;
-    case PartialAlias:
-    case MayAlias:
+    case AliasResult::NoAlias:
+      return AliasResult::NoAlias;
+    case AliasResult::PartialAlias:
+    case AliasResult::MayAlias:
       break;
-    case MustAlias:
-      return MustAlias;
+    case AliasResult::MustAlias:
+      return AliasResult::MustAlias;
   }
 
   /*
@@ -916,7 +916,7 @@ AliasResult PDGAnalysis::doTheyAlias(PDG *pdg,
     /*
      * SVF is enabled, so let's use it.
      */
-    AliasResult SVFAAResult;
+    AliasResult SVFAAResult{AliasResult::MayAlias};
     if (haveMemoryLocations) {
       SVFAAResult =
           NoelleSVFIntegration::alias(MemoryLocation::get(instIAsInst),
@@ -925,17 +925,17 @@ AliasResult PDGAnalysis::doTheyAlias(PDG *pdg,
       SVFAAResult = NoelleSVFIntegration::alias(instI, instJ);
     }
     switch (SVFAAResult) {
-      case NoAlias:
-        return NoAlias;
-      case PartialAlias:
-      case MayAlias:
+      case AliasResult::NoAlias:
+        return AliasResult::NoAlias;
+      case AliasResult::PartialAlias:
+      case AliasResult::MayAlias:
         break;
-      case MustAlias:
-        return MustAlias;
+      case AliasResult::MustAlias:
+        return AliasResult::MustAlias;
     }
   }
 
-  return MayAlias;
+  return AliasResult::MayAlias;
 }
 
 } // namespace llvm::noelle
