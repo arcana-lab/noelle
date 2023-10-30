@@ -99,12 +99,16 @@ void LDGAnalysis::removeDependences(PDG *loopDG, LoopStructure *loop) {
         toDelete.insert(dep);
         break;
       }
-      if (!dda->isThereThisMemoryDataDependenceType(dep->dataDependenceType(),
-                                                    srcInst,
-                                                    dstInst,
-                                                    *loop)) {
-        toDelete.insert(dep);
-        break;
+      auto r =
+          dda->isThereThisMemoryDataDependenceType(dep->dataDependenceType(),
+                                                   srcInst,
+                                                   dstInst,
+                                                   *loop);
+      switch (r) {
+
+        case MemoryDataDependenceStrength::CANNOT_EXIST:
+          toDelete.insert(dep);
+          break;
       }
     }
   }
