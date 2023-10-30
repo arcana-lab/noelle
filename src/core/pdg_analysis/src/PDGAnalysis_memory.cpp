@@ -37,10 +37,8 @@ std::pair<bool, bool> PDGAnalysis::isThereThisMemoryDataDependenceType(
   auto mustExist = false;
 
   for (auto ddAnalysis : this->ddAnalyses) {
-    auto resp = ddAnalysis->isThereThisMemoryDataDependenceType(DG_DATA_WAR,
-                                                                fromInst,
-                                                                toInst,
-                                                                F);
+    auto resp =
+        ddAnalysis->isThereThisMemoryDataDependenceType(t, fromInst, toInst, F);
     if (resp == CANNOT_EXIST) {
       noDep = true;
       break;
