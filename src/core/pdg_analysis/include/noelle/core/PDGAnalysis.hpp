@@ -207,6 +207,10 @@ private:
 
   bool canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value, Value> *edge);
 
+  bool canThereBeAMemoryDataDependence(Instruction *fromInst,
+                                       Instruction *toInst,
+                                       Function &F);
+
   std::pair<bool, bool> isThereThisMemoryDataDependenceType(
       DataDependenceType t,
       Instruction *fromInst,

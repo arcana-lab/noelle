@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Yian Su, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,31 @@
 #include "noelle/core/Utils.hpp"
 
 namespace llvm::noelle {
+
+bool PDGAnalysis::canThereBeAMemoryDataDependence(Instruction *fromInst,
+                                                  Instruction *toInst,
+                                                  Function &F) {
+
+  /*
+   * Check if any of the data dependence analyses can assert the lack of
+   * dependence from @fromInst to @toInst.
+   */
+  for (auto ddAnalysis : this->ddAnalyses) {
+    if (!ddAnalysis->canThereBeAMemoryDataDependence(fromInst, toInst, F)) {
+
+      /*
+       * We found a dependence analysis that can assert the lack of dependence.
+       */
+      return false;
+    }
+  }
+
+  /*
+   * We did not find a single dependence analysis that can assert the lack of
+   * dependence. So we must assume this dependence can happen at run time.
+   */
+  return true;
+}
 
 std::pair<bool, bool> PDGAnalysis::isThereThisMemoryDataDependenceType(
     DataDependenceType t,
@@ -77,13 +102,7 @@ void PDGAnalysis::iterateInstForStore(PDG *pdg,
      * Check if any of the data dependence analyses can assert the lack of
      * dependence from @store to @I.
      */
-    auto noDep = false;
-    for (auto ddAnalysis : this->ddAnalyses) {
-      if (ddAnalysis->canThereBeAMemoryDataDependence(store, inst, F)) {
-        noDep = true;
-      }
-    }
-    if (noDep) {
+    if (!this->canThereBeAMemoryDataDependence(store, inst, F)) {
       continue;
     }
 
@@ -143,13 +162,7 @@ void PDGAnalysis::iterateInstForLoad(PDG *pdg,
      * Check if any of the data dependence analyses can assert the lack of
      * dependence from @load to @I.
      */
-    auto noDep = false;
-    for (auto ddAnalysis : this->ddAnalyses) {
-      if (ddAnalysis->canThereBeAMemoryDataDependence(load, inst, F)) {
-        noDep = true;
-      }
-    }
-    if (noDep) {
+    if (!this->canThereBeAMemoryDataDependence(load, inst, F)) {
       continue;
     }
 
@@ -222,13 +235,7 @@ void PDGAnalysis::iterateInstForCall(PDG *pdg,
      * Check if any of the data dependence analyses can assert the lack of
      * dependence from @call to @I.
      */
-    auto noDep = false;
-    for (auto ddAnalysis : this->ddAnalyses) {
-      if (ddAnalysis->canThereBeAMemoryDataDependence(call, inst, F)) {
-        noDep = true;
-      }
-    }
-    if (noDep) {
+    if (!this->canThereBeAMemoryDataDependence(call, inst, F)) {
       continue;
     }
 
