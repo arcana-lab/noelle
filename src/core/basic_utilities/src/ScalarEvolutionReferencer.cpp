@@ -109,7 +109,8 @@ SCEVReference *ReferenceTreeBuilder::createReferenceOfNArySCEV(
    * If references of composed SCEVs could not be found, only return this
    * reference if its value is within scope
    */
-  if (compositeReference->getNumChildReferences() != S->getNumOperands()) {
+  if ((size_t)compositeReference->getNumChildReferences()
+      != S->getNumOperands()) {
     if (!compositeReference->getValue()) {
       delete compositeReference;
       return nullptr;

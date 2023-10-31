@@ -54,7 +54,7 @@ public:
   Value *getRootOfTree();
 
 private:
-  friend class SCEVVisitor<ReferenceTreeExpander, Value *>;
+  friend struct SCEVVisitor<ReferenceTreeExpander, Value *>;
 
   Value *visitConstant(const SCEVConstant *S);
   Value *visitTruncateExpr(const SCEVTruncateExpr *S);
@@ -89,7 +89,7 @@ public:
   SCEVReference *getTree();
 
 private:
-  friend class SCEVVisitor<ReferenceTreeBuilder, SCEVReference *>;
+  friend struct SCEVVisitor<ReferenceTreeBuilder, SCEVReference *>;
 
   SCEVReference *visitConstant(const SCEVConstant *S);
   SCEVReference *visitTruncateExpr(const SCEVTruncateExpr *S);
@@ -148,4 +148,5 @@ private:
   const SCEV *scev;
   std::vector<SCEVReference *> childReferences;
 };
+
 } // namespace llvm
