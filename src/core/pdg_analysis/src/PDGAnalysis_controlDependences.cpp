@@ -157,7 +157,7 @@ void PDGAnalysis::constructEdgesFromControlForFunction(PDG *pdg, Function &F) {
        * where the incoming value doesn't reside in incoming block
        */
       std::unordered_set<Value *> controlProducers;
-      for (auto i = 0; i < phi.getNumIncomingValues(); ++i) {
+      for (auto i = 0u; i < phi.getNumIncomingValues(); ++i) {
         auto incomingValue = phi.getIncomingValue(i);
         if (!incomingValue)
           continue;

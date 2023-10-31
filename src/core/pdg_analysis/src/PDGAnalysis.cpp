@@ -31,8 +31,8 @@ PDGAnalysis::PDGAnalysis()
   : ModulePass{ ID },
     M{ nullptr },
     programDependenceGraph{ nullptr },
-    dfa{},
     mpa{},
+    dfa{},
     embedPDG{ false },
     dumpPDG{ false },
     performThePDGComparison{ false },
@@ -455,7 +455,7 @@ bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value, Value> *edge) {
    * are used to read memory by the library call.
    */
   std::unordered_set<Value *> objects;
-  for (auto argID = 0; argID < callInst->arg_size(); argID++) {
+  for (auto argID = 0u; argID < callInst->arg_size(); argID++) {
     auto arg = callInst->getArgOperand(argID);
     auto argType = arg->getType();
     if (argType->isPointerTy()) {
