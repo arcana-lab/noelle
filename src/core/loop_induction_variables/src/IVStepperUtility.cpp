@@ -137,9 +137,15 @@ Value *IVUtility::offsetIVPHI(BasicBlock *insertBlock,
         ivType);
 
   } else {
-    offsetStartValue = offsetValue->getType()->isFloatingPointTy()
-                           ? insertBuilder.CreateFAdd(startValue, offsetValue)
-                           : insertBuilder.CreateAdd(startValue, offsetValue);
+    if (offsetValue->getType()->isFloatingPointTy()) {
+      offsetStartValue = insertBuilder.CreateFAdd(
+          insertBuilder.CreateFPTrunc(startValue, ivPHI->getType()),
+          insertBuilder.CreateFPTrunc(offsetValue, ivPHI->getType()));
+    } else {
+      offsetStartValue = insertBuilder.CreateAdd(
+          insertBuilder.CreateTrunc(startValue, ivPHI->getType()),
+          insertBuilder.CreateTrunc(offsetValue, ivPHI->getType()));
+    }
   }
 
   return offsetStartValue;
