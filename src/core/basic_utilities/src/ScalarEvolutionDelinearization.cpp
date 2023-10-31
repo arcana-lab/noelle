@@ -74,7 +74,7 @@ void ScalarEvolutionDelinearization::computeAccessFunctions(
       auto naryResult = dyn_cast<SCEVNAryExpr>(Res);
       SmallVector<const SCEV *, 4> ops;
       bool changedOperand = false;
-      for (auto i = 0; i < naryResult->getNumOperands(); ++i) {
+      for (auto i = 0u; i < naryResult->getNumOperands(); ++i) {
         auto opI = naryResult->getOperand(i);
         // opI->print(errs() << "\tOp: " << opI->getType()->getIntegerBitWidth()
         // << " "); errs() << "\n";
