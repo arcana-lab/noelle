@@ -2,7 +2,7 @@ DEBUG?=0
 JOBS?=8
 SVF_BRANCH?=SVF-1.8
 SCAF_BRANCH?=llvm14
-SCAF_ENABLE?=0
+SCAF_ENABLE?=1
 SVF_ENABLE?=0
 
 all: compile autotuner
