@@ -54,6 +54,8 @@ public:
   virtual bool isExpensive() {
     return false;
   }
+
+  virtual ~Remedy(){}
 };
 
 typedef std::shared_ptr<Remedies> Remedies_ptr;

@@ -30,7 +30,6 @@ LoopGoverningInductionVariable::LoopGoverningInductionVariable(
     std::vector<BasicBlock *> &exitBlocks)
   : loop{ l },
     IV{ iv },
-    scc{ scc },
     headerCmp{ nullptr },
     conditionValueDerivation{},
     intermediateValueUsedInCompare{ nullptr },

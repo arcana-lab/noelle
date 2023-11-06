@@ -69,12 +69,19 @@ InductionVariable::InductionVariable(
   : scc{ scc },
     loopEntryPHI{ loopEntryPHI },
     stepPHIs{ stepPHIs },
+    PHIs { },
+    nonPHIIntermediateValues { },
+    allInstructions { },
+    derivedSCEVInstructions { },
     startValue{ nullptr },
-    loopEntryPHIType{ loopEntryPHI->getType() },
     stepSCEV{ nullptr },
+    singleStepValue { nullptr} ,
     stepMultiplier{ stepMultiplier },
-    computationOfStepValue{},
-    isComputedStepValueLoopInvariant{ false } {
+    computationOfStepValue { },
+    isComputedStepValueLoopInvariant{ false },
+    loopEntryPHIType{ loopEntryPHI->getType() },
+    valuesToReferenceInComputingStepValue { },
+    valuesInScopeOfInductionVariable { } {
 
   /*
    * Fetch initial value of induction variable

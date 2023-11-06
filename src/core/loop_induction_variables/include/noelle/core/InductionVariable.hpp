@@ -177,6 +177,7 @@ private:
    */
   std::set<Value *> valuesToReferenceInComputingStepValue;
   std::set<Value *> valuesInScopeOfInductionVariable;
+
   void collectValuesInternalAndExternalToLoopAndSCC(
       LoopStructure *LS,
       LoopEnvironment &loopEnvironment);
