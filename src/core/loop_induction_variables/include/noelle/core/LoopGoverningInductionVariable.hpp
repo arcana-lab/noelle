@@ -57,7 +57,6 @@ public:
 private:
   LoopStructure *loop;
   InductionVariable &IV;
-  SCC &scc;
   std::set<Instruction *> conditionValueDerivation;
   Value *conditionValue;
   Instruction *intermediateValueUsedInCompare;
