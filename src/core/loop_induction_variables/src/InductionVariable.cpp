@@ -36,12 +36,12 @@ InductionVariable::InductionVariable(
     loopEntryPHI{ loopEntryPHI },
     stepPHIs{ std::unordered_set<PHINode *>({ loopEntryPHI }) },
     startValue{ ID.getStartValue() },
-    loopEntryPHIType{ loopEntryPHI->getType() },
     stepSCEV{ ID.getStep() },
+    singleStepValue{ ID.getConstIntStepValue() },
     stepMultiplier{ 1 },
     computationOfStepValue{},
-    singleStepValue{ ID.getConstIntStepValue() },
-    isComputedStepValueLoopInvariant{ false } {
+    isComputedStepValueLoopInvariant{ false },
+    loopEntryPHIType{ loopEntryPHI->getType() } {
 
   traverseCycleThroughLoopEntryPHIToGetAllIVInstructions(LS);
   traverseConsumersOfIVInstructionsToGetAllDerivedSCEVInstructions(LS, IVM, SE);
@@ -87,7 +87,7 @@ InductionVariable::InductionVariable(
    * Fetch initial value of induction variable
    */
   auto bbs = LS->getBasicBlocks();
-  for (auto i = 0; i < loopEntryPHI->getNumIncomingValues(); ++i) {
+  for (auto i = 0u; i < loopEntryPHI->getNumIncomingValues(); ++i) {
     auto incomingBB = loopEntryPHI->getIncomingBlock(i);
     if (bbs.find(incomingBB) == bbs.end()) {
       this->startValue = loopEntryPHI->getIncomingValue(i);

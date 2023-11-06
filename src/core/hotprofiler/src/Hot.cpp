@@ -43,7 +43,6 @@ void Hot::computeProgramInvocations(Module &M) {
      * Fetch the current basic block
      */
     auto bb = pairs.first;
-    auto bbInv = pairs.second;
 
     /*
      * Fetch the number of invocations of the basic block and its length.

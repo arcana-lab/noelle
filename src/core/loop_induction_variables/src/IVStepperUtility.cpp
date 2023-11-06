@@ -68,7 +68,7 @@ std::set<Instruction *> IVUtility::chunkInductionVariablePHI(
     PHINode *chunkPHI,
     Value *chunkStepSize) {
   std::set<Instruction *> chunkedIVValues;
-  for (auto i = 0; i < ivPHI->getNumIncomingValues(); ++i) {
+  for (auto i = 0u; i < ivPHI->getNumIncomingValues(); ++i) {
     auto B = ivPHI->getIncomingBlock(i);
     IRBuilder<> latchBuilder(B->getTerminator());
     if (preheaderBlock == B)
@@ -102,7 +102,7 @@ void IVUtility::stepInductionVariablePHI(BasicBlock *preheaderBlock,
                                          PHINode *ivPHI,
                                          Value *additionalStepSize) {
 
-  for (auto i = 0; i < ivPHI->getNumIncomingValues(); ++i) {
+  for (auto i = 0u; i < ivPHI->getNumIncomingValues(); ++i) {
     auto B = ivPHI->getIncomingBlock(i);
     if (preheaderBlock == B) {
       continue;

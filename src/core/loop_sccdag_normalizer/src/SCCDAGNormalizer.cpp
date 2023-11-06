@@ -215,7 +215,6 @@ void SCCDAGNormalizer::mergeBranchesWithoutOutgoingEdges(void) {
     bool allCmpOrBr = true;
     for (auto nodePair : scc->internalNodePairs()) {
       auto nodeValue = nodePair.first;
-      auto node = nodePair.second;
 
       /*
        * Handle the cmp instruction.
