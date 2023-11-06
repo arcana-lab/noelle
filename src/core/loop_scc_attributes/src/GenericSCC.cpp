@@ -27,8 +27,8 @@ GenericSCC::GenericSCC(SCCKind K, SCC *s, LoopStructure *loop)
   : loop{ loop },
     scc{ s },
     PHINodes{},
-    hasMemoryDependences{ false },
-    kind{ K } {
+    kind{ K },
+    hasMemoryDependences{ false } {
 
   /*
    * Collect PHIs included in the SCC.

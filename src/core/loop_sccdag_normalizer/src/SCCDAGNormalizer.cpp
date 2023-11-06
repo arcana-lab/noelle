@@ -86,17 +86,6 @@ void SCCDAGNormalizer::mergeLCSSAPhis() {
 }
 
 void SCCDAGNormalizer::mergeSCCsWithExternalInterIterationDependencies(void) {
-  auto isLastValuePHI = [](SCC *scc) -> bool {
-    if (scc->numInternalNodes() == 1) {
-      auto I = scc->begin_internal_node_map()->first;
-      if (isa<PHINode>(I)) {
-        return true;
-      }
-    }
-
-    return false;
-  };
-
   MergeGroups mergeGroups{};
   for (auto loop : this->loop->getLoops()) {
     auto loopCarriedEdges =
@@ -127,6 +116,17 @@ void SCCDAGNormalizer::mergeSCCsWithExternalInterIterationDependencies(void) {
       /*
        * Check the consumer SCC.
        */
+      /*auto isLastValuePHI = [](SCC *scc) -> bool {
+        if (scc->numInternalNodes() == 1) {
+          auto I = scc->begin_internal_node_map()->first;
+          if (isa<PHINode>(I)) {
+            return true;
+          }
+        }
+
+        return false;
+      };
+      */
       // if (!isLastValuePHI(consumerSCC)) {
       //   errs() << "SCCDAGNormalizer:  Unknown SCC with external loop carried
       //   dependence edge!\n"; edge->print(errs()) << "\n";
