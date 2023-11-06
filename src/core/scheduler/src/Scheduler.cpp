@@ -1199,7 +1199,7 @@ void LoopScheduler::remapClonedInstructions(ValueToValueMapTy &OriginalToClones,
 
     auto OriginalInstruction = cast<Instruction>(Original);
 
-    for (auto Index = 0; Index < OriginalInstruction->getNumOperands();
+    for (auto Index = 0u; Index < OriginalInstruction->getNumOperands();
          ++Index) {
 
       /*

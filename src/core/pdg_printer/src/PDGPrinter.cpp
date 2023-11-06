@@ -236,7 +236,7 @@ void DGPrinter::groupNodesByCluster(
   while (getline(ifile, line)) {
     ++numLines;
     // errs() << "Found line: " << line << "\n";
-    int nodeIndex = line.find(NODE_NAME);
+    auto nodeIndex = line.find(NODE_NAME);
     if (nodeIndex == std::string::npos)
       continue;
 

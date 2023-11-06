@@ -222,8 +222,6 @@ private:
   const uint32_t MaxPrologueSizeToHandle =
       16; /* Arbitrary, for performance concerns */
   bool SafeToDump = true;
-  bool DiscrepancyExists = false; /* Discrepancy between analysis
-                                     state and loop structure */
   std::set<BasicBlock *> Prologue;
   std::set<BasicBlock *> Body;
 };

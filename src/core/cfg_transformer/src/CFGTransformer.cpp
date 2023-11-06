@@ -63,11 +63,6 @@ void CFGTransformer::branchToTargetBasicBlockAndBack(
         addConditionalBranch) {
 
   /*
-   * Fetch the function
-   */
-  auto f = splitPoint->getFunction();
-
-  /*
    * Split the last basic block to inject the condition to jump to the new last
    * basic block
    */

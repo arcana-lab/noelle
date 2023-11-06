@@ -101,7 +101,8 @@ void ReductionSCC::initializeObject(LoopStructure &loop) {
     if (inst->getParent() != header) {
       continue;
     }
-    if (phiInst = dyn_cast<PHINode>(inst)) {
+    phiInst = dyn_cast<PHINode>(inst);
+    if (phiInst != nullptr){
       break;
     }
   }

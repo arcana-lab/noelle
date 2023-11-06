@@ -330,7 +330,7 @@ void SCCDAGPartitioner::resetPartitioner(void) {
    *
    *  - Reset SCCDebugOrder.
    */
-  auto numberOfSCCs = 0;
+  auto numberOfSCCs = 0u;
   for (auto node : partition->getNodes()) {
     numberOfSCCs += node->getT()->sccs.size();
   }
@@ -658,7 +658,7 @@ void SCCDAGPartitioner::mergeLCSSAPhisWithTheValuesTheyPropagate(void) {
     if (!this->partition->isIncludedInPartitioning(consumerSCC))
       continue;
 
-    for (auto i = 0; i < phi->getNumIncomingValues(); ++i) {
+    for (auto i = 0u; i < phi->getNumIncomingValues(); ++i) {
       auto incomingValue = phi->getIncomingValue(i);
       auto producerSCC = this->partition->sccOfValue(incomingValue);
       if (!producerSCC)
