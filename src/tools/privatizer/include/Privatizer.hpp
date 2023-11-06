@@ -111,6 +111,7 @@ private:
                                                      GlobalVariable *globalVar);
 
   Instruction *getInitProgramPoint(Noelle &noelle,
+                                   DominatorSummary *DS,
                                    GlobalVariable *globalVar,
                                    StoreInst *storeInst,
                                    unordered_set<Instruction *> &initializers);

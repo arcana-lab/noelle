@@ -140,7 +140,7 @@ bool Privatizer::initializedBeforeAllUse(Noelle &noelle,
     auto DS = noelle.getDominators(currentF);
     unordered_set<Instruction *> initializers;
     auto initProgramPoint =
-        getInitProgramPoint(noelle, globalVar, storeInst, initializers);
+        getInitProgramPoint(noelle, DS, globalVar, storeInst, initializers);
     if (!initProgramPoint) {
       return false;
     }
@@ -183,6 +183,7 @@ bool Privatizer::initializedBeforeAllUse(Noelle &noelle,
  */
 Instruction *Privatizer::getInitProgramPoint(
     Noelle &noelle,
+    DominatorSummary *DS,
     GlobalVariable *globalVar,
     StoreInst *storeInst,
     unordered_set<Instruction *> &initializers) {
@@ -227,6 +228,20 @@ Instruction *Privatizer::getInitProgramPoint(
       return nullptr;
     }
 
+    /*
+     * The expected initialization pattern works as follows.
+     * 1. There is a induction variable traverses each index of the array, and
+     *    the program initializes the corresponding element.
+     * 2. Currently, privatizer only supports induction varibles starting from
+     *    0, adding 1 each step, quitting at the length of the array. (A more
+     *    general, but more difficult strategy is to check the induction
+     * variable could visit each index.)
+     *
+     * int globalArray[10];
+     * for (int i = 0; i < 10; i++) {
+     *   globalVar[i] = some number;
+     * }
+     */
     LoopDependenceInfo *LDI = nullptr;
     for (auto ldi : *noelle.getLoops(storeInst->getFunction())) {
       if (!ldi->getLoopStructure()->isIncluded(storeInst)) {
@@ -243,6 +258,47 @@ Instruction *Privatizer::getInitProgramPoint(
       return nullptr;
     }
 
+    /*
+     * The initialization for each element in the array must happen in the
+     * loop header, because otherwise the storeInst is not necessarily executed.
+     * For example, this piece of code doesn't completely initialize
+     * @globalArray.
+     *
+     * int globalArray[10];
+     * for (int i = 0; i < 10; i++) {
+     *   if (i > 5) globalVar[i] = 7;
+     * }
+     */
+    if (storeInst->getParent() != LDI->getLoopStructure()->getHeader()) {
+      return nullptr;
+    }
+
+    /*
+     * Another weird case is that there may be multiple storeInsts in each
+     * iteration. For example, in the following case, only the first storeInst
+     * (globalVar[i] = 7) is considered to be the initializer.
+     *
+     * int globalArray[10];
+     * for (int i = 0; i < 10; i++) {
+     *   globalArray[i] = 7;
+     *   globalArray[i] = 28;
+     * }
+     */
+    for (auto gepUser : globalGEP->users()) {
+      auto gepInstUser = dyn_cast<Instruction>(gepUser);
+      if (!gepInstUser) {
+        return nullptr;
+      }
+      if ((gepInstUser != storeInst)
+          && !(DS->DT.dominates(storeInst, gepInstUser))) {
+        return nullptr;
+      }
+    }
+
+    /*
+     * The induction variable manager is to make sure each index of the array
+     * will be visited. Check comments above.
+     */
     auto IVM = LDI->getInductionVariableManager();
     auto GIV = IVM->getLoopGoverningInductionVariable();
 
