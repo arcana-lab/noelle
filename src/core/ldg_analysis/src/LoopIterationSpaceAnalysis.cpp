@@ -119,7 +119,7 @@ bool LoopIterationSpaceAnalysis::
    * and governed by the same SCEV derived from that IV
    */
   auto rootLoopStructure = this->loops->getLoop();
-  for (auto subscriptIdx = 0; subscriptIdx < space1->subscriptIVs.size();
+  for (auto subscriptIdx = 0u; subscriptIdx < space1->subscriptIVs.size();
        ++subscriptIdx) {
     auto iv1 = space1->subscriptIVs[subscriptIdx].second;
     if (iv1 == nullptr) {
@@ -336,7 +336,7 @@ void LoopIterationSpaceAnalysis::computeMemoryAccessSpace(ScalarEvolution &SE) {
      * i.e. delinearization must have been factored out all dimensions
      */
     auto isFullyDelinearized = true;
-    for (auto i = 0; i < memAccessSpace->subscripts.size(); ++i) {
+    for (auto i = 0u; i < memAccessSpace->subscripts.size(); ++i) {
       auto subscriptI = memAccessSpace->subscripts[i];
       if (auto addRecSubscript = dyn_cast<SCEVAddRecExpr>(subscriptI)) {
         if (isa<SCEVAddRecExpr>(addRecSubscript->getStart())
@@ -400,7 +400,7 @@ void LoopIterationSpaceAnalysis::
        */
       auto isBound = true;
       auto foundOffsetExpression = false;
-      for (auto operandID = 0; operandID < scevExpression->getNumOperands();
+      for (auto operandID = 0u; operandID < scevExpression->getNumOperands();
            operandID++) {
         auto operand = scevExpression->getOperand(operandID);
 
@@ -486,7 +486,7 @@ void LoopIterationSpaceAnalysis::
        */
       auto atLeastOneTopLevelNonOverlappingIV = false;
       auto rootLoopStructure = this->loops->getLoop();
-      for (auto idx = 0; idx < memAccessSpace->subscriptIVs.size(); ++idx) {
+      for (auto idx = 0u; idx < memAccessSpace->subscriptIVs.size(); ++idx) {
         auto instIVPair = memAccessSpace->subscriptIVs[idx];
         auto inst = instIVPair.first;
         auto iv = instIVPair.second;
@@ -877,7 +877,6 @@ bool LoopIterationSpaceAnalysis::isInnerDimensionSubscriptsBounded(
         // PHI: "); errs() << "\n";
 
         if (attr != nullptr && iv == attr->getInductionVariable()) {
-          auto loopGoverningIV = attr->getInductionVariable();
           if (constantStepSCEV && !constantStepSCEV->getValue()->isNegative()) {
             auto conditionValue = attr->getExitConditionValue();
             auto cmpInst =
