@@ -253,8 +253,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   /*
    * Collect induction variable information
    */
-  auto iv =
-      this->inductionVariables->getLoopGoverningInductionVariable(*topLoop);
+  this->inductionVariables->getLoopGoverningInductionVariable(*topLoop);
 
   return;
 }
