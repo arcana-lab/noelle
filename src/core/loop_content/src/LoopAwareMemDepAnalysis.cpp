@@ -246,7 +246,7 @@ DataFlowResult *computeReachabilityFromInstructions(
      * instructions within a single iteration.
      */
     auto succBB = succ->getParent();
-    if (succ == &*loopHeader->begin()) {
+    if (succBB == loopHeader) {
       return;
     }
 

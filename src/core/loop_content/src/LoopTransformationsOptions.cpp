@@ -30,8 +30,9 @@ LoopTransformationsManager::LoopTransformationsManager(
     bool enableLoopAwareDependenceAnalyses)
   : chunkSize{ chunkSize },
     maxCores{ maxNumberOfCores },
-    _areLoopAwareAnalysesEnabled{ enableLoopAwareDependenceAnalyses },
-    enabledOptimizations{ optimizations } {
+    enabledTransformations{},
+    enabledOptimizations{ optimizations },
+    _areLoopAwareAnalysesEnabled{ enableLoopAwareDependenceAnalyses } {
 
   return;
 }
