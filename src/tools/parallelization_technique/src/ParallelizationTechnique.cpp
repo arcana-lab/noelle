@@ -28,8 +28,8 @@ namespace llvm::noelle {
 
 ParallelizationTechnique::ParallelizationTechnique(Noelle &n)
   : noelle{ n },
-    tasks{},
     envBuilder{ nullptr },
+    tasks{},
     entryPointOfParallelizedLoop{ nullptr },
     exitPointOfParallelizedLoop{ nullptr },
     numTaskInstances{ 0 } {
@@ -129,7 +129,7 @@ void ParallelizationTechnique::initializeLoopEnvironmentUsers(void) {
   /*
    * Create the users of the environment: one user per task.
    */
-  for (auto i = 0; i < this->tasks.size(); ++i) {
+  for (auto i = 0u; i < this->tasks.size(); ++i) {
 
     /*
      * Fetch the current task and the related environment-user.
@@ -235,10 +235,9 @@ BasicBlock *ParallelizationTechnique::
         Value *numberOfThreadsExecuted) {
 
   /*
-   * Fetch the loop headers.
+   * Fetch the loop structure.
    */
   auto loopSummary = LDI->getLoopStructure();
-  auto loopPreHeader = loopSummary->getPreHeader();
 
   /*
    * Fetch the SCCDAG.
@@ -309,11 +308,9 @@ BasicBlock *ParallelizationTechnique::
    * If reduction occurred, then all environment loads to propagate live outs
    * need to be inserted after the reduction loop
    */
-  IRBuilder<> *afterReductionBuilder;
+  auto afterReductionBuilder = new IRBuilder<>(afterReductionB);
   if (afterReductionB->getTerminator()) {
     afterReductionBuilder->SetInsertPoint(afterReductionB->getTerminator());
-  } else {
-    afterReductionBuilder = new IRBuilder<>(afterReductionB);
   }
 
   for (int envID : environment->getEnvIDsOfLiveOutVars()) {
