@@ -88,7 +88,6 @@ bool SCCPartitionScheduler::squeezePartitions(void) {
        * Else, squeeze and schedule the SCC lower
        * TODO:
        */
-      bool isHoistingPartition = true;
 
       // for (auto scc : partitionToSqueeze->sccs) {
       //   for (auto [value, node] : scc->internalNodePairs()) {

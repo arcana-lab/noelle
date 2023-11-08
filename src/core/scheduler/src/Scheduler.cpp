@@ -346,8 +346,6 @@ std::set<Instruction *> Scheduler::getAllInstsToMoveForSpecifiedInst(
    *   2. Add outgoing dependences to the worklist according to
    *      Scheduler::getOutgoingDependencesInParentBasicBlock
    */
-  BasicBlock *Parent = I->getParent();
-
   std::queue<Instruction *> WorkList;
   WorkList.push(I);
   Requirements.insert(I);
@@ -465,12 +463,11 @@ std::set<Value *> Scheduler::getAllOutgoingDependences(
   /*
    * Iterate over the PDG
    */
-  auto Iterated =
-      ThePDG->iterateOverDependencesFrom(I,
-                                         false, /* Control dependences */
-                                         true,  /* Memory dependences */
-                                         true,  /* Register dependences */
-                                         Iterator);
+  ThePDG->iterateOverDependencesFrom(I,
+                                     false, /* Control dependences */
+                                     true,  /* Memory dependences */
+                                     true,  /* Register dependences */
+                                     Iterator);
 
   return OutgoingDependences;
 }
@@ -523,12 +520,11 @@ std::set<Instruction *> Scheduler::getOutgoingDependencesInParentBasicBlock(
   /*
    * Iterate over the PDG
    */
-  auto Iterated =
-      ThePDG->iterateOverDependencesFrom(I,
-                                         false, /* Control dependences */
-                                         true,  /* Memory dependences */
-                                         true,  /* Register dependences */
-                                         Iterator);
+  ThePDG->iterateOverDependencesFrom(I,
+                                     false, /* Control dependences */
+                                     true,  /* Memory dependences */
+                                     true,  /* Register dependences */
+                                     Iterator);
 
   return OutgoingDependences;
 }
@@ -938,12 +934,7 @@ bool LoopScheduler::mergePrologueBasicBlocks(void) {
 }
 
 bool LoopScheduler::shrinkPrologueBasicBlock(BasicBlock *Block) {
-
-  bool Modified = false;
-
-  // DEBUGGING
-  const uint32_t NumInstToMove = 4;
-  uint32_t NumMoved = 0;
+  auto Modified = false;
 
   /*
    * Find all instructions to move from @Block --- FIX --- VERY INEFFIEICNT
@@ -969,15 +960,7 @@ bool LoopScheduler::shrinkPrologueBasicBlock(BasicBlock *Block) {
 
     if (InstructionsToMove.find(&Move) != InstructionsToMove.end()) {
       OrderedInstructionsToMove.push_back(&Move);
-
-      // DEBUGGING
-      NumMoved++;
     }
-
-#if 0
-    // DEBUGGING
-    if (NumMoved == NumInstToMove) break;
-#endif
   }
 
   /*
