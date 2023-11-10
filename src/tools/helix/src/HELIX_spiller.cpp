@@ -59,10 +59,8 @@ void HELIX::spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
     assert(phiSCC != nullptr);
     auto sccInfo = sccManager->getSCCAttrs(phiSCC);
     assert(sccInfo != nullptr);
-    if (isa<ReductionSCC>(sccInfo)) {
-      continue;
-    }
-    if (isa<InductionVariableSCC>(sccInfo)) {
+    if (isa<ReductionSCC>(sccInfo) || isa<InductionVariableSCC>(sccInfo)
+        || isa<PeriodicVariableSCC>(sccInfo)) {
       continue;
     }
     if (loopIVManager->doesContributeToComputeAnInductionVariable(&phi)) {

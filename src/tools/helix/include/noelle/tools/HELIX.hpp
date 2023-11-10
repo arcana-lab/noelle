@@ -151,6 +151,8 @@ protected:
 
   void rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI);
 
+  void rewireLoopForPeriodicVariables(LoopDependenceInfo *LDI);
+
   BasicBlock *getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
       LoopDependenceInfo *LDI,
       uint32_t taskIndex,

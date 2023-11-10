@@ -116,11 +116,11 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
        */
       sccInfo = new LoopIterationSCC(scc, rootLoop);
 
-    } else if (std::get<0>(isPeriodic)) {
-      // errs() << "PERIODIC\n";
+    } else if (std::get<0>(isPeriodic) != nullptr) {
       auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
       Value *initialValue, *period, *step;
-      tie(std::ignore, initialValue, period, step) = isPeriodic;
+      PHINode *loopEntryPHI;
+      tie(loopEntryPHI, initialValue, period, step) = isPeriodic;
 
       /*
        * The SCC is a periodic variable.
@@ -129,6 +129,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
                                         rootLoop,
                                         loopCarriedDependences,
                                         DS,
+                                        loopEntryPHI,
                                         initialValue,
                                         period,
                                         step);
@@ -541,10 +542,10 @@ std::set<InductionVariable *> SCCDAGAttrs::
   return containedIVs;
 }
 
-std::tuple<bool, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
+std::tuple<PHINode *, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
     SCC *scc,
     LoopTree *loopNode) {
-  auto notPeriodic = make_tuple(false, nullptr, nullptr, nullptr);
+  auto notPeriodic = make_tuple(nullptr, nullptr, nullptr, nullptr);
 
   if (this->sccToLoopCarriedDependencies.find(scc)
       == this->sccToLoopCarriedDependencies.end()) {
@@ -641,10 +642,11 @@ std::tuple<bool, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
     if (!found)
       return notPeriodic;
 
-    // errs() << "periodic variable with initial value " << *initialValue <<
-    // "\n"; errs() << "                          and period " << *period <<
-    // "\n"; errs() << "                            and step " << *step << "\n";
-    return make_tuple(true, initialValue, period, step);
+    errs() << "periodic variable with loop entry phi " << *toPHI << "\n";
+    errs() << "                    and initial value " << *initialValue << "\n";
+    errs() << "                           and period " << *period << "\n";
+    errs() << "                             and step " << *step << "\n";
+    return make_tuple(toPHI, initialValue, period, step);
   }
 
   /*

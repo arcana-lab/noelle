@@ -304,7 +304,7 @@ HELIXTask *HELIX::createParallelizableTask(LoopDependenceInfo *LDI,
     errs() << this->prefixString << "  Adjusting loop IVs\n";
   }
   this->rewireLoopForIVsToIterateNthIterations(LDI);
-
+  this->rewireLoopForPeriodicVariables(LDI);
   /*
    * Delete reachability results
    */
