@@ -30,9 +30,12 @@ LoopGoverningInductionVariable::LoopGoverningInductionVariable(
     std::vector<BasicBlock *> &exitBlocks)
   : loop{ l },
     IV{ iv },
-    headerCmp{ nullptr },
     conditionValueDerivation{},
+    conditionValue{ nullptr },
     intermediateValueUsedInCompare{ nullptr },
+    headerCmp{ nullptr },
+    headerBr{ nullptr },
+    exitBlock{ nullptr },
     isWellFormed{ false } {
   assert(l != nullptr);
 
