@@ -30,6 +30,8 @@ class PeriodicVariableSCC : public SingleAccumulatorRecomputableSCC {
 public:
   PeriodicVariableSCC() = delete;
 
+  PHINode *getLoopEntryPHI(void) const;
+
   Value *getInitialValue(void) const;
 
   Value *getPeriod(void) const;
@@ -43,11 +45,13 @@ public:
       LoopStructure *loop,
       const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
       DominatorSummary &dom,
+      PHINode *loopEntryPHI,
       Value *initialValue,
       Value *period,
       Value *step);
 
 protected:
+  PHINode *loopEntryPHI;
   Value *initialValue;
   Value *period;
   Value *step;

@@ -28,6 +28,7 @@ PeriodicVariableSCC::PeriodicVariableSCC(
     LoopStructure *loop,
     const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
     DominatorSummary &dom,
+    PHINode *loopEntryPHI,
     Value *initVal,
     Value *per,
     Value *st)
@@ -36,11 +37,16 @@ PeriodicVariableSCC::PeriodicVariableSCC(
                                       loop,
                                       loopCarriedDependences,
                                       dom },
+    loopEntryPHI{ loopEntryPHI },
     initialValue{ initVal },
     period{ per },
     step{ st } {
 
   return;
+}
+
+PHINode *PeriodicVariableSCC::getLoopEntryPHI(void) const {
+  return this->loopEntryPHI;
 }
 
 Value *PeriodicVariableSCC::getInitialValue(void) const {

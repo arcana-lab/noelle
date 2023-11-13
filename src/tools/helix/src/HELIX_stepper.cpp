@@ -485,4 +485,93 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
   }
 }
 
+void HELIX::rewireLoopForPeriodicVariables(LoopDependenceInfo *LDI) {
+
+  /*
+   * Fetch the loop environment.
+   */
+  auto loopEnvironment = LDI->getEnvironment();
+
+  /*
+   * Fetch loop information.
+   */
+  auto task = static_cast<HELIXTask *>(this->tasks[0]);
+  auto loopStructure = LDI->getLoopStructure();
+  auto loopHeader = loopStructure->getHeader();
+  auto loopPreHeader = loopStructure->getPreHeader();
+  auto preheaderClone = task->getCloneOfOriginalBasicBlock(loopPreHeader);
+  auto headerClone = task->getCloneOfOriginalBasicBlock(loopHeader);
+
+  /*
+   * Iterate through periodic variables.
+   */
+  auto sccManager = LDI->getSCCManager();
+  for (auto sccInfo :
+       sccManager->getSCCsOfKind(GenericSCC::SCCKind::PERIODIC_VARIABLE)) {
+    auto periodicInfo = cast<PeriodicVariableSCC>(sccInfo);
+    auto loopEntryPHI = periodicInfo->getLoopEntryPHI();
+
+    /*
+     * If the instruction was spilled, it will not have a unique cloned
+     * instruction equivalent
+     */
+    if (!task->isAnOriginalInstruction(loopEntryPHI)) {
+      continue;
+    }
+
+    /*
+     * Determine start value of the periodic variable for the task
+     *   core_start = original_start + (original_step_size * core_id % period)
+     */
+    auto initialValue = periodicInfo->getInitialValue();
+    auto stepSize = periodicInfo->getStepValue();
+    auto period = periodicInfo->getPeriod();
+    auto taskPHI = cast<PHINode>(this->fetchCloneInTask(task, loopEntryPHI));
+
+    IRBuilder<> preheaderBuilder(preheaderClone->getTerminator());
+
+    auto stepXiteration = preheaderBuilder.CreateMul(
+        stepSize,
+        preheaderBuilder.CreateZExtOrTrunc(task->coreArg, stepSize->getType()),
+        "stepXiteration");
+    auto stepsModPeriod = preheaderBuilder.CreateSRem(
+        stepXiteration,
+        preheaderBuilder.CreateZExtOrTrunc(period, stepXiteration->getType()),
+        "stepsModPeriod");
+    auto offsetStartValue =
+        preheaderBuilder.CreateAdd(initialValue, stepsModPeriod);
+
+    taskPHI->setIncomingValueForBlock(preheaderClone, offsetStartValue);
+
+    /*
+     * Replace update of the periodic variable with the following update:
+     *  new_val = (prev_val + step_size * num_cores) % period
+     */
+    assert(taskPHI->getNumIncomingValues() == 2
+           && "periodic variable loopEntryPHI more than 2 values!\n");
+    BasicBlock *computationBlock = nullptr;
+    if (taskPHI->getIncomingBlock(0) == preheaderClone)
+      computationBlock = taskPHI->getIncomingBlock(1);
+    else
+      computationBlock = taskPHI->getIncomingBlock(0);
+
+    IRBuilder<> computationBuilder(computationBlock->getTerminator());
+
+    auto stepXcores = computationBuilder.CreateMul(
+        stepSize,
+        computationBuilder.CreateZExtOrTrunc(task->numCoresArg,
+                                             stepSize->getType()),
+        "stepXnumCores");
+    auto offsetIncomingValue =
+        computationBuilder.CreateAdd(taskPHI, stepXcores);
+    auto offsetIncomingValueModPeriod = computationBuilder.CreateSRem(
+        offsetIncomingValue,
+        computationBuilder.CreateZExtOrTrunc(period,
+                                             offsetIncomingValue->getType()));
+
+    taskPHI->setIncomingValueForBlock(computationBlock,
+                                      offsetIncomingValueModPeriod);
+  }
+}
+
 } // namespace llvm::noelle
