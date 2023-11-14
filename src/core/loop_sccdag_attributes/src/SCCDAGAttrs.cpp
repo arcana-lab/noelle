@@ -117,7 +117,6 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
       sccInfo = new LoopIterationSCC(scc, rootLoop);
 
     } else if (std::get<0>(isPeriodic)) {
-      // errs() << "PERIODIC\n";
       auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
       Value *initialValue, *period, *step;
       tie(std::ignore, initialValue, period, step) = isPeriodic;

@@ -10,7 +10,7 @@ set(Srcs
   HELIX_scheduler.cpp
   HELIX_inliner.cpp
   HELIX_dependences.cpp
-  HELIX_inductionVariableStepper.cpp
+  HELIX_stepper.cpp
   HELIX_sequentialSegments.cpp
   HELIX_sequentialSegment.cpp
   HELIX_linker.cpp
