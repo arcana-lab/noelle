@@ -48,9 +48,10 @@ function printTestsThatDoNotFailAnymore {
 totalTests=`grep Queue condor/regression.con_* | wc -l | awk '{print $1}'` ;
 failedTests=`wc -l regression/failing_tests | awk '{print $1}'` ;
 failedTestsPerc=`echo "scale=6;($failedTests / $totalTests) * 100" | bc` ;
+uniqueTestsThatFail=`./scripts/printUniqueTests.sh regression/failing_tests | grep [azA-Z] | wc -l | awk '{print $1}'` ;
 echo "################################### REGRESSION TESTS:" ;
 echo "  There are $totalTests regression tests" ;
-echo "    Only $failedTests ($failedTestsPerc%) are known to fail" ;
+echo "    Only $failedTests ($failedTestsPerc%) are known to fail (between $uniqueTestsThatFail programs with the exact same source code)" ;
 echo "  Checking their current results" ;
 
 # Check the tests that are still running
@@ -61,7 +62,8 @@ stillRunningRegressionTests="0";
 if test -s $stillRunning ; then
   stillRunningJobs=`wc -l $stillRunning | awk '{print $1}'` ;
   stillRunningJobsPerc=`echo "scale=6;($stillRunningJobs / $totalTests) * 100" | bc` ;
-  echo "    There are $stillRunningJobs ($stillRunningJobsPerc%) jobs that are still running" ;
+  stillRunningUniqueBenchs=`./scripts/printRunningTests.sh | sed 's/regression_[0-9]*//' | sort -u | wc -l | awk '{print $1}'` ;
+  echo "    There are $stillRunningJobs ($stillRunningJobsPerc%) jobs that are still running (between $stillRunningUniqueBenchs programs with the exact same source code)" ;
   stillRunningRegressionTests=`echo "$stillRunningJobs < 20 | bc"` ;
   if test "$stillRunningRegressionTests" == "1" ; then
     echo "    The running jobs are the following ones:" ;
