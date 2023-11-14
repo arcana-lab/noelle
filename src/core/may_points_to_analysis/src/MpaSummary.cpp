@@ -392,6 +392,7 @@ void MpaSummary::initPtInfo(void) {
           case UNKNOWN:
             usedAsFuncArg.insert(ptrId);
             addCopyEdge(ptrId, UnknownMemobjId);
+            break;
           default:
             break;
         }
