@@ -940,6 +940,7 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
    * Parse the file
    */
   auto filterLoops = false;
+  constexpr uint32_t maxValue{ std::numeric_limits<uint32_t>::max() };
   while (indexString.peek() != EOF) {
     filterLoops = true;
 
@@ -958,11 +959,17 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
      * Unroll factor
      */
     auto unrollFactor = this->fetchTheNextValue(indexString);
+    if (unrollFactor == maxValue) {
+      abort();
+    }
 
     /*
      * Peel factor
      */
     auto peelFactor = this->fetchTheNextValue(indexString);
+    if (peelFactor == maxValue) {
+      abort();
+    }
 
     /*
      * Techniques to disable
