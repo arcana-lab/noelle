@@ -509,13 +509,14 @@ void HELIX::rewireLoopForPeriodicVariables(LoopDependenceInfo *LDI) {
   for (auto sccInfo :
        sccManager->getSCCsOfKind(GenericSCC::SCCKind::PERIODIC_VARIABLE)) {
     auto periodicInfo = cast<PeriodicVariableSCC>(sccInfo);
-    auto loopEntryPHI = periodicInfo->getLoopEntryPHI();
+    auto accumulatorPHI =
+        periodicInfo->getPhiThatAccumulatesValuesBetweenLoopIterations();
 
     /*
      * If the instruction was spilled, it will not have a unique cloned
      * instruction equivalent
      */
-    if (!task->isAnOriginalInstruction(loopEntryPHI)) {
+    if (!task->isAnOriginalInstruction(accumulatorPHI)) {
       continue;
     }
 
@@ -526,7 +527,7 @@ void HELIX::rewireLoopForPeriodicVariables(LoopDependenceInfo *LDI) {
     auto initialValue = periodicInfo->getInitialValue();
     auto stepSize = periodicInfo->getStepValue();
     auto period = periodicInfo->getPeriod();
-    auto taskPHI = cast<PHINode>(this->fetchCloneInTask(task, loopEntryPHI));
+    auto taskPHI = cast<PHINode>(this->fetchCloneInTask(task, accumulatorPHI));
 
     IRBuilder<> preheaderBuilder(preheaderClone->getTerminator());
 
@@ -548,7 +549,7 @@ void HELIX::rewireLoopForPeriodicVariables(LoopDependenceInfo *LDI) {
      *  new_val = (prev_val + step_size * num_cores) % period
      */
     assert(taskPHI->getNumIncomingValues() == 2
-           && "periodic variable loopEntryPHI more than 2 values!\n");
+           && "periodic variable accumulatorPHI more than 2 values!\n");
     BasicBlock *computationBlock = nullptr;
     if (taskPHI->getIncomingBlock(0) == preheaderClone)
       computationBlock = taskPHI->getIncomingBlock(1);
