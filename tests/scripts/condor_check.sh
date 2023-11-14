@@ -45,8 +45,10 @@ function printTestsThatDoNotFailAnymore {
   return 0;
 }
 
+totalTests=`grep Queue condor/regression.con_* | wc -l | awk '{print $1}'` ;
 echo "################################### REGRESSION TESTS:" ;
-echo "  Checking the regression test results" ;
+echo "  There are $totalTests regression tests" ;
+echo "  Checking their results" ;
 
 # Check the tests that are still running
 regressionFinished="0" ;
@@ -55,7 +57,8 @@ condor_q `whoami` -l | grep ^Arguments | grep "`pwd`" | grep regression > $still
 stillRunningRegressionTests="0";
 if test -s $stillRunning ; then
   stillRunningJobs=`wc -l $stillRunning | awk '{print $1}'` ;
-  echo "    There are $stillRunningJobs jobs that are still running" ;
+  stillRunningJobsPerc=`echo "scale=6;($stillRunningJobs / $totalTests) * 100" | bc` ;
+  echo "    There are $stillRunningJobs ($stillRunningJobsPerc\%) jobs that are still running" ;
   stillRunningRegressionTests=`echo "$stillRunningJobs < 20 | bc"` ;
   if test "$stillRunningRegressionTests" == "1" ; then
     echo "    The running jobs are the following ones:" ;
