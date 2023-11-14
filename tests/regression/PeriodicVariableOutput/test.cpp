@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <iostream>
 
 int main(int argc, char *argv[]) {
   auto ntimes = atoll(argv[1]);
@@ -8,7 +7,7 @@ int main(int argc, char *argv[]) {
   int i = 0;
 
   while (i < ntimes) {
-    std::cout << "i: " << i << " flag: " << flag << std::endl;
+    printf("i: %d flag: %d\n", i, flag);
     flag = !flag;
     i++;
   }
