@@ -32,6 +32,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../alloc_aa/include 
   ../../dg/include 
   ../../pdg/include 
+  ../../sccdag/include
   ../../hotprofiler/include 
   ../../loop_structure/include 
   ../../loop_environment/include 
@@ -40,6 +41,10 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_invariants/include
   ../../loop_induction_variables/include
   ../../loop_content/include
+  ../../functions_manager/include
+  ../../pdg_analysis/include
+  ../../pdg_printer/include
+  ../../alias_analysis_engine/include
   ../include 
   ${CMAKE_INSTALL_PREFIX}/include
   )

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020 Simone Campanoni
+ * Copyright 2019 - 2023 Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,15 +19,13 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/LoopStructure.hpp"
-#include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopNestingGraph.hpp"
 
 namespace llvm::noelle {
 
-LoopNestingGraph::LoopNestingGraph(Module &M,
+LoopNestingGraph::LoopNestingGraph(FunctionsManager &fncsM,
                                    std::vector<LoopStructure *> const &loops)
-  : m{ M } {
+  : fm{ fncsM } {
 
   for (auto l : loops) {
     auto node = new LoopNestingGraphLoopNode(l);
@@ -49,14 +47,48 @@ std::unordered_set<LoopNestingGraphLoopNode *> LoopNestingGraph::getLoopNodes(
 
 std::unordered_set<LoopNestingGraphEdge *> LoopNestingGraph::getEdges(
     void) const {
-  return this->edges;
+  std::unordered_set<LoopNestingGraphEdge *> e;
+  for (auto p : this->edges) {
+    for (auto edge : p.second) {
+      e.insert(edge);
+    }
+  }
+
+  return e;
 }
 
 LoopNestingGraphLoopNode *LoopNestingGraph::getEntryNode(void) const {
-  // FIXME: currently return the first loop
-  if (this->loops.empty())
-    return nullptr;
-  return loops.begin()->second;
+
+  /*
+   * Fetch the entry function.
+   */
+  auto mainF = this->fm.getEntryFunction();
+  assert(mainF != nullptr);
+
+  /*
+   * Fetch a loop of the entry function that has no incoming edges.
+   */
+  for (auto p : this->loops) {
+    auto l = p.first;
+    auto n = p.second;
+
+    /*
+     * Check if the current loop is within the entry function.
+     */
+    if (l->getFunction() != mainF) {
+      continue;
+    }
+
+    /*
+     * Check if the current loop has no incoming edges.
+     */
+    auto ins = n->getIncomingEdges();
+    if (ins.size() == 0) {
+      return n;
+    }
+  }
+
+  return nullptr;
 }
 
 LoopNestingGraphLoopNode *LoopNestingGraph::getLoopNode(
@@ -122,7 +154,7 @@ LoopNestingGraphLoopLoopEdge *LoopNestingGraph::fetchOrCreateEdge(
      * Create a new edge.
      */
     auto newEdge = new LoopNestingGraphLoopLoopEdge(fromNode, toNode, isMust);
-    this->edges.insert(newEdge);
+    this->edges[fromNode].insert(newEdge);
 
     /*
      * Add the new edge.
