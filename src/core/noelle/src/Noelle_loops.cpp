@@ -1227,7 +1227,9 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
    */
   auto filterLoops = this->checkToGetLoopFilteringInfo();
 
-  //  add loops into the loop nesting graph
+  /*
+   * Add loops into the loop nesting graph
+   */
   std::vector<LoopStructure *> allLoops;
   for (auto function : functions) {
     auto allLoopsOfFunction = this->getLoopStructures(function, filterLoops);
@@ -1235,8 +1237,7 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
                     allLoopsOfFunction->begin(),
                     allLoopsOfFunction->end());
   }
-  // FIXME: is the module necessary?
-  auto loopNestingGraph = new LoopNestingGraph(*this->program, allLoops);
+  auto loopNestingGraph = new LoopNestingGraph(*fm, allLoops);
 
   /*
    * Fetch the call graph.

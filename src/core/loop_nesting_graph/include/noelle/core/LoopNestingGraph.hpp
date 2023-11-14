@@ -23,6 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopStructure.hpp"
+#include "noelle/core/FunctionsManager.hpp"
 #include "noelle/core/LoopNestingGraphNode.hpp"
 #include "noelle/core/LoopNestingGraphEdge.hpp"
 
@@ -32,7 +33,8 @@ namespace llvm::noelle {
  */
 class LoopNestingGraph {
 public:
-  LoopNestingGraph(Module &M, std::vector<LoopStructure *> const &loops);
+  LoopNestingGraph(FunctionsManager &fncsM,
+                   std::vector<LoopStructure *> const &loops);
 
   std::unordered_set<LoopNestingGraphLoopNode *> getLoopNodes(void) const;
 
@@ -48,11 +50,11 @@ public:
                   bool isMust);
 
 private:
-  Module &m;
+  FunctionsManager &fm;
   std::unordered_map<LoopStructure *, LoopNestingGraphLoopNode *> loops;
   std::unordered_map<Instruction *, LoopNestingGraphInstructionNode *>
       instructionNodes;
-  std::unordered_set<LoopNestingGraphEdge *> edges;
+  std::map<LoopNestingGraphLoopNode *, std::set<LoopNestingGraphEdge *>> edges;
 
   LoopNestingGraphLoopLoopEdge *fetchOrCreateEdge(
       LoopNestingGraphLoopNode *fromNode,
