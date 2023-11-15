@@ -51,7 +51,7 @@ public:
 
   iterator_range<std::set<uint32_t>::iterator> getEnvIDsOfLiveOutVars(void);
 
-  Instruction *getEnvPtr(uint32_t id);
+  Instruction *getEnvPtr(uint32_t id) const;
 
   ~LoopEnvironmentUser();
 
