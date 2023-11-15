@@ -62,7 +62,7 @@ Instruction *LoopEnvironmentUser::createEnvironmentVariablePointer(
    */
   assert(this->envIDToIndex.find(envID) != this->envIDToIndex.end()
          && "The environment variable is not included in the user\n");
-  auto envIndex = this->envIDToIndex[envID];
+  auto envIndex = this->envIDToIndex.at(envID);
 
   /*
    * Create the zero integer constant.
@@ -115,7 +115,7 @@ void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> &builder,
    */
   assert(this->envIDToIndex.find(envID) != this->envIDToIndex.end()
          && "The environment variable is not included in the user\n");
-  auto envIndex = this->envIDToIndex[envID];
+  auto envIndex = this->envIDToIndex.at(envID);
 
   /*
    * Compute how many values can fit in a cache line.
@@ -153,7 +153,6 @@ void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> &builder,
 
 void LoopEnvironmentUser::addLiveIn(uint32_t id) {
   if (this->envIDToIndex.find(id) != this->envIDToIndex.end()) {
-    auto ind = this->envIDToIndex[id];
     liveInIDs.insert(id);
   }
 
@@ -162,22 +161,22 @@ void LoopEnvironmentUser::addLiveIn(uint32_t id) {
 
 void LoopEnvironmentUser::addLiveOut(uint32_t id) {
   if (this->envIDToIndex.find(id) != this->envIDToIndex.end()) {
-    auto ind = this->envIDToIndex[id];
     liveOutIDs.insert(id);
   }
 
   return;
 }
 
-Instruction *LoopEnvironmentUser::getEnvPtr(uint32_t id) {
+Instruction *LoopEnvironmentUser::getEnvPtr(uint32_t id) const {
+
   /*
    * Mapping from envID to index
    */
   assert(this->envIDToIndex.find(id) != this->envIDToIndex.end()
          && "The environment variable is not included in the user\n");
-  auto ind = this->envIDToIndex[id];
+  auto ind = this->envIDToIndex.at(id);
 
-  auto ptr = this->envIndexToPtr[ind];
+  auto ptr = this->envIndexToPtr.at(ind);
   assert(ptr != nullptr);
 
   return ptr;
