@@ -791,7 +791,7 @@ bool LoopIterationSpaceAnalysis::isInnerDimensionSubscriptsBounded(
    * bounded-ness We assume program correctness for the outer-most dimension, as
    * the base program containing memory corruption is out of our hands
    */
-  for (auto i = 1; i < space->sizes.size(); ++i) {
+  for (auto i = 1u; i < space->sizes.size(); ++i) {
 
     auto sizeSCEV = space->sizes[i - 1];
     auto instIVPair = space->subscriptIVs[i];
