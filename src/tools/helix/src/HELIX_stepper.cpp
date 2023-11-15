@@ -532,15 +532,17 @@ void HELIX::rewireLoopForPeriodicVariables(LoopDependenceInfo *LDI) {
     IRBuilder<> preheaderBuilder(preheaderClone->getTerminator());
 
     auto stepXiteration = preheaderBuilder.CreateMul(
-        stepSize,
-        preheaderBuilder.CreateZExtOrTrunc(task->coreArg, stepSize->getType()),
+        preheaderBuilder.CreateZExtOrTrunc(stepSize, task->coreArg->getType()),
+        task->coreArg,
         "stepXiteration");
     auto stepsModPeriod = preheaderBuilder.CreateSRem(
         stepXiteration,
         preheaderBuilder.CreateZExtOrTrunc(period, stepXiteration->getType()),
         "stepsModPeriod");
-    auto offsetStartValue =
-        preheaderBuilder.CreateAdd(initialValue, stepsModPeriod);
+    auto offsetStartValue = preheaderBuilder.CreateAdd(
+        initialValue,
+        preheaderBuilder.CreateZExtOrTrunc(stepsModPeriod,
+                                           initialValue->getType()));
 
     taskPHI->setIncomingValueForBlock(preheaderClone, offsetStartValue);
 
