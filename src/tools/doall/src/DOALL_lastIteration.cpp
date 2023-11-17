@@ -201,7 +201,10 @@ BasicBlock *DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
      * Step 6: update the condition to check if the last loop iteration (last of
      * the sequential original loop) was executed by the current task.
      */
+    bool ivInLeftOperand =
+        (cmpInst->getOperand(0) == valueUsedToCompareAgainstExitConditionValue);
     ivUtility.updateConditionToCheckIfTheLastLoopIterationWasExecuted(
+        ivInLeftOperand,
         cast<CmpInst>(clonedCmpInst));
 
     return;
