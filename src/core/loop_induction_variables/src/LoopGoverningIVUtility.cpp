@@ -377,6 +377,7 @@ Value *LoopGoverningIVUtility::generateCodeToDetermineLastIterationValue(
 
 void LoopGoverningIVUtility::
     updateConditionToCheckIfTheLastLoopIterationWasExecuted(
+        bool ivInLeftOperand,
         CmpInst *condition) {
   assert(condition != nullptr);
 
@@ -399,18 +400,16 @@ void LoopGoverningIVUtility::
     case CmpInst::Predicate::ICMP_UGE:
     case CmpInst::Predicate::ICMP_SLE:
     case CmpInst::Predicate::ICMP_ULE:
-      newPredicate = this->doesOriginalCmpInstHaveIVAsLeftOperand
-                         ? condition->getInversePredicate()
-                         : this->strictPredicate;
+      newPredicate = ivInLeftOperand ? condition->getInversePredicate()
+                                     : this->strictPredicate;
       break;
 
     case CmpInst::Predicate::ICMP_SGT:
     case CmpInst::Predicate::ICMP_UGT:
     case CmpInst::Predicate::ICMP_SLT:
     case CmpInst::Predicate::ICMP_ULT:
-      newPredicate = this->doesOriginalCmpInstHaveIVAsLeftOperand
-                         ? this->nonStrictPredicate
-                         : condition->getInversePredicate();
+      newPredicate = ivInLeftOperand ? this->nonStrictPredicate
+                                     : condition->getInversePredicate();
       break;
 
     case CmpInst::Predicate::ICMP_EQ:
