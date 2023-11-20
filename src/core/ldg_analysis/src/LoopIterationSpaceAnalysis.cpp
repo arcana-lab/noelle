@@ -53,14 +53,16 @@ bool LoopIterationSpaceAnalysis::
     areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(
         Instruction *I,
         Instruction *J) const {
-  if (!I || !J
-      || accessSpaceByInstruction.find(I) == accessSpaceByInstruction.end()
-      || accessSpaceByInstruction.find(J) == accessSpaceByInstruction.end()) {
+  if (false || (!I) || (!J)
+      || (this->accessSpaceByInstruction.find(I)
+          == this->accessSpaceByInstruction.end())
+      || (this->accessSpaceByInstruction.find(J)
+          == this->accessSpaceByInstruction.end())) {
     return false;
   }
 
-  auto accessSpaceI = accessSpaceByInstruction.at(I);
-  auto accessSpaceJ = accessSpaceByInstruction.at(J);
+  auto accessSpaceI = this->accessSpaceByInstruction.at(I);
+  auto accessSpaceJ = this->accessSpaceByInstruction.at(J);
 
   // accessSpaceI->memoryAccessor->print(errs() << "Space I accessor: "); errs()
   // << "\n"; accessSpaceJ->memoryAccessor->print(errs() << "Space J accessor:
@@ -72,24 +74,45 @@ bool LoopIterationSpaceAnalysis::
   //   "); errs() << "\n";
   // }
 
-  if (nonOverlappingAccessesBetweenIterations.find(accessSpaceI)
-      == nonOverlappingAccessesBetweenIterations.end())
+  if (this->nonOverlappingAccessesBetweenIterations.find(accessSpaceI)
+      == this->nonOverlappingAccessesBetweenIterations.end())
     return false;
   // errs() << "Space I is fine\n";
-  if (nonOverlappingAccessesBetweenIterations.find(accessSpaceJ)
-      == nonOverlappingAccessesBetweenIterations.end())
+  if (this->nonOverlappingAccessesBetweenIterations.find(accessSpaceJ)
+      == this->nonOverlappingAccessesBetweenIterations.end())
     return false;
   // errs() << "Space J is fine\n";
 
-  return (accessSpaceI == accessSpaceJ)
-         || isMemoryAccessSpaceEquivalentForTopLoopIVSubscript(accessSpaceI,
+  /*
+   * @I accesses different memory location at different iterations.
+   *
+   * @J accesses different memory location at different iterations.
+   *
+   * Now we need to make sure that @I and @J do not overlap.
+   * Case 1: @I and @J have the same exact access space.
+   */
+  if (accessSpaceI == accessSpaceJ) {
+    return true;
+  }
+
+  /*
+   * Case 2: @I and @J are perfectly aligned.
+   * In other words, the memory access of @I will never overlap to any memory
+   * accessed by @J at a different iteration (and vice versa).
+   */
+  auto perfectlyAligned =
+      this->isMemoryAccessSpaceEquivalentForTopLoopIVSubscript(accessSpaceI,
                                                                accessSpaceJ);
+
+  return perfectlyAligned;
 }
 
 bool LoopIterationSpaceAnalysis::
     isMemoryAccessSpaceEquivalentForTopLoopIVSubscript(
         MemoryAccessSpace *space1,
         MemoryAccessSpace *space2) const {
+  assert(space1 != nullptr);
+  assert(space2 != nullptr);
 
   if (space1->subscriptIVs.size() == 0)
     return false;
@@ -204,20 +227,36 @@ void LoopIterationSpaceAnalysis::indexIVInstructionSCEVs(ScalarEvolution &SE) {
 }
 
 void LoopIterationSpaceAnalysis::computeMemoryAccessSpace(ScalarEvolution &SE) {
-
   std::unordered_set<Instruction *> memoryAccessors{};
-  for (auto B : this->loops->getLoop()->getBasicBlocks()) {
+
+  /*
+   * Fetch the target loop.
+   */
+  assert(this->loops != nullptr);
+  auto targetLoop = this->loops->getLoop();
+
+  for (auto B : targetLoop->getBasicBlocks()) {
     for (auto &I : *B) {
-      Value *memoryAccessorValue;
+
+      /*
+       * Fetch the memory address of the location that is referenced by the
+       * current instruction.
+       */
+      Value *memoryAccessorValue = nullptr;
       if (auto store = dyn_cast<StoreInst>(&I)) {
         memoryAccessorValue = store->getPointerOperand();
       } else if (auto load = dyn_cast<LoadInst>(&I)) {
         memoryAccessorValue = load->getPointerOperand();
       } else if (auto gep = dyn_cast<GetElementPtrInst>(&I)) {
         memoryAccessorValue = gep;
-      } else
+      } else {
         continue;
+      }
+      assert(memoryAccessorValue != nullptr);
 
+      /*
+       * Check if the memory address is computed within the current function.
+       */
       if (auto memoryAccessor = dyn_cast<Instruction>(memoryAccessorValue)) {
         memoryAccessors.insert(memoryAccessor);
       }
@@ -232,11 +271,11 @@ void LoopIterationSpaceAnalysis::computeMemoryAccessSpace(ScalarEvolution &SE) {
     /*
      * Construct memory space object to track this accessor
      */
-    auto element = accessSpaces.insert(std::move(
+    auto element = this->accessSpaces.insert(std::move(
         std::make_unique<LoopIterationSpaceAnalysis::MemoryAccessSpace>(
             memoryAccessor)));
     auto memAccessSpace = (*element.first).get();
-    accessSpaceByInstruction.insert(
+    this->accessSpaceByInstruction.insert(
         std::make_pair(memoryAccessor, memAccessSpace));
     memAccessSpace->memoryAccessorSCEV =
         SE.getSCEV(memAccessSpace->memoryAccessor);
@@ -248,7 +287,7 @@ void LoopIterationSpaceAnalysis::computeMemoryAccessSpace(ScalarEvolution &SE) {
       if (isa<StoreInst>(user) || isa<LoadInst>(user)
           || isa<GetElementPtrInst>(user)) {
         auto accessor = cast<Instruction>(user);
-        accessSpaceByInstruction.insert(
+        this->accessSpaceByInstruction.insert(
             std::make_pair(accessor, memAccessSpace));
       }
     }
@@ -257,8 +296,8 @@ void LoopIterationSpaceAnalysis::computeMemoryAccessSpace(ScalarEvolution &SE) {
      * Determine the accessed type
      */
     Type *accessedType = nullptr;
-    for (auto accesses : accessSpaceByInstruction) {
-      Instruction *accessor = accesses.first;
+    for (auto accesses : this->accessSpaceByInstruction) {
+      auto accessor = accesses.first;
       if (auto store = dyn_cast<StoreInst>(accessor)) {
         accessedType = store->getValueOperand()->getType();
       } else if (auto load = dyn_cast<LoadInst>(accessor)) {
@@ -540,7 +579,7 @@ void LoopIterationSpaceAnalysis::
     /*
      * The space is not overlapping between iterations
      */
-    nonOverlappingAccessesBetweenIterations.insert(memAccessSpace.get());
+    this->nonOverlappingAccessesBetweenIterations.insert(memAccessSpace.get());
   }
 
   // errs() << "Non overlapping size: " <<
