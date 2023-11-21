@@ -126,6 +126,7 @@ public:
                                                    Value *stepValue);
 
   void updateConditionToCheckIfTheLastLoopIterationWasExecuted(
+      bool ivInLeftOperand,
       CmpInst *condition);
 
 private:

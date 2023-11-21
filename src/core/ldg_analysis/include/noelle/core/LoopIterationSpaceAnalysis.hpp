@@ -39,30 +39,13 @@ public:
 
   LoopIterationSpaceAnalysis() = delete;
 
-  ~LoopIterationSpaceAnalysis();
-
   bool areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(
       Instruction *from,
       Instruction *to) const;
 
+  ~LoopIterationSpaceAnalysis();
+
 private:
-  /*
-   * Long-lived references
-   */
-  LoopTree *loops;
-  InductionVariableManager &ivManager;
-
-  /*
-   * Associate SCEVs with all IV instructions matching that evolution
-   */
-  std::unordered_map<const SCEV *, std::unordered_set<Instruction *>>
-      ivInstructionsBySCEV;
-  std::unordered_map<const SCEV *, std::unordered_set<Instruction *>>
-      derivedInstructionsFromIVsBySCEV;
-  std::unordered_map<Instruction *, InductionVariable *> ivsByInstruction;
-
-  void indexIVInstructionSCEVs(ScalarEvolution &SE);
-
   class MemoryAccessSpace {
   public:
     MemoryAccessSpace(Instruction *memoryAccessor);
@@ -92,6 +75,21 @@ private:
   };
 
   /*
+   * Long-lived references
+   */
+  LoopTree *loops;
+  InductionVariableManager &ivManager;
+
+  /*
+   * Associate SCEVs with all IV instructions matching that evolution
+   */
+  std::unordered_map<const SCEV *, std::unordered_set<Instruction *>>
+      ivInstructionsBySCEV;
+  std::unordered_map<const SCEV *, std::unordered_set<Instruction *>>
+      derivedInstructionsFromIVsBySCEV;
+  std::unordered_map<Instruction *, InductionVariable *> ivsByInstruction;
+
+  /*
    * For memory accessing instructions with pointer operands that are known
    * linear SCEVs, track the access space for the instruction
    */
@@ -99,14 +97,20 @@ private:
   std::unordered_map<Instruction *, MemoryAccessSpace *>
       accessSpaceByInstruction;
 
-  void computeMemoryAccessSpace(ScalarEvolution &SE);
-  void identifyIVForMemoryAccessSubscripts(ScalarEvolution &SE);
-
   /*
    * Cache memory access spaces with certain properties
    */
   std::unordered_set<MemoryAccessSpace *>
       nonOverlappingAccessesBetweenIterations;
+
+  /*
+   * Methods
+   */
+  void indexIVInstructionSCEVs(ScalarEvolution &SE);
+
+  void computeMemoryAccessSpace(ScalarEvolution &SE);
+
+  void identifyIVForMemoryAccessSubscripts(ScalarEvolution &SE);
 
   void identifyNonOverlappingAccessesBetweenIterationsAcrossOneLoopInvocation(
       ScalarEvolution &SE);
