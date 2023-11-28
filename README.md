@@ -37,7 +37,7 @@ The only documentation available for NOELLE is:
 - [the wiki](https://github.com/arcana-lab/noelle/wiki) of the project
 
 ## Version
-The latest stable version is 9.10.1 (tag = `v9.11.0`).
+The latest stable version is 9.11.0 (tag = `v9.11.0`).
 
 ### Version Numbering Scheme
 The version number is in the form of \[v _Major.Minor.Revision_ \]
