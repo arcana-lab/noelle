@@ -690,21 +690,4 @@ bool AllocAA::canPointToTheSameObject_ArgumentAttributes(Value *p1, Value *p2) {
 char AllocAA::ID = 0;
 static RegisterPass<AllocAA> X("AllocAA", "AllocAA");
 
-// Next there is code to register your pass to "clang"
-static AllocAA *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-                                        [](const PassManagerBuilder &,
-                                           legacy::PassManagerBase &PM) {
-                                          if (!_PassMaker) {
-                                            PM.add(_PassMaker = new AllocAA());
-                                          }
-                                        }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new AllocAA());
-      }
-    }); // ** for -O0
-
 } // namespace llvm::noelle

@@ -45,22 +45,4 @@ Outliner *OutlinerPass::getOutliner(void) const {
 char OutlinerPass::ID = 0;
 static RegisterPass<OutlinerPass> X("outliner", "Outline code");
 
-// Next there is code to register your pass to "clang"
-static OutlinerPass *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-                                        [](const PassManagerBuilder &,
-                                           legacy::PassManagerBase &PM) {
-                                          if (!_PassMaker) {
-                                            PM.add(_PassMaker =
-                                                       new OutlinerPass());
-                                          }
-                                        }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new OutlinerPass());
-      }
-    }); // ** for -O0
-
 } // namespace llvm::noelle

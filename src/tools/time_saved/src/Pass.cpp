@@ -141,21 +141,3 @@ char llvm::noelle::TimeSaved::ID = 0;
 static RegisterPass<TimeSaved> X(
     "TimeSaved",
     "Print estimated time saved by parallelization");
-
-// Next there is code to register your pass to "clang"
-static TimeSaved *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-                                        [](const PassManagerBuilder &,
-                                           legacy::PassManagerBase &PM) {
-                                          if (!_PassMaker) {
-                                            PM.add(_PassMaker =
-                                                       new TimeSaved());
-                                          }
-                                        }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new TimeSaved());
-      }
-    }); // ** for -O0

@@ -74,21 +74,3 @@ char LoopStats::ID = 0;
 static RegisterPass<LoopStats> X(
     "LoopStats",
     "Generate statistics output for loops using LDI");
-
-// Next there is code to register your pass to "clang"
-static LoopStats *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-                                        [](const PassManagerBuilder &,
-                                           legacy::PassManagerBase &PM) {
-                                          if (!_PassMaker) {
-                                            PM.add(_PassMaker =
-                                                       new LoopStats());
-                                          }
-                                        }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new LoopStats());
-      }
-    }); // ** for -O0

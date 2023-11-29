@@ -117,20 +117,3 @@ char llvm::noelle::AutotunerSearchSpace::ID = 0;
 static RegisterPass<AutotunerSearchSpace> X(
     "autotunersearchspace",
     "Generate file with number of loops that can be parallelized");
-
-// Next there is code to register your pass to "clang"
-static AutotunerSearchSpace *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(
-    PassManagerBuilder::EP_OptimizerLast,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new AutotunerSearchSpace());
-      }
-    }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new AutotunerSearchSpace());
-      }
-    }); // ** for -O0

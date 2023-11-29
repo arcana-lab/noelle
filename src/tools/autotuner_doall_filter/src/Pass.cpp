@@ -127,20 +127,3 @@ char llvm::noelle::AutotunerDoallFilter::ID = 0;
 static RegisterPass<AutotunerDoallFilter> X(
     "autotunerdoallfilter",
     "Reduce search space of DOALL loops.");
-
-// Next there is code to register your pass to "clang"
-static AutotunerDoallFilter *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(
-    PassManagerBuilder::EP_OptimizerLast,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new AutotunerDoallFilter());
-      }
-    }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new AutotunerDoallFilter());
-      }
-    }); // ** for -O0

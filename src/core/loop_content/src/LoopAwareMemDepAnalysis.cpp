@@ -60,23 +60,6 @@ char NoelleSCAFIntegration::ID = 0;
 static RegisterPass<NoelleSCAFIntegration> X("noellescaf",
                                              "Integration with SCAF");
 
-// Next there is code to register your pass to "clang"
-static NoelleSCAFIntegration *_PassMaker = nullptr;
-static RegisterStandardPasses _RegPass1(
-    PassManagerBuilder::EP_OptimizerLast,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new NoelleSCAFIntegration());
-      }
-    }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new NoelleSCAFIntegration());
-      }
-    }); // ** for -O0
-
 void refinePDGWithLoopAwareMemDepAnalysis(PDG *loopDG,
                                           Loop *l,
                                           LoopStructure *loopStructure,

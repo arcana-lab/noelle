@@ -47,22 +47,4 @@ bool LoopTransformer::runOnModule(Module &M) {
 char LoopTransformer::ID = 0;
 static RegisterPass<LoopTransformer> X("LoopTransformer", "Transform loops");
 
-// Next there is code to register your pass to "clang"
-static LoopTransformer *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-                                        [](const PassManagerBuilder &,
-                                           legacy::PassManagerBase &PM) {
-                                          if (!_PassMaker) {
-                                            PM.add(_PassMaker =
-                                                       new LoopTransformer());
-                                          }
-                                        }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new LoopTransformer());
-      }
-    }); // ** for -O0
-
 } // namespace llvm::noelle

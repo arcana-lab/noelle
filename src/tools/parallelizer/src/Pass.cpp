@@ -97,21 +97,3 @@ char llvm::noelle::Parallelizer::ID = 0;
 static RegisterPass<Parallelizer> X(
     "parallelizer",
     "Automatic parallelization of sequential code");
-
-// Next there is code to register your pass to "clang"
-static Parallelizer *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-                                        [](const PassManagerBuilder &,
-                                           legacy::PassManagerBase &PM) {
-                                          if (!_PassMaker) {
-                                            PM.add(_PassMaker =
-                                                       new Parallelizer());
-                                          }
-                                        }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new Parallelizer());
-      }
-    }); // ** for -O0

@@ -61,21 +61,3 @@ Heuristics *HeuristicsPass::getHeuristics(Noelle &noelle) {
 // Next there is code to register your pass to "opt"
 char HeuristicsPass::ID = 0;
 static RegisterPass<HeuristicsPass> X("heuristics", "Heuristics about code");
-
-// Next there is code to register your pass to "clang"
-static HeuristicsPass *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-                                        [](const PassManagerBuilder &,
-                                           legacy::PassManagerBase &PM) {
-                                          if (!_PassMaker) {
-                                            PM.add(_PassMaker =
-                                                       new HeuristicsPass());
-                                          }
-                                        }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new HeuristicsPass());
-      }
-    }); // ** for -O0

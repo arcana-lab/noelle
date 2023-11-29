@@ -52,21 +52,4 @@ char PlanInfo::ID = 0;
 static RegisterPass<PlanInfo> X("ParallelizerPlanInfo",
                                 "Print information about a parallel plan");
 
-// Next there is code to register your pass to "clang"
-static PlanInfo *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-                                        [](const PassManagerBuilder &,
-                                           legacy::PassManagerBase &PM) {
-                                          if (!_PassMaker) {
-                                            PM.add(_PassMaker = new PlanInfo());
-                                          }
-                                        }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new PlanInfo());
-      }
-    }); // ** for -O0
-
 } // namespace llvm::noelle
