@@ -21,7 +21,7 @@
  */
 #include "noelle/core/GenericSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 GenericSCC::GenericSCC(SCCKind K, SCC *s, LoopStructure *loop)
   : loop{ loop },
@@ -89,4 +89,4 @@ GenericSCC::SCCKind GenericSCC::getKind(void) const {
 
 GenericSCC::~GenericSCC() {}
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

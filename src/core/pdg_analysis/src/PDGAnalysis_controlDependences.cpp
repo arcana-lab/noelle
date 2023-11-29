@@ -25,7 +25,7 @@
 #include "noelle/core/PDGAnalysis.hpp"
 #include "llvm/Analysis/PostDominators.h"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void PDGAnalysis::constructEdgesFromControl(PDG *pdg, Module &M) {
   assert(pdg != nullptr);
@@ -195,4 +195,4 @@ void PDGAnalysis::constructEdgesFromControlForFunction(PDG *pdg, Function &F) {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

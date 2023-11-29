@@ -31,7 +31,7 @@
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/Invariants.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class InductionVariable {
 public:
@@ -205,4 +205,4 @@ private:
       ScalarEvolution &SE);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

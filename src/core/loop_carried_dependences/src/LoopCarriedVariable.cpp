@@ -22,7 +22,7 @@
 #include "noelle/core/Variable.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopCarriedVariable::LoopCarriedVariable(const LoopStructure &loop,
                                          LoopTree *loopNode,
@@ -498,4 +498,4 @@ Value *LoopCarriedVariable::getInitialValue(void) const {
   return this->initialValue;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

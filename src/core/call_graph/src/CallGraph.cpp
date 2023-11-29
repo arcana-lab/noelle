@@ -22,7 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/CallGraph.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 CallGraph::CallGraph(Module &M) : m{ M }, scccag{ nullptr } {
   return;
@@ -660,4 +660,4 @@ void CallGraph::removeSubEdge(CallGraphFunctionFunctionEdge *e,
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

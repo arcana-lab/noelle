@@ -22,7 +22,7 @@
 #include "noelle/core/Linker.hpp"
 #include "noelle/core/Architecture.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 Linker::Linker(Module &M, TypesManager *tm) : program{ M }, tm{ tm } {
 
@@ -226,4 +226,4 @@ void Linker::substituteOriginalLoopWithTransformedLoop(
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

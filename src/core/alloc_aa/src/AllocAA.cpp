@@ -21,7 +21,7 @@
  */
 #include "noelle/core/AllocAA.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * Options of the custom allocation function based alias analysis pass.
@@ -712,4 +712,4 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

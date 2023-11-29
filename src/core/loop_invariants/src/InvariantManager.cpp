@@ -23,7 +23,7 @@
 #include "noelle/core/Invariants.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 InvariantManager::InvariantManager(LoopStructure *loop, PDG *loopDG)
   : ls{ loop } {
@@ -373,4 +373,4 @@ bool InvariantManager::InvarianceChecker::arePHIIncomingValuesEquivalent(
   return false;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

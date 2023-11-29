@@ -21,7 +21,7 @@
  */
 #include "noelle/core/CompilationOptionsManager.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 CompilationOptionsManager::CompilationOptionsManager(
     Module &m,
@@ -53,4 +53,4 @@ bool CompilationOptionsManager::shouldLoopsBeHoistToMain(void) const {
   return this->_hoistLoopsToMain;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

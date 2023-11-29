@@ -22,7 +22,7 @@
 #include "noelle/tools/SmallestSizePartitionAnalysis.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 /*
  * Prioritize merge that best lowers overall cost without yielding a too costly

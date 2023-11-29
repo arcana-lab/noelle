@@ -25,7 +25,7 @@
 #include "noelle/tools/DOALL.hpp"
 #include "noelle/tools/DOALLTask.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI,
                                       DOALLTask *task) {
@@ -684,4 +684,4 @@ void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI,
       headerClone);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

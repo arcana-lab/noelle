@@ -22,7 +22,7 @@
 #include "Privatizer.hpp"
 #include "Utils.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool Privatizer::applyG2S(Noelle &noelle) {
   bool modified = false;
@@ -487,4 +487,4 @@ bool Privatizer::transformG2S(Noelle &noelle,
   return modified;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

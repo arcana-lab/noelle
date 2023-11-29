@@ -27,7 +27,7 @@
 #include "noelle/core/SCCDAGPartition.hpp"
 #include "noelle/core/Hot.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class InvocationLatency {
 public:
@@ -62,4 +62,4 @@ private:
   std::unordered_map<SCC *, std::set<Value *>> incomingExternals;
   std::unordered_map<SCC *, std::set<SCC *>> clonableParents;
 };
-} // namespace llvm::noelle
+} // namespace arcana::noelle

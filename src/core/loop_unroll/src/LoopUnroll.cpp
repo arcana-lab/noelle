@@ -23,7 +23,7 @@
 #include "llvm/Transforms/Utils/LoopUtils.h"
 #include "llvm/Transforms/Utils/UnrollLoop.h"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopUnroll::LoopUnroll() {
   return;
@@ -76,7 +76,8 @@ bool LoopUnroll::fullyUnrollLoop(LoopDependenceInfo const &LDI,
   opts.ForgetAllSCEV = false;
   OptimizationRemarkEmitter ORE(loopFunction);
   TargetTransformInfo TTI(loopFunction->getParent()->getDataLayout());
-  auto unrolled = UnrollLoop(llvmLoop, opts, &LI, &SE, &DT, &AC, &TTI, &ORE, true);
+  auto unrolled =
+      UnrollLoop(llvmLoop, opts, &LI, &SE, &DT, &AC, &TTI, &ORE, true);
 
   /*
    * Check if the loop unrolled.
@@ -103,4 +104,4 @@ bool LoopUnroll::fullyUnrollLoop(LoopDependenceInfo const &LDI,
   return modified;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

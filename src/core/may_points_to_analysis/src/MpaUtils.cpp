@@ -23,7 +23,7 @@
 
 using namespace std;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 MPAFunctionType getCalleeFunctionType(CallBase *callInst) {
   const set<string> READ_ONLY_LIB_FUNCTIONS = {
@@ -111,4 +111,4 @@ bool isAllocation(Instruction *allocation) {
   return false;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

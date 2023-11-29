@@ -25,7 +25,7 @@
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/LoopGoverningInductionVariable.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class IVUtility {
 public:
@@ -143,4 +143,4 @@ private:
   bool isWhile;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

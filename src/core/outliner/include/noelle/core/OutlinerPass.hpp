@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Outliner.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class OutlinerPass : public ModulePass {
 public:
@@ -46,4 +46,4 @@ public:
 private:
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -23,7 +23,7 @@
 
 #include "noelle/core/Noelle.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopTimingModel {
 public:
@@ -38,4 +38,4 @@ protected:
   LoopDependenceInfo &loop;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

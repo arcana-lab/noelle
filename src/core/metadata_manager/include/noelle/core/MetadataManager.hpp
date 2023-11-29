@@ -25,7 +25,7 @@
 #include "noelle/core/LoopStructure.hpp"
 #include "noelle/core/MetadataEntry.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class MetadataManager {
 public:
@@ -149,4 +149,4 @@ private:
   std::map<GlobalVariable *, std::set<std::string>> globalMetadata;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

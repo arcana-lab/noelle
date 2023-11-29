@@ -22,7 +22,7 @@
 #include "noelle/core/Architecture.hpp"
 #include "noelle/core/LoopEnvironmentUser.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopEnvironmentUser::LoopEnvironmentUser(
     std::unordered_map<uint32_t, uint32_t> &envIDToIndex)
@@ -196,4 +196,4 @@ LoopEnvironmentUser::~LoopEnvironmentUser() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -23,7 +23,7 @@
 #include "noelle/core/LoopEnvironmentBuilder.hpp"
 #include "noelle/core/Architecture.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopEnvironmentBuilder::LoopEnvironmentBuilder(LLVMContext &cxt,
                                                LoopEnvironment *environment,
@@ -722,4 +722,4 @@ LoopEnvironmentBuilder::~LoopEnvironmentBuilder() {
     delete user;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -21,7 +21,7 @@
  */
 #include "noelle/core/Variable.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool LoopCarriedCycle::isEvolutionReducibleAcrossLoopIterations(void) const {
   return false;
@@ -31,4 +31,4 @@ LoopCarriedCycle::~LoopCarriedCycle() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

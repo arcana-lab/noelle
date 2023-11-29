@@ -24,7 +24,7 @@
 #include "noelle/core/SCCDAG.hpp"
 #include "llvm/InitializePasses.h"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 SCCDAG::SCCDAG(PDG *pdg) {
 
@@ -419,4 +419,4 @@ SCCDAG::~SCCDAG() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

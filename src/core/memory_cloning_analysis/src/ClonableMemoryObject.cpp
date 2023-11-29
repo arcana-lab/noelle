@@ -21,7 +21,7 @@
  */
 #include "noelle/core/ClonableMemoryObject.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 std::unordered_set<Instruction *> ClonableMemoryObject::
     getInstructionsUsingLocationOutsideLoop(void) const {
@@ -1100,4 +1100,4 @@ uint64_t ClonableMemoryObject::getSizeInBits(void) const {
   return this->sizeInBits;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -23,7 +23,7 @@
 #include "noelle/core/InductionVariableSCC.hpp"
 #include "noelle/tools/HELIX.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void HELIX::spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
                                              DataFlowResult *reachabilityDFR,
@@ -514,4 +514,4 @@ void HELIX::replaceUsesOfSpilledPHIWithLoads(
   }
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

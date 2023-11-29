@@ -31,7 +31,7 @@
 
 #include "noelle/core/PDG.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 PDG::PDG(Module &M) {
 
@@ -418,4 +418,4 @@ PDG::~PDG() {
       delete node;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

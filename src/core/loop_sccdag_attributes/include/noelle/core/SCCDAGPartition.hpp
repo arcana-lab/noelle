@@ -27,10 +27,10 @@
 #include "noelle/core/DGGraphTraits.hpp"
 #include "noelle/core/LoopForest.hpp"
 
-namespace llvm {
-namespace noelle {
+namespace arcana::noelle {
 
-struct SCCSet {
+class SCCSet {
+public:
   std::unordered_set<SCC *> sccs;
 
   raw_ostream &print(raw_ostream &stream);
@@ -146,14 +146,16 @@ private:
   std::unordered_set<LoopTree *> allLoops;
 };
 
-} // namespace noelle
+} // namespace arcana::noelle
+
+namespace llvm {
 
 template <>
 struct GraphTraits<
-    DGGraphWrapper<llvm::noelle::SCCDAGPartition, llvm::noelle::SCCSet> *>
+    DGGraphWrapper<arcana::noelle::SCCDAGPartition, arcana::noelle::SCCSet> *>
   : public GraphTraitsBase<
-        DGGraphWrapper<llvm::noelle::SCCDAGPartition, llvm::noelle::SCCSet>,
-        DGNodeWrapper<llvm::noelle::SCCSet>,
-        llvm::noelle::SCCSet> {};
+        DGGraphWrapper<arcana::noelle::SCCDAGPartition, arcana::noelle::SCCSet>,
+        DGNodeWrapper<arcana::noelle::SCCSet>,
+        arcana::noelle::SCCSet> {};
 
 } // namespace llvm

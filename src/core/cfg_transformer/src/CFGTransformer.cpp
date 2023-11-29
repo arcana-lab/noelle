@@ -21,7 +21,7 @@
  */
 #include "noelle/core/CFGTransformer.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 CFGTransformer::CFGTransformer() : ModulePass{ ID } {
   return;
@@ -83,4 +83,4 @@ void CFGTransformer::branchToTargetBasicBlockAndBack(
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

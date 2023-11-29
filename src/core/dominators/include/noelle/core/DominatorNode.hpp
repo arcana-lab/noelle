@@ -24,7 +24,7 @@
 #include "llvm/Analysis/PostDominators.h"
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 namespace DTAliases {
 using Node = DomTreeNodeBase<BasicBlock>;
@@ -54,4 +54,4 @@ private:
   DominatorNode *iDom;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

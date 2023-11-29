@@ -29,7 +29,7 @@
 #include "noelle/core/Dominators.hpp"
 #include "noelle/core/ClonableMemoryObject.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class MemoryCloningAnalysis {
 public:
@@ -46,4 +46,4 @@ private:
       clonableMemoryLocations;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DGBase.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * Program Dependence Graph.
@@ -154,4 +154,4 @@ protected:
       std::unordered_set<DGEdge<Value, Value> *> const &edgesToIgnore);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

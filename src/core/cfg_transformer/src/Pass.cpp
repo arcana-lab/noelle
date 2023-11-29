@@ -22,7 +22,7 @@
 #include "noelle/core/CFGTransformer.hpp"
 #include "llvm/Analysis/PostDominators.h"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool CFGTransformer::doInitialization(Module &M) {
 
@@ -65,4 +65,4 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

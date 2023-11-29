@@ -21,7 +21,7 @@
  */
 #include "noelle/core/InductionVariableSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 InductionVariableSCC::InductionVariableSCC(
     SCCKind K,
@@ -43,4 +43,4 @@ bool InductionVariableSCC::classof(const GenericSCC *s) {
          && (s->getKind() <= GenericSCC::SCCKind::LAST_INDUCTION_VARIABLE);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

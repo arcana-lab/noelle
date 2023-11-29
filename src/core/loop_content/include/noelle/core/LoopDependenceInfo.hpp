@@ -35,7 +35,7 @@
 #include "noelle/core/LoopTransformationsOptions.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopDependenceInfo {
 public:
@@ -218,4 +218,4 @@ private:
   SCCDAG *computeSCCDAGWithOnlyVariableAndControlDependences(PDG *loopDG);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

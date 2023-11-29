@@ -21,7 +21,7 @@
  */
 #include "noelle/core/Task.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 BasicBlock *Task::newBasicBlock(void) {
   return this->newBasicBlock("");
@@ -43,4 +43,4 @@ BasicBlock *Task::newBasicBlock(const std::string &name) {
   return bb;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

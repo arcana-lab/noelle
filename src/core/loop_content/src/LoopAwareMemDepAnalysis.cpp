@@ -35,7 +35,7 @@
 #  include "scaf/Utilities/ModuleLoops.h"
 #endif
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * SCAF
@@ -369,4 +369,4 @@ std::set<AliasAnalysisEngine *> LoopDependenceInfo::getLoopAliasAnalysisEngines(
   return s;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

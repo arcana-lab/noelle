@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopStructure {
 public:
@@ -106,4 +106,4 @@ private:
   bool isContainedInstructionLoopInvariant(Instruction *inst) const;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

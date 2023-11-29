@@ -21,7 +21,7 @@
  */
 #include "noelle/core/CleanMetadata.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 CleanMetadata::CleanMetadata() : ModulePass{ ID }, cleanPDG{ false } {
   return;
@@ -97,4 +97,4 @@ CleanMetadata::~CleanMetadata() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

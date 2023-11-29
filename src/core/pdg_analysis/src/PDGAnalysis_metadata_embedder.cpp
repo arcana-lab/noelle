@@ -24,7 +24,7 @@
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
   errs() << "Embed PDG as metadata\n";
@@ -132,4 +132,4 @@ void PDGAnalysis::embedEdgesAsMetadata(
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

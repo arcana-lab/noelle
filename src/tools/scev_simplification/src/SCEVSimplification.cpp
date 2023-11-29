@@ -22,7 +22,7 @@
 #include "noelle/tools/SCEVSimplification.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 SCEVSimplification::SCEVSimplification(Noelle &noelle) : noelle{ noelle } {
   auto fm = noelle.getFunctionsManager();

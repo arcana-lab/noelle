@@ -23,7 +23,7 @@
 #include "noelle/tools/DSWP.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 void DSWP::printStageSCCs(LoopDependenceInfo *LDI) const {
   if (this->verbose == Verbosity::Disabled) {

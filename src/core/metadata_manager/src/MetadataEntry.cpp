@@ -21,7 +21,7 @@
  */
 #include "noelle/core/MetadataEntry.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 MetadataEntry::MetadataEntry(const std::string metadataName,
                              const std::string metadataValue)
@@ -38,4 +38,4 @@ std::string MetadataEntry::getValue(void) const {
   return this->value;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

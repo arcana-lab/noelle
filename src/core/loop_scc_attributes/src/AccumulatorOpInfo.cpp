@@ -21,7 +21,7 @@
  */
 #include "AccumulatorOpInfo.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 AccumulatorOpInfo::AccumulatorOpInfo() {
   this->sideEffectFreeOps = { Instruction::Add, Instruction::FAdd,
@@ -104,4 +104,4 @@ Value *AccumulatorOpInfo::generateIdentityFor(Instruction *accumulator,
   return initVal;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -22,7 +22,7 @@
 #include "noelle/core/MayPointsToAnalysis.hpp"
 #include "MpaUtils.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 MayPointsToAnalysis::MayPointsToAnalysis() {}
 
@@ -125,4 +125,4 @@ MpaSummary *MayPointsToAnalysis::getFunctionSummary(Function *currentF) {
   return functionSummaries[currentF];
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

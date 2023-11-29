@@ -26,7 +26,7 @@
 #include "IntegrationWithSVF.hpp"
 #include "noelle/core/Utils.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void PDGAnalysis::iterateInstForStore(PDG *pdg,
                                       Function &F,
@@ -883,7 +883,7 @@ AliasResult PDGAnalysis::doTheyAlias(PDG *pdg,
   /*
    * Query the LLVM alias analyses.
    */
-  AliasResult aaResult{AliasResult::MayAlias};
+  AliasResult aaResult{ AliasResult::MayAlias };
   if (haveMemoryLocations) {
     aaResult = AA.alias(MemoryLocation::get(instIAsInst),
                         MemoryLocation::get(instJAsInst));
@@ -916,7 +916,7 @@ AliasResult PDGAnalysis::doTheyAlias(PDG *pdg,
     /*
      * SVF is enabled, so let's use it.
      */
-    AliasResult SVFAAResult{AliasResult::MayAlias};
+    AliasResult SVFAAResult{ AliasResult::MayAlias };
     if (haveMemoryLocations) {
       SVFAAResult =
           NoelleSVFIntegration::alias(MemoryLocation::get(instIAsInst),
@@ -938,4 +938,4 @@ AliasResult PDGAnalysis::doTheyAlias(PDG *pdg,
   return AliasResult::MayAlias;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

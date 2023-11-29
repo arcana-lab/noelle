@@ -22,7 +22,7 @@
 #include "noelle/tools/LoopInvariantCodeMotion.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut(
     LoopDependenceInfo const &LDI) {
@@ -166,4 +166,4 @@ bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut(
   return modified;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

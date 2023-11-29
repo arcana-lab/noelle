@@ -22,7 +22,7 @@
 #include "noelle/core/CFGAnalysis.hpp"
 #include "noelle/core/DataFlowAnalysis.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 CFGAnalysis::CFGAnalysis() : ModulePass{ ID } {
   return;
@@ -70,4 +70,4 @@ bool CFGAnalysis::isIncludedInACycle(Instruction &i) {
   return false;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

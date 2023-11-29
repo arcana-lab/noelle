@@ -25,7 +25,7 @@
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/CallGraphTraits.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 class CallGraph;
 
 class SCCCAGNode {
@@ -75,4 +75,4 @@ private:
   std::unordered_map<CallGraphNode *, SCCCAGNode *> nodes;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -27,7 +27,7 @@
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * SCCDAG of a dependence graph.
@@ -145,4 +145,4 @@ private:
   void computeReachabilityAmongSCCs(void);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

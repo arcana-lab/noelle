@@ -24,7 +24,7 @@
 #include "noelle/core/SCCDAGPartition.hpp"
 #include "noelle/tools/ParallelizationTechnique.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences
   : public ParallelizationTechnique {
@@ -64,4 +64,4 @@ protected:
                            const std::set<SCC *> &sequentialSCCs);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

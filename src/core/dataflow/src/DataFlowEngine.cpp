@@ -21,7 +21,7 @@
  */
 #include "noelle/core/DataFlowEngine.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 DataFlowEngine::DataFlowEngine() {
   return;
@@ -442,4 +442,4 @@ DataFlowResult *DataFlowEngine::applyCustomizableForwardAnalysis(
   return df;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

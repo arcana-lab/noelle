@@ -32,7 +32,7 @@
 #include "DSWPTask.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class DSWP
   : public ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences {
@@ -154,4 +154,4 @@ private:
                               int taskIndex) const;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

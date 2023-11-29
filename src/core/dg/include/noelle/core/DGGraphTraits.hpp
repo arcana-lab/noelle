@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -25,8 +25,7 @@
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SubCFGs.hpp"
 
-namespace llvm {
-namespace noelle {
+namespace arcana::noelle {
 
 template <class T>
 class DGElementWrapper {
@@ -237,7 +236,10 @@ struct GraphTraitsBase {
     return node->child_end();
   }
 };
-} // namespace noelle
+
+} // namespace arcana::noelle
+
+namespace llvm {
 
 /*
  * Specializations for GraphTraits and DOTGraphTraits using GraphTraitsBase and

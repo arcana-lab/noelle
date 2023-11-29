@@ -22,7 +22,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "noelle/core/SCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 SCC::SCC(std::set<DGNode<Value> *> internalNodes) {
 
@@ -298,4 +298,4 @@ SCC::~SCC() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

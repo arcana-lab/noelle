@@ -23,7 +23,7 @@
 
 #include "noelle/core/Noelle.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LiveMemorySummary {
 public:
@@ -121,4 +121,4 @@ private:
                                Function *currentF);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

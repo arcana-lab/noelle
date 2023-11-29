@@ -22,7 +22,7 @@
 #include "noelle/core/CallGraphTraits.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 CallGraphWrapper::CallGraphWrapper(CallGraph *graph)
   : wrappedGraph{ graph },

@@ -22,7 +22,7 @@
 #include "LoopStats.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void LoopStats::collectStatsOnLLVMSCCs(Hot *profiles,
                                        PDG *loopDG,
@@ -119,8 +119,7 @@ void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
 
     auto isSCC = false;
     for (auto edge : scc->getEdges()) {
-      if (scc->isInternal(edge->getSrc())
-          && scc->isInternal(edge->getDst())) {
+      if (scc->isInternal(edge->getSrc()) && scc->isInternal(edge->getDst())) {
         isSCC = true;
         break;
       }
@@ -153,4 +152,4 @@ void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

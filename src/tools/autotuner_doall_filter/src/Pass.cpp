@@ -24,7 +24,7 @@
 #include <cstdlib>
 #include <fstream>
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 AutotunerDoallFilter::AutotunerDoallFilter() : ModulePass(this->ID) {}
 
@@ -120,10 +120,10 @@ void AutotunerDoallFilter::getAnalysisUsage(AnalysisUsage &AU) const {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle
 
 // Next there is code to register your pass to "opt"
-char llvm::noelle::AutotunerDoallFilter::ID = 0;
+char arcana::noelle::AutotunerDoallFilter::ID = 0;
 static RegisterPass<AutotunerDoallFilter> X(
     "autotunerdoallfilter",
     "Reduce search space of DOALL loops.");

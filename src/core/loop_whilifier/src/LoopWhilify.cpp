@@ -21,7 +21,7 @@
  */
 #include "noelle/core/LoopWhilify.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopWhilifier::LoopWhilifier() : outputPrefix{ "Whilifier: " } {
   return;
@@ -1051,4 +1051,4 @@ void WhilifierContext::Dump() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

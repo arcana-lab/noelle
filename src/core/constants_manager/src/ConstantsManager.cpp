@@ -21,7 +21,7 @@
  */
 #include "noelle/core/ConstantsManager.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 ConstantsManager::ConstantsManager(Module &m, TypesManager *tm)
   : program{ m },
@@ -56,4 +56,4 @@ Constant *ConstantsManager::getIntegerConstant(int64_t constantValue,
   return c;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

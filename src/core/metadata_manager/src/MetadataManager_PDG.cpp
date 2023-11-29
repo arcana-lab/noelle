@@ -21,7 +21,7 @@
  */
 #include "noelle/core/MetadataManager.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void MetadataManager::removePDGMetadata(void) {
   for (auto &F : this->program) {
@@ -48,4 +48,4 @@ void MetadataManager::removePDGMetadata(void) {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

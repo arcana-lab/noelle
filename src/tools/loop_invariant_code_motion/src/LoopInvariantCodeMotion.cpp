@@ -22,7 +22,7 @@
 #include "noelle/tools/LoopInvariantCodeMotion.hpp"
 #include "Mem2RegNonAlloca.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopInvariantCodeMotion::LoopInvariantCodeMotion(Noelle &noelle)
   : noelle{ noelle } {
@@ -53,4 +53,4 @@ bool LoopInvariantCodeMotion::extractInvariantsFromLoop(
   return false;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

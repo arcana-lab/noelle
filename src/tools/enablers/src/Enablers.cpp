@@ -23,7 +23,7 @@
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 #include "noelle/tools/DOALL.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool EnablersManager::applyEnablers(
     LoopDependenceInfo *LDI,
@@ -309,4 +309,4 @@ bool EnablersManager::applyDevirtualizer(LoopDependenceInfo *LDI,
   return modified;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

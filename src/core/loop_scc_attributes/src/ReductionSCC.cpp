@@ -21,7 +21,7 @@
  */
 #include "noelle/core/ReductionSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 ReductionSCC::ReductionSCC(
     SCCKind K,
@@ -102,7 +102,7 @@ void ReductionSCC::initializeObject(LoopStructure &loop) {
       continue;
     }
     phiInst = dyn_cast<PHINode>(inst);
-    if (phiInst != nullptr){
+    if (phiInst != nullptr) {
       break;
     }
   }
@@ -141,4 +141,4 @@ bool ReductionSCC::classof(const GenericSCC *s) {
          && (s->getKind() <= GenericSCC::SCCKind::LAST_REDUCTION);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

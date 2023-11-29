@@ -7,7 +7,7 @@
 
 using namespace llvm;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 enum class MarkerMode { Instrument, Reinstrument, Renumber };
 
@@ -35,4 +35,4 @@ private:
   MarkerMode Mode;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

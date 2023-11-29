@@ -23,7 +23,7 @@
 #include "noelle/core/Architecture.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 std::set<GenericSCC *> DSWP::getClonableSCCs(SCCDAGAttrs *sccManager,
                                              LoopTree *loopNode) const {
@@ -143,4 +143,4 @@ bool DSWP::canBeCloned(GenericSCC *scc) const {
   return false;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

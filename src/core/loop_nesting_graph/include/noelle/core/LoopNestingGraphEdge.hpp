@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopNestingGraphNode.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 class LoopNestingGraphLoopNode;
 class LoopNestingGraphInstructionNode;
 
@@ -84,4 +84,4 @@ private:
       subEdgesMap;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -23,7 +23,7 @@
 
 #include "noelle/core/Noelle.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class DeadFunctionEliminator : public ModulePass {
 public:
@@ -48,4 +48,4 @@ private:
   std::string prefix;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

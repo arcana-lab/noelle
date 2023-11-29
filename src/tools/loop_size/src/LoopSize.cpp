@@ -22,7 +22,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "noelle/tools/LoopSize.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopSize::LoopSize() : ModulePass{ ID } {}
 
@@ -97,4 +97,4 @@ bool LoopSize::runOnModule(Module &M) {
   return false;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

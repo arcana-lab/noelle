@@ -21,7 +21,7 @@
  */
 #include "noelle/core/Task.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 Task::Task(FunctionType *taskSignature, Module &M)
   : instanceIndexV{ nullptr },
@@ -411,4 +411,4 @@ Task::~Task() {
 
 uint64_t Task::currentID = 0;
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

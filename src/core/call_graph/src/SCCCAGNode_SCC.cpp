@@ -22,7 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCCCAG.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 SCCCAGNode_SCC::SCCCAGNode_SCC(std::unordered_set<CallGraphNode *> const &nodes)
   : nodes{ nodes } {
@@ -37,4 +37,4 @@ SCCCAGNode_SCC::~SCCCAGNode_SCC() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -22,7 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Hot.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void Hot::setBasicBlockInvocations(BasicBlock *bb, uint64_t invocations) {
 
@@ -136,4 +136,4 @@ void Hot::setBranchFrequency(BasicBlock *src,
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

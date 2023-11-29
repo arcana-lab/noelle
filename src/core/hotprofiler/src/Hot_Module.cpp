@@ -22,7 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Hot.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 uint64_t Hot::getSelfInstructions(void) const {
   return this->moduleNumberOfInstructionsExecuted;
@@ -48,4 +48,4 @@ uint64_t Hot::getTotalInstructions(void) const {
   return this->getSelfInstructions();
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

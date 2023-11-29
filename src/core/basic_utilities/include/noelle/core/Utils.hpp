@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class Utils {
 public:
@@ -40,4 +40,4 @@ public:
   static Value *getFreedObject(CallBase *call);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

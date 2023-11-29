@@ -24,7 +24,7 @@
 #include "noelle/core/PDGPrinter.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 void LoopStats::collectStatsForLoops(
     Noelle &noelle,

@@ -24,7 +24,7 @@
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Architecture.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 static cl::opt<int> Verbose(
     "noelle-verbose",
@@ -205,4 +205,4 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

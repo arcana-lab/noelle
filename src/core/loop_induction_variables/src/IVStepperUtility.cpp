@@ -21,7 +21,7 @@
  */
 #include "noelle/core/IVStepperUtility.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 PHINode *IVUtility::createChunkPHI(BasicBlock *preheaderB,
                                    BasicBlock *headerB,
@@ -191,4 +191,4 @@ Value *IVUtility::computeInductionVariableValueForIteration(
   return valueAtIteration;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

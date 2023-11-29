@@ -24,7 +24,7 @@
 #include "noelle/tools/HELIX.hpp"
 #include "noelle/tools/DOALL.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool HELIX::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
 
@@ -84,4 +84,4 @@ bool HELIX::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   return true;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

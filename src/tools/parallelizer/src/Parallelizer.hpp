@@ -33,7 +33,7 @@
 #include "HeuristicsPass.hpp"
 #include "noelle/tools/DSWP.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class Parallelizer : public ModulePass {
 public:
@@ -72,4 +72,4 @@ private:
   bool collectThreadPoolHelperFunctionsAndTypes(Module &M, Noelle &par);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

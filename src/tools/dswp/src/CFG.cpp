@@ -21,7 +21,7 @@
  */
 #include "noelle/tools/DSWP.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void DSWP::generateLoopSubsetForStage(LoopDependenceInfo *LDI, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
@@ -140,4 +140,4 @@ void DSWP::generateLoopSubsetForStage(LoopDependenceInfo *LDI, int taskIndex) {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

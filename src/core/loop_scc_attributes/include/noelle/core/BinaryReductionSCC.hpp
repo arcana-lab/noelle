@@ -26,7 +26,7 @@
 #include "noelle/core/Dominators.hpp"
 #include "noelle/core/Variable.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class BinaryReductionSCC : public ReductionSCC {
 public:
@@ -64,4 +64,4 @@ protected:
   iterator_range<instruction_iterator> getAccumulators(void);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

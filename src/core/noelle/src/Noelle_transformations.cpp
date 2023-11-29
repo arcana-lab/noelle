@@ -22,7 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Noelle.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool Noelle::isTransformationEnabled(Transformation transformation) {
   auto exist = this->enabledTransformations.find(transformation)
@@ -31,4 +31,4 @@ bool Noelle::isTransformationEnabled(Transformation transformation) {
   return exist;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -21,7 +21,7 @@
  */
 #include "noelle/tools/DSWP.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void DSWP::generateStagesFromPartitionedSCCs(LoopDependenceInfo *LDI) {
   assert(LDI != nullptr);
@@ -273,4 +273,4 @@ Value *DSWP::createQueueSizesArrayFromStages(LoopDependenceInfo *LDI,
                                 PointerType::getUnqual(int64Type)));
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

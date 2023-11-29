@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class TypesManager {
 public:
@@ -44,4 +44,4 @@ private:
   Module &program;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -25,7 +25,7 @@
 #include "noelle/core/LoopStructure.hpp"
 #include "noelle/core/SCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class Hot {
 public:
@@ -190,4 +190,4 @@ private:
   friend class HotProfiler;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

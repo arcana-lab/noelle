@@ -21,7 +21,7 @@
  */
 #include "noelle/core/LoopCarriedSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopCarriedSCC::LoopCarriedSCC(
     SCCKind K,
@@ -49,4 +49,4 @@ bool LoopCarriedSCC::classof(const GenericSCC *s) {
          && (s->getKind() <= GenericSCC::SCCKind::LAST_LOOP_CARRIED);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -27,7 +27,7 @@
 #include "noelle/core/LoopNestingGraphNode.hpp"
 #include "noelle/core/LoopNestingGraphEdge.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 /*
  * Loop nesting graph.
  */
@@ -63,4 +63,4 @@ private:
       bool isMust);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

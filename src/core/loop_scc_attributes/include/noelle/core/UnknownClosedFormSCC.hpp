@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/RecomputableSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class UnknownClosedFormSCC : public RecomputableSCC {
 public:
@@ -39,4 +39,4 @@ public:
 protected:
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

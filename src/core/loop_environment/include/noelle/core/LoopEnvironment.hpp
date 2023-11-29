@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopEnvironment {
 public:
@@ -86,4 +86,4 @@ private:
   Type *exitBlockType;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

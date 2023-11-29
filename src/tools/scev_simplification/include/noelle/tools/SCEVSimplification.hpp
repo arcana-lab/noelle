@@ -25,7 +25,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class SCEVSimplification {
 public:
@@ -103,4 +103,4 @@ private:
   IntegerType *intTypeForPtrSize;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

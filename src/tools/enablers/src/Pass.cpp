@@ -22,7 +22,7 @@
 #include "EnablersManager.hpp"
 #include "noelle/core/LoopDistribution.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 static cl::opt<bool> DisableEnablers("noelle-disable-enablers",
                                      cl::ZeroOrMore,
@@ -80,4 +80,4 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

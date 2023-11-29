@@ -21,7 +21,7 @@
  */
 #include "noelle/tools/HELIX.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void HELIX::inlineCalls(Task *task) {
 
@@ -42,4 +42,4 @@ void HELIX::inlineCalls(Task *task) {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

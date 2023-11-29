@@ -6,7 +6,7 @@
 
 using namespace llvm;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class UniqueIRVerifier : public InstVisitor<UniqueIRVerifier> {
 
@@ -35,4 +35,4 @@ private:
   void checkInstruction(Instruction &);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

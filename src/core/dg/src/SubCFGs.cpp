@@ -22,7 +22,7 @@
 #include "noelle/core/SubCFGs.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 SubCFGs::SubCFGs(Module &M) {
   for (auto &F : M) {

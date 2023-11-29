@@ -21,7 +21,7 @@
  */
 #include "noelle/core/LoopTransformationsOptions.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopTransformationsManager::LoopTransformationsManager(
     uint32_t maxNumberOfCores,
@@ -95,4 +95,4 @@ std::unordered_set<LoopDependenceInfoOptimization> LoopTransformationsManager::
   return this->enabledOptimizations;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

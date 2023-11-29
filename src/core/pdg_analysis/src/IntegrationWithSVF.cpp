@@ -37,7 +37,7 @@
 #  include "MSSA/MemSSA.h"
 #endif
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void PDGAnalysis::initializeSVF(Module &M) {
   return;
@@ -218,4 +218,4 @@ std::set<AliasAnalysisEngine *> PDGAnalysis::getProgramAliasAnalysisEngines(
   return s;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

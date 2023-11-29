@@ -26,7 +26,7 @@
 #include "noelle/core/LoopDependenceInfo.hpp"
 #include "noelle/core/SCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopDistribution {
 public:
@@ -78,4 +78,4 @@ private:
                std::set<Instruction *> &instructionsAdded);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

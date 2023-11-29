@@ -24,7 +24,7 @@
 #include "noelle/core/BinaryReductionSCC.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 ParallelizationTechnique::ParallelizationTechnique(Noelle &n)
   : noelle{ n },
@@ -1829,4 +1829,4 @@ ParallelizationTechnique::~ParallelizationTechnique() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

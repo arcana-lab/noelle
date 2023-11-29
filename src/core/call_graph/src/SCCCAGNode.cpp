@@ -22,10 +22,10 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCCCAG.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 SCCCAGNode::~SCCCAGNode() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

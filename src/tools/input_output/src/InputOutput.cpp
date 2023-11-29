@@ -22,7 +22,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "InputOutput.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 std::unordered_map<std::string, std::string> InputOutput::stdioUnlockedFunctionMapping = {
   { "getc",
@@ -85,4 +85,4 @@ bool InputOutput::runOnModule(Module &M) {
   return false;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

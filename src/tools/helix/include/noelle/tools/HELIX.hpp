@@ -36,7 +36,7 @@
 #include "noelle/tools/SpilledLoopCarriedDependence.hpp"
 #include "HeuristicsPass.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class HELIX
   : public ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences {
@@ -183,4 +183,4 @@ private:
   std::vector<Value *> ssFuturePtrs;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

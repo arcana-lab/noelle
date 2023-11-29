@@ -25,7 +25,7 @@
 #include "noelle/core/PDGAnalysis.hpp"
 #include "IntegrationWithSVF.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 noelle::CallGraph *PDGAnalysis::getProgramCallGraph(void) {
   if (this->noelleCG == nullptr) {
@@ -97,4 +97,4 @@ bool PDGAnalysis::isInternalFunctionThatReachUnhandledExternalFunction(
   return !F->empty() && !this->reachableUnhandledExternalFuncs[F].empty();
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -21,7 +21,7 @@
  */
 #include "noelle/core/OutlinerPass.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 Outliner::Outliner() {
 
@@ -41,4 +41,4 @@ Function *outline(std::unordered_set<BasicBlock *> const &basicBlocksToOutline,
   return nullptr;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/CallGraphNode.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class CallGraphEdge {
 public:
@@ -91,4 +91,4 @@ private:
       subEdgesMap;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

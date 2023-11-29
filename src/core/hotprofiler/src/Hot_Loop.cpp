@@ -22,7 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Hot.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 uint64_t Hot::getStaticInstructions(LoopStructure *l) const {
   uint64_t t = 0;
@@ -196,4 +196,4 @@ uint64_t Hot::getIterations(LoopStructure *l) const {
   return loopIterations;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -24,7 +24,7 @@
 
 #include "noelle/core/DominatorNode.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class DominatorForest {
 public:
@@ -82,4 +82,4 @@ private:
   void addDescendants(DominatorNode *n, std::set<BasicBlock *> &ds) const;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

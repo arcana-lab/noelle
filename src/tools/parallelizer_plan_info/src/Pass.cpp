@@ -34,7 +34,7 @@ static cl::list<int> PrintHeaders(
     cl::CommaSeparated,
     cl::desc("Print the headers of some loops with a parallel plan"));
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool PlanInfo::doInitialization(Module &M) {
   this->printAllHeaders = PrintAllHeaders.getValue();
@@ -69,4 +69,4 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

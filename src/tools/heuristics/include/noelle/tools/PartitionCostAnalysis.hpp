@@ -32,7 +32,7 @@
 
 using namespace std;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class PartitionCostAnalysis {
 public:
@@ -78,4 +78,4 @@ protected:
   Verbosity verbose;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

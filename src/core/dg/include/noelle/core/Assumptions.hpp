@@ -14,8 +14,7 @@
 
 using namespace llvm;
 
-namespace llvm {
-namespace noelle {
+namespace arcana::noelle {
 
 template <class T, class SubT>
 class DGEdge;
@@ -55,7 +54,7 @@ public:
     return false;
   }
 
-  virtual ~Remedy(){}
+  virtual ~Remedy() {}
 };
 
 typedef std::shared_ptr<Remedies> Remedies_ptr;
@@ -115,7 +114,6 @@ struct RemediesCompare {
 typedef std::set<Remedies_ptr, RemediesCompare> SetOfRemedies;
 typedef std::unique_ptr<SetOfRemedies> SetOfRemedies_ptr;
 
-} // namespace noelle
-} // namespace llvm
+} // namespace arcana::noelle
 
 #endif

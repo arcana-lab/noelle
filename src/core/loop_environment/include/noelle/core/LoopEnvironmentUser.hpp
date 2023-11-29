@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopEnvironmentUser {
 public:
@@ -67,4 +67,4 @@ private:
   std::unordered_map<uint32_t, uint32_t> &envIDToIndex;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

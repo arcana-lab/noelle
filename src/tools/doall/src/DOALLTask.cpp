@@ -21,7 +21,7 @@
  */
 #include "noelle/tools/DOALLTask.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 DOALLTask::DOALLTask(FunctionType *taskSignature, Module &M)
   : Task{ taskSignature, M } {
@@ -45,4 +45,4 @@ DOALLTask::DOALLTask(FunctionType *taskSignature, Module &M)
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

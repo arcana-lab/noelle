@@ -21,7 +21,7 @@
  */
 #include "DeadFunctionEliminator.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 DeadFunctionEliminator::DeadFunctionEliminator()
   : ModulePass{ ID },
@@ -241,4 +241,4 @@ bool DeadFunctionEliminator::runOnModule(Module &M) {
   return modified;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

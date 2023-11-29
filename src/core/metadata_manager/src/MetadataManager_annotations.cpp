@@ -21,7 +21,7 @@
  */
 #include "noelle/core/MetadataManager.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 std::set<std::string> MetadataManager::getSourceCodeAnnotations(
     Function *f) const {
@@ -47,4 +47,4 @@ std::set<std::string> MetadataManager::getSourceCodeAnnotations(
   return this->globalMetadata.at(g);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

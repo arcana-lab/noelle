@@ -21,7 +21,7 @@
  */
 #pragma once
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * Transformations included in NOELLE
@@ -47,4 +47,4 @@ enum LoopDependenceInfoOptimization {
   THREAD_SAFE_LIBRARY_ID
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

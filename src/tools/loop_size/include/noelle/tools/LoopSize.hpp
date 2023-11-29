@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopSize : public ModulePass {
 public:
@@ -43,4 +43,4 @@ public:
 private:
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

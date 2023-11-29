@@ -30,7 +30,7 @@
 #include "noelle/core/SubCFGs.hpp"
 #include "noelle/core/SCCDAG.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class Mem2RegNonAlloca {
 public:
@@ -67,4 +67,4 @@ private:
   void dumpLogs(void);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

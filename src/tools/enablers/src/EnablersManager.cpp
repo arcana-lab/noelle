@@ -22,7 +22,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "EnablersManager.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 EnablersManager::EnablersManager() : ModulePass{ ID } {
 
@@ -163,4 +163,4 @@ bool EnablersManager::runOnModule(Module &M) {
   return modified;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

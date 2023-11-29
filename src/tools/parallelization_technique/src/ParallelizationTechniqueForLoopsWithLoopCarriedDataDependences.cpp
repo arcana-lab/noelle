@@ -21,7 +21,7 @@
  */
 #include "noelle/tools/ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
     ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences(
@@ -295,4 +295,4 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
   }
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

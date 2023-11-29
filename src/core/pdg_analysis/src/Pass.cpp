@@ -24,7 +24,7 @@
 #include "noelle/core/PDGPrinter.hpp"
 #include "llvm/Analysis/PostDominators.h"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * Pass options.
@@ -128,4 +128,4 @@ bool PDGAnalysis::runOnModule(Module &M) {
   return false;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

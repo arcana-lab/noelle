@@ -31,7 +31,7 @@
 
 using namespace llvm;
 using namespace std;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 using namespace Repl;
 

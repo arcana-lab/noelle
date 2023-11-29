@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopCarriedSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class MemoryClonableSCC : public LoopCarriedSCC {
 public:
@@ -40,4 +40,4 @@ protected:
       const std::set<DGEdge<Value, Value> *> &loopCarriedDependences);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

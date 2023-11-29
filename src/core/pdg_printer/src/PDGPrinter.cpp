@@ -41,7 +41,7 @@
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/SCCDAGGraphTraits.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 PDGPrinter::PDGPrinter() {
   return;
@@ -264,4 +264,4 @@ void DGPrinter::groupNodesByCluster(
   }
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

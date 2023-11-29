@@ -26,7 +26,7 @@
 #include "noelle/core/LoopEnvironment.hpp"
 #include "noelle/core/LoopEnvironmentUser.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopEnvironmentBuilder {
 public:
@@ -140,4 +140,4 @@ private:
   void createUsers(uint32_t numUsers);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

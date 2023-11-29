@@ -21,7 +21,7 @@
  */
 #include "RemoveFunction.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 RemoveFunction::RemoveFunction()
   : ModulePass{ ID },
@@ -67,4 +67,4 @@ bool RemoveFunction::runOnModule(Module &M) {
   return true;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

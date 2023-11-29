@@ -21,7 +21,7 @@
  */
 #include "noelle/tools/LoopInvariantCodeMotion.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool LoopInvariantCodeMotion::hoistInvariantValues(
     LoopDependenceInfo const &LDI) {
@@ -466,4 +466,4 @@ std::vector<Instruction *> LoopInvariantCodeMotion::
   return s;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

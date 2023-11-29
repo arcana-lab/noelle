@@ -4,7 +4,7 @@
 
 #include "noelle/core/UniqueIRMarker.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class IDToInstructionMapper : public InstVisitor<IDToInstructionMapper> {
 public:
@@ -36,4 +36,4 @@ private:
   Module &Mod;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

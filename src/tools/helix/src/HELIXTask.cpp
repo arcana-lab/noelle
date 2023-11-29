@@ -21,7 +21,7 @@
  */
 #include "noelle/tools/HELIXTask.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 HELIXTask::HELIXTask(FunctionType *taskSignature, Module &M)
   : Task{ taskSignature, M } {
@@ -46,4 +46,4 @@ HELIXTask::HELIXTask(FunctionType *taskSignature, Module &M)
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

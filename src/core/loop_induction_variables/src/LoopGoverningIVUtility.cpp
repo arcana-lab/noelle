@@ -21,7 +21,7 @@
  */
 #include "noelle/core/IVStepperUtility.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopGoverningIVUtility::LoopGoverningIVUtility(
     LoopStructure *loopOfGIV,
@@ -425,4 +425,4 @@ void LoopGoverningIVUtility::
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

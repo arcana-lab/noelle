@@ -21,7 +21,7 @@
  */
 #include "noelle/core/LoopEnvironment.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopEnvironment::LoopEnvironment(PDG *loopDG,
                                  std::vector<BasicBlock *> &exitBlocks)
@@ -277,4 +277,4 @@ uint64_t LoopEnvironment::getNumberOfLiveOuts(void) const {
   return numberOfLiveOuts;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

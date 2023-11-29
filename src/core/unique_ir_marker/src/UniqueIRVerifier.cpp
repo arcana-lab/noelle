@@ -3,7 +3,7 @@
 using std::addressof;
 using namespace llvm;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 UniqueIRVerifier::UniqueIRVerifier(ModulePass &MP) : MP(MP) {}
 
@@ -65,4 +65,4 @@ bool UniqueIRVerifier::verifyLoops() {
                        LoopIDsFromLoopInfo.begin());
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

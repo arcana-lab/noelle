@@ -27,7 +27,7 @@
 #include "noelle/core/Invariants.hpp"
 #include "noelle/core/Dominators.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class ClonableMemoryObject {
 public:
@@ -139,4 +139,4 @@ private:
                       DominatorSummary &ds);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -29,7 +29,7 @@
 
 using namespace llvm;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 struct HeuristicsPass : public ModulePass {
 public:
   static char ID;
@@ -44,4 +44,4 @@ public:
 
   Heuristics *getHeuristics(Noelle &noelle);
 };
-} // namespace llvm::noelle
+} // namespace arcana::noelle
