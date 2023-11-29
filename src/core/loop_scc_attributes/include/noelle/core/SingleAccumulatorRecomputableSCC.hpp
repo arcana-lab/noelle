@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/RecomputableSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class SingleAccumulatorRecomputableSCC : public RecomputableSCC {
 public:
@@ -45,4 +45,4 @@ protected:
       DominatorSummary &dom);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

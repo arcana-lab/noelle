@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DataFlowResult.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class DataFlowAnalysis {
 public:
@@ -42,4 +42,4 @@ public:
   DataFlowResult *getFullSets(Function *f);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

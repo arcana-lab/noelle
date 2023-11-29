@@ -25,7 +25,7 @@
 #include "noelle/core/LoopCarriedSCC.hpp"
 #include "noelle/core/Dominators.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class RecomputableSCC : public LoopCarriedSCC {
 public:
@@ -56,4 +56,4 @@ protected:
   void addValue(Instruction *v);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

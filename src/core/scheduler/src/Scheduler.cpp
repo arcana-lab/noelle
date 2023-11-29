@@ -21,7 +21,7 @@
  */
 #include "noelle/core/Scheduler.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * ------------------------------------------------------------------
@@ -1278,4 +1278,4 @@ void LoopScheduler::resolveSuccessorPHIs(Instruction *const Moved,
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

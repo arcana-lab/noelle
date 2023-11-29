@@ -25,7 +25,7 @@
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/LoopForest.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class InvariantManager {
 public:
@@ -83,4 +83,4 @@ private:
   };
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

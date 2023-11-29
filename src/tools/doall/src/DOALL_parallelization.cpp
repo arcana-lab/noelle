@@ -24,7 +24,7 @@
 #include "noelle/tools/DOALL.hpp"
 #include "noelle/tools/DOALLTask.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
 
@@ -254,4 +254,4 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   return true;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

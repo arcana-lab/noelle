@@ -21,7 +21,7 @@
  */
 #include "noelle/core/LoopNestingGraph.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopNestingGraph::LoopNestingGraph(FunctionsManager &fncsM,
                                    std::vector<LoopStructure *> const &loops)
@@ -129,7 +129,7 @@ LoopNestingGraphLoopLoopEdge *LoopNestingGraph::fetchOrCreateEdge(
   /*
    * Create the sub-edge.
    */
-  llvm::noelle::LoopNestingGraphInstructionNode *instNode = nullptr;
+  arcana::noelle::LoopNestingGraphInstructionNode *instNode = nullptr;
 
   // subedge can have a null instNode if it's not a call edge
   if (callInst != nullptr) {
@@ -191,4 +191,4 @@ LoopNestingGraphLoopLoopEdge *LoopNestingGraph::fetchOrCreateEdge(
   return existingEdge;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

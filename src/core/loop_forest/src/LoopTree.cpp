@@ -21,16 +21,13 @@
  */
 #include "noelle/core/LoopForest.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
-LoopTree::LoopTree(LoopForest *f, LoopStructure *l)
-  : LoopTree(f, l, nullptr) {
+LoopTree::LoopTree(LoopForest *f, LoopStructure *l) : LoopTree(f, l, nullptr) {
   return;
 }
 
-LoopTree::LoopTree(LoopForest *f,
-                               LoopStructure *l,
-                               LoopTree *parent)
+LoopTree::LoopTree(LoopForest *f, LoopStructure *l, LoopTree *parent)
   : forest{ f },
     loop{ l },
     parent{ parent } {
@@ -332,4 +329,4 @@ LoopTree::~LoopTree() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

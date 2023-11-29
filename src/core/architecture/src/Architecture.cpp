@@ -21,7 +21,7 @@
  */
 #include "noelle/core/Architecture.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 Architecture::Architecture() {
   return;
@@ -39,4 +39,4 @@ int32_t Architecture::getCacheLineBytes(void) {
   return 64;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

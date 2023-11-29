@@ -22,7 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/CallGraphNode.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 CallGraphFunctionNode::CallGraphFunctionNode(Function &func) : f{ func } {
 
@@ -67,4 +67,4 @@ CallGraphNode::~CallGraphNode() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

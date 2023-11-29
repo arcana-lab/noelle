@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class TalkDown : public ModulePass {
 public:
@@ -40,4 +40,4 @@ public:
 private:
   bool enabled;
 };
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -24,7 +24,7 @@
 #include "noelle/core/LoopNestingGraphNode.hpp"
 #include "noelle/core/LoopNestingGraphEdge.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopNestingGraphLoopNode::LoopNestingGraphLoopNode(LoopStructure *loop)
   : loop{ loop } {
@@ -128,4 +128,4 @@ void LoopNestingGraphInstructionNode::print(void) {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -28,7 +28,7 @@
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/LoopForest.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class EvolutionUpdate;
 
@@ -209,4 +209,4 @@ private:
   std::unordered_set<Use *> externalValuesUsed;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

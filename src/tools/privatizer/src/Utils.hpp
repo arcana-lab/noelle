@@ -22,7 +22,7 @@
 #pragma once
 
 #include "noelle/core/Noelle.hpp"
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class UserSummary {
 public:
@@ -76,4 +76,4 @@ unordered_set<Function *> functionsInvokedFrom(Noelle &noelle,
  */
 unordered_set<Function *> hotFunctions(Noelle &noelle);
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

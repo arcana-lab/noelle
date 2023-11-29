@@ -35,7 +35,7 @@
 
 using namespace std;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class Heuristics {
 public:
@@ -69,4 +69,4 @@ private:
   InvocationLatency invocationLatency;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

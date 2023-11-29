@@ -22,7 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Hot.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 Hot::Hot() : moduleNumberOfInstructionsExecuted{ 0 } {
   return;
@@ -350,4 +350,4 @@ void Hot::computeTotalInstructions(
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -24,7 +24,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "noelle/tools/DOALL.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class AutotunerDoallFilter : public ModulePass {
 public:
@@ -42,4 +42,4 @@ public:
   static char ID;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

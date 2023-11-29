@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class CompilationOptionsManager {
 public:
@@ -49,4 +49,4 @@ private:
   bool _hoistLoopsToMain;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

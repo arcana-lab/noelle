@@ -22,7 +22,7 @@
 #include "LoopStats.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 void LoopStats::printPerLoopStats(Hot *profiles, Stats *stats) {
   if (stats->loopID != -1) {

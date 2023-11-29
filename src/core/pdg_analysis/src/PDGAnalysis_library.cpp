@@ -25,7 +25,7 @@
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Utils.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool PDGAnalysis::isTheLibraryFunctionPure(Function *libraryFunction) {
   if (PDGAnalysis::externalFuncsHaveNoSideEffectOrHandledBySVF.count(
@@ -170,4 +170,4 @@ const StringSet<> PDGAnalysis::externalThreadSafeFunctions{
 
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

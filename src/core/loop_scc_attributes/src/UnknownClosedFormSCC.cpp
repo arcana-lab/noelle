@@ -21,7 +21,7 @@
  */
 #include "noelle/core/UnknownClosedFormSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 UnknownClosedFormSCC::UnknownClosedFormSCC(
     SCC *s,
@@ -42,4 +42,4 @@ bool UnknownClosedFormSCC::classof(const GenericSCC *s) {
   return (s->getKind() == GenericSCC::SCCKind::UNKNOWN_CLOSED_FORM);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

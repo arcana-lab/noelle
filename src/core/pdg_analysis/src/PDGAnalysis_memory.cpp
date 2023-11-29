@@ -26,7 +26,7 @@
 #include "IntegrationWithSVF.hpp"
 #include "noelle/core/Utils.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void PDGAnalysis::iterateInstForStore(PDG *pdg,
                                       Function &F,
@@ -938,4 +938,4 @@ AliasResult PDGAnalysis::doTheyAlias(PDG *pdg,
   return MayAlias;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

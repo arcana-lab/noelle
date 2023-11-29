@@ -22,7 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Hot.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 uint64_t Hot::getStaticInstructions(Instruction *i) const {
   return 1;
@@ -106,4 +106,4 @@ bool Hot::hasBeenExecuted(Instruction *i) const {
   return true;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

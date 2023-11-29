@@ -74,3 +74,5 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/CFG.h"
 #include <llvm/IR/Verifier.h>
+
+using namespace llvm;

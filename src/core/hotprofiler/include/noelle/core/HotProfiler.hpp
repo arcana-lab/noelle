@@ -26,7 +26,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Hot.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class HotProfiler : public ModulePass {
 public:
@@ -48,4 +48,4 @@ private:
   void analyzeProfiles(Module &M);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

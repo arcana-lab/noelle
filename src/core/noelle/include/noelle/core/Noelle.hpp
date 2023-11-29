@@ -44,7 +44,7 @@
 #include "noelle/core/AliasAnalysisEngine.hpp"
 #include "noelle/core/MayPointsToAnalysis.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 enum class Verbosity { Disabled, Minimal, Maximal };
 
@@ -287,4 +287,4 @@ private:
   fetchFunctionsSorting(void);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

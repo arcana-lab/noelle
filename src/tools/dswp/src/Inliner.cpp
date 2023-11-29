@@ -22,7 +22,7 @@
 #include "noelle/tools/DSWP.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 void DSWP::inlineQueueCalls(int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];

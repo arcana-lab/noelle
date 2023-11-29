@@ -24,7 +24,7 @@
 
 using namespace std;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 MpaSummary::MpaSummary(Function *currentF) : currentF(currentF) {
 
@@ -547,4 +547,4 @@ bool MpaSummary::unionPts(NodeID srcId, NodeID dstId) {
   }
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

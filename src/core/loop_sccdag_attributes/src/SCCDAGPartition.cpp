@@ -21,7 +21,7 @@
  */
 #include "noelle/core/SCCDAGPartition.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 SCCDAGPartition::SCCDAGPartition(
     SCCDAG *sccdag,
@@ -718,7 +718,7 @@ raw_ostream &SCCDAGPartitioner::printSet(raw_ostream &stream, SCCSet *set) {
   return stream << "\n";
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle
 
 // raw_ostream &SCCDAGPartition::print (raw_ostream &stream, std::string prefix)
 // {

@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SingleAccumulatorRecomputableSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class InductionVariableSCC : public SingleAccumulatorRecomputableSCC {
 public:
@@ -41,4 +41,4 @@ protected:
       DominatorSummary &dom);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

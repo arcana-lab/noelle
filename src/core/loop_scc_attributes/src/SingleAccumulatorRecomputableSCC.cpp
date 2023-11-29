@@ -21,7 +21,7 @@
  */
 #include "noelle/core/SingleAccumulatorRecomputableSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 SingleAccumulatorRecomputableSCC::SingleAccumulatorRecomputableSCC(
     SCCKind K,
@@ -70,4 +70,4 @@ bool SingleAccumulatorRecomputableSCC::classof(const GenericSCC *s) {
              <= GenericSCC::SCCKind::LAST_SINGLE_ACCUMULATOR_RECOMPUTABLE);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

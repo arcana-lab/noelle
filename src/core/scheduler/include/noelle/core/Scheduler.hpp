@@ -25,7 +25,7 @@
 #include "noelle/core/LoopDependenceInfo.hpp"
 #include "noelle/core/Dominators.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 enum ScheduleDirection {
 
@@ -226,4 +226,4 @@ private:
   std::set<BasicBlock *> Body;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

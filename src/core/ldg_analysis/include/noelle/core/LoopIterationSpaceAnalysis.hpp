@@ -29,7 +29,7 @@
 #include "noelle/core/LoopGoverningInductionVariable.hpp"
 #include "noelle/core/IVStepperUtility.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopIterationSpaceAnalysis {
 public:
@@ -127,4 +127,4 @@ private:
                                          MemoryAccessSpace *space);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

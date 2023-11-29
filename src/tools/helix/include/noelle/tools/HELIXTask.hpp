@@ -26,7 +26,7 @@
 
 using namespace std;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class HELIXTask : public Task {
 public:
@@ -56,4 +56,4 @@ public:
   std::set<CallInst *> signals;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -21,7 +21,7 @@
  */
 #include "noelle/core/InductionVariable.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 InductionVariable::InductionVariable(
     LoopStructure *LS,
@@ -69,19 +69,19 @@ InductionVariable::InductionVariable(
   : scc{ scc },
     loopEntryPHI{ loopEntryPHI },
     stepPHIs{ stepPHIs },
-    PHIs { },
-    nonPHIIntermediateValues { },
-    allInstructions { },
-    derivedSCEVInstructions { },
+    PHIs{},
+    nonPHIIntermediateValues{},
+    allInstructions{},
+    derivedSCEVInstructions{},
     startValue{ nullptr },
     stepSCEV{ nullptr },
-    singleStepValue { nullptr} ,
+    singleStepValue{ nullptr },
     stepMultiplier{ stepMultiplier },
-    computationOfStepValue { },
+    computationOfStepValue{},
     isComputedStepValueLoopInvariant{ false },
     loopEntryPHIType{ loopEntryPHI->getType() },
-    valuesToReferenceInComputingStepValue { },
-    valuesInScopeOfInductionVariable { } {
+    valuesToReferenceInComputingStepValue{},
+    valuesInScopeOfInductionVariable{} {
 
   /*
    * Fetch initial value of induction variable
@@ -570,4 +570,4 @@ Type *InductionVariable::getType(void) const {
   return loopEntryPHIType;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/GenericSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopCarriedSCC : public GenericSCC {
 public:
@@ -51,4 +51,4 @@ protected:
                  bool commutative);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

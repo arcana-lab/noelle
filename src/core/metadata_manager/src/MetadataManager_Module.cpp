@@ -21,7 +21,7 @@
  */
 #include "noelle/core/MetadataManager.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool MetadataManager::doesHaveMetadata(const std::string &metadataName) const {
 
@@ -59,4 +59,4 @@ void MetadataManager::addMetadata(const std::string &metadataName,
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

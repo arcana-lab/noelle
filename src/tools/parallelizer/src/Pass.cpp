@@ -21,7 +21,7 @@
  */
 #include "Parallelizer.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * Options of the Parallelizer pass.
@@ -90,10 +90,10 @@ void Parallelizer::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<HeuristicsPass>();
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle
 
 // Next there is code to register your pass to "opt"
-char llvm::noelle::Parallelizer::ID = 0;
+char arcana::noelle::Parallelizer::ID = 0;
 static RegisterPass<Parallelizer> X(
     "parallelizer",
     "Automatic parallelization of sequential code");

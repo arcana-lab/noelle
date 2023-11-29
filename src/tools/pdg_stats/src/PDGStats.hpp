@@ -23,7 +23,7 @@
 
 #include "noelle/core/Noelle.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class PDGStats : public ModulePass {
 public:
@@ -79,4 +79,4 @@ private:
                                  uint64_t totCalls);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

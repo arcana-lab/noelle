@@ -21,7 +21,7 @@
  */
 #include "noelle/core/PeriodicVariableSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 PeriodicVariableSCC::PeriodicVariableSCC(
     SCC *s,
@@ -59,4 +59,4 @@ bool PeriodicVariableSCC::classof(const GenericSCC *s) {
   return (s->getKind() == GenericSCC::SCCKind::PERIODIC_VARIABLE);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

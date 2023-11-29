@@ -27,7 +27,7 @@
 #include "noelle/core/DataFlowResult.hpp"
 #include "noelle/core/SCCDAGPartition.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class SCCPartitionScheduler {
 public:
@@ -66,4 +66,4 @@ private:
       Instruction *I);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

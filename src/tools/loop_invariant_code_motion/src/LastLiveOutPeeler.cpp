@@ -54,7 +54,7 @@ using namespace llvm;
 #include "LastLiveOutPeeler.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 LastLiveOutPeeler::LastLiveOutPeeler(LoopDependenceInfo const &LDI,
                                      Noelle &noelle)

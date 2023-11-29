@@ -23,7 +23,7 @@
 
 #include "noelle/core/Utils.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 typedef uint32_t NodeID;
 
@@ -205,4 +205,4 @@ private:
   MpaSummary *getFunctionSummary(Function *currentF);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

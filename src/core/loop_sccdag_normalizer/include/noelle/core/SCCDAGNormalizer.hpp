@@ -27,7 +27,7 @@
 #include "noelle/core/SCCDAGPartition.hpp"
 #include "noelle/core/LoopForest.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class SCCDAGNormalizer {
 public:
@@ -62,4 +62,4 @@ private:
    */
   void collapseIntroducedCycles(void);
 };
-} // namespace llvm::noelle
+} // namespace arcana::noelle

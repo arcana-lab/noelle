@@ -22,7 +22,7 @@
 
 #include "PlanInfo.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 PlanInfo::PlanInfo() : ModulePass{ ID }, printAllHeaders{ false } {
   return;
@@ -93,4 +93,4 @@ bool PlanInfo::runOnModule(Module &M) {
   return false;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

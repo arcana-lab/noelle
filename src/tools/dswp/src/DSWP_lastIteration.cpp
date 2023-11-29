@@ -21,7 +21,7 @@
  */
 #include "noelle/tools/DSWP.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 BasicBlock *DSWP::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
     LoopDependenceInfo *LDI,
@@ -30,4 +30,4 @@ BasicBlock *DSWP::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
   return &bb;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

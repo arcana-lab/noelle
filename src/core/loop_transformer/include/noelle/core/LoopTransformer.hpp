@@ -27,7 +27,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopTransformer : public ModulePass {
 public:
@@ -60,4 +60,4 @@ private:
   PDG *pdg;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

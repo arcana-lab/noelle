@@ -21,7 +21,7 @@
  */
 #include "noelle/core/Task.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void Task::adjustDataAndControlFlowToUseClones(void) {
 
@@ -153,4 +153,4 @@ void Task::adjustDataAndControlFlowToUseClones(Instruction *cloneI) {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

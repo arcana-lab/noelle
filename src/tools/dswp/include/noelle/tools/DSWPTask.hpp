@@ -28,7 +28,7 @@
 
 using namespace std;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 struct QueueInfo;
 struct QueueInstrs;
@@ -115,4 +115,4 @@ struct QueueInstrs {
   Value *allocaCast;
   Value *load;
 };
-} // namespace llvm::noelle
+} // namespace arcana::noelle

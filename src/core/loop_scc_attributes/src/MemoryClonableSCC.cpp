@@ -21,7 +21,7 @@
  */
 #include "noelle/core/MemoryClonableSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 MemoryClonableSCC::MemoryClonableSCC(
     SCCKind K,
@@ -38,4 +38,4 @@ bool MemoryClonableSCC::classof(const GenericSCC *s) {
          && (s->getKind() <= GenericSCC::SCCKind::LAST_MEMORY_CLONABLE);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

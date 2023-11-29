@@ -1,6 +1,6 @@
 #include "noelle/core/ProgramAliasAnalysisEngine.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 ProgramAliasAnalysisEngine::ProgramAliasAnalysisEngine(const std::string &name,
                                                        void *ptr)
@@ -12,4 +12,4 @@ std::string ProgramAliasAnalysisEngine::getName(void) const {
   return "ProgramAliasAnalysisEngine \"" + this->n + "\"";
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

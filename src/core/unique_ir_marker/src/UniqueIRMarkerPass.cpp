@@ -9,7 +9,7 @@ cl::opt<bool> ReinstrumentModule("reinstrument-ir");
 cl::opt<bool> RenumberModule("renumber-ir");
 cl::opt<bool> VerifyModule("verify-ir");
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 UniqueIRMarkerPass::UniqueIRMarkerPass() : ModulePass(ID) {}
 
@@ -58,4 +58,4 @@ static RegisterPass<UniqueIRMarkerPass> X(
     "Add a unique ID to Instructions, BB, Loop, Function and Modules "
     "which will be used by VIA.");
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

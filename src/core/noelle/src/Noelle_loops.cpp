@@ -29,7 +29,7 @@
 #include "noelle/core/LoopForest.hpp"
 #include "noelle/core/HotProfiler.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 std::vector<LoopStructure *> *Noelle::getLoopStructures(Function *function) {
   return this->getLoopStructures(function, this->minHot);
@@ -1566,4 +1566,4 @@ std::function<std::vector<Function *>(std::set<Function *> fns)> Noelle::
   return s;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

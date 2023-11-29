@@ -24,7 +24,7 @@
 
 #include "noelle/core/Noelle.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class PlanInfo : public ModulePass {
 public:
@@ -44,4 +44,4 @@ private:
   std::vector<int> printHeaders;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

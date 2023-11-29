@@ -25,7 +25,7 @@
 #include "noelle/core/LoopUnroll.hpp"
 #include "noelle/core/LoopDistribution.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopTransformer::LoopTransformer() : ModulePass{ ID } {
   return;
@@ -166,4 +166,4 @@ bool LoopTransformer::splitLoop(LoopDependenceInfo *loop,
   return modified;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

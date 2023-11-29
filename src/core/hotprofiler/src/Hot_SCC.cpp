@@ -22,7 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Hot.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool Hot::hasBeenExecuted(SCC *scc) const {
   auto s = this->getSelfInstructions(scc);
@@ -61,4 +61,4 @@ uint64_t Hot::getTotalInstructions(SCC *scc) const {
   return t;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -21,7 +21,7 @@
  */
 #include "noelle/core/LoopIterationSpaceAnalysis.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopIterationSpaceAnalysis::LoopIterationSpaceAnalysis(
     LoopTree *loops,
@@ -1009,4 +1009,4 @@ bool LoopIterationSpaceAnalysis::isInnerDimensionSubscriptsBounded(
   return true;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

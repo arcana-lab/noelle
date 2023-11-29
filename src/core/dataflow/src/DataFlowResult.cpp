@@ -22,7 +22,7 @@
 #include "noelle/core/DataFlowResult.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 DataFlowResult::DataFlowResult() {
   return;

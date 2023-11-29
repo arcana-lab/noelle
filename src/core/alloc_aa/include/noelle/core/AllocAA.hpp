@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 enum class AllocAAVerbosity { Disabled, Minimal, Maximal };
 
@@ -89,4 +89,4 @@ private:
   bool canPointToTheSameObject_Globals(Value *p1, Value *p2);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

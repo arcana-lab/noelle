@@ -24,7 +24,7 @@
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 MDNode *PDGAnalysis::getEdgeMetadata(
     DGEdge<Value, Value> *edge,
@@ -233,4 +233,4 @@ DGEdge<Value, Value> *PDGAnalysis::constructEdgeFromMetadata(
   return edge;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

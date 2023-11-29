@@ -24,7 +24,7 @@
 #include "noelle/core/DGGraphTraits.hpp"
 #include "noelle/core/SCCDAG.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 template <class GraphType, class NodeType>
 struct ElementTraits<GraphType, NodeType, SCC>
@@ -74,7 +74,7 @@ struct ElementTraits<GraphType, NodeType, SCC>
   }
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle
 
 namespace llvm {
 

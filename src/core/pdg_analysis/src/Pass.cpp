@@ -23,7 +23,7 @@
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/PDGPrinter.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * Pass options.
@@ -127,4 +127,4 @@ bool PDGAnalysis::runOnModule(Module &M) {
   return false;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

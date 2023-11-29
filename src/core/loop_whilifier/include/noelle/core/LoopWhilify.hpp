@@ -25,7 +25,7 @@
 #include "noelle/core/LoopDependenceInfo.hpp"
 #include "noelle/core/Scheduler.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class WhilifierContext {
 
@@ -144,4 +144,4 @@ private:
   void rerouteLoopBranches(WhilifierContext &WC, BasicBlock *NewHeader);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -50,7 +50,7 @@
 
 using namespace llvm;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class DGPrinter {
 public:
@@ -115,4 +115,4 @@ private:
                                       std::set<Function *> &funcSet);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

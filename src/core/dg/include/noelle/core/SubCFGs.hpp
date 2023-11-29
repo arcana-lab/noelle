@@ -34,9 +34,9 @@
 
 using namespace std;
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * Execution Graph.
@@ -67,4 +67,4 @@ private:
   void connectBasicBlockNodes();
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

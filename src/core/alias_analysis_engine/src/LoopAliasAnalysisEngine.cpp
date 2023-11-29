@@ -1,6 +1,6 @@
 #include "noelle/core/LoopAliasAnalysisEngine.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopAliasAnalysisEngine::LoopAliasAnalysisEngine(const std::string &name,
                                                  void *ptr)
@@ -12,4 +12,4 @@ std::string LoopAliasAnalysisEngine::getName(void) const {
   return "LoopAliasAnalysisEngine \"" + this->n + "\"";
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

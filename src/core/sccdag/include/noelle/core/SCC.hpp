@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DGBase.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * Strongly Connected Component
@@ -111,4 +111,4 @@ public:
   DGEdge(const DGEdge<SCC, SCC> &oldEdge) : DGEdge<SCC, Value>(oldEdge) {}
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

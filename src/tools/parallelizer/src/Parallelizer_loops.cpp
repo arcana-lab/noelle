@@ -21,7 +21,7 @@
  */
 #include "Parallelizer.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
 
@@ -201,4 +201,4 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
   return modified;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

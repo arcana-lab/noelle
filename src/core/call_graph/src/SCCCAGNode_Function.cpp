@@ -22,7 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCCCAG.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 SCCCAGNode_Function::SCCCAGNode_Function(CallGraphNode *n) : node{ n } {
   return;
@@ -40,4 +40,4 @@ SCCCAGNode_Function::~SCCCAGNode_Function() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

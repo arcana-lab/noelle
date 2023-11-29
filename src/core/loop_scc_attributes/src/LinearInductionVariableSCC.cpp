@@ -21,7 +21,7 @@
  */
 #include "noelle/core/LinearInductionVariableSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LinearInductionVariableSCC::LinearInductionVariableSCC(
     SCC *s,
@@ -48,4 +48,4 @@ bool LinearInductionVariableSCC::classof(const GenericSCC *s) {
   return (s->getKind() == GenericSCC::SCCKind::LINEAR_INDUCTION_VARIABLE);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

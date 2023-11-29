@@ -21,7 +21,7 @@
  */
 #include "TimeSaved.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 TimeSaved::TimeSaved() : ModulePass{ ID }, forceParallelization{ true } {
 
@@ -134,10 +134,10 @@ void TimeSaved::getAnalysisUsage(AnalysisUsage &AU) const {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle
 
 // Next there is code to register your pass to "opt"
-char llvm::noelle::TimeSaved::ID = 0;
+char arcana::noelle::TimeSaved::ID = 0;
 static RegisterPass<TimeSaved> X(
     "TimeSaved",
     "Print estimated time saved by parallelization");

@@ -23,10 +23,10 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LDGAnalysis {
 public:
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

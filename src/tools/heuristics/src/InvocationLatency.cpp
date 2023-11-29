@@ -22,7 +22,7 @@
 #include "noelle/tools/InvocationLatency.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 InvocationLatency::InvocationLatency(Hot *hot) : profiles{ hot } {
   return;

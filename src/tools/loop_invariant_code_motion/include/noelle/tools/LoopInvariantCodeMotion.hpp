@@ -26,7 +26,7 @@
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/SubCFGs.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopInvariantCodeMotion {
 public:
@@ -57,4 +57,4 @@ private:
       Instruction &I);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

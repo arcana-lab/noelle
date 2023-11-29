@@ -25,7 +25,7 @@
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopUnroll {
 public:
@@ -53,4 +53,4 @@ private:
    */
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

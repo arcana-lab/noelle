@@ -31,7 +31,7 @@
 #include "noelle/core/AliasAnalysisEngine.hpp"
 #include "noelle/core/MayPointsToAnalysis.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 enum class PDGVerbosity { Disabled, Minimal, Maximal, MaximalAndPDG };
 
@@ -203,4 +203,4 @@ private:
   static const StringSet<> externalThreadSafeFunctions;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

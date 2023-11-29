@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SingleAccumulatorRecomputableSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class PeriodicVariableSCC : public SingleAccumulatorRecomputableSCC {
 public:
@@ -53,4 +53,4 @@ protected:
   Value *step;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

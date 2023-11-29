@@ -21,7 +21,7 @@
  */
 #include "noelle/core/LoopTransformer.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool LoopTransformer::doInitialization(Module &M) {
 
@@ -65,4 +65,4 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

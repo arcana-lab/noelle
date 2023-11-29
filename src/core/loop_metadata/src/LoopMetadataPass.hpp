@@ -25,7 +25,7 @@
 
 using namespace llvm;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopMetadataPass : public ModulePass {
 public:
@@ -45,4 +45,4 @@ private:
   bool setIDs(std::vector<LoopStructure *> &loopStructures);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

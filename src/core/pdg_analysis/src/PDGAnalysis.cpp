@@ -25,7 +25,7 @@
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Utils.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 PDGAnalysis::PDGAnalysis()
   : ModulePass{ ID },
@@ -754,4 +754,4 @@ PDGAnalysis::~PDGAnalysis() {
   }
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

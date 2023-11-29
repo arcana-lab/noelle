@@ -25,7 +25,7 @@
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Hot.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class FunctionsManager {
 public:
@@ -63,4 +63,4 @@ private:
   Hot *prof;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

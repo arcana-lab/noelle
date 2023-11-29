@@ -22,7 +22,7 @@
 #include "Mem2RegNonAlloca.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 Mem2RegNonAlloca::Mem2RegNonAlloca(LoopDependenceInfo const &LDI,
                                    Noelle &noelle)
@@ -720,4 +720,4 @@ void Mem2RegNonAlloca::dumpLogs(void) {
   // + ".dot", new SubCFGs(basicBlocksSet));
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

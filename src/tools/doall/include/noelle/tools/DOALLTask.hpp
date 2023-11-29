@@ -24,7 +24,7 @@
 #include "noelle/core/Task.hpp"
 #include "noelle/core/SCCDAGAttrs.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class DOALLTask : public Task {
 public:
@@ -50,4 +50,4 @@ public:
   PHINode *outermostLoopIV;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

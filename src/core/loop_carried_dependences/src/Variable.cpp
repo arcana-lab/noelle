@@ -22,7 +22,7 @@
 #include "noelle/core/Variable.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /************************************************************************************
  * LoopCarriedMemoryLocation implementation
@@ -271,4 +271,4 @@ Instruction *EvolutionUpdate::getUpdateInstruction(void) const {
   return updateInstruction;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

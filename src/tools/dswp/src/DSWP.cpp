@@ -23,7 +23,7 @@
 #include "noelle/core/Architecture.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 DSWP::DSWP(Noelle &n, bool forceParallelization, bool enableSCCMerging)
   : ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences{ n,
@@ -420,4 +420,4 @@ Transformation DSWP::getParallelizationID(void) const {
   return Transformation::DSWP_ID;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

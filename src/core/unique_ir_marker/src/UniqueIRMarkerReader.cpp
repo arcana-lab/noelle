@@ -4,7 +4,7 @@
 
 using namespace llvm;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 optional<Constant *> UniqueIRMarkerReader::getInstructionConstID(
     const llvm::Instruction *I) {
@@ -136,4 +136,4 @@ optional<IDType> UniqueIRMarkerReader::getIDFromLoopMeta(MDNode *Node) {
   return nullopt;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

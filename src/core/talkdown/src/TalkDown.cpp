@@ -21,7 +21,7 @@
  */
 #include "noelle/core/TalkDown.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * Options for talkdown
@@ -71,4 +71,4 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

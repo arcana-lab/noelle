@@ -25,7 +25,7 @@
 #include "noelle/core/Dominators.hpp"
 #include "noelle/core/LoopStructure.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopForest;
 
@@ -120,4 +120,4 @@ private:
       std::unordered_set<LoopTree *> &potentialTrees);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

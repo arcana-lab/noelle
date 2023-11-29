@@ -21,7 +21,7 @@
  */
 #include "TimeSaved.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 std::pair<uint64_t, uint64_t> TimeSaved::evaluateSavings(
     Noelle &noelle,
@@ -126,4 +126,4 @@ uint64_t TimeSaved::evaluateSavings(
   return rootLoopMaxTimeSaved;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

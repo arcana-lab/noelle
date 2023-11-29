@@ -21,7 +21,7 @@
  */
 #include "CodeSize.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool CodeSize::doInitialization(Module &M) {
   return false;
@@ -55,4 +55,4 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

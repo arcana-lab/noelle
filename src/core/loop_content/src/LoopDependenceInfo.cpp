@@ -27,7 +27,7 @@
 #include "LoopAwareMemDepAnalysis.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopDependenceInfo::LoopDependenceInfo(
     CompilationOptionsManager *compilationOptionsManager,
@@ -787,4 +787,4 @@ LoopDependenceInfo::~LoopDependenceInfo() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -26,7 +26,7 @@ static cl::opt<bool> DisableDead("noelle-disable-dead",
                                  cl::Hidden,
                                  cl::desc("Disable the dead code eliminator"));
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool DeadFunctionEliminator::doInitialization(Module &M) {
   if (DisableDead.getNumOccurrences() > 0) {
@@ -62,4 +62,4 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -22,7 +22,7 @@
 #include "Privatizer.hpp"
 #include "Utils.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool Privatizer::applyH2S(Noelle &noelle) {
   bool modified = false;
@@ -258,4 +258,4 @@ bool Privatizer::transformH2S(Noelle &noelle, LiveMemorySummary liveMemSum) {
   return modified;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

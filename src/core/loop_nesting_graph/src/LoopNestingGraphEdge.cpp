@@ -22,7 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopNestingGraphEdge.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void LoopNestingGraphEdge::setMust(void) {
   this->isMust = true;
@@ -116,4 +116,4 @@ void LoopNestingGraphInstructionLoopEdge::print(void) {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

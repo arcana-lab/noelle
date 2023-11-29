@@ -23,7 +23,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/HotProfiler.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 Noelle::Noelle()
   : ModulePass{ ID },
@@ -231,4 +231,4 @@ GlobalsManager *Noelle::getGlobalsManager(void) {
   return this->gm;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

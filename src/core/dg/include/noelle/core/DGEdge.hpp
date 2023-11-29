@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DGNode.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 enum DataDependenceType { DG_DATA_NONE, DG_DATA_RAW, DG_DATA_WAR, DG_DATA_WAW };
 
@@ -157,7 +157,7 @@ public:
     return;
   }
 
-  bool isLoopCarriedDependence() const ;
+  bool isLoopCarriedDependence() const;
 
   void addSubEdge(DGEdge<SubT, SubT> *edge);
 
@@ -343,10 +343,10 @@ template <class T, class SubT>
 T *DGEdge<T, SubT>::getDst(void) const {
   return to->getT();
 }
-  
+
 template <class T, class SubT>
 bool DGEdge<T, SubT>::isLoopCarriedDependence() const {
   return isLoopCarried;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -24,7 +24,7 @@
 #include "noelle/core/SCCPartitionScheduler.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 /*
  * Heuristic used: push furthest outlier instructions closer to the rest of the

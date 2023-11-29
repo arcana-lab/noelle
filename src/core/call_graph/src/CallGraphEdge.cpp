@@ -22,7 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/CallGraphEdge.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void CallGraphEdge::setMust(void) {
   this->isMust = true;
@@ -176,4 +176,4 @@ CallGraphFunctionFunctionEdge::~CallGraphFunctionFunctionEdge() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Transformations.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopTransformationsManager {
 public:
@@ -75,4 +75,4 @@ private:
   bool _areLoopAwareAnalysesEnabled;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

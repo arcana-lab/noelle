@@ -25,7 +25,7 @@
 #include "noelle/core/SCCDAGPartition.hpp"
 #include "llvm/ADT/iterator_range.h"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class SequentialSegment {
 public:
@@ -85,4 +85,4 @@ private:
       std::unordered_set<Instruction *> &ssInstructions);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle
