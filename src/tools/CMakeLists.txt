@@ -58,6 +58,7 @@ foreach(tool_dir ${tool_dirs})
   install(FILES ${noelle_include}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/noelle/tools)
 
+  # Append this include dir for compilation
   list(APPEND noelle_tool_include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/${tool_dir}/include)
 endforeach()
 set_property(GLOBAL PROPERTY NOELLE_TOOL_INCLUDE_DIRS "${noelle_tool_include_dirs}")
@@ -71,7 +72,7 @@ include_directories(${noelle_tool_include_dirs})
 
 # Add each Tool
 foreach(tool_dir ${tool_dirs})
-  set(dir_cmake ${CMAKE_CURRENT_SOURCE_DIR}/${core_dir}/CMakeLists.txt)
+  set(dir_cmake ${CMAKE_CURRENT_SOURCE_DIR}/${tool_dir}/CMakeLists.txt)
   if(EXISTS ${dir_cmake})
     add_subdirectory(${tool_dir})
   else()
@@ -79,3 +80,4 @@ foreach(tool_dir ${tool_dirs})
   endif()
 endforeach()
                   
+add_subdirectory(scripts)

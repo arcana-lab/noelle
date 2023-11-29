@@ -74,7 +74,7 @@ foreach(core_dir ${core_dirs})
   install(FILES ${noelle_include}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/noelle/core)
 
-  # Apend this include dir for compilation
+  # Append this include dir for compilation
   list(APPEND noelle_core_include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/${core_dir}/include)
 endforeach()
 set_property(GLOBAL PROPERTY NOELLE_CORE_INCLUDE_DIRS "${noelle_core_include_dirs}")
@@ -92,3 +92,5 @@ foreach(core_dir ${core_dirs})
     message("could not find ${dir_cmake}")
   endif()
 endforeach()
+
+add_subdirectory(scripts)
