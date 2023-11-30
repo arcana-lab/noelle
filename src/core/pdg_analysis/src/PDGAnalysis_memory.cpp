@@ -194,7 +194,8 @@ bool PDGAnalysis::hasNoMemoryOperations(CallBase *call) {
    * SVF is enabled.
    * We can use it.
    */
-  if (NoelleSVFIntegration::getModRefInfo(call) == ModRefInfo::NoModRef) {
+  auto svfResult = NoelleSVFIntegration::getModRefInfo(call);
+  if ((svfResult == ModRefInfo::NoModRef) || (svfResult == ModRefInfo::Must)) {
     return true;
   }
 
@@ -223,6 +224,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
    */
   switch (AA.getModRefInfo(call, MemoryLocation::get(store))) {
     case ModRefInfo::NoModRef:
+    case ModRefInfo::Must:
       return;
     case ModRefInfo::Ref:
     case ModRefInfo::MustRef:
@@ -268,6 +270,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
       auto const &loc = MemoryLocation::get(store);
       switch (NoelleSVFIntegration::getModRefInfo(call, loc)) {
         case ModRefInfo::NoModRef:
+        case ModRefInfo::Must:
           return;
         case ModRefInfo::Ref:
         case ModRefInfo::MustRef:
@@ -357,6 +360,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
    */
   switch (AA.getModRefInfo(call, MemoryLocation::get(load))) {
     case ModRefInfo::NoModRef:
+    case ModRefInfo::Must:
     case ModRefInfo::Ref:
     case ModRefInfo::MustRef:
       return;
@@ -397,6 +401,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
       switch (NoelleSVFIntegration::getModRefInfo(call,
                                                   MemoryLocation::get(load))) {
         case ModRefInfo::NoModRef:
+        case ModRefInfo::Must:
         case ModRefInfo::Ref:
         case ModRefInfo::MustRef:
           return;
@@ -487,6 +492,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
    */
   switch (AA.getModRefInfo(otherCall, call)) {
     case ModRefInfo::NoModRef:
+    case ModRefInfo::Must:
       return;
 
     case ModRefInfo::Ref:
@@ -501,6 +507,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
       if (isCallReachableFromOtherCall) {
         switch (AA.getModRefInfo(call, otherCall)) {
           case ModRefInfo::NoModRef:
+          case ModRefInfo::Must:
           case ModRefInfo::Ref:
           case ModRefInfo::MustRef:
 
@@ -531,6 +538,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
       if (isCallReachableFromOtherCall) {
         switch (AA.getModRefInfo(call, otherCall)) {
           case ModRefInfo::NoModRef:
+          case ModRefInfo::Must:
             return;
           case ModRefInfo::Ref:
           case ModRefInfo::MustRef:
@@ -560,6 +568,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
       if (isCallReachableFromOtherCall) {
         switch (AA.getModRefInfo(call, otherCall)) {
           case ModRefInfo::NoModRef:
+          case ModRefInfo::Must:
             return;
           case ModRefInfo::Ref:
           case ModRefInfo::MustRef:
@@ -616,6 +625,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
         && isSafeToQueryModRefOfSVF(otherCall, bv)) {
       switch (NoelleSVFIntegration::getModRefInfo(otherCall, call)) {
         case ModRefInfo::NoModRef:
+        case ModRefInfo::Must:
           return;
 
         case ModRefInfo::Ref:
@@ -624,6 +634,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
           if (isCallReachableFromOtherCall) {
             switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
               case ModRefInfo::NoModRef:
+              case ModRefInfo::Must:
               case ModRefInfo::Ref:
               case ModRefInfo::MustRef:
                 return;
@@ -642,6 +653,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
           if (isCallReachableFromOtherCall) {
             switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
               case ModRefInfo::NoModRef:
+              case ModRefInfo::Must:
                 return;
               case ModRefInfo::Ref:
               case ModRefInfo::MustRef:
@@ -665,6 +677,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
           if (isCallReachableFromOtherCall) {
             switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
               case ModRefInfo::NoModRef:
+              case ModRefInfo::Must:
                 return;
               case ModRefInfo::Ref:
               case ModRefInfo::MustRef:
