@@ -225,12 +225,15 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
     case ModRefInfo::NoModRef:
       return;
     case ModRefInfo::Ref:
+    case ModRefInfo::MustRef:
       bv[0] = true;
       break;
     case ModRefInfo::Mod:
+    case ModRefInfo::MustMod:
       bv[1] = true;
       break;
     case ModRefInfo::ModRef:
+    case ModRefInfo::MustModRef:
       bv[2] = true;
       break;
   }
@@ -267,12 +270,15 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
         case ModRefInfo::NoModRef:
           return;
         case ModRefInfo::Ref:
+        case ModRefInfo::MustRef:
           bv[0] = true;
           break;
         case ModRefInfo::Mod:
+        case ModRefInfo::MustMod:
           bv[1] = true;
           break;
         case ModRefInfo::ModRef:
+        case ModRefInfo::MustModRef:
           bv[2] = true;
           break;
       }
@@ -352,9 +358,12 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
   switch (AA.getModRefInfo(call, MemoryLocation::get(load))) {
     case ModRefInfo::NoModRef:
     case ModRefInfo::Ref:
+    case ModRefInfo::MustRef:
       return;
     case ModRefInfo::Mod:
+    case ModRefInfo::MustMod:
     case ModRefInfo::ModRef:
+    case ModRefInfo::MustModRef:
       break;
   }
 
@@ -389,10 +398,13 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                   MemoryLocation::get(load))) {
         case ModRefInfo::NoModRef:
         case ModRefInfo::Ref:
+        case ModRefInfo::MustRef:
           return;
 
         case ModRefInfo::Mod:
+        case ModRefInfo::MustMod:
         case ModRefInfo::ModRef:
+        case ModRefInfo::MustModRef:
           break;
       }
     }
@@ -478,6 +490,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
       return;
 
     case ModRefInfo::Ref:
+    case ModRefInfo::MustRef:
 
       /*
        * @otherCall may read memory locations written by @call
@@ -489,6 +502,8 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
         switch (AA.getModRefInfo(call, otherCall)) {
           case ModRefInfo::NoModRef:
           case ModRefInfo::Ref:
+          case ModRefInfo::MustRef:
+
             /*
              * Contradicting
              * if @otherCall Ref @call, and @call is reachable from @otherCall
@@ -496,13 +511,16 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
              */
             return;
           case ModRefInfo::Mod:
+          case ModRefInfo::MustMod:
           case ModRefInfo::ModRef:
+          case ModRefInfo::MustModRef:
             break;
         }
       }
       break;
 
     case ModRefInfo::Mod:
+    case ModRefInfo::MustMod:
 
       /*
        * @otherCall may write a memory location that can be read or written by
@@ -515,12 +533,15 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
           case ModRefInfo::NoModRef:
             return;
           case ModRefInfo::Ref:
+          case ModRefInfo::MustRef:
             rbv[0] = true;
             break;
           case ModRefInfo::Mod:
+          case ModRefInfo::MustMod:
             rbv[1] = true;
             break;
           case ModRefInfo::ModRef:
+          case ModRefInfo::MustModRef:
             rbv[2] = true;
             break;
         }
@@ -528,6 +549,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
       break;
 
     case ModRefInfo::ModRef:
+    case ModRefInfo::MustModRef:
 
       /*
        * @otherCall may read or write a memory location that can be written by
@@ -540,6 +562,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
           case ModRefInfo::NoModRef:
             return;
           case ModRefInfo::Ref:
+          case ModRefInfo::MustRef:
             /*
              * Contradicting
              * if @otherCall ModRef @call, and @call is reachable from
@@ -547,9 +570,11 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
              */
             return;
           case ModRefInfo::Mod:
+          case ModRefInfo::MustMod:
             rbv[1] = true;
             break;
           case ModRefInfo::ModRef:
+          case ModRefInfo::MustModRef:
             rbv[2] = true;
             break;
         }
@@ -587,39 +612,47 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
      * This is due to a bug in SVF that doesn't model I/O library calls
      * correctly.
      */
-    if (true && isSafeToQueryModRefOfSVF(call, bv)
+    if (isSafeToQueryModRefOfSVF(call, bv)
         && isSafeToQueryModRefOfSVF(otherCall, bv)) {
       switch (NoelleSVFIntegration::getModRefInfo(otherCall, call)) {
         case ModRefInfo::NoModRef:
           return;
 
         case ModRefInfo::Ref:
+        case ModRefInfo::MustRef:
           bv[0] = true;
           if (isCallReachableFromOtherCall) {
             switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
               case ModRefInfo::NoModRef:
               case ModRefInfo::Ref:
+              case ModRefInfo::MustRef:
                 return;
               case ModRefInfo::Mod:
+              case ModRefInfo::MustMod:
               case ModRefInfo::ModRef:
+              case ModRefInfo::MustModRef:
                 break;
             }
           }
           break;
 
         case ModRefInfo::Mod:
+        case ModRefInfo::MustMod:
           bv[1] = true;
           if (isCallReachableFromOtherCall) {
             switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
               case ModRefInfo::NoModRef:
                 return;
               case ModRefInfo::Ref:
+              case ModRefInfo::MustRef:
                 rbv[0] = true;
                 break;
               case ModRefInfo::Mod:
+              case ModRefInfo::MustMod:
                 rbv[1] = true;
                 break;
               case ModRefInfo::ModRef:
+              case ModRefInfo::MustModRef:
                 rbv[2] = true;
                 break;
             }
@@ -627,17 +660,21 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
           break;
 
         case ModRefInfo::ModRef:
+        case ModRefInfo::MustModRef:
           bv[2] = true;
           if (isCallReachableFromOtherCall) {
             switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
               case ModRefInfo::NoModRef:
                 return;
               case ModRefInfo::Ref:
+              case ModRefInfo::MustRef:
                 return;
               case ModRefInfo::Mod:
+              case ModRefInfo::MustMod:
                 rbv[1] = true;
                 break;
               case ModRefInfo::ModRef:
+              case ModRefInfo::MustModRef:
                 rbv[2] = true;
                 break;
             }
