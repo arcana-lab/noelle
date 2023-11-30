@@ -26,7 +26,7 @@
 #include "noelle/tools/DSWP.hpp"
 #include "SCCDAGAttrTestSuite.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 // Register pass to "opt"
 char SCCDAGAttrTestSuite::ID = 0;
@@ -261,4 +261,4 @@ Values SCCDAGAttrTestSuite::loopCarriedDependencies(ModulePass &pass,
   return valueNames;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

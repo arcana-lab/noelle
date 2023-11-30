@@ -74,7 +74,7 @@ bool DSTestSuite::runOnModule(Module &M) {
   this->dt = &getAnalysis<DominatorTreeWrapperPass>(*mainFunction).getDomTree();
   this->pdt = &getAnalysis<PostDominatorTreeWrapperPass>(*mainFunction)
                    .getPostDomTree();
-  this->ds = new noelle::DominatorSummary(*dt, *pdt);
+  this->ds = new arcana::noelle::DominatorSummary(*dt, *pdt);
 
   suite->runTests((ModulePass &)*this);
 
@@ -84,7 +84,7 @@ bool DSTestSuite::runOnModule(Module &M) {
 
 Values DSTestSuite::domNodeIsIdentical(DSTestSuite &pass,
                                        DomTreeNodeBase<BasicBlock> &node,
-                                       noelle::DominatorNode &nodeS) {
+                                       arcana::noelle::DominatorNode &nodeS) {
   BasicBlock *bb = node.getBlock();
   BasicBlock *bbS = nodeS.getBlock();
   if (bb != bbS) {
@@ -124,7 +124,7 @@ Values DSTestSuite::domNodeIsIdentical(DSTestSuite &pass,
 template <class DTBase>
 Values DSTestSuite::domTreeIsIdentical(DSTestSuite &pass,
                                        DTBase &DT,
-                                       noelle::DominatorForest &DTS) {
+                                       arcana::noelle::DominatorForest &DTS) {
   auto &roots = DT.getRoots();
   for (auto root : roots) {
     auto node = DT.getNode(root);

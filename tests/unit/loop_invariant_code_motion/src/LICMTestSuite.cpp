@@ -21,7 +21,7 @@
  */
 #include "LICMTestSuite.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 // Register pass to "opt"
 char LICMTestSuite::ID = 0;
@@ -164,4 +164,4 @@ Values LICMTestSuite::loadsAndStoresAreHoistedFromLoop(ModulePass &pass,
   return hoistedValues;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

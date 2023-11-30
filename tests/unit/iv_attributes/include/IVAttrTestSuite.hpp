@@ -46,7 +46,7 @@
 
 using namespace parallelizertests;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class IVAttrTestSuite : public ModulePass {
 public:
@@ -77,4 +77,4 @@ private:
   SCCDAG *sccdag;
   InductionVariableManager *IVs;
 };
-} // namespace llvm::noelle
+} // namespace arcana::noelle

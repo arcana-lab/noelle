@@ -47,7 +47,7 @@
 
 using namespace parallelizertests;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class SCCDAGAttrTestSuite : public ModulePass {
 public:
@@ -93,4 +93,4 @@ private:
   LoopDependenceInfo *ldi;
   Noelle *noelle;
 };
-} // namespace llvm::noelle
+} // namespace arcana::noelle

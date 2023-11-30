@@ -22,7 +22,7 @@
 #include "IVAttrTestSuite.hpp"
 #include "noelle/core/Noelle.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 // Register pass to "opt"
 char IVAttrTestSuite::ID = 0;
@@ -226,4 +226,4 @@ Values IVAttrTestSuite::verifyLoopGoverning(ModulePass &pass,
   return loopGoverningInfos;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle
