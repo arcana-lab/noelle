@@ -27,8 +27,8 @@
  *      Author: Yulei Sui
  */
 
-#ifndef MEMORYREGION_H_
-#define MEMORYREGION_H_
+#ifndef NOELLE_EXTERNAL_PATCH_MSSA_MEMORYREGION_H_
+#define NOELLE_EXTERNAL_PATCH_MSSA_MEMORYREGION_H_
 
 #include "MemoryModel/PointerAnalysis.h"
 #include "Util/PTACallGraph.h"
@@ -455,4 +455,4 @@ public:
 
 };
 
-#endif /* MEMORYREGION_H_ */
+#endif /* NOELLE_EXTERNAL_PATCH_MSSA_MEMORYREGION_H_ */

@@ -27,8 +27,8 @@
  *      Author: Yulei Sui
  */
 
-#ifndef PTACALLGRAPH_H_
-#define PTACALLGRAPH_H_
+#ifndef NOELLE_EXTERNAL_PATCH_UTIL_PTACALLGRAPH_H_
+#define NOELLE_EXTERNAL_PATCH_UTIL_PTACALLGRAPH_H_
 
 #include "MemoryModel/GenericGraph.h"
 #include "Util/SVFUtil.h"
@@ -402,4 +402,4 @@ template<> struct GraphTraits<PTACallGraph*> : public GraphTraits<GenericGraph<P
 }
 
 
-#endif /* PTACALLGRAPH_H_ */
+#endif /* NOELLE_EXTERNAL_PATCH_UTIL_PTACALLGRAPH_H_ */
