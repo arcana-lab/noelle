@@ -132,16 +132,64 @@ bool NoelleSVFIntegration::hasIndCSCallees(CallBase *call) {
 
 const std::set<const Function *> NoelleSVFIntegration::getIndCSCallees(
     CallBase *call) {
+
+  /*
+   * Check if @call is a direct call.
+   */
+  auto calleeF = call->getCalledFunction();
+  if (calleeF != nullptr) {
+    return { calleeF };
+  }
+
+  /*
+   * @call is an indirect call
+   *
+   * Check if we SVF has been enabled and can handle @call.
+   */
 #ifdef ENABLE_SVF
   if (auto callInst = dyn_cast<CallInst>(call)) {
     return svfCallGraph->getIndCSCallees(callInst);
   }
-  // TODO
-  return {};
-#else
-  // TODO
-  return {};
 #endif
+
+  /*
+   * SVF has not been enabled or it cannot handle @call.
+   */
+  std::set<const Function *> callees;
+  auto currentProgram = call->getModule();
+  for (auto &F : *currentProgram) {
+
+    /*
+     * Check if @F is used for something that isn't a direct call.
+     * In this case, @F could be invoked indirectly
+     */
+    for (auto user : F.users()) {
+      auto userAsInst = dyn_cast<Instruction>(user);
+      if (userAsInst == nullptr) {
+        continue;
+      }
+      if (isa<CallBase>(userAsInst)) {
+        continue;
+      }
+
+      /*
+       * @F could be invoked indirectly as its address is used by a non-call
+       * instruction that could store it in memory.
+       *
+       * Check if @F has the same signature of the function invoked by @call.
+       */
+      // TODO
+      if (true) {
+
+        /*
+         * @F has a signature that is compatible with @call.
+         */
+        callees.insert(&F);
+      }
+    }
+  }
+
+  return callees;
 }
 
 bool NoelleSVFIntegration::isReachableBetweenFunctions(const Function *from,
