@@ -1,13 +1,13 @@
 # Sources
 set(Srcs 
-  InvariantManager.cpp
+  DependenceAnalysis.cpp
 )
 
 # Compilation flags
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "Invariants")
+set(PassName "DependenceAnalysis")
 
 # configure LLVM 
 find_package(LLVM 9 REQUIRED CONFIG)
@@ -23,20 +23,10 @@ message(STATUS "LLVM_DIR IS ${LLVM_CMAKE_DIR}.")
 
 include_directories(${LLVM_INCLUDE_DIRS} 
   ../../basic_utilities/include 
-  ../../dominators/include 
-  ../../transformations/include
-  ../../call_graph/include
-  ../../dataflow/include
-  ../../architecture/include 
-  ../../alloc_aa/include 
-  ../../dg/include 
-  ../../pdg/include 
-  ../../dependence_analysis/include
-  ../../call_graph_analysis/include
-  ../../hotprofiler/include 
-  ../../loop_structure/include 
-  ../../talkdown/include
-  ../include 
+  ../../dg/include
+  ../../loop_structure/include
+  ../include
+  ./
   ${CMAKE_INSTALL_PREFIX}/include
   )
 

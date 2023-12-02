@@ -1,10 +1,10 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2023 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights to
- use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ use, copy, modify, merge, publoopsh, distribute, sublicense, and/or sell copies
  of the Software, and to permit persons to whom the Software is furnished to do
  so, subject to the following conditions:
 
@@ -19,40 +19,31 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#pragma once
+
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Noelle.hpp"
+#include "noelle/core/DGBase.hpp"
+#include "noelle/core/LoopStructure.hpp"
 
-namespace arcana::noelle {
+namespace llvm::noelle {
 
-DominatorSummary *Noelle::getDominators(Function *f) {
+enum CallStrength { CS_CANNOT_EXIST, CS_MAY_EXIST, CS_MUST_EXIST };
 
-  /*
-   * Fetch the dominators from LLVM.
-   */
-  auto &DT = getAnalysis<DominatorTreeWrapperPass>(*f).getDomTree();
-  auto &PDT = getAnalysis<PostDominatorTreeWrapperPass>(*f).getPostDomTree();
+class CallGraphAnalysis {
+public:
+  CallGraphAnalysis(const std::string &name);
 
-  /*
-   * Combine them.
-   */
-  auto ds = new DominatorSummary(DT, PDT);
+  std::string getName(void) const;
 
-  return ds;
-}
+  virtual CallStrength canThisFunctionBeACallee(Function &caller,
+                                        Function &potentialCallee);
 
-FunctionsManager *Noelle::getFunctionsManager(void) {
-  if (!this->fm) {
-    this->fm = new FunctionsManager(*this->program,
-                                    *this->pdgAnalysis,
-                                    this->getProfiles());
-  }
-  return this->fm;
-}
+  virtual CallStrength canThisFunctionBeACallee(CallBase *caller,
+                                        Function &potentialCallee);
 
-void Noelle::addAnalysis(CallGraphAnalysis *a) {
-  this->pdgAnalysis->addAnalysis(a);
 
-  return;
-}
+private:
+  std::string analysisName;
+};
 
-} // namespace arcana::noelle
+} // namespace llvm::noelle

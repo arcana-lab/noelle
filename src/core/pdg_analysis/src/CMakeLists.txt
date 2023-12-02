@@ -40,7 +40,10 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../call_graph/include
   ../../dg/include
   ../../pdg/include
+  ../../loop_structure/include
   ../../alias_analysis_engine/include
+  ../../dependence_analysis/include
+  ../../call_graph_analysis/include
   ${CMAKE_INSTALL_PREFIX}/include
   ${CMAKE_INSTALL_PREFIX}/include/svf
   )

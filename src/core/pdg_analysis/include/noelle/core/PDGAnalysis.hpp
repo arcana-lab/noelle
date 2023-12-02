@@ -30,6 +30,8 @@
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
 #include "noelle/core/MayPointsToAnalysis.hpp"
+#include "noelle/core/DependenceAnalysis.hpp"
+#include "noelle/core/CallGraphAnalysis.hpp"
 
 namespace arcana::noelle {
 
@@ -41,8 +43,6 @@ public:
 
   PDGAnalysis();
 
-  virtual ~PDGAnalysis();
-
   bool doInitialization(Module &M) override;
 
   void getAnalysisUsage(AnalysisUsage &AU) const override;
@@ -51,15 +51,23 @@ public:
 
   bool runOnModule(Module &M) override;
 
+  void addAnalysis(DependenceAnalysis *a);
+
+  void addAnalysis(CallGraphAnalysis *a);
+
   PDG *getPDG(void);
 
   noelle::CallGraph *getProgramCallGraph(void);
+
+  virtual ~PDGAnalysis();
 
   static bool isTheLibraryFunctionPure(Function *libraryFunction);
 
   static bool isTheLibraryFunctionThreadSafe(Function *libraryFunction);
 
   static std::set<AliasAnalysisEngine *> getProgramAliasAnalysisEngines(void);
+
+  static bool canAccessMemory(Instruction *i);
 
 private:
   Module *M;
@@ -77,7 +85,8 @@ private:
   bool disableRA;
   PDGPrinter printer;
   noelle::CallGraph *noelleCG;
-
+  std::set<DependenceAnalysis *> ddAnalyses;
+  std::set<CallGraphAnalysis *> cgAnalyses;
   std::unordered_set<const Function *> internalFuncs;
   std::unordered_set<const Function *> unhandledExternalFuncs;
   std::unordered_map<const Function *, std::unordered_set<const Function *>>
@@ -197,6 +206,16 @@ private:
   bool isInIndependentRegion(Instruction *, Instruction *);
 
   bool canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value, Value> *edge);
+
+  bool canThereBeAMemoryDataDependence(Instruction *fromInst,
+                                       Instruction *toInst,
+                                       Function &F);
+
+  std::pair<bool, bool> isThereThisMemoryDataDependenceType(
+      DataDependenceType t,
+      Instruction *fromInst,
+      Instruction *toInst,
+      Function &F);
 
   static const StringSet<> externalFuncsHaveNoSideEffectOrHandledBySVF;
 

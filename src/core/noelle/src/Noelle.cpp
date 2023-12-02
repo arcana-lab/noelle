@@ -33,12 +33,15 @@ Noelle::Noelle()
     profiles{ nullptr },
     programDependenceGraph{ nullptr },
     loopAwareDependenceAnalysis{ false },
+    pdgAnalysis{ nullptr },
+    ldgAnalysis{},
     fm{ nullptr },
     tm{ nullptr },
     cm{ nullptr },
     om{ nullptr },
     mm{ nullptr },
     linker{ nullptr } {
+
   return;
 }
 

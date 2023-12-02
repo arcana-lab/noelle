@@ -1,6 +1,6 @@
 # Project
 cmake_minimum_required(VERSION 3.13)
-project(LDGAnalysis)
+project(CallGraphAnalysis)
 
 # Dependences
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
@@ -11,8 +11,7 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/noelle/core/LoopIterationSpaceAnalysis.hpp
-  include/noelle/core/LDGAnalysis.hpp
+  include/noelle/core/CallGraphAnalysis.hpp
   DESTINATION 
   include/noelle/core
   )

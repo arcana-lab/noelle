@@ -50,7 +50,7 @@ struct CAT : public ModulePass {
       /*
        * Fetch the outgoing edges.
        */
-      auto outEdges = node->getOutgoingEdges();
+      auto outEdges = pcf->getOutgoingEdges(node);
       if (outEdges.size() == 0) {
         errs() << " The function \"" << f->getName() << "\" has no calls\n";
         continue;
