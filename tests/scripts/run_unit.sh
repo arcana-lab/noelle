@@ -3,11 +3,11 @@
 # Set the installation directory
 installDir="`git rev-parse --show-toplevel`/install"  ;
 mkdir -p $installDir ;
-export PDG_INSTALL_DIR="$installDir" ;
+export NOELLE_INSTALL_DIR="$installDir" ;
 
 CC="clang++"
-LIB_DIR=$PDG_INSTALL_DIR/lib
-TEST_LIB_DIR=$PDG_INSTALL_DIR/test/lib
+LIB_DIR=$NOELLE_INSTALL_DIR/lib
+TEST_LIB_DIR=$NOELLE_INSTALL_DIR/test/lib
 TRANSFORMATIONS_BEFORE_PARALLELIZATION="-basicaa -mem2reg -scalar-evolution -loops -loop-simplify -lcssa -domtree -postdomtree"
 
 PROFILER_LIBS="-lm -lstdc++ -lpthread"

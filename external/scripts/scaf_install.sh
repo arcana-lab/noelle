@@ -8,10 +8,10 @@ fi
 debugCompilation=$1 ;
 
 # Fetch the installation directory
-if test -z ${PDG_INSTALL_DIR} ; then
+if test -z ${NOELLE_INSTALL_DIR} ; then
   installDir="`pwd`/../install" ;
 else
-  installDir="${PDG_INSTALL_DIR}" ;
+  installDir="${NOELLE_INSTALL_DIR}" ;
 fi
 
 # Set the environment
