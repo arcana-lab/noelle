@@ -12,31 +12,31 @@ setup:
 	mkdir -p `realpath ../../install`/test
 
 control_flow_equivalence:
-	cd $@ ; PDG_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
 
 dependence_graphs:
-	cd $@ ; PDG_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
 
 dominator_summary:
-	cd $@ ; PDG_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
 
 empty_template:
-	cd $@ ; PDG_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
 
 helpers:
-	cd $@ ; PDG_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
 
 iv_attributes:
-	cd $@ ; PDG_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
 
 loop_domain_space:
-	cd $@ ; PDG_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
 
 loop_invariant_code_motion:
-	cd $@ ; PDG_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
 
 sccdag_attributes:
-	cd $@ ; PDG_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
 
 clean:
 	rm -f *.txt ;

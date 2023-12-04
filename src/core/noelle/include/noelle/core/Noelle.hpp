@@ -27,6 +27,7 @@
 #include "noelle/core/Queue.hpp"
 #include "noelle/core/LoopForest.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/LDGAnalysis.hpp"
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/LoopDependenceInfo.hpp"
 #include "noelle/core/HotProfiler.hpp"
@@ -43,6 +44,8 @@
 #include "noelle/core/Linker.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
 #include "noelle/core/MayPointsToAnalysis.hpp"
+#include "noelle/core/DependenceAnalysis.hpp"
+#include "noelle/core/CallGraphAnalysis.hpp"
 
 namespace arcana::noelle {
 
@@ -183,6 +186,10 @@ public:
 
   Hot *getProfiles(void);
 
+  void addAnalysis(DependenceAnalysis *a);
+
+  void addAnalysis(CallGraphAnalysis *a);
+
   PDG *getProgramDependenceGraph(void);
 
   DataFlowAnalysis getDataFlowAnalyses(void) const;
@@ -238,6 +245,7 @@ private:
   bool hoistLoopsToMain;
   bool loopAwareDependenceAnalysis;
   PDGAnalysis *pdgAnalysis;
+  LDGAnalysis ldgAnalysis;
   char *filterFileName;
   bool hasReadFilterFile;
   std::map<uint32_t, uint32_t> loopThreads;

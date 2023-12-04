@@ -22,11 +22,25 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/DependenceAnalysis.hpp"
+#include "noelle/core/PDG.hpp"
+#include "noelle/core/LoopStructure.hpp"
 
 namespace arcana::noelle {
 
 class LDGAnalysis {
 public:
+  LDGAnalysis();
+
+  void addAnalysis(DependenceAnalysis *a);
+
+  void improveDependenceGraph(PDG *loopDG, LoopStructure *loop);
+
+private:
+  std::set<DependenceAnalysis *> ddAnalyses;
+
+  void removeDependences(PDG *loopDG, LoopStructure *loop);
+  void removeLoopCarriedDependences(PDG *loopDG, LoopStructure *loop);
 };
 
 } // namespace arcana::noelle

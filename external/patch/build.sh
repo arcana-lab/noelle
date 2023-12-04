@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set the installation directory
-installDir=$PDG_INSTALL_DIR ;
+installDir=$NOELLE_INSTALL_DIR ;
 if test "$installDir" == "" ; then
   installDir="`realpath ../../install`"  ;
 fi

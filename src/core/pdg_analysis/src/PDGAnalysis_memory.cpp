@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Yian Su, Simone Campanoni
+ * Copyright 2016 - 2023  Angelo Matni, Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,55 @@
 
 namespace arcana::noelle {
 
+bool PDGAnalysis::canThereBeAMemoryDataDependence(Instruction *fromInst,
+                                                  Instruction *toInst,
+                                                  Function &F) {
+
+  /*
+   * Check if any of the data dependence analyses can assert the lack of
+   * dependence from @fromInst to @toInst.
+   */
+  for (auto ddAnalysis : this->ddAnalyses) {
+    if (!ddAnalysis->canThereBeAMemoryDataDependence(fromInst, toInst, F)) {
+
+      /*
+       * We found a dependence analysis that can assert the lack of dependence.
+       */
+      return false;
+    }
+  }
+
+  /*
+   * We did not find a single dependence analysis that can assert the lack of
+   * dependence. So we must assume this dependence can happen at run time.
+   */
+  return true;
+}
+
+std::pair<bool, bool> PDGAnalysis::isThereThisMemoryDataDependenceType(
+    DataDependenceType t,
+    Instruction *fromInst,
+    Instruction *toInst,
+    Function &F) {
+  auto noDep = false;
+  auto mustExist = false;
+
+  for (auto ddAnalysis : this->ddAnalyses) {
+    auto resp =
+        ddAnalysis->isThereThisMemoryDataDependenceType(t, fromInst, toInst, F);
+    if (resp == CANNOT_EXIST) {
+      noDep = true;
+      break;
+    }
+    if (resp == MUST_EXIST) {
+      mustExist = true;
+      break;
+    }
+  }
+
+  return make_pair(noDep, mustExist);
+}
+
 void PDGAnalysis::iterateInstForStore(PDG *pdg,
                                       Function &F,
                                       AAResults &AA,
@@ -37,9 +86,30 @@ void PDGAnalysis::iterateInstForStore(PDG *pdg,
   for (auto I : dfr->OUT(store)) {
 
     /*
+     * Check if the instruction can access memory.
+     */
+    auto inst = dyn_cast<Instruction>(I);
+    if (inst == nullptr) {
+      continue;
+    }
+    if (!PDGAnalysis::canAccessMemory(inst)) {
+      continue;
+    }
+
+    /*
+     * The instruction can access memory.
+     *
+     * Check if any of the data dependence analyses can assert the lack of
+     * dependence from @store to @I.
+     */
+    if (!this->canThereBeAMemoryDataDependence(store, inst, F)) {
+      continue;
+    }
+
+    /*
      * Check stores.
      */
-    if (auto otherStore = dyn_cast<StoreInst>(I)) {
+    if (auto otherStore = dyn_cast<StoreInst>(inst)) {
       this->addEdgeFromMemoryAlias(pdg, F, AA, store, otherStore, DG_DATA_WAW);
       continue;
     }
@@ -47,7 +117,7 @@ void PDGAnalysis::iterateInstForStore(PDG *pdg,
     /*
      * Check loads.
      */
-    if (auto load = dyn_cast<LoadInst>(I)) {
+    if (auto load = dyn_cast<LoadInst>(inst)) {
       this->addEdgeFromMemoryAlias(pdg, F, AA, store, load, DG_DATA_RAW);
       continue;
     }
@@ -55,7 +125,7 @@ void PDGAnalysis::iterateInstForStore(PDG *pdg,
     /*
      * Check calls.
      */
-    if (auto call = dyn_cast<CallBase>(I)) {
+    if (auto call = dyn_cast<CallBase>(inst)) {
       if (!Utils::isActualCode(call)) {
         continue;
       }
@@ -76,9 +146,30 @@ void PDGAnalysis::iterateInstForLoad(PDG *pdg,
   for (auto I : dfr->OUT(load)) {
 
     /*
+     * Check if the instruction can access memory.
+     */
+    auto inst = dyn_cast<Instruction>(I);
+    if (inst == nullptr) {
+      continue;
+    }
+    if (!PDGAnalysis::canAccessMemory(inst)) {
+      continue;
+    }
+
+    /*
+     * The instruction can access memory.
+     *
+     * Check if any of the data dependence analyses can assert the lack of
+     * dependence from @load to @I.
+     */
+    if (!this->canThereBeAMemoryDataDependence(load, inst, F)) {
+      continue;
+    }
+
+    /*
      * Check stores.
      */
-    if (auto store = dyn_cast<StoreInst>(I)) {
+    if (auto store = dyn_cast<StoreInst>(inst)) {
       this->addEdgeFromMemoryAlias(pdg, F, AA, load, store, DG_DATA_WAR);
       continue;
     }
@@ -86,10 +177,7 @@ void PDGAnalysis::iterateInstForLoad(PDG *pdg,
     /*
      * Check calls.
      */
-    if (auto call = dyn_cast<CallBase>(I)) {
-      if (!Utils::isActualCode(call)) {
-        continue;
-      }
+    if (auto call = dyn_cast<CallBase>(inst)) {
       this->addEdgeFromFunctionModRef(pdg, F, AA, call, load, false);
       continue;
     }
@@ -119,14 +207,42 @@ void PDGAnalysis::iterateInstForCall(PDG *pdg,
   }
 
   /*
-   * Identify all dependences with @call.
+   * Check if the instruction can access memory.
+   */
+  if (!PDGAnalysis::canAccessMemory(call)) {
+    return;
+  }
+
+  /*
+   * Identify all dependences from @call.
    */
   for (auto I : dfr->OUT(call)) {
 
     /*
+     * Check if the instruction can access memory.
+     */
+    auto inst = dyn_cast<Instruction>(I);
+    if (inst == nullptr) {
+      continue;
+    }
+    if (!PDGAnalysis::canAccessMemory(inst)) {
+      continue;
+    }
+
+    /*
+     * The instruction can access memory.
+     *
+     * Check if any of the data dependence analyses can assert the lack of
+     * dependence from @call to @I.
+     */
+    if (!this->canThereBeAMemoryDataDependence(call, inst, F)) {
+      continue;
+    }
+
+    /*
      * Check stores.
      */
-    if (auto store = dyn_cast<StoreInst>(I)) {
+    if (auto store = dyn_cast<StoreInst>(inst)) {
       addEdgeFromFunctionModRef(pdg, F, AA, call, store, true);
       continue;
     }
@@ -134,7 +250,7 @@ void PDGAnalysis::iterateInstForCall(PDG *pdg,
     /*
      * Check loads.
      */
-    if (auto load = dyn_cast<LoadInst>(I)) {
+    if (auto load = dyn_cast<LoadInst>(inst)) {
       addEdgeFromFunctionModRef(pdg, F, AA, call, load, true);
       continue;
     }
@@ -142,7 +258,7 @@ void PDGAnalysis::iterateInstForCall(PDG *pdg,
     /*
      * Check calls.
      */
-    if (auto baseOtherCall = dyn_cast<CallBase>(I)) {
+    if (auto baseOtherCall = dyn_cast<CallBase>(inst)) {
 
       /*
        * Check direct calls
@@ -154,12 +270,12 @@ void PDGAnalysis::iterateInstForCall(PDG *pdg,
       }
       bool isCallReachableFromOtherCall =
           dfr->OUT(baseOtherCall).count(call) > 0 ? true : false;
-      addEdgeFromFunctionModRef(pdg,
-                                F,
-                                AA,
-                                call,
-                                baseOtherCall,
-                                isCallReachableFromOtherCall);
+      this->addEdgeFromFunctionModRef(pdg,
+                                      F,
+                                      AA,
+                                      call,
+                                      baseOtherCall,
+                                      isCallReachableFromOtherCall);
       continue;
     }
   }
@@ -307,7 +423,21 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
    */
   if (makeRefEdge) {
     if (addEdgeFromCall) {
-      pdg->addEdge(call, store)->setMemMustType(true, false, DG_DATA_WAR);
+
+      /*
+       * Our alias analyses cannot disprove a may, WAR dependence.
+       *
+       * Check if any of the data dependence analyses can assert something
+       * better.
+       */
+      auto [noDep, mustExist] =
+          this->isThereThisMemoryDataDependenceType(DG_DATA_WAR,
+                                                    call,
+                                                    store,
+                                                    F);
+      if (!noDep) {
+        pdg->addEdge(call, store)->setMemMustType(true, mustExist, DG_DATA_WAR);
+      }
 
     } else {
 
@@ -316,13 +446,42 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
        * allocators as they always return new memory.
        */
       if (!Utils::isAllocator(call)) {
-        pdg->addEdge(store, call)->setMemMustType(true, false, DG_DATA_RAW);
+
+        /*
+         * Our alias analyses cannot disprove a may, WAR dependence.
+         *
+         * Check if any of the data dependence analyses can assert something
+         * better.
+         */
+        auto [noDep, mustExist] =
+            this->isThereThisMemoryDataDependenceType(DG_DATA_RAW,
+                                                      call,
+                                                      store,
+                                                      F);
+        if (!noDep) {
+          pdg->addEdge(store, call)
+              ->setMemMustType(true, mustExist, DG_DATA_RAW);
+        }
       }
     }
   }
   if (makeModEdge) {
     if (addEdgeFromCall) {
-      pdg->addEdge(call, store)->setMemMustType(true, false, DG_DATA_WAW);
+
+      /*
+       * Our alias analyses cannot disprove a may, WAR dependence.
+       *
+       * Check if any of the data dependence analyses can assert something
+       * better.
+       */
+      auto [noDep, mustExist] =
+          this->isThereThisMemoryDataDependenceType(DG_DATA_WAW,
+                                                    call,
+                                                    store,
+                                                    F);
+      if (!noDep) {
+        pdg->addEdge(call, store)->setMemMustType(true, mustExist, DG_DATA_WAW);
+      }
 
     } else {
 
@@ -331,7 +490,22 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
        * allocators as they always return new memory.
        */
       if (!Utils::isAllocator(call)) {
-        pdg->addEdge(store, call)->setMemMustType(true, false, DG_DATA_WAW);
+
+        /*
+         * Our alias analyses cannot disprove a may, WAR dependence.
+         *
+         * Check if any of the data dependence analyses can assert something
+         * better.
+         */
+        auto [noDep, mustExist] =
+            this->isThereThisMemoryDataDependenceType(DG_DATA_WAW,
+                                                      call,
+                                                      store,
+                                                      F);
+        if (!noDep) {
+          pdg->addEdge(store, call)
+              ->setMemMustType(true, mustExist, DG_DATA_WAW);
+        }
       }
     }
   }
@@ -419,7 +593,17 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
    * There is a dependence.
    */
   if (addEdgeFromCall) {
-    pdg->addEdge(call, load)->setMemMustType(true, false, DG_DATA_RAW);
+
+    /*
+     * Our alias analyses cannot disprove a may, WAR dependence.
+     *
+     * Check if any of the data dependence analyses can assert something better.
+     */
+    auto [noDep, mustExist] =
+        this->isThereThisMemoryDataDependenceType(DG_DATA_RAW, call, load, F);
+    if (!noDep) {
+      pdg->addEdge(call, load)->setMemMustType(true, false, DG_DATA_RAW);
+    }
 
   } else {
 
@@ -428,7 +612,18 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
      * as they always return new memory.
      */
     if (!Utils::isAllocator(call)) {
-      pdg->addEdge(load, call)->setMemMustType(true, false, DG_DATA_WAR);
+
+      /*
+       * Our alias analyses cannot disprove a may, WAR dependence.
+       *
+       * Check if any of the data dependence analyses can assert something
+       * better.
+       */
+      auto [noDep, mustExist] =
+          this->isThereThisMemoryDataDependenceType(DG_DATA_WAR, call, load, F);
+      if (!noDep) {
+        pdg->addEdge(load, call)->setMemMustType(true, false, DG_DATA_WAR);
+      }
     }
   }
 
@@ -704,18 +899,46 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
     return;
   }
   if (bv[0]) {
+
     /*
      * @otherCall reads a memory location that @call writes.
      * there is a RAW memory dependence from @call to @otherCall
+     *
+     * Our alias analyses cannot disprove a may, WAR dependence.
+     *
+     * Check if any of the data dependence analyses can assert something better.
      */
-    pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
+    auto [noDep, mustExist] =
+        this->isThereThisMemoryDataDependenceType(DG_DATA_RAW,
+                                                  call,
+                                                  otherCall,
+                                                  F);
+    if (!noDep) {
+      pdg->addEdge(call, otherCall)
+          ->setMemMustType(true, mustExist, DG_DATA_RAW);
+    }
 
     /*
      * Check the unique case that @otherCall and @call are the same.
      * In this case, there is also a WAR dependence
      */
     if (otherCall == call) {
-      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+
+      /*
+       * Our alias analyses cannot disprove a may, WAR dependence.
+       *
+       * Check if any of the data dependence analyses can assert something
+       * better.
+       */
+      auto [noDep, mustExist] =
+          this->isThereThisMemoryDataDependenceType(DG_DATA_WAR,
+                                                    call,
+                                                    otherCall,
+                                                    F);
+      if (!noDep) {
+        pdg->addEdge(call, otherCall)
+            ->setMemMustType(true, mustExist, DG_DATA_WAR);
+      }
     }
 
   } else if (bv[1]) {
@@ -727,6 +950,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
     }
 
     if (rbv[0]) {
+
       /*
        * Check the unique case that @otherCall and @call are the same.
        */
@@ -741,21 +965,50 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
       /*
        * @call may read a memory location that can be written by @otherCall
        * only need to add WAR data dependence from @call to @otherCall
+       *
+       * Our alias analyses cannot disprove a may, WAR dependence.
+       *
+       * Check if any of the data dependence analyses can assert something
+       * better.
        */
-      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+      auto [noDep, mustExist] =
+          this->isThereThisMemoryDataDependenceType(DG_DATA_WAR,
+                                                    call,
+                                                    otherCall,
+                                                    F);
+      if (!noDep) {
+        pdg->addEdge(call, otherCall)
+            ->setMemMustType(true, mustExist, DG_DATA_WAR);
+      }
 
     } else if (rbv[1]) {
+
       /*
        * @call may write a memory location that can be written by @otherCall
        * only need to add WAW data dependence from call to otherCall
+       *
+       * Our alias analyses cannot disprove a may, WAR dependence.
+       *
+       * Check if any of the data dependence analyses can assert something
+       * better.
        */
-      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+      auto [noDep, mustExist] =
+          this->isThereThisMemoryDataDependenceType(DG_DATA_WAW,
+                                                    call,
+                                                    otherCall,
+                                                    F);
+      if (!noDep) {
+        pdg->addEdge(call, otherCall)
+            ->setMemMustType(true, mustExist, DG_DATA_WAW);
+      }
 
     } else {
+
       /*
        * Check the unique case that @otherCall and @call are the same.
        */
       if (otherCall == call) {
+
         /*
          * Contradicting
          * if @call Mod itself, the reverse query should also return Mod result
@@ -766,9 +1019,30 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
       /*
        * whatever rbv[2] (reverseModRef) is set or not
        * need to add both WAR and WAW from @call to @otherCall
+       *
+       * Our alias analyses cannot disprove a may, WAR dependence.
+       *
+       * Check if any of the data dependence analyses can assert something
+       * better.
        */
-      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
-      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+      auto [noDep, mustExist] =
+          this->isThereThisMemoryDataDependenceType(DG_DATA_WAR,
+                                                    call,
+                                                    otherCall,
+                                                    F);
+      if (!noDep) {
+        pdg->addEdge(call, otherCall)
+            ->setMemMustType(true, mustExist, DG_DATA_WAR);
+      }
+      auto [noDep2, mustExist2] =
+          this->isThereThisMemoryDataDependenceType(DG_DATA_WAW,
+                                                    call,
+                                                    otherCall,
+                                                    F);
+      if (!noDep2) {
+        pdg->addEdge(call, otherCall)
+            ->setMemMustType(true, mustExist2, DG_DATA_WAW);
+      }
     }
 
   } else {
@@ -796,17 +1070,75 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
       /*
        * @call may write a memory location that can be read or written by
        * @otherCall need to add both RAW and WAW from call to otherCall
+       *
+       * Our alias analyses cannot disprove a may, WAR dependence.
+       *
+       * Check if any of the data dependence analyses can assert something
+       * better.
        */
-      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
-      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+      auto [noDep, mustExist] =
+          this->isThereThisMemoryDataDependenceType(DG_DATA_RAW,
+                                                    call,
+                                                    otherCall,
+                                                    F);
+      if (!noDep) {
+        pdg->addEdge(call, otherCall)
+            ->setMemMustType(true, mustExist, DG_DATA_RAW);
+      }
+      auto [noDep2, mustExist2] =
+          this->isThereThisMemoryDataDependenceType(DG_DATA_WAW,
+                                                    call,
+                                                    otherCall,
+                                                    F);
+      if (!noDep2) {
+        pdg->addEdge(call, otherCall)
+            ->setMemMustType(true, mustExist2, DG_DATA_WAW);
+      }
+
     } else if (rbv[2]) {
+
       /*
        * @call may read or write a memory location that can be written by
        * @otherCall need to add all RAW, WAW and WAR from @call to @otherCall
+       *
+       * Our alias analyses cannot disprove a may dependence.
+       *
+       * Check if any of the data dependence analyses can assert something
+       * better.
        */
-      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
-      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
-      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAR);
+      {
+        auto [noDep, mustExist] =
+            this->isThereThisMemoryDataDependenceType(DG_DATA_RAW,
+                                                      call,
+                                                      otherCall,
+                                                      F);
+        if (!noDep) {
+          pdg->addEdge(call, otherCall)
+              ->setMemMustType(true, mustExist, DG_DATA_RAW);
+        }
+      }
+      {
+        auto [noDep, mustExist] =
+            this->isThereThisMemoryDataDependenceType(DG_DATA_WAW,
+                                                      call,
+                                                      otherCall,
+                                                      F);
+        if (!noDep) {
+          pdg->addEdge(call, otherCall)
+              ->setMemMustType(true, mustExist, DG_DATA_WAW);
+        }
+      }
+      {
+        auto [noDep, mustExist] =
+            this->isThereThisMemoryDataDependenceType(DG_DATA_WAR,
+                                                      call,
+                                                      otherCall,
+                                                      F);
+        if (!noDep) {
+          pdg->addEdge(call, otherCall)
+              ->setMemMustType(true, mustExist, DG_DATA_WAR);
+        }
+      }
 
     } else {
       assert(
@@ -828,9 +1160,34 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
       /*
        * @otherCall may read or write a memory location that can be written by
        * @call need to add both RAW, WAW @call to @otherCall
+       *
+       * Our alias analyses cannot disprove a may dependence.
+       *
+       * Check if any of the data dependence analyses can assert something
+       * better.
        */
-      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_RAW);
-      pdg->addEdge(call, otherCall)->setMemMustType(true, false, DG_DATA_WAW);
+      {
+        auto [noDep, mustExist] =
+            this->isThereThisMemoryDataDependenceType(DG_DATA_RAW,
+                                                      call,
+                                                      otherCall,
+                                                      F);
+        if (!noDep) {
+          pdg->addEdge(call, otherCall)
+              ->setMemMustType(true, mustExist, DG_DATA_RAW);
+        }
+      }
+      {
+        auto [noDep, mustExist] =
+            this->isThereThisMemoryDataDependenceType(DG_DATA_WAW,
+                                                      call,
+                                                      otherCall,
+                                                      F);
+        if (!noDep) {
+          pdg->addEdge(call, otherCall)
+              ->setMemMustType(true, mustExist, DG_DATA_WAW);
+        }
+      }
     }
   }
 
@@ -986,6 +1343,38 @@ AliasResult PDGAnalysis::doTheyAlias(PDG *pdg,
   }
 
   return AliasResult::MayAlias;
+}
+
+bool PDGAnalysis::canAccessMemory(Instruction *i) {
+
+  /*
+   * Check if @i just metadata.
+   */
+  if (!Utils::isActualCode(i)) {
+    return false;
+  }
+
+  /*
+   * Check if @i can access memory.
+   */
+  if (isa<StoreInst>(i)) {
+    return true;
+  }
+  if (isa<LoadInst>(i)) {
+    return true;
+  }
+  if (auto call = dyn_cast<CallBase>(i)) {
+    auto callee = call->getCalledFunction();
+    if (callee != nullptr) {
+      if (PDGAnalysis::isTheLibraryFunctionPure(callee)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  return false;
 }
 
 } // namespace arcana::noelle
