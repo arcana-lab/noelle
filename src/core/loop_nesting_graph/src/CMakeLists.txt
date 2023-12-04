@@ -45,6 +45,8 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../pdg_analysis/include
   ../../pdg_printer/include
   ../../alias_analysis_engine/include
+  ../../dependence_analysis/include
+  ../../call_graph_analysis/include
   ../include 
   ${CMAKE_INSTALL_PREFIX}/include
   )

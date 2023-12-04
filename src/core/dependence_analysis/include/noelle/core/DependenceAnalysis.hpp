@@ -25,7 +25,7 @@
 #include "noelle/core/DGBase.hpp"
 #include "noelle/core/LoopStructure.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 enum MemoryDataDependenceStrength { CANNOT_EXIST, MAY_EXIST, MUST_EXIST };
 
@@ -70,4 +70,4 @@ private:
   std::string analysisName;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

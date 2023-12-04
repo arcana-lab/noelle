@@ -23,7 +23,7 @@
 
 #include "noelle/core/CallGraphAnalysis.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 CallGraphAnalysis::CallGraphAnalysis(const std::string &name)
   : analysisName{ name } {
@@ -34,12 +34,16 @@ std::string CallGraphAnalysis::getName(void) const {
   return this->analysisName;
 }
 
-CallStrength CallGraphAnalysis::canThisFunctionBeACallee(CallBase *caller, Function &potentialCallee){
-  return CallStrength::CS_MAY_EXIST;
-}
-  
-CallStrength CallGraphAnalysis::canThisFunctionBeACallee(Function &caller, Function &potentialCallee){
+CallStrength CallGraphAnalysis::canThisFunctionBeACallee(
+    CallBase *caller,
+    Function &potentialCallee) {
   return CallStrength::CS_MAY_EXIST;
 }
 
-} // namespace llvm::noelle
+CallStrength CallGraphAnalysis::canThisFunctionBeACallee(
+    Function &caller,
+    Function &potentialCallee) {
+  return CallStrength::CS_MAY_EXIST;
+}
+
+} // namespace arcana::noelle

@@ -21,7 +21,7 @@
  */
 #include "noelle/core/LDGAnalysis.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LDGAnalysis::LDGAnalysis() {
   return;
@@ -182,4 +182,4 @@ void LDGAnalysis::removeLoopCarriedDependences(PDG *loopDG,
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

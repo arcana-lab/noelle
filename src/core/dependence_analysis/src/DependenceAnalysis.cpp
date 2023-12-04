@@ -23,7 +23,7 @@
 
 #include "noelle/core/DependenceAnalysis.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 DependenceAnalysis::DependenceAnalysis(const std::string &name)
   : analysisName{ name } {
@@ -80,4 +80,4 @@ bool DependenceAnalysis::canThisDependenceBeLoopCarried(
   return true;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

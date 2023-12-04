@@ -25,7 +25,7 @@
 #include "noelle/core/DGBase.hpp"
 #include "noelle/core/LoopStructure.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 enum CallStrength { CS_CANNOT_EXIST, CS_MAY_EXIST, CS_MUST_EXIST };
 
@@ -36,14 +36,13 @@ public:
   std::string getName(void) const;
 
   virtual CallStrength canThisFunctionBeACallee(Function &caller,
-                                        Function &potentialCallee);
+                                                Function &potentialCallee);
 
   virtual CallStrength canThisFunctionBeACallee(CallBase *caller,
-                                        Function &potentialCallee);
-
+                                                Function &potentialCallee);
 
 private:
   std::string analysisName;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle
