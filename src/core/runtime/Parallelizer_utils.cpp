@@ -28,7 +28,7 @@
 //#define RUNTIME_PRINT
 //#define DSWP_STATS
 
-using namespace MARC;
+using namespace arcana::virgil;
 
 #define CACHE_LINE_SIZE 64
 
