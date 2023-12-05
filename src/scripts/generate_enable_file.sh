@@ -1,6 +1,14 @@
 #!/bin/bash
 
-enableFile="../enable" ;
+# Set the installation directory
+installDir=$NOELLE_INSTALL_DIR ;
+if test "$installDir" == "" ; then
+  installDir="`git rev-parse --show-toplevel`/install"  ;
+fi
+mkdir -p $installDir ;
+
+# Set the enable file
+enableFile="${installDir}/enable" ;
 
 echo "#!/bin/bash" > ${enableFile} ;
 echo "" >> ${enableFile} ;
