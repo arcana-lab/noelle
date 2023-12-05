@@ -5,6 +5,7 @@ installDir=$NOELLE_INSTALL_DIR ;
 if test "$installDir" == "" ; then
   installDir="`git rev-parse --show-toplevel`/install"  ;
 fi
+installDir="`realpath $installDir`" ;
 mkdir -p $installDir ;
 
 # Set the enable file
