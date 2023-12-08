@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_CORE_DG_DGNODE_H_
+#define NOELLE_SRC_CORE_DG_DGNODE_H_
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
@@ -187,3 +189,5 @@ uint64_t DGNode<T>::inDegree(void) const {
 }
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_DG_DGNODE_H_

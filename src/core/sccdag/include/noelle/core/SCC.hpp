@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_CORE_SCCDAG_SCC_H_
+#define NOELLE_SRC_CORE_SCCDAG_SCC_H_
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
@@ -112,3 +114,5 @@ public:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_SCCDAG_SCC_H_

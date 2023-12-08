@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_TOOLS_HEURISTICS_H_
+#define NOELLE_SRC_TOOLS_HEURISTICS_H_
 #pragma once
 
 #include "llvm/IR/Function.h"
@@ -70,3 +72,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_HEURISTICS_H_

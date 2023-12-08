@@ -1,3 +1,5 @@
+#ifndef NOELLE_SRC_CORE_BASIC_UTILITIES_BITMATRIX_H_
+#define NOELLE_SRC_CORE_BASIC_UTILITIES_BITMATRIX_H_
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
@@ -51,3 +53,5 @@ private:
 };
 
 } // namespace llvm
+
+#endif // NOELLE_SRC_CORE_BASIC_UTILITIES_BITMATRIX_H_

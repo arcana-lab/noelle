@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_CORE_MAY_POINTS_TO_ANALYSIS_MPAUTILS_H_
+#define NOELLE_SRC_CORE_MAY_POINTS_TO_ANALYSIS_MPAUTILS_H_
 #pragma once
 
 #include "noelle/core/Utils.hpp"
@@ -49,3 +51,5 @@ BitVector unite(const BitVector &lhs, const BitVector &rhs);
 bool isAllocation(Instruction *allocation);
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_MAY_POINTS_TO_ANALYSIS_MPAUTILS_H_
