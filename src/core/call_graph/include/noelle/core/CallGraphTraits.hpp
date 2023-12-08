@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_CORE_CALL_GRAPH_CALLGRAPHTRAITS_H_
+#define NOELLE_SRC_CORE_CALL_GRAPH_CALLGRAPHTRAITS_H_
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
@@ -105,3 +107,5 @@ struct GraphTraits<arcana::noelle::CallGraphWrapper *>
   : public arcana::noelle::CallGraphWrapperTraits {};
 
 } // namespace llvm
+
+#endif // NOELLE_SRC_CORE_CALL_GRAPH_CALLGRAPHTRAITS_H_

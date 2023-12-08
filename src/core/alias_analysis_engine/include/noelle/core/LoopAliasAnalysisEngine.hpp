@@ -1,3 +1,5 @@
+#ifndef NOELLE_SRC_CORE_ALIAS_ANALYSIS_ENGINE_LOOPALIASANALYSISENGINE_H_
+#define NOELLE_SRC_CORE_ALIAS_ANALYSIS_ENGINE_LOOPALIASANALYSISENGINE_H_
 #pragma once
 
 #include "noelle/core/AliasAnalysisEngine.hpp"
@@ -14,3 +16,5 @@ protected:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_ALIAS_ANALYSIS_ENGINE_LOOPALIASANALYSISENGINE_H_

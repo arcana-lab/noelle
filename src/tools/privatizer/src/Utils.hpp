@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_TOOLS_PRIVATIZER_UTILS_H_
+#define NOELLE_SRC_TOOLS_PRIVATIZER_UTILS_H_
 #pragma once
 
 #include "noelle/core/Noelle.hpp"
@@ -77,3 +79,5 @@ unordered_set<Function *> functionsInvokedFrom(Noelle &noelle,
 unordered_set<Function *> hotFunctions(Noelle &noelle);
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_PRIVATIZER_UTILS_H_
