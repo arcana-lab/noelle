@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_H_
+#define NOELLE_H_
 #pragma once
 
 #include "noelle/core/Dominators.hpp"
@@ -288,3 +290,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_H_

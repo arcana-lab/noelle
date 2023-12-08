@@ -1,3 +1,5 @@
+#ifndef NOELLE_SRC_CORE_UNIQUE_IR_MARKER_IDTOVALUEMAPPER_H_
+#define NOELLE_SRC_CORE_UNIQUE_IR_MARKER_IDTOVALUEMAPPER_H_
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
@@ -37,3 +39,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_UNIQUE_IR_MARKER_IDTOVALUEMAPPER_H_

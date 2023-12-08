@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_TOOLS_HELIX_HELIXTASK_H_
+#define NOELLE_SRC_TOOLS_HELIX_HELIXTASK_H_
 #pragma once
 
 #include "noelle/core/Task.hpp"
@@ -57,3 +59,5 @@ public:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_HELIX_HELIXTASK_H_
