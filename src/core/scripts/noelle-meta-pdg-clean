@@ -5,7 +5,14 @@ if test $# -lt 2 ; then
   exit 1;
 fi
 
-installDir
+SOURCE=${BASH_SOURCE[0]}
+while [ -L "${SOURCE}" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR=$( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd )
+  SOURCE=$(readlink "${SOURCE}")
+  # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+  [[ ${SOURCE} != /* ]] && SOURCE=$DIR/$SOURCE 
+done
+installDir=$(realpath $( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd )/..)
 
 # Remove the PDG from the bitcode
 cmdToExecute="noelle-load -load ${installDir}/lib/CleanMetadata.so -CleanMetadata -clean-pdg-metadata=true $1 -o $2" 
