@@ -23,7 +23,7 @@
 
 namespace arcana::noelle {
 
-void DSWP::generateLoopSubsetForStage(LoopDependenceInfo *LDI, int taskIndex) {
+void DSWP::generateLoopSubsetForStage(LoopContent *LDI, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
 
   /*

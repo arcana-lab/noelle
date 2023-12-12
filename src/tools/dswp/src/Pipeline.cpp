@@ -23,7 +23,7 @@
 
 namespace arcana::noelle {
 
-void DSWP::generateStagesFromPartitionedSCCs(LoopDependenceInfo *LDI) {
+void DSWP::generateStagesFromPartitionedSCCs(LoopContent *LDI) {
   assert(LDI != nullptr);
 
   /*
@@ -75,7 +75,7 @@ void DSWP::generateStagesFromPartitionedSCCs(LoopDependenceInfo *LDI) {
   return;
 }
 
-void DSWP::addClonableSCCsToStages(LoopDependenceInfo *LDI) {
+void DSWP::addClonableSCCsToStages(LoopContent *LDI) {
   auto sccManager = LDI->getSCCManager();
   for (auto techniqueTask : this->tasks) {
     auto task = (DSWPTask *)techniqueTask;
@@ -110,7 +110,7 @@ void DSWP::addClonableSCCsToStages(LoopDependenceInfo *LDI) {
   }
 }
 
-bool DSWP::isCompleteAndValidStageStructure(LoopDependenceInfo *LDI) const {
+bool DSWP::isCompleteAndValidStageStructure(LoopContent *LDI) const {
   std::set<SCC *> allSCCs;
   for (auto techniqueTask : this->tasks) {
     auto task = (DSWPTask *)techniqueTask;
@@ -144,7 +144,7 @@ bool DSWP::isCompleteAndValidStageStructure(LoopDependenceInfo *LDI) const {
   return true;
 }
 
-void DSWP::createPipelineFromStages(LoopDependenceInfo *LDI, Noelle &par) {
+void DSWP::createPipelineFromStages(LoopContent *LDI, Noelle &par) {
 
   /*
    * Fetch the managers.
@@ -210,7 +210,7 @@ void DSWP::createPipelineFromStages(LoopDependenceInfo *LDI, Noelle &par) {
   return;
 }
 
-Value *DSWP::createStagesArrayFromStages(LoopDependenceInfo *LDI,
+Value *DSWP::createStagesArrayFromStages(LoopContent *LDI,
                                          IRBuilder<> funcBuilder,
                                          Noelle &par) {
 
@@ -241,7 +241,7 @@ Value *DSWP::createStagesArrayFromStages(LoopDependenceInfo *LDI,
                                 PointerType::getUnqual(int8Type)));
 }
 
-Value *DSWP::createQueueSizesArrayFromStages(LoopDependenceInfo *LDI,
+Value *DSWP::createQueueSizesArrayFromStages(LoopContent *LDI,
                                              IRBuilder<> funcBuilder,
                                              Noelle &par) {
 

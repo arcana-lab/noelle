@@ -35,7 +35,7 @@ ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
 }
 
 bool ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
-    canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
+    canBeAppliedToLoop(LoopContent *LDI, Heuristics *h) const {
 
   /*
    * We do not handle loops with no successors.
@@ -67,13 +67,13 @@ ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
 }
 
 void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
-    partitionSCCDAG(LoopDependenceInfo *LDI) {
+    partitionSCCDAG(LoopContent *LDI) {
   auto f = [](GenericSCC *scc) -> bool { return false; };
   this->partitionSCCDAG(LDI, f);
 }
 
 void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
-    partitionSCCDAG(LoopDependenceInfo *LDI,
+    partitionSCCDAG(LoopContent *LDI,
                     std::function<bool(GenericSCC *scc)> skipSCC) {
 
   /*
@@ -185,7 +185,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
 void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
     printSequentialCode(raw_ostream &stream,
                         const std::string &prefixString,
-                        LoopDependenceInfo *LDI,
+                        LoopContent *LDI,
                         const std::set<SCC *> &sequentialSCCs) {
 
   /*

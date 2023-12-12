@@ -23,47 +23,45 @@
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 
 namespace arcana::noelle {
 
-LoopDependenceInfo::LoopDependenceInfo(
-    LDGAnalysis &ldgAnalysis,
-    CompilationOptionsManager *compilationOptionsManager,
-    PDG *fG,
-    LoopTree *loopNode,
-    Loop *l,
-    DominatorSummary &DS,
-    ScalarEvolution &SE)
-  : LoopDependenceInfo{ ldgAnalysis, compilationOptionsManager,
-                        fG,          loopNode,
-                        l,           DS,
-                        SE,          Architecture::getNumberOfLogicalCores(),
-                        {},          true } {
+LoopContent::LoopContent(LDGAnalysis &ldgAnalysis,
+                         CompilationOptionsManager *compilationOptionsManager,
+                         PDG *fG,
+                         LoopTree *loopNode,
+                         Loop *l,
+                         DominatorSummary &DS,
+                         ScalarEvolution &SE)
+  : LoopContent{ ldgAnalysis, compilationOptionsManager,
+                 fG,          loopNode,
+                 l,           DS,
+                 SE,          Architecture::getNumberOfLogicalCores(),
+                 {},          true } {
   return;
 }
 
-LoopDependenceInfo::LoopDependenceInfo(
-    LDGAnalysis &ldgAnalysis,
-    CompilationOptionsManager *compilationOptionsManager,
-    PDG *fG,
-    LoopTree *loopNode,
-    Loop *l,
-    DominatorSummary &DS,
-    ScalarEvolution &SE,
-    uint32_t maxCores)
-  : LoopDependenceInfo{ ldgAnalysis, compilationOptionsManager,
-                        fG,          loopNode,
-                        l,           DS,
-                        SE,          maxCores,
-                        {},          true } {
+LoopContent::LoopContent(LDGAnalysis &ldgAnalysis,
+                         CompilationOptionsManager *compilationOptionsManager,
+                         PDG *fG,
+                         LoopTree *loopNode,
+                         Loop *l,
+                         DominatorSummary &DS,
+                         ScalarEvolution &SE,
+                         uint32_t maxCores)
+  : LoopContent{ ldgAnalysis, compilationOptionsManager,
+                 fG,          loopNode,
+                 l,           DS,
+                 SE,          maxCores,
+                 {},          true } {
 
   return;
 }
 
-LoopDependenceInfo::LoopDependenceInfo(
+LoopContent::LoopContent(
     LDGAnalysis &ldgAnalysis,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
@@ -72,22 +70,40 @@ LoopDependenceInfo::LoopDependenceInfo(
     DominatorSummary &DS,
     ScalarEvolution &SE,
     uint32_t maxCores,
-    std::unordered_set<LoopDependenceInfoOptimization> optimizations)
-  : LoopDependenceInfo{ ldgAnalysis,
-                        compilationOptionsManager,
-                        fG,
-                        loopNode,
-                        l,
-                        DS,
-                        SE,
-                        maxCores,
-                        optimizations,
-                        true } {
+    std::unordered_set<LoopContentOptimization> optimizations)
+  : LoopContent{ ldgAnalysis,
+                 compilationOptionsManager,
+                 fG,
+                 loopNode,
+                 l,
+                 DS,
+                 SE,
+                 maxCores,
+                 optimizations,
+                 true } {
 
   return;
 }
 
-LoopDependenceInfo::LoopDependenceInfo(
+LoopContent::LoopContent(LDGAnalysis &ldgAnalysis,
+                         CompilationOptionsManager *compilationOptionsManager,
+                         PDG *fG,
+                         LoopTree *loopNode,
+                         Loop *l,
+                         DominatorSummary &DS,
+                         ScalarEvolution &SE,
+                         uint32_t maxCores,
+                         bool enableLoopAwareDependenceAnalyses)
+  : LoopContent{ ldgAnalysis, compilationOptionsManager,
+                 fG,          loopNode,
+                 l,           DS,
+                 SE,          maxCores,
+                 {},          enableLoopAwareDependenceAnalyses } {
+
+  return;
+}
+
+LoopContent::LoopContent(
     LDGAnalysis &ldgAnalysis,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
@@ -96,17 +112,23 @@ LoopDependenceInfo::LoopDependenceInfo(
     DominatorSummary &DS,
     ScalarEvolution &SE,
     uint32_t maxCores,
+    std::unordered_set<LoopContentOptimization> optimizations,
     bool enableLoopAwareDependenceAnalyses)
-  : LoopDependenceInfo{ ldgAnalysis, compilationOptionsManager,
-                        fG,          loopNode,
-                        l,           DS,
-                        SE,          maxCores,
-                        {},          enableLoopAwareDependenceAnalyses } {
-
+  : LoopContent(ldgAnalysis,
+                compilationOptionsManager,
+                fG,
+                loopNode,
+                l,
+                DS,
+                SE,
+                maxCores,
+                optimizations,
+                enableLoopAwareDependenceAnalyses,
+                8) {
   return;
 }
 
-LoopDependenceInfo::LoopDependenceInfo(
+LoopContent::LoopContent(
     LDGAnalysis &ldgAnalysis,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
@@ -115,32 +137,7 @@ LoopDependenceInfo::LoopDependenceInfo(
     DominatorSummary &DS,
     ScalarEvolution &SE,
     uint32_t maxCores,
-    std::unordered_set<LoopDependenceInfoOptimization> optimizations,
-    bool enableLoopAwareDependenceAnalyses)
-  : LoopDependenceInfo(ldgAnalysis,
-                       compilationOptionsManager,
-                       fG,
-                       loopNode,
-                       l,
-                       DS,
-                       SE,
-                       maxCores,
-                       optimizations,
-                       enableLoopAwareDependenceAnalyses,
-                       8) {
-  return;
-}
-
-LoopDependenceInfo::LoopDependenceInfo(
-    LDGAnalysis &ldgAnalysis,
-    CompilationOptionsManager *compilationOptionsManager,
-    PDG *fG,
-    LoopTree *loopNode,
-    Loop *l,
-    DominatorSummary &DS,
-    ScalarEvolution &SE,
-    uint32_t maxCores,
-    std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+    std::unordered_set<LoopContentOptimization> optimizations,
     bool enableLoopAwareDependenceAnalyses,
     uint32_t chunkSize)
   : loop{ loopNode },
@@ -266,8 +263,7 @@ LoopDependenceInfo::LoopDependenceInfo(
   return;
 }
 
-void LoopDependenceInfo::copyParallelizationOptionsFrom(
-    LoopDependenceInfo *otherLDI) {
+void LoopContent::copyParallelizationOptionsFrom(LoopContent *otherLDI) {
   auto otherLTM = otherLDI->getLoopTransformationsManager();
   assert(otherLTM != nullptr);
 
@@ -284,7 +280,7 @@ void LoopDependenceInfo::copyParallelizationOptionsFrom(
   return;
 }
 
-void LoopDependenceInfo::fetchLoopAndBBInfo(Loop *l, ScalarEvolution &SE) {
+void LoopContent::fetchLoopAndBBInfo(Loop *l, ScalarEvolution &SE) {
 
   /*
    * Compute the trip counts of all loops in the loop tree that starts with @l.
@@ -302,7 +298,7 @@ void LoopDependenceInfo::fetchLoopAndBBInfo(Loop *l, ScalarEvolution &SE) {
   return;
 }
 
-uint64_t LoopDependenceInfo::computeTripCounts(Loop *l, ScalarEvolution &SE) {
+uint64_t LoopContent::computeTripCounts(Loop *l, ScalarEvolution &SE) {
 
   /*
    * Fetch the trip count of the loop given as input.
@@ -312,7 +308,7 @@ uint64_t LoopDependenceInfo::computeTripCounts(Loop *l, ScalarEvolution &SE) {
   return tripCount;
 }
 
-std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
+std::pair<PDG *, SCCDAG *> LoopContent::createDGsForLoop(
     LDGAnalysis &ldgAnalysis,
     CompilationOptionsManager *com,
     Loop *l,
@@ -448,7 +444,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
    * Analyze the loop to identify opportunities of cloning stack objects.
    */
   if (this->loopTransformationsManager->isOptimizationEnabled(
-          LoopDependenceInfoOptimization::MEMORY_CLONING_ID)) {
+          LoopContentOptimization::MEMORY_CLONING_ID)) {
     this->removeUnnecessaryDependenciesThatCloningMemoryNegates(loopNode,
                                                                 loopDG,
                                                                 DS);
@@ -458,7 +454,7 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
    * Remove memory dependences with known thread-safe library functions.
    */
   if (this->loopTransformationsManager->isOptimizationEnabled(
-          LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID)) {
+          LoopContentOptimization::THREAD_SAFE_LIBRARY_ID)) {
     this->removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions(loopNode,
                                                                       loopDG,
                                                                       DS);
@@ -502,11 +498,10 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
   return std::make_pair(loopDG, loopSCCDAG);
 }
 
-void LoopDependenceInfo::
-    removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions(
-        LoopTree *loopNode,
-        PDG *loopDG,
-        DominatorSummary &DS) {
+void LoopContent::removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions(
+    LoopTree *loopNode,
+    PDG *loopDG,
+    DominatorSummary &DS) {
 
   /*
    * Fetch the loop sub-tree rooted at @this.
@@ -570,7 +565,7 @@ void LoopDependenceInfo::
   return;
 }
 
-void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
+void LoopContent::removeUnnecessaryDependenciesThatCloningMemoryNegates(
     LoopTree *loopNode,
     PDG *loopInternalDG,
     DominatorSummary &DS) {
@@ -671,11 +666,11 @@ void LoopDependenceInfo::removeUnnecessaryDependenciesThatCloningMemoryNegates(
   return;
 }
 
-PDG *LoopDependenceInfo::getLoopDG(void) const {
+PDG *LoopContent::getLoopDG(void) const {
   return this->loopDG;
 }
 
-bool LoopDependenceInfo::iterateOverSubLoopsRecursively(
+bool LoopContent::iterateOverSubLoopsRecursively(
     std::function<bool(const LoopStructure &child)> funcToInvoke) {
 
   /*
@@ -690,58 +685,55 @@ bool LoopDependenceInfo::iterateOverSubLoopsRecursively(
   return false;
 }
 
-LoopStructure *LoopDependenceInfo::getLoopStructure(void) const {
+LoopStructure *LoopContent::getLoopStructure(void) const {
   return this->loop->getLoop();
 }
 
-LoopStructure *LoopDependenceInfo::getNestedMostLoopStructure(
-    Instruction *I) const {
+LoopStructure *LoopContent::getNestedMostLoopStructure(Instruction *I) const {
   return this->loop->getInnermostLoopThatContains(I);
 }
 
-InductionVariableManager *LoopDependenceInfo::getInductionVariableManager(
-    void) const {
+InductionVariableManager *LoopContent::getInductionVariableManager(void) const {
   return inductionVariables;
 }
 
-MemoryCloningAnalysis *LoopDependenceInfo::getMemoryCloningAnalysis(
-    void) const {
+MemoryCloningAnalysis *LoopContent::getMemoryCloningAnalysis(void) const {
   assert(
       this->memoryCloningAnalysis != nullptr
-      && "Requesting memory cloning analysis without having specified LoopDependenceInfoOptimization::MEMORY_CLONING");
+      && "Requesting memory cloning analysis without having specified LoopContentOptimization::MEMORY_CLONING");
   return this->memoryCloningAnalysis;
 }
 
-bool LoopDependenceInfo::doesHaveCompileTimeKnownTripCount(void) const {
+bool LoopContent::doesHaveCompileTimeKnownTripCount(void) const {
   return this->compileTimeKnownTripCount;
 }
 
-uint64_t LoopDependenceInfo::getCompileTimeTripCount(void) const {
+uint64_t LoopContent::getCompileTimeTripCount(void) const {
   return this->tripCount;
 }
 
-InvariantManager *LoopDependenceInfo::getInvariantManager(void) const {
+InvariantManager *LoopContent::getInvariantManager(void) const {
   return this->invariantManager;
 }
 
-LoopIterationSpaceAnalysis *LoopDependenceInfo::getLoopIterationSpaceAnalysis(
+LoopIterationSpaceAnalysis *LoopContent::getLoopIterationSpaceAnalysis(
     void) const {
   return this->domainSpaceAnalysis;
 }
 
-LoopTree *LoopDependenceInfo::getLoopHierarchyStructures(void) const {
+LoopTree *LoopContent::getLoopHierarchyStructures(void) const {
   return this->loop;
 }
 
-SCCDAGAttrs *LoopDependenceInfo::getSCCManager(void) const {
+SCCDAGAttrs *LoopContent::getSCCManager(void) const {
   return this->sccdagAttrs;
 }
 
-LoopEnvironment *LoopDependenceInfo::getEnvironment(void) const {
+LoopEnvironment *LoopContent::getEnvironment(void) const {
   return this->environment;
 }
 
-SCCDAG *LoopDependenceInfo::computeSCCDAGWithOnlyVariableAndControlDependences(
+SCCDAG *LoopContent::computeSCCDAGWithOnlyVariableAndControlDependences(
     PDG *loopDG) {
 
   /*
@@ -776,12 +768,12 @@ SCCDAG *LoopDependenceInfo::computeSCCDAGWithOnlyVariableAndControlDependences(
   return loopSCCDAGWithoutMemoryDeps;
 }
 
-LoopTransformationsManager *LoopDependenceInfo::getLoopTransformationsManager(
+LoopTransformationsManager *LoopContent::getLoopTransformationsManager(
     void) const {
   return this->loopTransformationsManager;
 }
 
-LoopDependenceInfo::~LoopDependenceInfo() {
+LoopContent::~LoopContent() {
   delete this->loopDG;
   delete this->environment;
 

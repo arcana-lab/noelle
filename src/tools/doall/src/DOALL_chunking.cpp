@@ -27,8 +27,7 @@
 
 namespace arcana::noelle {
 
-void DOALL::rewireLoopToIterateChunks(LoopDependenceInfo *LDI,
-                                      DOALLTask *task) {
+void DOALL::rewireLoopToIterateChunks(LoopContent *LDI, DOALLTask *task) {
 
   /*
    * Fetch loop and IV information.

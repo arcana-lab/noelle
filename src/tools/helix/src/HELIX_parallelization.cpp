@@ -26,7 +26,7 @@
 
 namespace arcana::noelle {
 
-bool HELIX::apply(LoopDependenceInfo *LDI, Heuristics *h) {
+bool HELIX::apply(LoopContent *LDI, Heuristics *h) {
 
   /*
    * Print the LDI
@@ -79,8 +79,7 @@ bool HELIX::apply(LoopDependenceInfo *LDI, Heuristics *h) {
   return modified;
 }
 
-HELIXTask *HELIX::createParallelizableTask(LoopDependenceInfo *LDI,
-                                           Heuristics *h) {
+HELIXTask *HELIX::createParallelizableTask(LoopContent *LDI, Heuristics *h) {
 
   /*
    * Check if we have the APIs available.
@@ -104,7 +103,7 @@ HELIXTask *HELIX::createParallelizableTask(LoopDependenceInfo *LDI,
   auto sccManager = LDI->getSCCManager();
 
   /*
-   * Keep around the original loops' LoopDependenceInfo.
+   * Keep around the original loops' LoopContent.
    * This is necessary because a new LDI will be generated after spilling
    * loop-carried variables and we will need to map original SCCs to the new
    * SCCs of the new LDI.
@@ -261,8 +260,7 @@ HELIXTask *HELIX::createParallelizableTask(LoopDependenceInfo *LDI,
    * overrides the live-in mapping to use locally cloned memory instructions
    * that are live-in to the loop
    */
-  if (ltm->isOptimizationEnabled(
-          LoopDependenceInfoOptimization::MEMORY_CLONING_ID)) {
+  if (ltm->isOptimizationEnabled(LoopContentOptimization::MEMORY_CLONING_ID)) {
     this->cloneMemoryLocationsLocallyAndRewireLoop(LDI, 0);
   }
 
@@ -313,7 +311,7 @@ HELIXTask *HELIX::createParallelizableTask(LoopDependenceInfo *LDI,
   return helixTask;
 }
 
-bool HELIX::synchronizeTask(LoopDependenceInfo *LDI,
+bool HELIX::synchronizeTask(LoopContent *LDI,
                             Heuristics *h,
                             HELIXTask *helixTask) {
   assert(LDI != nullptr);

@@ -25,7 +25,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopStructure.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/SCC.hpp"
 
 namespace arcana::noelle {
@@ -37,12 +37,12 @@ public:
    */
   LoopDistribution();
 
-  bool splitLoop(LoopDependenceInfo const &LDI,
+  bool splitLoop(LoopContent const &LDI,
                  SCC *SCCToPullOut,
                  std::set<Instruction *> &instructionsRemoved,
                  std::set<Instruction *> &instructionsAdded);
 
-  bool splitLoop(LoopDependenceInfo const &LDI,
+  bool splitLoop(LoopContent const &LDI,
                  std::set<SCC *> const &SCCsToPullOut,
                  std::set<Instruction *> &instructionsRemoved,
                  std::set<Instruction *> &instructionsAdded);
@@ -55,25 +55,25 @@ private:
   /*
    * Methods
    */
-  bool splitLoop(LoopDependenceInfo const &LDI,
+  bool splitLoop(LoopContent const &LDI,
                  std::set<Instruction *> &instsToPullOut,
                  std::set<Instruction *> &instructionsRemoved,
                  std::set<Instruction *> &instructionsAdded);
 
   void recursivelyCollectDependencies(Instruction *inst,
                                       std::set<Instruction *> &toPopulate,
-                                      LoopDependenceInfo const &LDI);
+                                      LoopContent const &LDI);
 
   bool splitWouldBeTrivial(LoopStructure *const loopStructure,
                            std::set<Instruction *> const &instsToPullOut,
                            std::set<Instruction *> const &instsToClone);
 
   bool splitWouldRequireForwardingDataDependencies(
-      LoopDependenceInfo const &LDI,
+      LoopContent const &LDI,
       std::set<Instruction *> const &instsToPullOut,
       std::set<Instruction *> const &instsToClone);
 
-  void doSplit(LoopDependenceInfo const &LDI,
+  void doSplit(LoopContent const &LDI,
                std::set<Instruction *> const &instsToPullOut,
                std::set<Instruction *> const &instsToClone,
                std::set<Instruction *> &instructionsRemoved,

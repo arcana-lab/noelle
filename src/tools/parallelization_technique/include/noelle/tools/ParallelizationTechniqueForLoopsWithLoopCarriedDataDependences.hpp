@@ -38,8 +38,7 @@ public:
       Noelle &n,
       bool forceParallelization);
 
-  bool canBeAppliedToLoop(LoopDependenceInfo *LDI,
-                          Heuristics *h) const override;
+  bool canBeAppliedToLoop(LoopContent *LDI, Heuristics *h) const override;
 
   /*
    * Destructor.
@@ -56,13 +55,13 @@ protected:
   /*
    * Partition SCCDAG.
    */
-  void partitionSCCDAG(LoopDependenceInfo *LDI);
-  void partitionSCCDAG(LoopDependenceInfo *LDI,
+  void partitionSCCDAG(LoopContent *LDI);
+  void partitionSCCDAG(LoopContent *LDI,
                        std::function<bool(GenericSCC *scc)> skipSCC);
 
   void printSequentialCode(raw_ostream &stream,
                            const std::string &prefixString,
-                           LoopDependenceInfo *LDI,
+                           LoopContent *LDI,
                            const std::set<SCC *> &sequentialSCCs);
 };
 

@@ -12,7 +12,7 @@ add_subdirectory(src)
 install(
   FILES
   include/noelle/core/ControlFlowEquivalence.hpp
-  include/noelle/core/LoopDependenceInfo.hpp
+  include/noelle/core/LoopContent.hpp
   include/noelle/core/LoopTransformationsOptions.hpp
   DESTINATION 
   include/noelle/core

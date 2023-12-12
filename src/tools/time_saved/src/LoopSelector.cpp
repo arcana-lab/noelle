@@ -24,13 +24,13 @@
 
 namespace arcana::noelle {
 
-std::vector<LoopDependenceInfo *> TimeSaved::selectTheOrderOfLoopsToParallelize(
+std::vector<LoopContent *> TimeSaved::selectTheOrderOfLoopsToParallelize(
     Noelle &noelle,
     Hot *profiles,
     noelle::LoopTree *tree,
     uint64_t &maxTimeSaved,
     uint64_t &maxTimeSavedWithDOALLOnly) {
-  std::vector<LoopDependenceInfo *> selectedLoops{};
+  std::vector<LoopContent *> selectedLoops{};
 
   /*
    * Fetch the verbosity.
@@ -41,7 +41,7 @@ std::vector<LoopDependenceInfo *> TimeSaved::selectTheOrderOfLoopsToParallelize(
    * Compute the amount of time that can be saved by a parallelization technique
    * per loop.
    */
-  std::map<LoopDependenceInfo *, uint64_t> timeSavedLoops;
+  std::map<LoopContent *, uint64_t> timeSavedLoops;
   std::map<LoopStructure *, bool> doallLoops;
   std::map<LoopStructure *, uint64_t> timeSavedPerLoop;
   auto selector = [&noelle,
@@ -53,10 +53,8 @@ std::vector<LoopDependenceInfo *> TimeSaved::selectTheOrderOfLoopsToParallelize(
      * Fetch the loop.
      */
     auto ls = n->getLoop();
-    auto optimizations = {
-      LoopDependenceInfoOptimization::MEMORY_CLONING_ID,
-      LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID
-    };
+    auto optimizations = { LoopContentOptimization::MEMORY_CLONING_ID,
+                           LoopContentOptimization::THREAD_SAFE_LIBRARY_ID };
     auto ldi = noelle.getLoop(ls, optimizations);
 
     /*
@@ -140,8 +138,7 @@ std::vector<LoopDependenceInfo *> TimeSaved::selectTheOrderOfLoopsToParallelize(
    * Sort the loops depending on the amount of time that can be saved by a
    * parallelization technique.
    */
-  auto compareOperator = [&timeSavedLoops](LoopDependenceInfo *l1,
-                                           LoopDependenceInfo *l2) {
+  auto compareOperator = [&timeSavedLoops](LoopContent *l1, LoopContent *l2) {
     auto s1 = timeSavedLoops[l1];
     auto s2 = timeSavedLoops[l2];
     if (s1 != s2) {

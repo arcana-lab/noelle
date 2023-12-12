@@ -335,7 +335,7 @@ LoopForest *Noelle::getLoopNestingForest(void) {
   return forest;
 }
 
-LoopDependenceInfo *Noelle::getLoop(LoopStructure *l) {
+LoopContent *Noelle::getLoop(LoopStructure *l) {
 
   /*
    * Check if the loop is valid.
@@ -352,9 +352,9 @@ LoopDependenceInfo *Noelle::getLoop(LoopStructure *l) {
   return ldi;
 }
 
-LoopDependenceInfo *Noelle::getLoop(
+LoopContent *Noelle::getLoop(
     LoopStructure *loop,
-    std::unordered_set<LoopDependenceInfoOptimization> optimizations) {
+    std::unordered_set<LoopContentOptimization> optimizations) {
 
   /*
    * Fetch the the function dependence graph, post dominators, and scalar
@@ -369,8 +369,7 @@ LoopDependenceInfo *Noelle::getLoop(
    * No filter file was provided. Construct LDI without profiler configurables
    */
   if (!this->hasReadFilterFile) {
-    auto ldi =
-        this->getLoopDependenceInfoForLoop(header,
+    auto ldi = this->getLoopContentForLoop(header,
                                            funcPDG,
                                            DS,
                                            0,
@@ -391,24 +390,24 @@ LoopDependenceInfo *Noelle::getLoop(
   auto loopIndex = loopIDOpt.value();
 
   auto maximumNumberOfCoresForTheParallelization = this->loopThreads[loopIndex];
-  auto ldi = this->getLoopDependenceInfoForLoop(
-      header,
-      funcPDG,
-      DS,
-      this->techniquesToDisable[loopIndex],
-      this->DOALLChunkSize[loopIndex],
-      maximumNumberOfCoresForTheParallelization,
-      optimizations,
-      this->loopAwareDependenceAnalysis);
+  auto ldi =
+      this->getLoopContentForLoop(header,
+                                  funcPDG,
+                                  DS,
+                                  this->techniquesToDisable[loopIndex],
+                                  this->DOALLChunkSize[loopIndex],
+                                  maximumNumberOfCoresForTheParallelization,
+                                  optimizations,
+                                  this->loopAwareDependenceAnalysis);
 
   delete DS;
   return ldi;
 }
 
-LoopDependenceInfo *Noelle::getLoop(BasicBlock *header,
-                                    PDG *functionPDG,
-                                    LoopTransformationsManager *ltm,
-                                    bool enableLoopAwareDependenceAnalysis) {
+LoopContent *Noelle::getLoop(BasicBlock *header,
+                             PDG *functionPDG,
+                             LoopTransformationsManager *ltm,
+                             bool enableLoopAwareDependenceAnalysis) {
 
   /*
    * Get the dominators.
@@ -445,8 +444,7 @@ LoopDependenceInfo *Noelle::getLoop(BasicBlock *header,
   /*
    * Fetch the loop content.
    */
-  auto ldi =
-      this->getLoopDependenceInfoForLoop(header,
+  auto ldi = this->getLoopContentForLoop(header,
                                          functionPDG,
                                          DS,
                                          techniquesToDisable,
@@ -458,7 +456,7 @@ LoopDependenceInfo *Noelle::getLoop(BasicBlock *header,
   return ldi;
 }
 
-std::vector<LoopDependenceInfo *> *Noelle::getLoops(Function *function) {
+std::vector<LoopContent *> *Noelle::getLoops(Function *function) {
   if (function->empty()) {
     return {};
   }
@@ -467,13 +465,13 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(Function *function) {
   return v;
 }
 
-std::vector<LoopDependenceInfo *> *Noelle::getLoops(Function *function,
-                                                    double minimumHotness) {
+std::vector<LoopContent *> *Noelle::getLoops(Function *function,
+                                             double minimumHotness) {
 
   /*
    * Allocate the vector of loops.
    */
-  auto allLoops = new std::vector<LoopDependenceInfo *>();
+  auto allLoops = new std::vector<LoopContent *>();
 
   /*
    * Check if the function is hot.
@@ -558,15 +556,15 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(Function *function,
       auto &newLI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
       auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
       auto llvmLoop = newLI.getLoopFor(ls->getHeader());
-      auto ldi = new LoopDependenceInfo(this->ldgAnalysis,
-                                        this->getCompilationOptionsManager(),
-                                        funcPDG,
-                                        loopNode,
-                                        llvmLoop,
-                                        *DS,
-                                        SE,
-                                        this->om->getMaximumNumberOfCores(),
-                                        this->loopAwareDependenceAnalysis);
+      auto ldi = new LoopContent(this->ldgAnalysis,
+                                 this->getCompilationOptionsManager(),
+                                 funcPDG,
+                                 loopNode,
+                                 llvmLoop,
+                                 *DS,
+                                 SE,
+                                 this->om->getMaximumNumberOfCores(),
+                                 this->loopAwareDependenceAnalysis);
       allLoops->push_back(ldi);
     }
   }
@@ -579,18 +577,18 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(Function *function,
   return allLoops;
 }
 
-std::vector<LoopDependenceInfo *> *Noelle::getLoops(void) {
+std::vector<LoopContent *> *Noelle::getLoops(void) {
   auto v = this->getLoops(this->minHot);
 
   return v;
 }
 
-std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
+std::vector<LoopContent *> *Noelle::getLoops(double minimumHotness) {
 
   /*
    * Allocate the vector of loops.
    */
-  auto allLoops = new std::vector<LoopDependenceInfo *>();
+  auto allLoops = new std::vector<LoopContent *>();
 
   /*
    * Fetch the list of functions of the module.
@@ -758,23 +756,23 @@ std::vector<LoopDependenceInfo *> *Noelle::getLoops(double minimumHotness) {
         /*
          * Check if we have to filter loops.
          */
-        LoopDependenceInfo *ldi = nullptr;
+        LoopContent *ldi = nullptr;
         if (!filterLoops) {
-          ldi = new LoopDependenceInfo(this->ldgAnalysis,
-                                       this->getCompilationOptionsManager(),
-                                       funcPDG,
-                                       loopNode,
-                                       LLVMLoop,
-                                       *DS,
-                                       SE,
-                                       this->om->getMaximumNumberOfCores(),
-                                       this->loopAwareDependenceAnalysis);
+          ldi = new LoopContent(this->ldgAnalysis,
+                                this->getCompilationOptionsManager(),
+                                funcPDG,
+                                loopNode,
+                                LLVMLoop,
+                                *DS,
+                                SE,
+                                this->om->getMaximumNumberOfCores(),
+                                this->loopAwareDependenceAnalysis);
 
         } else {
           auto maximumNumberOfCoresForTheParallelization =
               loopThreads[currentLoopIndex];
           assert(maximumNumberOfCoresForTheParallelization > 1);
-          ldi = this->getLoopDependenceInfoForLoop(
+          ldi = this->getLoopContentForLoop(
               loopNode,
               LLVMLoop,
               funcPDG,
@@ -1032,7 +1030,7 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
   return filterLoops;
 }
 
-void Noelle::sortByHotness(std::vector<LoopDependenceInfo *> &loops) {
+void Noelle::sortByHotness(std::vector<LoopContent *> &loops) {
 
   /*
    * Fetch the profiles.
@@ -1042,8 +1040,7 @@ void Noelle::sortByHotness(std::vector<LoopDependenceInfo *> &loops) {
   /*
    * Define the order between loops.
    */
-  auto compareLoops = [hot](LoopDependenceInfo *a,
-                            LoopDependenceInfo *b) -> bool {
+  auto compareLoops = [hot](LoopContent *a, LoopContent *b) -> bool {
     assert(a != nullptr);
     assert(b != nullptr);
 
@@ -1142,12 +1139,12 @@ std::vector<LoopTree *> Noelle::sortByHotness(
 }
 
 void Noelle::sortByStaticNumberOfInstructions(
-    std::vector<LoopDependenceInfo *> &loops) {
+    std::vector<LoopContent *> &loops) {
 
   /*
    * Define the order between loops.
    */
-  auto compareLoops = [](LoopDependenceInfo *a, LoopDependenceInfo *b) -> bool {
+  auto compareLoops = [](LoopContent *a, LoopContent *b) -> bool {
     auto aLS = a->getLoopStructure();
     auto bLS = b->getLoopStructure();
     auto aInsts = aLS->getNumberOfInstructions();
@@ -1164,14 +1161,14 @@ void Noelle::sortByStaticNumberOfInstructions(
   return;
 }
 
-LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
+LoopContent *Noelle::getLoopContentForLoop(
     BasicBlock *header,
     PDG *functionPDG,
     DominatorSummary *DS,
     uint32_t techniquesToDisable,
     uint32_t DOALLChunkSize,
     uint32_t maxCores,
-    std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+    std::unordered_set<LoopContentOptimization> optimizations,
     bool enableLoopAwareDependenceAnalysis) {
 
   /*
@@ -1194,10 +1191,9 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
   auto llvmLoop = LI.getLoopFor(header);
 
   /*
-   * Compute the LoopDependenceInfo
+   * Compute the LoopContent
    */
-  auto ldi =
-      this->getLoopDependenceInfoForLoop(newLoopNode,
+  auto ldi = this->getLoopContentForLoop(newLoopNode,
                                          llvmLoop,
                                          functionPDG,
                                          DS,
@@ -1312,7 +1308,7 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
   return loopNestingGraph;
 }
 
-LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
+LoopContent *Noelle::getLoopContentForLoop(
     LoopTree *loopNode,
     Loop *loop,
     PDG *functionPDG,
@@ -1321,23 +1317,23 @@ LoopDependenceInfo *Noelle::getLoopDependenceInfoForLoop(
     uint32_t techniquesToDisableForLoop,
     uint32_t DOALLChunkSizeForLoop,
     uint32_t maxCores,
-    std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+    std::unordered_set<LoopContentOptimization> optimizations,
     bool enableLoopAwareDependenceAnalysis) {
 
   /*
    * Allocate the LDI.
    */
-  auto ldi = new LoopDependenceInfo(this->ldgAnalysis,
-                                    this->getCompilationOptionsManager(),
-                                    functionPDG,
-                                    loopNode,
-                                    loop,
-                                    *DS,
-                                    *SE,
-                                    maxCores,
-                                    optimizations,
-                                    enableLoopAwareDependenceAnalysis,
-                                    DOALLChunkSizeForLoop);
+  auto ldi = new LoopContent(this->ldgAnalysis,
+                             this->getCompilationOptionsManager(),
+                             functionPDG,
+                             loopNode,
+                             loop,
+                             *DS,
+                             *SE,
+                             maxCores,
+                             optimizations,
+                             enableLoopAwareDependenceAnalysis,
+                             DOALLChunkSizeForLoop);
 
   /*
    * Set the techniques that are enabled.

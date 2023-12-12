@@ -63,13 +63,13 @@ private:
   void printRefinedLoopGraphsForFunction(
       Noelle &noelle,
       std::unordered_map<Function *, LoopForest *> &programLoops,
-      std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
+      std::unordered_map<LoopStructure *, LoopContent *> &lsToLDI,
       Function &F);
 
   void collectStatsForLoopEdges(
       Noelle &noelle,
       std::unordered_map<Function *, LoopForest *> &programLoops,
-      std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
+      std::unordered_map<LoopStructure *, LoopContent *> &lsToLDI,
       Function &F);
 
   void analyzeDependence(DGEdge<Value, Value> *edge);

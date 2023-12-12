@@ -24,7 +24,7 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/Scheduler.hpp"
 
 namespace arcana::noelle {
@@ -88,7 +88,7 @@ public:
    */
   LoopWhilifier();
 
-  bool whilifyLoop(LoopDependenceInfo &LDI,
+  bool whilifyLoop(LoopContent &LDI,
                    Scheduler &scheduler,
                    DominatorSummary *DS,
                    PDG *FDG);

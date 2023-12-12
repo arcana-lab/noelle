@@ -49,7 +49,7 @@ bool PlanInfo::runOnModule(Module &M) {
    * Collecting loops with a parallel plan
    */
   auto mm = noelle.getMetadataManager();
-  std::map<int, LoopDependenceInfo *> order2ldi;
+  std::map<int, LoopContent *> order2ldi;
   for (auto tree : forest->getTrees()) {
     auto collector = [&](LoopTree *n, uint32_t treeLevel) -> bool {
       auto ls = n->getLoop();
@@ -58,10 +58,8 @@ bool PlanInfo::runOnModule(Module &M) {
       }
       auto order =
           std::stoi(mm->getMetadata(ls, "noelle.parallelizer.looporder"));
-      auto optimizations = {
-        LoopDependenceInfoOptimization::MEMORY_CLONING_ID,
-        LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID
-      };
+      auto optimizations = { LoopContentOptimization::MEMORY_CLONING_ID,
+                             LoopContentOptimization::THREAD_SAFE_LIBRARY_ID };
       auto ldi = noelle.getLoop(ls, optimizations);
       order2ldi[order] = ldi;
       return false;

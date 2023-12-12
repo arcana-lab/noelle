@@ -26,7 +26,7 @@
 namespace arcana::noelle {
 
 bool EnablersManager::applyEnablers(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     Noelle &par,
     LoopTransformer &LoopTransformer,
     LoopInvariantCodeMotion &loopInvariantCodeMotion,
@@ -103,7 +103,7 @@ bool EnablersManager::applyEnablers(
   return false;
 }
 
-bool EnablersManager::applyLoopWhilifier(LoopDependenceInfo *LDI,
+bool EnablersManager::applyLoopWhilifier(LoopContent *LDI,
                                          Noelle &par,
                                          LoopTransformer &LoopTransformer) {
   assert(LDI != nullptr);
@@ -139,7 +139,7 @@ bool EnablersManager::applyLoopWhilifier(LoopDependenceInfo *LDI,
   return modified;
 }
 
-bool EnablersManager::applyLoopDistribution(LoopDependenceInfo *LDI,
+bool EnablersManager::applyLoopDistribution(LoopContent *LDI,
                                             Noelle &par,
                                             LoopTransformer &loopTransformer) {
 
@@ -214,7 +214,7 @@ bool EnablersManager::applyLoopDistribution(LoopDependenceInfo *LDI,
   return false;
 }
 
-bool EnablersManager::applyDevirtualizer(LoopDependenceInfo *LDI,
+bool EnablersManager::applyDevirtualizer(LoopContent *LDI,
                                          Noelle &par,
                                          LoopTransformer &lt) {
 

@@ -26,7 +26,7 @@
 
 namespace arcana::noelle {
 
-void DOALL::invokeParallelizedLoop(LoopDependenceInfo *LDI) {
+void DOALL::invokeParallelizedLoop(LoopContent *LDI) {
 
   /*
    * Create the environment.

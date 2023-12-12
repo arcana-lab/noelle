@@ -24,7 +24,7 @@
 
 namespace arcana::noelle {
 
-bool LoopDistribution::splitLoop(LoopDependenceInfo const &LDI,
+bool LoopDistribution::splitLoop(LoopContent const &LDI,
                                  SCC *SCCToPullOut,
                                  std::set<Instruction *> &instructionsRemoved,
                                  std::set<Instruction *> &instructionsAdded) {
@@ -35,7 +35,7 @@ bool LoopDistribution::splitLoop(LoopDependenceInfo const &LDI,
   return modified;
 }
 
-bool LoopDistribution::splitLoop(LoopDependenceInfo const &LDI,
+bool LoopDistribution::splitLoop(LoopContent const &LDI,
                                  std::set<SCC *> const &SCCsToPullOut,
                                  std::set<Instruction *> &instructionsRemoved,
                                  std::set<Instruction *> &instructionsAdded) {
@@ -55,7 +55,7 @@ bool LoopDistribution::splitLoop(LoopDependenceInfo const &LDI,
   return modified;
 }
 
-bool LoopDistribution::splitLoop(LoopDependenceInfo const &LDI,
+bool LoopDistribution::splitLoop(LoopContent const &LDI,
                                  std::set<Instruction *> &instsToPullOut,
                                  std::set<Instruction *> &instructionsRemoved,
                                  std::set<Instruction *> &instructionsAdded) {
@@ -227,7 +227,7 @@ bool LoopDistribution::splitLoop(LoopDependenceInfo const &LDI,
 void LoopDistribution::recursivelyCollectDependencies(
     Instruction *inst,
     std::set<Instruction *> &toPopulate,
-    LoopDependenceInfo const &LDI) {
+    LoopContent const &LDI) {
   std::vector<Instruction *> queue = { inst };
   auto BBs = LDI.getLoopStructure()->getBasicBlocks();
   auto pdg = LDI.getLoopDG();
@@ -298,7 +298,7 @@ bool LoopDistribution::splitWouldBeTrivial(
  * split the loop
  */
 bool LoopDistribution::splitWouldRequireForwardingDataDependencies(
-    LoopDependenceInfo const &LDI,
+    LoopContent const &LDI,
     std::set<Instruction *> const &instsToPullOut,
     std::set<Instruction *> const &instsToClone) {
   auto BBs = LDI.getLoopStructure()->getBasicBlocks();
@@ -387,7 +387,7 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies(
   return false;
 }
 
-void LoopDistribution::doSplit(LoopDependenceInfo const &LDI,
+void LoopDistribution::doSplit(LoopContent const &LDI,
                                std::set<Instruction *> const &instsToPullOut,
                                std::set<Instruction *> const &instsToClone,
                                std::set<Instruction *> &instructionsRemoved,

@@ -32,7 +32,7 @@ namespace arcana::noelle {
 class SequentialSegment {
 public:
   SequentialSegment(Noelle &noelle,
-                    LoopDependenceInfo *LDI,
+                    LoopContent *LDI,
                     DataFlowResult *reachabilityDFR,
                     SCCSet *sccs,
                     int32_t ID,
@@ -57,7 +57,7 @@ private:
   Verbosity verbosity;
 
   void determineEntryAndExitFrontier(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       DominatorSummary *DS,
       DataFlowResult *dfr,
       std::unordered_set<Instruction *> &ssInstructions);
@@ -67,7 +67,7 @@ private:
    * more extensive testing
    */
   void determineEntriesAndExits(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       DataFlowResult *dfr,
       std::unordered_set<Instruction *> &ssInstructions);
 
@@ -75,9 +75,9 @@ private:
       Instruction *originalBarrierInst);
 
   std::unordered_map<Instruction *, std::unordered_set<Instruction *>>
-  computeBeforeInstructionMap(LoopDependenceInfo *LDI, DataFlowResult *dfr);
+  computeBeforeInstructionMap(LoopContent *LDI, DataFlowResult *dfr);
 
-  void printSCCInfo(LoopDependenceInfo *LDI,
+  void printSCCInfo(LoopContent *LDI,
                     std::unordered_set<Instruction *> &ssInstructions,
                     const std::string &prefixString);
 

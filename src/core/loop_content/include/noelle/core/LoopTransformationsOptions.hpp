@@ -33,7 +33,7 @@ public:
   LoopTransformationsManager(
       uint32_t maxNumberOfCores,
       uint32_t chunkSize,
-      std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+      std::unordered_set<LoopContentOptimization> optimizations,
       bool enableLoopAwareDependenceAnalyses);
 
   LoopTransformationsManager(const LoopTransformationsManager &other);
@@ -60,11 +60,11 @@ public:
   /*
    * Check whether an optimization is enabled
    */
-  bool isOptimizationEnabled(LoopDependenceInfoOptimization optimization) const;
+  bool isOptimizationEnabled(LoopContentOptimization optimization) const;
 
   bool areLoopAwareAnalysesEnabled(void) const;
 
-  std::unordered_set<LoopDependenceInfoOptimization> getOptimizationsEnabled(
+  std::unordered_set<LoopContentOptimization> getOptimizationsEnabled(
       void) const;
 
 private:
@@ -72,7 +72,7 @@ private:
   uint32_t maxCores;
   std::set<Transformation>
       enabledTransformations; /* Transformations enabled. */
-  std::unordered_set<LoopDependenceInfoOptimization>
+  std::unordered_set<LoopContentOptimization>
       enabledOptimizations; /* Optimizations enabled. */
   bool _areLoopAwareAnalysesEnabled;
 };

@@ -2,7 +2,7 @@
 set(Srcs 
   ControlFlowEquivalence.cpp
   LoopAwareMemDepAnalysis.cpp
-  LoopDependenceInfo.cpp
+  LoopContent.cpp
   LoopTransformationsOptions.cpp
 )
 

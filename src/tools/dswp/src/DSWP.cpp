@@ -46,7 +46,7 @@ DSWP::DSWP(Noelle &n, bool forceParallelization, bool enableSCCMerging)
   return;
 }
 
-bool DSWP::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
+bool DSWP::canBeAppliedToLoop(LoopContent *LDI, Heuristics *h) const {
 
   /*
    * Check the parent class.
@@ -185,7 +185,7 @@ bool DSWP::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   return true;
 }
 
-bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
+bool DSWP::apply(LoopContent *LDI, Heuristics *h) {
 
   /*
    * Start.
@@ -339,7 +339,7 @@ bool DSWP::apply(LoopDependenceInfo *LDI, Heuristics *h) {
      */
     auto ltm = LDI->getLoopTransformationsManager();
     if (ltm->isOptimizationEnabled(
-            LoopDependenceInfoOptimization::MEMORY_CLONING_ID)) {
+            LoopContentOptimization::MEMORY_CLONING_ID)) {
       this->cloneMemoryLocationsLocallyAndRewireLoop(LDI, i);
     }
 

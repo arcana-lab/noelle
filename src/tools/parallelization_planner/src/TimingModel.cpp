@@ -24,7 +24,7 @@
 
 namespace arcana::noelle {
 
-LoopTimingModel::LoopTimingModel(Noelle &noelle, LoopDependenceInfo &ldi)
+LoopTimingModel::LoopTimingModel(Noelle &noelle, LoopContent &ldi)
   : n{ noelle },
     loop{ ldi } {
   return;

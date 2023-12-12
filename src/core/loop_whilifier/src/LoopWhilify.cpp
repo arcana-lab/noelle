@@ -27,7 +27,7 @@ LoopWhilifier::LoopWhilifier() : outputPrefix{ "Whilifier: " } {
   return;
 }
 
-bool LoopWhilifier::whilifyLoop(LoopDependenceInfo &LDI,
+bool LoopWhilifier::whilifyLoop(LoopContent &LDI,
                                 Scheduler &scheduler,
                                 DominatorSummary *DS,
                                 PDG *FDG) {

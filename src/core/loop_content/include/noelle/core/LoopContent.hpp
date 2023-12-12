@@ -40,75 +40,72 @@
 
 namespace arcana::noelle {
 
-class LoopDependenceInfo {
+class LoopContent {
 public:
   /*
    * Constructors.
    */
-  LoopDependenceInfo(LDGAnalysis &ldgAnalysis,
-                     CompilationOptionsManager *compilationOptionsManager,
-                     PDG *fG,
-                     LoopTree *loopNode,
-                     Loop *l,
-                     DominatorSummary &DS,
-                     ScalarEvolution &SE);
+  LoopContent(LDGAnalysis &ldgAnalysis,
+              CompilationOptionsManager *compilationOptionsManager,
+              PDG *fG,
+              LoopTree *loopNode,
+              Loop *l,
+              DominatorSummary &DS,
+              ScalarEvolution &SE);
 
-  LoopDependenceInfo(LDGAnalysis &ldgAnalysis,
-                     CompilationOptionsManager *compilationOptionsManager,
-                     PDG *fG,
-                     LoopTree *loopNode,
-                     Loop *l,
-                     DominatorSummary &DS,
-                     ScalarEvolution &SE,
-                     uint32_t maxCores);
+  LoopContent(LDGAnalysis &ldgAnalysis,
+              CompilationOptionsManager *compilationOptionsManager,
+              PDG *fG,
+              LoopTree *loopNode,
+              Loop *l,
+              DominatorSummary &DS,
+              ScalarEvolution &SE,
+              uint32_t maxCores);
 
-  LoopDependenceInfo(
-      LDGAnalysis &ldgAnalysis,
-      CompilationOptionsManager *compilationOptionsManager,
-      PDG *fG,
-      LoopTree *loopNode,
-      Loop *l,
-      DominatorSummary &DS,
-      ScalarEvolution &SE,
-      uint32_t maxCores,
-      std::unordered_set<LoopDependenceInfoOptimization> optimizations);
+  LoopContent(LDGAnalysis &ldgAnalysis,
+              CompilationOptionsManager *compilationOptionsManager,
+              PDG *fG,
+              LoopTree *loopNode,
+              Loop *l,
+              DominatorSummary &DS,
+              ScalarEvolution &SE,
+              uint32_t maxCores,
+              std::unordered_set<LoopContentOptimization> optimizations);
 
-  LoopDependenceInfo(LDGAnalysis &ldgAnalysis,
-                     CompilationOptionsManager *compilationOptionsManager,
-                     PDG *fG,
-                     LoopTree *loopNode,
-                     Loop *l,
-                     DominatorSummary &DS,
-                     ScalarEvolution &SE,
-                     uint32_t maxCores,
-                     bool enableLoopAwareDependenceAnalyses);
+  LoopContent(LDGAnalysis &ldgAnalysis,
+              CompilationOptionsManager *compilationOptionsManager,
+              PDG *fG,
+              LoopTree *loopNode,
+              Loop *l,
+              DominatorSummary &DS,
+              ScalarEvolution &SE,
+              uint32_t maxCores,
+              bool enableLoopAwareDependenceAnalyses);
 
-  LoopDependenceInfo(
-      LDGAnalysis &ldgAnalysis,
-      CompilationOptionsManager *compilationOptionsManager,
-      PDG *fG,
-      LoopTree *loop,
-      Loop *l,
-      DominatorSummary &DS,
-      ScalarEvolution &SE,
-      uint32_t maxCores,
-      std::unordered_set<LoopDependenceInfoOptimization> optimizations,
-      bool enableLoopAwareDependenceAnalyses);
+  LoopContent(LDGAnalysis &ldgAnalysis,
+              CompilationOptionsManager *compilationOptionsManager,
+              PDG *fG,
+              LoopTree *loop,
+              Loop *l,
+              DominatorSummary &DS,
+              ScalarEvolution &SE,
+              uint32_t maxCores,
+              std::unordered_set<LoopContentOptimization> optimizations,
+              bool enableLoopAwareDependenceAnalyses);
 
-  LoopDependenceInfo(
-      LDGAnalysis &ldgAnalysis,
-      CompilationOptionsManager *compilationOptionsManager,
-      PDG *fG,
-      LoopTree *loop,
-      Loop *l,
-      DominatorSummary &DS,
-      ScalarEvolution &SE,
-      uint32_t maxCores,
-      std::unordered_set<LoopDependenceInfoOptimization> optimizations,
-      bool enableLoopAwareDependenceAnalyses,
-      uint32_t chunkSize);
+  LoopContent(LDGAnalysis &ldgAnalysis,
+              CompilationOptionsManager *compilationOptionsManager,
+              PDG *fG,
+              LoopTree *loop,
+              Loop *l,
+              DominatorSummary &DS,
+              ScalarEvolution &SE,
+              uint32_t maxCores,
+              std::unordered_set<LoopContentOptimization> optimizations,
+              bool enableLoopAwareDependenceAnalyses,
+              uint32_t chunkSize);
 
-  LoopDependenceInfo() = delete;
+  LoopContent() = delete;
 
   /*
    * Return the object containing all loop structures at and nested within this
@@ -135,7 +132,7 @@ public:
   /*
    * Copy all options from otherLDI to "this".
    */
-  void copyParallelizationOptionsFrom(LoopDependenceInfo *otherLDI);
+  void copyParallelizationOptionsFrom(LoopContent *otherLDI);
 
   /*
    * Iterate over children of "this" recursively following the loop nesting tree
@@ -165,7 +162,7 @@ public:
   /*
    * Deconstructor.
    */
-  ~LoopDependenceInfo();
+  ~LoopContent();
 
   static std::set<AliasAnalysisEngine *> getLoopAliasAnalysisEngines(void);
 

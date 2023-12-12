@@ -44,10 +44,7 @@ enum Transformation {
   Last = DEVIRTUALIZER_ID
 };
 
-enum LoopDependenceInfoOptimization {
-  MEMORY_CLONING_ID,
-  THREAD_SAFE_LIBRARY_ID
-};
+enum LoopContentOptimization { MEMORY_CLONING_ID, THREAD_SAFE_LIBRARY_ID };
 
 } // namespace arcana::noelle
 

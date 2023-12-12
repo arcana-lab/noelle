@@ -24,7 +24,7 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/SubCFGs.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCC.hpp"
@@ -48,20 +48,18 @@ public:
    */
   HELIX(Noelle &n, bool forceParallelization);
 
-  bool apply(LoopDependenceInfo *LDI, Heuristics *h) override;
+  bool apply(LoopContent *LDI, Heuristics *h) override;
 
-  bool canBeAppliedToLoop(LoopDependenceInfo *LDI,
-                          Heuristics *h) const override;
+  bool canBeAppliedToLoop(LoopContent *LDI, Heuristics *h) const override;
 
-  PDG *constructTaskInternalDependenceGraphFromOriginalLoopDG(
-      LoopDependenceInfo *LDI);
+  PDG *constructTaskInternalDependenceGraphFromOriginalLoopDG(LoopContent *LDI);
 
   Function *getTaskFunction(void) const;
 
   SCC *getTheSequentialSCCThatCreatesTheSequentialPrologue(
-      LoopDependenceInfo *LDI) const;
+      LoopContent *LDI) const;
 
-  bool doesHaveASequentialPrologue(LoopDependenceInfo *LDI) const;
+  bool doesHaveASequentialPrologue(LoopContent *LDI) const;
 
   uint32_t getMinimumNumberOfIdleCores(void) const override;
 
@@ -72,35 +70,34 @@ public:
   virtual ~HELIX();
 
 protected:
-  virtual HELIXTask *createParallelizableTask(LoopDependenceInfo *LDI,
-                                              Heuristics *h);
+  virtual HELIXTask *createParallelizableTask(LoopContent *LDI, Heuristics *h);
 
-  virtual bool synchronizeTask(LoopDependenceInfo *LDI,
+  virtual bool synchronizeTask(LoopContent *LDI,
                                Heuristics *h,
                                HELIXTask *helixTask);
 
-  virtual void invokeParallelizedLoop(LoopDependenceInfo *LDI,
+  virtual void invokeParallelizedLoop(LoopContent *LDI,
                                       uint64_t numberOfSequentialSegments);
 
-  void spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
+  void spillLoopCarriedDataDependencies(LoopContent *LDI,
                                         DataFlowResult *reachabilityDFR,
                                         HELIXTask *helixTask);
 
   void createLoadsAndStoresToSpilledLCD(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       DataFlowResult *reachabilityDFR,
       std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
       SpilledLoopCarriedDependence *spill,
       Value *spillEnvPtr);
 
   void insertStoresToSpilledLCD(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
       SpilledLoopCarriedDependence *spill,
       Value *spillEnvPtr);
 
   void defineFrontierForLoadsToSpilledLCD(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       DataFlowResult *reachabilityDFR,
       std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
       SpilledLoopCarriedDependence *spill,
@@ -108,7 +105,7 @@ protected:
       std::unordered_set<BasicBlock *> &originalFrontierBlocks);
 
   void replaceUsesOfSpilledPHIWithLoads(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
       SpilledLoopCarriedDependence *spill,
       Value *spillEnvPtr,
@@ -116,20 +113,20 @@ protected:
       std::unordered_set<BasicBlock *> &originalFrontierBlocks);
 
   std::vector<SequentialSegment *> identifySequentialSegments(
-      LoopDependenceInfo *originalLDI,
-      LoopDependenceInfo *LDI,
+      LoopContent *originalLDI,
+      LoopContent *LDI,
       DataFlowResult *reachabilityDFR,
       HELIXTask *helixTask);
 
-  void squeezeSequentialSegments(LoopDependenceInfo *LDI,
+  void squeezeSequentialSegments(LoopContent *LDI,
                                  std::vector<SequentialSegment *> *sss,
                                  DataFlowResult *reachabilityDFR);
 
-  void scheduleSequentialSegments(LoopDependenceInfo *LDI,
+  void scheduleSequentialSegments(LoopContent *LDI,
                                   std::vector<SequentialSegment *> *sss,
                                   DataFlowResult *reachabilityDFR);
 
-  void addSynchronizations(LoopDependenceInfo *LDI,
+  void addSynchronizations(LoopContent *LDI,
                            std::vector<SequentialSegment *> *sss,
                            HELIXTask *helixTask);
 
@@ -151,12 +148,12 @@ protected:
 
   void inlineCalls(Task *task);
 
-  void rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI);
+  void rewireLoopForIVsToIterateNthIterations(LoopContent *LDI);
 
-  void rewireLoopForPeriodicVariables(LoopDependenceInfo *LDI);
+  void rewireLoopForPeriodicVariables(LoopContent *LDI);
 
   BasicBlock *getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       uint32_t taskIndex,
       BasicBlock &bb) override;
 
@@ -164,7 +161,7 @@ protected:
    * Fields
    */
   Function *waitSSCall, *signalSSCall;
-  LoopDependenceInfo *originalLDI;
+  LoopContent *originalLDI;
   LoopEnvironmentBuilder *loopCarriedLoopEnvironmentBuilder;
   std::unordered_set<SpilledLoopCarriedDependence *> spills;
   std::unordered_map<Instruction *, Instruction *>
@@ -173,11 +170,11 @@ protected:
   bool enableInliner;
   Function *taskDispatcherSS;
   Function *taskDispatcherCS;
-  void squeezeSequentialSegment(LoopDependenceInfo *LDI,
+  void squeezeSequentialSegment(LoopContent *LDI,
                                 DataFlowResult *reachabilityDFR,
                                 SequentialSegment *ss);
 
-  DataFlowResult *computeReachabilityFromInstructions(LoopDependenceInfo *LDI);
+  DataFlowResult *computeReachabilityFromInstructions(LoopContent *LDI);
 
 private:
   std::string prefixString;

@@ -30,7 +30,7 @@ LoopInvariantCodeMotion::LoopInvariantCodeMotion(Noelle &noelle)
 }
 
 bool LoopInvariantCodeMotion::promoteMemoryLocationsToRegisters(
-    LoopDependenceInfo const &LDI) {
+    LoopContent const &LDI) {
   Mem2RegNonAlloca mem2Reg(LDI, this->noelle);
 
   auto result = mem2Reg.promoteMemoryToRegister();
@@ -39,7 +39,7 @@ bool LoopInvariantCodeMotion::promoteMemoryLocationsToRegisters(
 }
 
 bool LoopInvariantCodeMotion::extractInvariantsFromLoop(
-    LoopDependenceInfo const &LDI) {
+    LoopContent const &LDI) {
 
   if (this->hoistInvariantValues(LDI)) {
     return true;

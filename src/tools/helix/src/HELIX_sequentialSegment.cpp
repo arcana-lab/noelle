@@ -25,7 +25,7 @@
 namespace arcana::noelle {
 
 SequentialSegment::SequentialSegment(Noelle &noelle,
-                                     LoopDependenceInfo *LDI,
+                                     LoopContent *LDI,
                                      DataFlowResult *reachabilityDFR,
                                      SCCSet *sccs,
                                      int32_t ID,
@@ -125,7 +125,7 @@ int32_t SequentialSegment::getID(void) {
 }
 
 void SequentialSegment::determineEntryAndExitFrontier(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     DominatorSummary *DS,
     DataFlowResult *dfr,
     std::unordered_set<Instruction *> &ssInstructions) {
@@ -378,7 +378,7 @@ Instruction *SequentialSegment::getFrontierInstructionThatDoesNotSplitPHIs(
  * instruction J in OUT[I] and recording that I can execute before J.
  */
 std::unordered_map<Instruction *, std::unordered_set<Instruction *>>
-SequentialSegment::computeBeforeInstructionMap(LoopDependenceInfo *LDI,
+SequentialSegment::computeBeforeInstructionMap(LoopContent *LDI,
                                                DataFlowResult *dfr) {
 
   /*
@@ -426,8 +426,7 @@ SequentialSegment::computeBeforeInstructionMap(LoopDependenceInfo *LDI,
   return beforeInstructionMap;
 }
 
-DataFlowResult *HELIX::computeReachabilityFromInstructions(
-    LoopDependenceInfo *LDI) {
+DataFlowResult *HELIX::computeReachabilityFromInstructions(LoopContent *LDI) {
 
   auto loopStructure = LDI->getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
@@ -504,7 +503,7 @@ std::unordered_set<Instruction *> SequentialSegment::getInstructions(void) {
 }
 
 void SequentialSegment::printSCCInfo(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     std::unordered_set<Instruction *> &ssInstructions,
     const std::string &prefixString) {
 

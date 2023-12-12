@@ -26,9 +26,8 @@
 using namespace llvm;
 using namespace arcana::noelle;
 
-void LoopStats::collectStatsForLoops(
-    Noelle &noelle,
-    std::vector<LoopDependenceInfo *> const &loops) {
+void LoopStats::collectStatsForLoops(Noelle &noelle,
+                                     std::vector<LoopContent *> const &loops) {
 
   /*
    * Fetch the profiles.

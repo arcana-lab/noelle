@@ -37,9 +37,8 @@ bool PDGStats::runOnModule(Module &M) {
    * Compute the loops for all functions.
    */
   std::unordered_map<Function *, LoopForest *> programLoopForests;
-  std::unordered_map<Function *, std::vector<LoopDependenceInfo *> *>
-      programLoops;
-  std::unordered_map<LoopStructure *, LoopDependenceInfo *> lsToLDI;
+  std::unordered_map<Function *, std::vector<LoopContent *> *> programLoops;
+  std::unordered_map<LoopStructure *, LoopContent *> lsToLDI;
   for (auto &F : M) {
 
     /*
@@ -185,7 +184,7 @@ void PDGStats::collectStatsForPotentialEdges(
 void PDGStats::printRefinedLoopGraphsForFunction(
     Noelle &noelle,
     std::unordered_map<Function *, LoopForest *> &programLoops,
-    std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
+    std::unordered_map<LoopStructure *, LoopContent *> &lsToLDI,
     Function &F) {
   auto loopCount = 0;
   /*
@@ -228,7 +227,7 @@ void PDGStats::printRefinedLoopGraphsForFunction(
 void PDGStats::collectStatsForLoopEdges(
     Noelle &noelle,
     std::unordered_map<Function *, LoopForest *> &programLoops,
-    std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
+    std::unordered_map<LoopStructure *, LoopContent *> &lsToLDI,
     Function &F) {
 
   /*

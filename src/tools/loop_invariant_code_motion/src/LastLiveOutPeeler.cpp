@@ -56,8 +56,7 @@ using namespace llvm;
 using namespace llvm;
 using namespace arcana::noelle;
 
-LastLiveOutPeeler::LastLiveOutPeeler(LoopDependenceInfo const &LDI,
-                                     Noelle &noelle)
+LastLiveOutPeeler::LastLiveOutPeeler(LoopContent const &LDI, Noelle &noelle)
   : LDI{ LDI },
     noelle{ noelle } {}
 

@@ -26,7 +26,7 @@
 
 namespace arcana::noelle {
 
-bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
+bool DOALL::apply(LoopContent *LDI, Heuristics *h) {
 
   /*
    * Check if DOALL is enabled.
@@ -189,8 +189,7 @@ bool DOALL::apply(LoopDependenceInfo *LDI, Heuristics *h) {
    * overrides the live-in mapping to use locally cloned memory instructions
    * that are live-in to the loop
    */
-  if (ltm->isOptimizationEnabled(
-          LoopDependenceInfoOptimization::MEMORY_CLONING_ID)) {
+  if (ltm->isOptimizationEnabled(LoopContentOptimization::MEMORY_CLONING_ID)) {
     this->cloneMemoryLocationsLocallyAndRewireLoop(LDI, 0);
   }
   doallTask->adjustDataAndControlFlowToUseClones();

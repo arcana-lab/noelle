@@ -29,7 +29,7 @@ namespace arcana::noelle {
 
 class LoopTimingModel {
 public:
-  LoopTimingModel(Noelle &noelle, LoopDependenceInfo &ldi);
+  LoopTimingModel(Noelle &noelle, LoopContent &ldi);
 
   uint64_t getTimeSavedByParallelizingLoop(void);
 
@@ -37,7 +37,7 @@ public:
 
 protected:
   Noelle &n;
-  LoopDependenceInfo &loop;
+  LoopContent &loop;
 };
 
 } // namespace arcana::noelle

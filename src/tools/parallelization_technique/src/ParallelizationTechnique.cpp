@@ -51,7 +51,7 @@ uint32_t ParallelizationTechnique::getIndexOfEnvironmentVariable(
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     std::set<uint32_t> nonReducableVars) {
   std::set<uint32_t> emptySet{};
 
@@ -59,7 +59,7 @@ void ParallelizationTechnique::initializeEnvironmentBuilder(
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     std::set<uint32_t> simpleVars,
     std::set<uint32_t> reducableVars) {
   auto isReducable = [&reducableVars](uint32_t variableID,
@@ -73,7 +73,7 @@ void ParallelizationTechnique::initializeEnvironmentBuilder(
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     std::function<bool(uint32_t variableID, bool isLiveOut)>
         shouldThisVariableBeReduced) {
   auto shouldThisVariableBeSkipped =
@@ -84,7 +84,7 @@ void ParallelizationTechnique::initializeEnvironmentBuilder(
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     std::function<bool(uint32_t variableID, bool isLiveOut)>
         shouldThisVariableBeReduced,
     std::function<bool(uint32_t variableID, bool isLiveOut)>
@@ -153,8 +153,7 @@ void ParallelizationTechnique::initializeLoopEnvironmentUsers(void) {
   }
 }
 
-void ParallelizationTechnique::allocateEnvironmentArray(
-    LoopDependenceInfo *LDI) {
+void ParallelizationTechnique::allocateEnvironmentArray(LoopContent *LDI) {
 
   /*
    * Fetch the loop function.
@@ -177,8 +176,7 @@ void ParallelizationTechnique::allocateEnvironmentArray(
   envBuilder->generateEnvVariables(builder);
 }
 
-void ParallelizationTechnique::populateLiveInEnvironment(
-    LoopDependenceInfo *LDI) {
+void ParallelizationTechnique::populateLiveInEnvironment(LoopContent *LDI) {
 
   /*
    * Fetch the metadata manager
@@ -231,7 +229,7 @@ void ParallelizationTechnique::populateLiveInEnvironment(
 
 BasicBlock *ParallelizationTechnique::
     performReductionToAllReducableLiveOutVariables(
-        LoopDependenceInfo *LDI,
+        LoopContent *LDI,
         Value *numberOfThreadsExecuted) {
 
   /*
@@ -352,7 +350,7 @@ BasicBlock *ParallelizationTechnique::
 }
 
 void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     std::vector<Task *> taskStructs) {
   assert(this->tasks.size() == 0);
 
@@ -409,7 +407,7 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks(
   }
 }
 
-void ParallelizationTechnique::cloneSequentialLoop(LoopDependenceInfo *LDI,
+void ParallelizationTechnique::cloneSequentialLoop(LoopContent *LDI,
                                                    int taskIndex) {
   assert(LDI != nullptr);
   assert(taskIndex < this->tasks.size());
@@ -440,7 +438,7 @@ void ParallelizationTechnique::cloneSequentialLoop(LoopDependenceInfo *LDI,
 }
 
 void ParallelizationTechnique::cloneSequentialLoopSubset(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     int taskIndex,
     std::set<Instruction *> subset) {
 
@@ -476,7 +474,7 @@ void ParallelizationTechnique::cloneSequentialLoopSubset(
 }
 
 void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     int taskIndex) {
 
   /*
@@ -822,7 +820,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
 }
 
 void ParallelizationTechnique::generateCodeToLoadLiveInVariables(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     int taskIndex) {
 
   /*
@@ -882,7 +880,7 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables(
 }
 
 void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     int taskIndex) {
 
   /*
@@ -1138,7 +1136,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
 }
 
 std::set<BasicBlock *> ParallelizationTechnique::
-    determineLatestPointsToInsertLiveOutStore(LoopDependenceInfo *LDI,
+    determineLatestPointsToInsertLiveOutStore(LoopContent *LDI,
                                               int taskIndex,
                                               Instruction *liveOut,
                                               bool isReduced,
@@ -1194,7 +1192,7 @@ std::set<BasicBlock *> ParallelizationTechnique::
 
 Instruction *ParallelizationTechnique::
     fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable(
-        LoopDependenceInfo *LDI,
+        LoopContent *LDI,
         int taskIndex,
         int envID,
         BasicBlock *insertBasicBlock,
@@ -1319,7 +1317,7 @@ Value *ParallelizationTechnique::castToCorrectReducibleType(
 }
 
 void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     int taskIndex) {
 
   /*
@@ -1409,7 +1407,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
 }
 
 void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     int taskIndex) {
 
   /*
@@ -1535,7 +1533,7 @@ void ParallelizationTechnique::doNestedInlineOfCalls(
 }
 
 std::unordered_map<InductionVariable *, Value *> ParallelizationTechnique::
-    cloneIVStepValueComputation(LoopDependenceInfo *LDI,
+    cloneIVStepValueComputation(LoopContent *LDI,
                                 int taskIndex,
                                 IRBuilder<> &insertBlock) {
 
@@ -1655,7 +1653,7 @@ void ParallelizationTechnique::
 }
 
 float ParallelizationTechnique::computeSequentialFractionOfExecution(
-    LoopDependenceInfo *LDI) const {
+    LoopContent *LDI) const {
   auto f = [](GenericSCC *sccInfo) -> bool {
     auto mustBeSynchronized = isa<LoopCarriedUnknownSCC>(sccInfo);
     return mustBeSynchronized;
@@ -1667,7 +1665,7 @@ float ParallelizationTechnique::computeSequentialFractionOfExecution(
 }
 
 float ParallelizationTechnique::computeSequentialFractionOfExecution(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     std::function<bool(GenericSCC *scc)> doesItRunSequentially) const {
 
   /*

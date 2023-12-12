@@ -29,7 +29,7 @@
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/Noelle.hpp"
 #include <fstream>
 
@@ -62,7 +62,7 @@ private:
                                                        noelle::CallGraph *pcg);
   bool inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(
       Function *F,
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       noelle::CallGraph *pcg,
       Noelle &noelle);
 

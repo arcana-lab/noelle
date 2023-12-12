@@ -43,7 +43,7 @@
 #include "llvm/IR/IRBuilder.h"
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCDAG.hpp"
@@ -78,7 +78,7 @@ private:
    * Methods
    */
 
-  std::vector<LoopDependenceInfo *> selectTheOrderOfLoopsToParallelize(
+  std::vector<LoopContent *> selectTheOrderOfLoopsToParallelize(
       Noelle &noelle,
       Hot *profiles,
       noelle::LoopTree *tree,

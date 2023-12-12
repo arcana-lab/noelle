@@ -38,7 +38,7 @@ void LoopTransformer::setPDG(PDG *programDependenceGraph) {
   return;
 }
 
-LoopUnrollResult LoopTransformer::unrollLoop(LoopDependenceInfo *loop,
+LoopUnrollResult LoopTransformer::unrollLoop(LoopContent *loop,
                                              uint32_t unrollFactor) {
 
   /*
@@ -89,7 +89,7 @@ LoopUnrollResult LoopTransformer::unrollLoop(LoopDependenceInfo *loop,
   return unrolled;
 }
 
-bool LoopTransformer::fullyUnrollLoop(LoopDependenceInfo *loop) {
+bool LoopTransformer::fullyUnrollLoop(LoopContent *loop) {
 
   /*
    * Fetch the unroller
@@ -111,7 +111,7 @@ bool LoopTransformer::fullyUnrollLoop(LoopDependenceInfo *loop) {
   return modified;
 }
 
-bool LoopTransformer::whilifyLoop(LoopDependenceInfo *loop) {
+bool LoopTransformer::whilifyLoop(LoopContent *loop) {
   assert(this->pdg != nullptr);
 
   /*
@@ -142,7 +142,7 @@ LoopTransformer::~LoopTransformer() {
   return;
 }
 
-bool LoopTransformer::splitLoop(LoopDependenceInfo *loop,
+bool LoopTransformer::splitLoop(LoopContent *loop,
                                 std::set<SCC *> const &SCCsToPullOut,
                                 std::set<Instruction *> &instructionsRemoved,
                                 std::set<Instruction *> &instructionsAdded) {

@@ -25,7 +25,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Noelle.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 
 namespace arcana::noelle {
 
@@ -33,16 +33,16 @@ class SCEVSimplification {
 public:
   SCEVSimplification(Noelle &noelle);
 
-  bool simplifyIVRelatedSCEVs(LoopDependenceInfo const &LDI);
+  bool simplifyIVRelatedSCEVs(LoopContent const &LDI);
 
   bool simplifyIVRelatedSCEVs(LoopTree *rootLoopNode,
                               InvariantManager *invariantManager,
                               InductionVariableManager *ivManager);
 
-  bool simplifyLoopGoverningIVGuards(LoopDependenceInfo const &LDI,
+  bool simplifyLoopGoverningIVGuards(LoopContent const &LDI,
                                      ScalarEvolution &SE);
 
-  bool simplifyConstantPHIs(LoopDependenceInfo const &LDI);
+  bool simplifyConstantPHIs(LoopContent const &LDI);
 
 private:
   const SCEV *getOffsetBetween(ScalarEvolution &SE,

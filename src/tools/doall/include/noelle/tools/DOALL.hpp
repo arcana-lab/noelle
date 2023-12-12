@@ -24,7 +24,7 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCDAG.hpp"
@@ -44,10 +44,9 @@ public:
    */
   DOALL(Noelle &noelle);
 
-  bool apply(LoopDependenceInfo *LDI, Heuristics *h) override;
+  bool apply(LoopContent *LDI, Heuristics *h) override;
 
-  bool canBeAppliedToLoop(LoopDependenceInfo *LDI,
-                          Heuristics *h) const override;
+  bool canBeAppliedToLoop(LoopContent *LDI, Heuristics *h) const override;
 
   uint32_t getMinimumNumberOfIdleCores(void) const override;
 
@@ -55,9 +54,8 @@ public:
 
   Transformation getParallelizationID(void) const override;
 
-  static std::set<SCC *> getSCCsThatBlockDOALLToBeApplicable(
-      LoopDependenceInfo *LDI,
-      Noelle &par);
+  static std::set<SCC *> getSCCsThatBlockDOALLToBeApplicable(LoopContent *LDI,
+                                                             Noelle &par);
 
 protected:
   bool enabled;
@@ -65,18 +63,18 @@ protected:
   Noelle &n;
   std::map<PHINode *, std::set<Instruction *>> IVValueJustBeforeEnteringBody;
 
-  virtual void invokeParallelizedLoop(LoopDependenceInfo *LDI);
+  virtual void invokeParallelizedLoop(LoopContent *LDI);
 
   /*
    * DOALL specific generation
    */
-  void rewireLoopToIterateChunks(LoopDependenceInfo *LDI, DOALLTask *task);
+  void rewireLoopToIterateChunks(LoopContent *LDI, DOALLTask *task);
 
   /*
    * Interface
    */
   BasicBlock *getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       uint32_t taskIndex,
       BasicBlock &bb) override;
 };

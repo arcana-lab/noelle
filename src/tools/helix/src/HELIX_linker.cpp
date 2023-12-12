@@ -23,7 +23,7 @@
 
 namespace arcana::noelle {
 
-void HELIX::invokeParallelizedLoop(LoopDependenceInfo *LDI,
+void HELIX::invokeParallelizedLoop(LoopContent *LDI,
                                    uint64_t numberOfSequentialSegments) {
 
   /*

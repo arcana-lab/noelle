@@ -31,7 +31,7 @@
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/LDGAnalysis.hpp"
 #include "noelle/core/DataFlow.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/HotProfiler.hpp"
 #include "noelle/core/Scheduler.hpp"
 #include "noelle/core/MetadataManager.hpp"
@@ -135,31 +135,31 @@ public:
       double minimumHotness,
       std::function<bool(LoopStructure *)> includeLoop);
 
-  std::vector<LoopDependenceInfo *> *getLoops(void);
+  std::vector<LoopContent *> *getLoops(void);
 
-  std::vector<LoopDependenceInfo *> *getLoops(double minimumHotness);
+  std::vector<LoopContent *> *getLoops(double minimumHotness);
 
-  std::vector<LoopDependenceInfo *> *getLoops(Function *function);
+  std::vector<LoopContent *> *getLoops(Function *function);
 
-  std::vector<LoopDependenceInfo *> *getLoops(Function *function,
-                                              double minimumHotness);
+  std::vector<LoopContent *> *getLoops(Function *function,
+                                       double minimumHotness);
 
-  LoopDependenceInfo *getLoop(LoopStructure *loop);
+  LoopContent *getLoop(LoopStructure *loop);
 
-  LoopDependenceInfo *getLoop(
+  LoopContent *getLoop(
       LoopStructure *loop,
-      std::unordered_set<LoopDependenceInfoOptimization> optimizations);
+      std::unordered_set<LoopContentOptimization> optimizations);
 
-  LoopDependenceInfo *getLoop(BasicBlock *header,
-                              PDG *functionPDG,
-                              LoopTransformationsManager *ltm,
-                              bool enableLoopAwareDependenceAnalysis = true);
+  LoopContent *getLoop(BasicBlock *header,
+                       PDG *functionPDG,
+                       LoopTransformationsManager *ltm,
+                       bool enableLoopAwareDependenceAnalysis = true);
 
   uint32_t getNumberOfProgramLoops(void);
 
   uint32_t getNumberOfProgramLoops(double minimumHotness);
 
-  void sortByHotness(std::vector<LoopDependenceInfo *> &loops);
+  void sortByHotness(std::vector<LoopContent *> &loops);
 
   void sortByHotness(std::vector<LoopStructure *> &loops);
 
@@ -168,8 +168,7 @@ public:
 
   std::vector<SCC *> sortByHotness(const std::set<SCC *> &SCCs);
 
-  void sortByStaticNumberOfInstructions(
-      std::vector<LoopDependenceInfo *> &loops);
+  void sortByStaticNumberOfInstructions(std::vector<LoopContent *> &loops);
 
   LoopForest *getProgramLoopsNestingForest(void);
 
@@ -268,17 +267,17 @@ private:
 
   bool checkToGetLoopFilteringInfo(void);
 
-  LoopDependenceInfo *getLoopDependenceInfoForLoop(
+  LoopContent *getLoopContentForLoop(
       BasicBlock *header,
       PDG *functionPDG,
       DominatorSummary *DS,
       uint32_t techniquesToDisable,
       uint32_t DOALLChunkSize,
       uint32_t maxCores,
-      std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+      std::unordered_set<LoopContentOptimization> optimizations,
       bool enableLoopAwareDependenceAnalysis);
 
-  LoopDependenceInfo *getLoopDependenceInfoForLoop(
+  LoopContent *getLoopContentForLoop(
       LoopTree *loopNode,
       Loop *loop,
       PDG *functionPDG,
@@ -287,7 +286,7 @@ private:
       uint32_t techniquesToDisable,
       uint32_t DOALLChunkSize,
       uint32_t maxCores,
-      std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+      std::unordered_set<LoopContentOptimization> optimizations,
       bool enableLoopAwareDependenceAnalysis);
 
   bool isLoopHot(LoopStructure *loopStructure, double minimumHotness);

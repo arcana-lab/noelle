@@ -24,7 +24,7 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/Invariants.hpp"
 #include "noelle/core/Noelle.hpp"
 
@@ -36,12 +36,12 @@ namespace arcana::noelle {
 
 class Mem2RegNonAlloca {
 public:
-  Mem2RegNonAlloca(LoopDependenceInfo const &LDI, Noelle &noelle);
+  Mem2RegNonAlloca(LoopContent const &LDI, Noelle &noelle);
 
   bool promoteMemoryToRegister(void);
 
 private:
-  LoopDependenceInfo const &LDI;
+  LoopContent const &LDI;
   Noelle &noelle;
   InvariantManager &invariants;
 

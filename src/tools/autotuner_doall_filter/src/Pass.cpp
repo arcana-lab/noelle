@@ -92,7 +92,7 @@ bool AutotunerDoallFilter::runOnModule(Module &M) {
     assert(loopIDOpt);
     uint64_t loopID = loopIDOpt.value();
 
-    LoopDependenceInfo *loopDependenceInfo = noelle.getLoop(loopStructure);
+    LoopContent *loopDependenceInfo = noelle.getLoop(loopStructure);
 
     std::string enabledLoopStringWithLoopID = std::to_string(loopID) + " ";
     if (doall.canBeAppliedToLoop(loopDependenceInfo, nullptr)) {

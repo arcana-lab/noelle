@@ -27,7 +27,7 @@
 #include "llvm/Transforms/Utils/UnrollLoop.h"
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 
 namespace arcana::noelle {
 
@@ -39,13 +39,13 @@ public:
 
   void setPDG(PDG *programDependenceGraph);
 
-  LoopUnrollResult unrollLoop(LoopDependenceInfo *loop, uint32_t unrollFactor);
+  LoopUnrollResult unrollLoop(LoopContent *loop, uint32_t unrollFactor);
 
-  bool fullyUnrollLoop(LoopDependenceInfo *loop);
+  bool fullyUnrollLoop(LoopContent *loop);
 
-  bool whilifyLoop(LoopDependenceInfo *loop);
+  bool whilifyLoop(LoopContent *loop);
 
-  bool splitLoop(LoopDependenceInfo *loop,
+  bool splitLoop(LoopContent *loop,
                  std::set<SCC *> const &SCCsToPullOut,
                  std::set<Instruction *> &instructionsRemoved,
                  std::set<Instruction *> &instructionsAdded);

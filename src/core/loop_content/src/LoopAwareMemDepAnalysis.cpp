@@ -22,7 +22,7 @@
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 #include "noelle/core/LoopAliasAnalysisEngine.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
 
 /*
@@ -364,8 +364,7 @@ bool NoelleSCAFIntegration::runOnModule(Module &M) {
   return false;
 }
 
-std::set<AliasAnalysisEngine *> LoopDependenceInfo::getLoopAliasAnalysisEngines(
-    void) {
+std::set<AliasAnalysisEngine *> LoopContent::getLoopAliasAnalysisEngines(void) {
   std::set<AliasAnalysisEngine *> s;
 
 #ifdef ENABLE_SCAF

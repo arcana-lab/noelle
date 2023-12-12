@@ -24,7 +24,7 @@
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCDAG.hpp"
@@ -64,12 +64,11 @@ private:
   /*
    * Methods
    */
-  bool parallelizeLoop(LoopDependenceInfo *LDI, Noelle &par, Heuristics *h);
+  bool parallelizeLoop(LoopContent *LDI, Noelle &par, Heuristics *h);
 
   bool parallelizeLoops(Noelle &noelle, Heuristics *heuristics);
 
-  std::vector<LoopDependenceInfo *> getLoopsToParallelize(Module &M,
-                                                          Noelle &par);
+  std::vector<LoopContent *> getLoopsToParallelize(Module &M, Noelle &par);
 
   bool collectThreadPoolHelperFunctionsAndTypes(Module &M, Noelle &par);
 };

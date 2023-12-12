@@ -23,7 +23,7 @@
 
 namespace arcana::noelle {
 
-bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
+bool Parallelizer::parallelizeLoop(LoopContent *LDI,
                                    Noelle &par,
                                    Heuristics *h) {
   auto prefix = "Parallelizer: parallelizerLoop: ";

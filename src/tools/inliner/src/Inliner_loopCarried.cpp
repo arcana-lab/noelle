@@ -180,7 +180,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences(
  */
 bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(
     Function *F,
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     noelle::CallGraph *pcg,
     Noelle &noelle) {
   assert(pcg != nullptr);

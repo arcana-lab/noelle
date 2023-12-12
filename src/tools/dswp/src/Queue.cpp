@@ -25,7 +25,7 @@ using namespace llvm;
 using namespace arcana::noelle;
 
 void DSWP::registerQueue(Noelle &par,
-                         LoopDependenceInfo *LDI,
+                         LoopContent *LDI,
                          DSWPTask *fromStage,
                          DSWPTask *toStage,
                          Instruction *producer,
@@ -85,7 +85,7 @@ void DSWP::registerQueue(Noelle &par,
   return;
 }
 
-void DSWP::collectControlQueueInfo(LoopDependenceInfo *LDI, Noelle &par) {
+void DSWP::collectControlQueueInfo(LoopContent *LDI, Noelle &par) {
 
   /*
    * Fetch the SCCDAG.
@@ -200,7 +200,7 @@ void DSWP::collectControlQueueInfo(LoopDependenceInfo *LDI, Noelle &par) {
 }
 
 std::set<Task *> DSWP::collectTransitivelyControlledTasks(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     DGNode<Value> *conditionalBranchNode) {
   std::set<Task *> tasksControlledByCondition;
   auto sccManager = LDI->getSCCManager();
@@ -249,7 +249,7 @@ std::set<Task *> DSWP::collectTransitivelyControlledTasks(
   return tasksControlledByCondition;
 }
 
-void DSWP::collectDataAndMemoryQueueInfo(LoopDependenceInfo *LDI, Noelle &par) {
+void DSWP::collectDataAndMemoryQueueInfo(LoopContent *LDI, Noelle &par) {
 
   auto sccManager = LDI->getSCCManager();
   for (auto techniqueTask : this->tasks) {
@@ -377,7 +377,7 @@ void DSWP::generateLoadsOfQueuePointers(Noelle &par, int taskIndex) {
     loadQueuePtrFromIndex(queueIndex);
 }
 
-void DSWP::popValueQueues(LoopDependenceInfo *LDI, Noelle &par, int taskIndex) {
+void DSWP::popValueQueues(LoopContent *LDI, Noelle &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
 
   for (auto queueIndex : task->popValueQueues) {
@@ -409,9 +409,7 @@ void DSWP::popValueQueues(LoopDependenceInfo *LDI, Noelle &par, int taskIndex) {
   }
 }
 
-void DSWP::pushValueQueues(LoopDependenceInfo *LDI,
-                           Noelle &par,
-                           int taskIndex) {
+void DSWP::pushValueQueues(LoopContent *LDI, Noelle &par, int taskIndex) {
   auto task = (DSWPTask *)this->tasks[taskIndex];
 
   for (auto queueIndex : task->pushValueQueues) {

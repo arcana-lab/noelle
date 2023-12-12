@@ -25,7 +25,7 @@
 
 namespace arcana::noelle {
 
-bool HELIX::doesHaveASequentialPrologue(LoopDependenceInfo *LDI) const {
+bool HELIX::doesHaveASequentialPrologue(LoopContent *LDI) const {
 
   /*
    * Fetch the loop governing IV.
@@ -53,7 +53,7 @@ bool HELIX::doesHaveASequentialPrologue(LoopDependenceInfo *LDI) const {
 }
 
 SCC *HELIX::getTheSequentialSCCThatCreatesTheSequentialPrologue(
-    LoopDependenceInfo *LDI) const {
+    LoopContent *LDI) const {
 
   /*
    * Fetch the loop SCCDAG
