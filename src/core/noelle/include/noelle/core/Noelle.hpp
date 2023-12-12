@@ -135,25 +135,25 @@ public:
       double minimumHotness,
       std::function<bool(LoopStructure *)> includeLoop);
 
-  std::vector<LoopContent *> *getLoops(void);
+  std::vector<LoopContent *> *getLoopContents(void);
 
-  std::vector<LoopContent *> *getLoops(double minimumHotness);
+  std::vector<LoopContent *> *getLoopContents(double minimumHotness);
 
-  std::vector<LoopContent *> *getLoops(Function *function);
+  std::vector<LoopContent *> *getLoopContents(Function *function);
 
-  std::vector<LoopContent *> *getLoops(Function *function,
-                                       double minimumHotness);
+  std::vector<LoopContent *> *getLoopContents(Function *function,
+                                              double minimumHotness);
 
-  LoopContent *getLoop(LoopStructure *loop);
+  LoopContent *getLoopContent(LoopStructure *loop);
 
-  LoopContent *getLoop(
+  LoopContent *getLoopContent(
       LoopStructure *loop,
       std::unordered_set<LoopContentOptimization> optimizations);
 
-  LoopContent *getLoop(BasicBlock *header,
-                       PDG *functionPDG,
-                       LoopTransformationsManager *ltm,
-                       bool enableLoopAwareDependenceAnalysis = true);
+  LoopContent *getLoopContent(BasicBlock *header,
+                              PDG *functionPDG,
+                              LoopTransformationsManager *ltm,
+                              bool enableLoopAwareDependenceAnalysis = true);
 
   uint32_t getNumberOfProgramLoops(void);
 

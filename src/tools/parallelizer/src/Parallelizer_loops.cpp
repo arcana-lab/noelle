@@ -95,7 +95,7 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
       }
       auto optimizations = { LoopContentOptimization::MEMORY_CLONING_ID,
                              LoopContentOptimization::THREAD_SAFE_LIBRARY_ID };
-      auto ldi = noelle.getLoop(ls, optimizations);
+      auto ldi = noelle.getLoopContent(ls, optimizations);
       loopParallelizationOrder[parallelizationOrderIndex] = ldi;
       return false;
     };

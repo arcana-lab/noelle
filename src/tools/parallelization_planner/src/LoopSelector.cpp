@@ -225,7 +225,7 @@ std::vector<LoopContent *> Planner::selectTheOrderOfLoopsToParallelize(
     auto ls = n->getLoop();
     auto optimizations = { LoopContentOptimization::MEMORY_CLONING_ID,
                            LoopContentOptimization::THREAD_SAFE_LIBRARY_ID };
-    auto ldi = noelle.getLoop(ls, optimizations);
+    auto ldi = noelle.getLoopContent(ls, optimizations);
 
     /*
      * Compute the timing model for this loop.

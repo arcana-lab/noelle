@@ -344,7 +344,7 @@ public:
   // get all loops and assign them id based on hotness decrementally
   virtual void createLoopMap() {
     profiles = noelle.getProfiles();
-    loops = noelle.getLoops();
+    loops = noelle.getLoopContents();
     noelle.sortByHotness(*loops);
     unsigned loopId = 0;
     for (auto loop : *loops) {

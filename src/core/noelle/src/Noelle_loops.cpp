@@ -335,7 +335,7 @@ LoopForest *Noelle::getLoopNestingForest(void) {
   return forest;
 }
 
-LoopContent *Noelle::getLoop(LoopStructure *l) {
+LoopContent *Noelle::getLoopContent(LoopStructure *l) {
 
   /*
    * Check if the loop is valid.
@@ -347,12 +347,12 @@ LoopContent *Noelle::getLoop(LoopStructure *l) {
   /*
    * Compute the LDI abstraction.
    */
-  auto ldi = this->getLoop(l, {});
+  auto ldi = this->getLoopContent(l, {});
 
   return ldi;
 }
 
-LoopContent *Noelle::getLoop(
+LoopContent *Noelle::getLoopContent(
     LoopStructure *loop,
     std::unordered_set<LoopContentOptimization> optimizations) {
 
@@ -404,10 +404,10 @@ LoopContent *Noelle::getLoop(
   return ldi;
 }
 
-LoopContent *Noelle::getLoop(BasicBlock *header,
-                             PDG *functionPDG,
-                             LoopTransformationsManager *ltm,
-                             bool enableLoopAwareDependenceAnalysis) {
+LoopContent *Noelle::getLoopContent(BasicBlock *header,
+                                    PDG *functionPDG,
+                                    LoopTransformationsManager *ltm,
+                                    bool enableLoopAwareDependenceAnalysis) {
 
   /*
    * Get the dominators.
@@ -456,17 +456,17 @@ LoopContent *Noelle::getLoop(BasicBlock *header,
   return ldi;
 }
 
-std::vector<LoopContent *> *Noelle::getLoops(Function *function) {
+std::vector<LoopContent *> *Noelle::getLoopContents(Function *function) {
   if (function->empty()) {
     return {};
   }
-  auto v = this->getLoops(function, this->minHot);
+  auto v = this->getLoopContents(function, this->minHot);
 
   return v;
 }
 
-std::vector<LoopContent *> *Noelle::getLoops(Function *function,
-                                             double minimumHotness) {
+std::vector<LoopContent *> *Noelle::getLoopContents(Function *function,
+                                                    double minimumHotness) {
 
   /*
    * Allocate the vector of loops.
@@ -577,13 +577,13 @@ std::vector<LoopContent *> *Noelle::getLoops(Function *function,
   return allLoops;
 }
 
-std::vector<LoopContent *> *Noelle::getLoops(void) {
-  auto v = this->getLoops(this->minHot);
+std::vector<LoopContent *> *Noelle::getLoopContents(void) {
+  auto v = this->getLoopContents(this->minHot);
 
   return v;
 }
 
-std::vector<LoopContent *> *Noelle::getLoops(double minimumHotness) {
+std::vector<LoopContent *> *Noelle::getLoopContents(double minimumHotness) {
 
   /*
    * Allocate the vector of loops.

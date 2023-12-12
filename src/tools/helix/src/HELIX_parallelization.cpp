@@ -70,10 +70,11 @@ bool HELIX::apply(LoopContent *LDI, Heuristics *h) {
   auto header = LDI->getLoopStructure()->getHeader();
   auto headerClone = helixTask->getCloneOfOriginalBasicBlock(header);
   assert(headerClone != nullptr);
-  auto newLDI = this->noelle.getLoop(headerClone,
-                                     taskFunctionDG,
-                                     LDI->getLoopTransformationsManager(),
-                                     false);
+  auto newLDI =
+      this->noelle.getLoopContent(headerClone,
+                                  taskFunctionDG,
+                                  LDI->getLoopTransformationsManager(),
+                                  false);
   auto modified = this->synchronizeTask(newLDI, h, helixTask);
 
   return modified;

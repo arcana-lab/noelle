@@ -44,7 +44,7 @@ bool PDGStats::runOnModule(Module &M) {
     /*
      * Fetch all loops within the current function.
      */
-    programLoops[&F] = noelle.getLoops(&F);
+    programLoops[&F] = noelle.getLoopContents(&F);
     if (programLoops[&F] == nullptr) {
       continue;
     }
