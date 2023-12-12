@@ -21,7 +21,7 @@
  */
 #include "noelle/core/GlobalsManager.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 GlobalsManager::GlobalsManager(Module &m) : program{ m } {
   return;
@@ -40,4 +40,4 @@ std::set<GlobalVariable *> GlobalsManager::getGlobals(void) const {
   return gs;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

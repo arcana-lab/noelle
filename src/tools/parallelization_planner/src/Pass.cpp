@@ -21,7 +21,7 @@
  */
 #include "Planner.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * Options of the Planner pass.
@@ -171,10 +171,10 @@ void Planner::getAnalysisUsage(AnalysisUsage &AU) const {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle
 
 // Next there is code to register your pass to "opt"
-char llvm::noelle::Planner::ID = 0;
+char arcana::noelle::Planner::ID = 0;
 static RegisterPass<Planner> X("planner", "Automatic parallelization planner");
 
 // Next there is code to register your pass to "clang"

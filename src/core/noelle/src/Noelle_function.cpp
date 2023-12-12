@@ -22,7 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Noelle.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 DominatorSummary *Noelle::getDominators(Function *f) {
 
@@ -49,4 +49,10 @@ FunctionsManager *Noelle::getFunctionsManager(void) {
   return this->fm;
 }
 
-} // namespace llvm::noelle
+void Noelle::addAnalysis(CallGraphAnalysis *a) {
+  this->pdgAnalysis->addAnalysis(a);
+
+  return;
+}
+
+} // namespace arcana::noelle

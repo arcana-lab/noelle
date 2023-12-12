@@ -11,7 +11,7 @@ using std::reference_wrapper;
 
 using namespace llvm;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class UniqueIRMarkerReader {
 
@@ -48,4 +48,4 @@ private:
   static optional<IDType> getIDFromLoopMeta(MDNode *);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

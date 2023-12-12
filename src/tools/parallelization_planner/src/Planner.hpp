@@ -30,7 +30,7 @@
 #include "noelle/core/MetadataManager.hpp"
 #include "noelle/tools/DOALL.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class Planner : public ModulePass {
 public:
@@ -83,4 +83,4 @@ private:
                            std::function<bool(LoopStructure *)> considerLoop);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

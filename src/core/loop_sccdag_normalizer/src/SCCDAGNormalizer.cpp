@@ -22,7 +22,7 @@
 #include "noelle/core/SCCDAGNormalizer.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 SCCDAGNormalizer::SCCDAGNormalizer(SCCDAG &dag, LoopTree *loop)
   : loop{ loop },
@@ -349,4 +349,4 @@ void SCCDAGNormalizer::MergeGroups::merge(DGNode<SCC> *sccNode1,
 //   }
 // }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

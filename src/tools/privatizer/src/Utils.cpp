@@ -22,7 +22,7 @@
 #include "Privatizer.hpp"
 #include "Utils.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 UserSummary::UserSummary(GlobalVariable *globalVar, Noelle &noelle) {
   auto hotFuncs = hotFunctions(noelle);
@@ -162,4 +162,4 @@ unordered_set<Function *> hotFunctions(Noelle &noelle) {
   return hotFuncs;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

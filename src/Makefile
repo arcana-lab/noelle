@@ -22,7 +22,7 @@ ifeq ($(DEBUG), 1)
 	echo "Making debug NOELLE: core"
 	mkdir -p core-debug
 	cd core-debug&&\
-	cmake -DCMAKE_INSTALL_PREFIX="$(PDG_INSTALL_DIR)" -DCMAKE_BUILD_TYPE=Debug -DLLVM_ENABLE_UNWIND_TABLES=On ../core && \
+	cmake -DCMAKE_INSTALL_PREFIX="$(NOELLE_INSTALL_DIR)" -DCMAKE_BUILD_TYPE=Debug -DLLVM_ENABLE_UNWIND_TABLES=On ../core && \
 	make -j${JOBS} &&\
 	make install
 else
@@ -31,7 +31,7 @@ else
 	echo "Making release NOELLE: core"
 	mkdir -p core-release
 	cd core-release&& \
-	cmake -DCMAKE_INSTALL_PREFIX="$(PDG_INSTALL_DIR)" -DCMAKE_BUILD_TYPE=Release ../core && \
+	cmake -DCMAKE_INSTALL_PREFIX="$(NOELLE_INSTALL_DIR)" -DCMAKE_BUILD_TYPE=Release ../core && \
 	make -j${JOBS} &&\
 	make install
 endif
@@ -44,14 +44,14 @@ ifeq ($(DEBUG), 1)
 	echo "Making debug NOELLE: tools"
 	mkdir -p tools-debug
 	cd tools-debug&&\
-	cmake -DCMAKE_INSTALL_PREFIX="$(PDG_INSTALL_DIR)" -DCMAKE_BUILD_TYPE=Debug -DLLVM_ENABLE_UNWIND_TABLES=On ../tools && \
+	cmake -DCMAKE_INSTALL_PREFIX="$(NOELLE_INSTALL_DIR)" -DCMAKE_BUILD_TYPE=Debug -DLLVM_ENABLE_UNWIND_TABLES=On ../tools && \
 	make -j${JOBS} &&\
 	make install
 else
 	echo "Making release NOELLE: tools"
 	mkdir -p tools-release
 	cd tools-release && \
-	cmake -DCMAKE_INSTALL_PREFIX="$(PDG_INSTALL_DIR)" -DCMAKE_BUILD_TYPE=Release ../tools && \
+	cmake -DCMAKE_INSTALL_PREFIX="$(NOELLE_INSTALL_DIR)" -DCMAKE_BUILD_TYPE=Release ../tools && \
 	make -j${JOBS} &&\
 	make install
 endif

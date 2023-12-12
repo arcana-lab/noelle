@@ -25,7 +25,7 @@
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/InductionVariable.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopGoverningInductionVariable {
 public:
@@ -66,4 +66,4 @@ private:
   bool isWellFormed;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

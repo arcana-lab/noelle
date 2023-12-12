@@ -4,7 +4,7 @@
 
 using namespace llvm;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class UniqueIRMarkerPass : public ModulePass {
 public:
@@ -16,4 +16,4 @@ public:
   bool runOnModule(Module &) override;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -25,7 +25,7 @@
 #include "noelle/tools/LoopInvariantCodeMotion.hpp"
 #include "noelle/tools/SCEVSimplification.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class EnablersManager : public ModulePass {
 public:
@@ -73,4 +73,4 @@ private:
                           LoopTransformer &lt);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

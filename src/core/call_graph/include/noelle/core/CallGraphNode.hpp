@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class CallGraphNode {
 public:
@@ -62,4 +62,4 @@ private:
   Function &f;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -22,7 +22,7 @@
 #include "Planner.hpp"
 #include "TimingModel.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void Planner::removeLoopsNotWorthParallelizing(Noelle &noelle,
                                                Hot *profiles,
@@ -394,4 +394,4 @@ std::vector<LoopDependenceInfo *> Planner::selectTheOrderOfLoopsToParallelize(
 
   return selectedLoops;
 }
-} // namespace llvm::noelle
+} // namespace arcana::noelle

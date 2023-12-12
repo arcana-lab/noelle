@@ -21,7 +21,7 @@
  */
 #include "noelle/core/Task.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 AllocaInst *Task::newStackVariable(Type *typeOfVariable) {
 
@@ -41,4 +41,4 @@ AllocaInst *Task::newStackVariable(Type *typeOfVariable) {
   return newStackVariable;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

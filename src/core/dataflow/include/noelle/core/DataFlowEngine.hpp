@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DataFlowResult.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class DataFlowEngine {
 public:
@@ -116,4 +116,4 @@ private:
       std::function<Instruction *(BasicBlock *bb)> getLastInstruction);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

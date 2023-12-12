@@ -33,7 +33,7 @@
 
 using namespace std;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class MinMaxSizePartitionAnalysis : public PartitionCostAnalysis {
 public:
@@ -51,4 +51,4 @@ public:
       SCCSet *sB,
       std::function<bool(GenericSCC *scc)> canBeRematerialized);
 };
-} // namespace llvm::noelle
+} // namespace arcana::noelle

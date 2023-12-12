@@ -21,7 +21,7 @@
  */
 #include "noelle/core/CleanMetadata.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 static cl::opt<bool> CleanLoopMetadata(
     "clean-loop-metadata",
@@ -88,4 +88,4 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

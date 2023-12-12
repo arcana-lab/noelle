@@ -26,7 +26,7 @@
 #include "noelle/core/CallGraphEdge.hpp"
 #include "noelle/core/SCCCAG.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 class SCCCAG;
 
 /*
@@ -107,4 +107,4 @@ private:
       std::unordered_map<Function *, CallGraph *> &islands) const;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

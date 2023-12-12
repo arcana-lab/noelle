@@ -42,7 +42,7 @@
 
 using namespace parallelizertests;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class CFETestSuite : public ModulePass {
 public:
@@ -66,4 +66,4 @@ private:
   Module *M;
   ControlFlowEquivalence *CFE;
 };
-} // namespace llvm::noelle
+} // namespace arcana::noelle

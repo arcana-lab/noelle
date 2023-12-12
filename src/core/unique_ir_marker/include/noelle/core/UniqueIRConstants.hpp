@@ -6,7 +6,7 @@ using llvm::StringRef;
 
 using IDType = uint64_t;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class UniqueIRConstants {
 public:
@@ -17,4 +17,4 @@ public:
   static const StringRef VIAModule;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -6,7 +6,7 @@
 using std::addressof;
 using namespace llvm;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void UniqueIRMarker::visitModule(Module &M) {
   auto metaNode = M.getOrInsertNamedMetadata(UniqueIRConstants::VIAModule);
@@ -151,4 +151,4 @@ IDType UniqueIRMarker::uniqueModuleCounter() {
   return ModuleCounter++;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -25,7 +25,7 @@
 #include "noelle/core/MemoryClonableSCC.hpp"
 #include "noelle/core/ClonableMemoryObject.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class StackObjectClonableSCC : public MemoryClonableSCC {
 public:
@@ -49,4 +49,4 @@ protected:
   std::set<ClonableMemoryObject *> _clonableMemoryLocations;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

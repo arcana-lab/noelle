@@ -21,7 +21,7 @@
  */
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopCarriedUnknownSCC::LoopCarriedUnknownSCC(
     SCC *s,
@@ -39,4 +39,4 @@ bool LoopCarriedUnknownSCC::classof(const GenericSCC *s) {
   return (s->getKind() == GenericSCC::SCCKind::LOOP_CARRIED_UNKNOWN);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

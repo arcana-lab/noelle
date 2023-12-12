@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class Task {
 public:
@@ -196,4 +196,4 @@ private:
   static uint64_t currentID;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

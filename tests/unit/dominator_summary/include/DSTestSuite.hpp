@@ -60,16 +60,16 @@ private:
 
   static Values domNodeIsIdentical(DSTestSuite &pass,
                                    DomTreeNodeBase<BasicBlock> &node,
-                                   noelle::DominatorNode &nodeS);
+                                   arcana::noelle::DominatorNode &nodeS);
 
   template <class DTBase>
   static Values domTreeIsIdentical(DSTestSuite &pass,
                                    DTBase &DT,
-                                   noelle::DominatorForest &DTS);
+                                   arcana::noelle::DominatorForest &DTS);
 
   TestSuite *suite;
   Module *M;
-  noelle::DominatorSummary *ds;
+  arcana::noelle::DominatorSummary *ds;
   DominatorTree *dt;
   PostDominatorTree *pdt;
 };

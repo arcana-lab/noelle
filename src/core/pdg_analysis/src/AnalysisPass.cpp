@@ -34,7 +34,7 @@
 #include "noelle/core/PDGAnalysis.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 // Next there is code to register your pass to "opt"
 char PDGAnalysis::ID = 0;

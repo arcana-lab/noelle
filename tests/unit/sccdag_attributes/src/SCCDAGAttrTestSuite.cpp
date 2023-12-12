@@ -26,7 +26,7 @@
 #include "noelle/tools/DSWP.hpp"
 #include "SCCDAGAttrTestSuite.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 // Register pass to "opt"
 char SCCDAGAttrTestSuite::ID = 0;
@@ -117,8 +117,10 @@ bool SCCDAGAttrTestSuite::runOnModule(Module &M) {
 
   auto pdg = getAnalysis<PDGAnalysis>().getPDG();
   this->fdg = pdg->createFunctionSubgraph(*mainFunction);
+  LDGAnalysis ldg{};
   this->ldi =
-      new LoopDependenceInfo(this->noelle->getCompilationOptionsManager(),
+      new LoopDependenceInfo(ldg,
+                             this->noelle->getCompilationOptionsManager(),
                              fdg,
                              loopNode,
                              topLoop,
@@ -261,4 +263,4 @@ Values SCCDAGAttrTestSuite::loopCarriedDependencies(ModulePass &pass,
   return valueNames;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

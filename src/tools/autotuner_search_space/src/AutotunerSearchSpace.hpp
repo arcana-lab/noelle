@@ -23,7 +23,7 @@
 
 #include "noelle/core/Noelle.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class AutotunerSearchSpace : public ModulePass {
 public:
@@ -41,4 +41,4 @@ public:
   static char ID;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

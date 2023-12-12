@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/GenericSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopIterationSCC : public GenericSCC {
 public:
@@ -41,4 +41,4 @@ protected:
   LoopIterationSCC(SCCKind K, SCC *s, LoopStructure *loop);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

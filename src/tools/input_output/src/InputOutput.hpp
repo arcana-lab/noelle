@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class InputOutput : public ModulePass {
 public:
@@ -48,4 +48,4 @@ private:
       stdioUnlockedFunctionMapping;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -22,7 +22,7 @@
 
 #include "noelle/core/Dominators.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 DominatorSummary::DominatorSummary(DominatorTree &dt, PostDominatorTree &pdt)
   : DT{ dt },
@@ -35,4 +35,4 @@ DominatorSummary::DominatorSummary(DominatorSummary &ds,
   : DT{ ds.DT, bbSubset },
     PDT{ ds.PDT, bbSubset } {}
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

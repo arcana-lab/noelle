@@ -34,7 +34,7 @@
 #include "noelle/core/InductionVariable.hpp"
 #include "noelle/core/LoopGoverningInductionVariable.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class InductionVariableManager {
 public:
@@ -90,4 +90,4 @@ private:
       loopToGoverningIVAttrMap;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

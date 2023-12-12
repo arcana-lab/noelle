@@ -28,14 +28,14 @@
 /*
  * SCAF headers
  */
-#define ENABLE_SCAF
+//#define ENABLE_SCAF
 #ifdef ENABLE_SCAF
 #  include "scaf/MemoryAnalysisModules/LoopAA.h"
 #  include "scaf/Utilities/PDGQueries.h"
 #  include "scaf/Utilities/ModuleLoops.h"
 #endif
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * SCAF
@@ -77,7 +77,8 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-void refinePDGWithLoopAwareMemDepAnalysis(PDG *loopDG,
+void refinePDGWithLoopAwareMemDepAnalysis(LDGAnalysis &ldgAnalysis,
+                                          PDG *loopDG,
                                           Loop *l,
                                           LoopStructure *loopStructure,
                                           LoopTree *loops,
@@ -87,6 +88,13 @@ void refinePDGWithLoopAwareMemDepAnalysis(PDG *loopDG,
   if (LIDS) {
     refinePDGWithLIDS(loopDG, loopStructure, loops, LIDS);
   }
+
+  /*
+   * Run the loop-centric data dependence analyses.
+   */
+  ldgAnalysis.improveDependenceGraph(loopDG, loopStructure);
+
+  return;
 }
 
 void refinePDGWithSCAF(PDG *loopDG, Loop *l) {
@@ -369,4 +377,4 @@ std::set<AliasAnalysisEngine *> LoopDependenceInfo::getLoopAliasAnalysisEngines(
   return s;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

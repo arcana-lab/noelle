@@ -21,7 +21,7 @@
  */
 #include "Privatizer.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 static cl::opt<bool> DisablePrivatizer("noelle-disable-privatizer",
                                        cl::ZeroOrMore,
@@ -66,4 +66,4 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

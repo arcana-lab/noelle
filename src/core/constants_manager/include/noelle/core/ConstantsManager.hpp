@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TypesManager.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class ConstantsManager {
 public:
@@ -39,4 +39,4 @@ private:
   TypesManager *tm;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

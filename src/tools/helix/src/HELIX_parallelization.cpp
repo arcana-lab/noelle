@@ -24,7 +24,7 @@
 #include "noelle/tools/HELIX.hpp"
 #include "noelle/tools/DOALL.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool HELIX::apply(LoopDependenceInfo *LDI, Heuristics *h) {
 
@@ -530,4 +530,4 @@ bool HELIX::synchronizeTask(LoopDependenceInfo *LDI,
   return true;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

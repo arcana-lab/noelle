@@ -25,7 +25,7 @@
 
 using namespace llvm;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 struct LoopStats : public ModulePass {
 public:
@@ -124,4 +124,4 @@ private:
   void printStatsHumanReadable(Hot *profiles);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

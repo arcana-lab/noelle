@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/CallGraph.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class CallGraphNodeWrapper;
 
@@ -96,12 +96,12 @@ struct CallGraphWrapperTraits {
   }
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle
 
 namespace llvm {
 
 template <>
-struct GraphTraits<noelle::CallGraphWrapper *>
-  : public noelle::CallGraphWrapperTraits {};
+struct GraphTraits<arcana::noelle::CallGraphWrapper *>
+  : public arcana::noelle::CallGraphWrapperTraits {};
 
 } // namespace llvm

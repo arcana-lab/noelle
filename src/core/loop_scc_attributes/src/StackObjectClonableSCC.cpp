@@ -21,7 +21,7 @@
  */
 #include "noelle/core/StackObjectClonableSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 StackObjectClonableSCC::StackObjectClonableSCC(
     SCC *s,
@@ -48,4 +48,4 @@ std::set<AllocaInst *> StackObjectClonableSCC::getMemoryLocationsToClone(
   return allocations;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

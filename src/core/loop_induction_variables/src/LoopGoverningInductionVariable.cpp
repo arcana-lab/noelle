@@ -21,7 +21,7 @@
  */
 #include "noelle/core/LoopGoverningInductionVariable.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopGoverningInductionVariable::LoopGoverningInductionVariable(
     LoopStructure *l,
@@ -314,4 +314,4 @@ Instruction *LoopGoverningInductionVariable::
   return intermediateValueUsedInCompare;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

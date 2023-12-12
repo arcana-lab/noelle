@@ -21,7 +21,7 @@
  */
 #include "noelle/tools/HELIX.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void HELIX::invokeParallelizedLoop(LoopDependenceInfo *LDI,
                                    uint64_t numberOfSequentialSegments) {
@@ -88,4 +88,4 @@ void HELIX::invokeParallelizedLoop(LoopDependenceInfo *LDI,
   afterCallBuilder.CreateBr(this->exitPointOfParallelizedLoop);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -22,7 +22,7 @@
 #include "noelle/tools/HELIX.hpp"
 #include "noelle/tools/SequentialSegment.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 SequentialSegment::SequentialSegment(Noelle &noelle,
                                      LoopDependenceInfo *LDI,
@@ -551,4 +551,4 @@ void SequentialSegment::printSCCInfo(
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

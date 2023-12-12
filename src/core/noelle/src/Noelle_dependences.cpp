@@ -21,7 +21,7 @@
  */
 #include "noelle/core/Noelle.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 PDG *Noelle::getProgramDependenceGraph(void) {
   if (this->programDependenceGraph == nullptr) {
@@ -93,4 +93,11 @@ std::vector<SCC *> Noelle::sortByHotness(const std::set<SCC *> &SCCs) {
   return s;
 }
 
-} // namespace llvm::noelle
+void Noelle::addAnalysis(DependenceAnalysis *a) {
+  this->pdgAnalysis->addAnalysis(a);
+  this->ldgAnalysis.addAnalysis(a);
+
+  return;
+}
+
+} // namespace arcana::noelle

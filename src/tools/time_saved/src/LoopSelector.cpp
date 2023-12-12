@@ -22,7 +22,7 @@
 #include "TimeSaved.hpp"
 #include "TimingModel.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 std::vector<LoopDependenceInfo *> TimeSaved::selectTheOrderOfLoopsToParallelize(
     Noelle &noelle,
@@ -216,4 +216,4 @@ std::vector<LoopDependenceInfo *> TimeSaved::selectTheOrderOfLoopsToParallelize(
 
   return selectedLoops;
 }
-} // namespace llvm::noelle
+} // namespace arcana::noelle

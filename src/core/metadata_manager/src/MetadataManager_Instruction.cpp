@@ -21,7 +21,7 @@
  */
 #include "noelle/core/MetadataManager.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool MetadataManager::doesHaveMetadata(Instruction *inst,
                                        const std::string &metadataName) {
@@ -138,4 +138,4 @@ void MetadataManager::deleteMetadata(Instruction *inst,
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

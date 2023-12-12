@@ -21,7 +21,7 @@
  */
 #include "Parallelizer.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool Parallelizer::collectThreadPoolHelperFunctionsAndTypes(Module &M,
                                                             Noelle &par) {
@@ -71,4 +71,4 @@ bool Parallelizer::collectThreadPoolHelperFunctionsAndTypes(Module &M,
   return true;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

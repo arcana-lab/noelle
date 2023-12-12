@@ -22,7 +22,7 @@
 #include "noelle/core/BinaryReductionSCC.hpp"
 #include "AccumulatorOpInfo.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 static AccumulatorOpInfo accumOpInfo;
 
@@ -165,4 +165,4 @@ bool BinaryReductionSCC::classof(const GenericSCC *s) {
   return (s->getKind() == GenericSCC::SCCKind::BINARY_REDUCTION);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

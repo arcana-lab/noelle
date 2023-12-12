@@ -25,7 +25,7 @@
 #include <fstream>
 #include <string>
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 AutotunerSearchSpace::AutotunerSearchSpace() : ModulePass(this->ID) {}
 
@@ -110,10 +110,10 @@ void AutotunerSearchSpace::getAnalysisUsage(AnalysisUsage &AU) const {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle
 
 // Next there is code to register your pass to "opt"
-char llvm::noelle::AutotunerSearchSpace::ID = 0;
+char arcana::noelle::AutotunerSearchSpace::ID = 0;
 static RegisterPass<AutotunerSearchSpace> X(
     "autotunersearchspace",
     "Generate file with number of loops that can be parallelized");

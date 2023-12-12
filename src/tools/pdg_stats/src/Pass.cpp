@@ -23,7 +23,7 @@
 #include "PDGStats.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 static cl::opt<bool> LoopDGDump("noelle-refined-loopdg-dump",
                                 cl::ZeroOrMore,

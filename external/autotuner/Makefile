@@ -1,11 +1,10 @@
-AUTOTUNER_INSTALL_RELEASE?=$(shell pwd)/../../install
+NOELLE_INSTALL_DIR?=$(shell pwd)/../../install
 
 all: install
 
 install:
-	cp -r ../autotuner $(AUTOTUNER_INSTALL_RELEASE)/
+	cp -r ../autotuner $(NOELLE_INSTALL_DIR)/
 
 clean:
-	#rm -rf $(AUTOTUNER_INSTALL_RELEASE)/autotuner
 
 .PHONY: install clean

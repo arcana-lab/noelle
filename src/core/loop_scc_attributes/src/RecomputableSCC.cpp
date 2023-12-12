@@ -21,7 +21,7 @@
  */
 #include "noelle/core/RecomputableSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 RecomputableSCC::RecomputableSCC(
     SCCKind K,
@@ -62,4 +62,4 @@ bool RecomputableSCC::classof(const GenericSCC *s) {
          && (s->getKind() <= GenericSCC::SCCKind::LAST_RECOMPUTABLE);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

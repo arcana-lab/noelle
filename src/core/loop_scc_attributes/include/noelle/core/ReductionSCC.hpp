@@ -25,7 +25,7 @@
 #include "noelle/core/Dominators.hpp"
 #include "noelle/core/LoopCarriedSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class ReductionSCC : public LoopCarriedSCC {
 public:
@@ -62,4 +62,4 @@ protected:
   void initializeObject(LoopStructure &loop);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

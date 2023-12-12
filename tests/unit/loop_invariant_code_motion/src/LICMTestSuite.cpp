@@ -21,7 +21,7 @@
  */
 #include "LICMTestSuite.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 // Register pass to "opt"
 char LICMTestSuite::ID = 0;
@@ -75,7 +75,7 @@ bool LICMTestSuite::runOnModule(Module &M) {
 
   this->mainF = M.getFunction("main");
   auto &noelle = getAnalysis<Noelle>();
-  auto pdg = getAnalysis<PDGAnalysis>().getPDG();
+  auto pdg = noelle.getProgramDependenceGraph();
   this->fdg = pdg->createFunctionSubgraph(*mainF);
   auto &LI = getAnalysis<LoopInfoWrapperPass>(*mainF).getLoopInfo();
   auto &DT = getAnalysis<DominatorTreeWrapperPass>(*mainF).getDomTree();
@@ -100,7 +100,9 @@ bool LICMTestSuite::runOnModule(Module &M) {
       << "LICMTestSuite: Instantiating LDI and LoopInvariantCodeMotion components\n";
   DominatorSummary DS{ DT, PDT };
   auto om = noelle.getCompilationOptionsManager();
-  this->ldi = new LoopDependenceInfo(om, fdg, loopNode, l, DS, SE, true, false);
+  LDGAnalysis ldg{};
+  this->ldi =
+      new LoopDependenceInfo(ldg, om, fdg, loopNode, l, DS, SE, true, false);
   this->licm = new LoopInvariantCodeMotion(noelle);
 
   // PDGPrinter pdgPrinter;
@@ -164,4 +166,4 @@ Values LICMTestSuite::loadsAndStoresAreHoistedFromLoop(ModulePass &pass,
   return hoistedValues;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

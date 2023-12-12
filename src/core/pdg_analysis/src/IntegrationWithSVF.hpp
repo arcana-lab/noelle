@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/CallGraph.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class NoelleSVFIntegration : public ModulePass {
 public:
@@ -48,4 +48,4 @@ public:
   static AliasResult alias(const Value *v1, const Value *v2);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

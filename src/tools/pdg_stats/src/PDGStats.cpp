@@ -24,7 +24,7 @@
 #include "PDGStats.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 bool PDGStats::runOnModule(Module &M) {
 

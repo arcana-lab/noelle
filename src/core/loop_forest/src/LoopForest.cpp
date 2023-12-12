@@ -21,7 +21,7 @@
  */
 #include "noelle/core/LoopForest.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopForest::LoopForest(
     std::vector<LoopStructure *> const &loops,
@@ -327,4 +327,4 @@ LoopTree *LoopForest::getInnermostLoopThatContains(BasicBlock *bb) const {
   return n;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

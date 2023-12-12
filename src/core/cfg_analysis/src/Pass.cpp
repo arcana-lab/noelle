@@ -21,7 +21,7 @@
  */
 #include "noelle/core/CFGAnalysis.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool CFGAnalysis::doInitialization(Module &M) {
 
@@ -64,4 +64,4 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -23,7 +23,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/HotProfiler.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 Noelle::Noelle()
   : ModulePass{ ID },
@@ -33,12 +33,15 @@ Noelle::Noelle()
     profiles{ nullptr },
     programDependenceGraph{ nullptr },
     loopAwareDependenceAnalysis{ false },
+    pdgAnalysis{ nullptr },
+    ldgAnalysis{},
     fm{ nullptr },
     tm{ nullptr },
     cm{ nullptr },
     om{ nullptr },
     mm{ nullptr },
     linker{ nullptr } {
+
   return;
 }
 
@@ -231,4 +234,4 @@ GlobalsManager *Noelle::getGlobalsManager(void) {
   return this->gm;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

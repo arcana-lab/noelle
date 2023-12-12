@@ -22,7 +22,7 @@
 #include "TimeSaved.hpp"
 #include "TimingModel.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopTimingModel::LoopTimingModel(Noelle &noelle, LoopDependenceInfo &ldi)
   : n{ noelle },
@@ -101,4 +101,4 @@ uint64_t LoopTimingModel::getTimeSpentInCriticalPathPerIteration(void) {
   return biggestSCCTime;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

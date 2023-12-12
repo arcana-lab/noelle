@@ -22,7 +22,7 @@
 #include "noelle/core/ControlFlowEquivalence.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 ControlFlowEquivalence::ControlFlowEquivalence(const DominatorSummary *ds,
                                                LoopTree *loops,

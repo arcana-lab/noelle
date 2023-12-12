@@ -21,7 +21,7 @@
  */
 #include "noelle/core/FunctionsManager.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 FunctionsManager::FunctionsManager(Module &m,
                                    PDGAnalysis &noellePDGAnalysis,
@@ -265,4 +265,4 @@ void FunctionsManager::removeFunction(Function &f) {
   f.eraseFromParent();
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

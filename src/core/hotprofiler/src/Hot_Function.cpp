@@ -22,7 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Hot.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 uint64_t Hot::getStaticInstructions(Function *f) const {
   uint64_t t = 0;
@@ -99,4 +99,4 @@ double Hot::getDynamicTotalInstructionCoverage(Function *f) const {
   return hotness;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

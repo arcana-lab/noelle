@@ -22,7 +22,7 @@
 #include "noelle/core/Utils.hpp"
 #include "noelle/core/LoopDistribution.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool LoopDistribution::splitLoop(LoopDependenceInfo const &LDI,
                                  SCC *SCCToPullOut,
@@ -606,4 +606,4 @@ void LoopDistribution::doSplit(LoopDependenceInfo const &LDI,
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

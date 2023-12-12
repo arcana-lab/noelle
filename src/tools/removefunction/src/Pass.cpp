@@ -27,7 +27,7 @@ static cl::opt<std::string> NameOfFunctionToDelete(
     cl::Hidden,
     cl::desc("Disable the dead code eliminator"));
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool RemoveFunction::doInitialization(Module &M) {
   this->functionName = NameOfFunctionToDelete;
@@ -62,4 +62,4 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

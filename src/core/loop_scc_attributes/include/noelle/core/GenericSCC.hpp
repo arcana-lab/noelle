@@ -25,7 +25,7 @@
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/LoopStructure.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * This is the top of the class hierarchy that organizes SCCs of a loop.
@@ -119,4 +119,4 @@ private:
   bool hasMemoryDependences;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

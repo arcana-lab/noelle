@@ -21,7 +21,7 @@
  */
 #include "noelle/core/LoopIterationSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopIterationSCC::LoopIterationSCC(SCC *s, LoopStructure *loop)
   : LoopIterationSCC(GenericSCC::SCCKind::LOOP_ITERATION, s, loop) {
@@ -38,4 +38,4 @@ bool LoopIterationSCC::classof(const GenericSCC *s) {
          && (s->getKind() <= GenericSCC::SCCKind::LAST_LOOP_ITERATION);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

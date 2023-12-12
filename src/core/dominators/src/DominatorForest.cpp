@@ -21,7 +21,7 @@
  */
 #include "noelle/core/DominatorForest.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 DominatorForest::DominatorForest(llvm::DominatorTree &DT)
   : DominatorForest{ collectNodesOfTree<llvm::DominatorTree>(DT) } {
@@ -417,4 +417,4 @@ raw_ostream &DominatorForest::print(raw_ostream &stream,
   return stream;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,16 +21,9 @@
  */
 #pragma once
 
-#include "llvm/IR/Module.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/Operator.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/ADT/iterator_range.h"
-#include <set>
-#include <unordered_map>
+#include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * GOAL: Traverse call graph to explore memory sites.
@@ -81,4 +74,4 @@ struct MemoryReference {
   bool offsetDetermined;
   int32_t offsetInBits;
 };
-} // namespace llvm::noelle
+} // namespace arcana::noelle

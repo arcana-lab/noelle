@@ -23,7 +23,7 @@
 #include "noelle/core/UnknownClosedFormSCC.hpp"
 #include "noelle/tools/DOALL.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
     LoopDependenceInfo *LDI,
@@ -92,4 +92,4 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
   return sccs;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

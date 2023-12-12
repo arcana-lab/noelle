@@ -26,7 +26,7 @@
 #include "noelle/core/DGNode.hpp"
 #include "noelle/core/DGEdge.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 template <class T>
 class DG {
@@ -618,4 +618,4 @@ uint64_t DG<T>::numEdges(void) const {
   return allEdges.size();
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

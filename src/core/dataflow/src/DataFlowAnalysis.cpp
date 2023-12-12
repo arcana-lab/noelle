@@ -21,7 +21,7 @@
  */
 #include "noelle/core/DataFlow.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 DataFlowAnalysis::DataFlowAnalysis() {
   return;
@@ -118,4 +118,4 @@ DataFlowResult *DataFlowAnalysis::runReachableAnalysis(Function *f) {
   return dfr;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

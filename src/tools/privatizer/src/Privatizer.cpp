@@ -22,7 +22,7 @@
 #include "Privatizer.hpp"
 #include "Utils.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 FunctionSummary::FunctionSummary(Function *currentF) : currentF(currentF) {
   for (auto &bb : *currentF) {
@@ -112,4 +112,4 @@ void Privatizer::clearFunctionSummaries() {
   functionSummaries.clear();
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

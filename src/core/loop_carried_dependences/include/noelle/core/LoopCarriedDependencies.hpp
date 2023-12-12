@@ -28,7 +28,7 @@
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/LoopForest.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopCarriedDependencies {
 public:
@@ -55,4 +55,4 @@ private:
                                                   BasicBlock *J);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

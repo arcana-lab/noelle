@@ -26,11 +26,13 @@
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/LoopIterationSpaceAnalysis.hpp"
 #include "noelle/core/LoopForest.hpp"
+#include "noelle/core/LDGAnalysis.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 // Perform loop-aware memory dependence analysis to refine the loop PDG
-void refinePDGWithLoopAwareMemDepAnalysis(PDG *loopDG,
+void refinePDGWithLoopAwareMemDepAnalysis(LDGAnalysis &ldgAnalysis,
+                                          PDG *loopDG,
                                           Loop *l,
                                           LoopStructure *loopStructure,
                                           LoopTree *loops,
@@ -44,4 +46,4 @@ void refinePDGWithLIDS(PDG *loopDG,
                        LoopTree *loops,
                        LoopIterationSpaceAnalysis *LIDS);
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

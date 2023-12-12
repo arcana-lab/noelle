@@ -21,7 +21,7 @@
  */
 #include "noelle/core/MetadataManager.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 MetadataManager::MetadataManager(Module &M) : program{ M } {
 
@@ -334,4 +334,4 @@ void MetadataManager::addMetadata(LoopStructure *loop,
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

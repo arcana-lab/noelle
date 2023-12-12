@@ -2,7 +2,7 @@
 
 #include "noelle/core/AliasAnalysisEngine.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopAliasAnalysisEngine : public AliasAnalysisEngine {
 public:
@@ -13,4 +13,4 @@ public:
 protected:
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

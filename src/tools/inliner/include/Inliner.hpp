@@ -31,7 +31,7 @@
 #include "noelle/core/Noelle.hpp"
 #include <fstream>
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class Inliner : public ModulePass {
 public:
@@ -136,4 +136,4 @@ private:
   Verbosity verbose;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -26,7 +26,7 @@
 #include "noelle/core/Dominators.hpp"
 #include "noelle/core/LoopForest.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class ControlFlowEquivalence {
 public:
@@ -57,4 +57,4 @@ private:
   std::unordered_map<BasicBlock *, std::unordered_set<BasicBlock *> *>
       bbToEquivalence;
 };
-} // namespace llvm::noelle
+} // namespace arcana::noelle

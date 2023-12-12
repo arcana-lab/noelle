@@ -6,7 +6,7 @@ using std::addressof;
 
 using namespace llvm;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 IDToInstructionMapper::IDToInstructionMapper(Module &M)
   : InstVisitor<IDToInstructionMapper>(),
@@ -56,4 +56,4 @@ void IDToFunctionMapper::visitFunction(Function &F) {
   }
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -22,7 +22,7 @@
 #include "noelle/core/SCCPartitionScheduler.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 SCCPartitionScheduler::SCCPartitionScheduler(
     SCCDAG *loopSCCDAG,

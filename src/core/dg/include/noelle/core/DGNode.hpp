@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 template <class T, class SubT>
 class DGEdge;
@@ -186,4 +186,4 @@ uint64_t DGNode<T>::inDegree(void) const {
   return incomingEdges.size();
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

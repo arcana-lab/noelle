@@ -23,7 +23,7 @@
 
 #include "noelle/core/Utils.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 enum MPAFunctionType {
   MALLOC,
@@ -48,4 +48,4 @@ BitVector unite(const BitVector &lhs, const BitVector &rhs);
 
 bool isAllocation(Instruction *allocation);
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

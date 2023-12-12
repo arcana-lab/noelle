@@ -21,7 +21,7 @@
  */
 #include "noelle/core/LoopCarriedDependencies.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void LoopCarriedDependencies::setLoopCarriedDependencies(
     LoopTree *loopNode,
@@ -340,4 +340,4 @@ bool LoopCarriedDependencies::canBasicBlockReachHeaderBeforeOther(
   return false;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

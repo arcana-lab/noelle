@@ -45,7 +45,7 @@
 
 using namespace parallelizertests;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopDomainSpaceTestSuite : public ModulePass {
 public:
@@ -87,4 +87,4 @@ private:
   LoopIterationSpaceAnalysis *domainSpaceAnalysis;
   LoopTree *loopNode;
 };
-} // namespace llvm::noelle
+} // namespace arcana::noelle

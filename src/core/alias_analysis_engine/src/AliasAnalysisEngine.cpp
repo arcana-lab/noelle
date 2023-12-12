@@ -1,6 +1,6 @@
 #include "noelle/core/AliasAnalysisEngine.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 AliasAnalysisEngine::AliasAnalysisEngine(const std::string &name, void *ptr)
   : n{ name },
@@ -13,9 +13,9 @@ AliasAnalysisEngine::AliasAnalysisEngine(const std::string &name, void *ptr)
 void *AliasAnalysisEngine::getRawPointer(void) const {
   return this->rawPtr;
 }
-  
-AliasAnalysisEngine::~AliasAnalysisEngine(){
-  return ;
+
+AliasAnalysisEngine::~AliasAnalysisEngine() {
+  return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

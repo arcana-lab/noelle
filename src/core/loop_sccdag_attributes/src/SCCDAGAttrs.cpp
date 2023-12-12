@@ -30,7 +30,7 @@
 #include "noelle/core/LoopCarriedDependencies.hpp"
 #include "noelle/core/UnknownClosedFormSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
                          PDG *loopDG,
@@ -977,4 +977,4 @@ SCCDAGAttrs::~SCCDAGAttrs() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

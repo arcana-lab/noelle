@@ -25,7 +25,7 @@
 #include "noelle/core/Dominators.hpp"
 #include "noelle/core/LoopCarriedSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LoopCarriedUnknownSCC : public LoopCarriedSCC {
 public:
@@ -41,4 +41,4 @@ public:
 protected:
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

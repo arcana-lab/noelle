@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class AccumulatorOpInfo {
 public:
@@ -43,4 +43,4 @@ public:
   Value *generateIdentityFor(Instruction *accumulator, Type *castType);
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

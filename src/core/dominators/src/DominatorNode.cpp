@@ -21,7 +21,7 @@
  */
 #include "noelle/core/DominatorNode.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 DominatorNode::DominatorNode(const DTAliases::Node &node)
   : B{ node.getBlock() },
@@ -86,4 +86,4 @@ DominatorNode *DominatorNode::getIDom(void) {
   return iDom;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

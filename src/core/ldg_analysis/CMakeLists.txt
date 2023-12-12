@@ -12,6 +12,7 @@ add_subdirectory(src)
 install(
   FILES
   include/noelle/core/LoopIterationSpaceAnalysis.hpp
+  include/noelle/core/LDGAnalysis.hpp
   DESTINATION 
   include/noelle/core
   )

@@ -21,7 +21,7 @@
  */
 #include "Parallelizer.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
                                    Noelle &par,
@@ -212,4 +212,4 @@ bool Parallelizer::parallelizeLoop(LoopDependenceInfo *LDI,
 
   return true;
 }
-} // namespace llvm::noelle
+} // namespace arcana::noelle

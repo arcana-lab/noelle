@@ -24,7 +24,7 @@
 #include "noelle/core/DominatorNode.hpp"
 #include "noelle/core/DominatorForest.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class DominatorSummary {
 public:
@@ -34,4 +34,4 @@ public:
   DominatorForest DT, PDT;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

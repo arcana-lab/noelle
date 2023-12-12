@@ -22,7 +22,7 @@
 #include "noelle/tools/DOALL.hpp"
 #include "noelle/core/InductionVariableSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   if (this->verbose != Verbosity::Disabled) {
@@ -215,4 +215,4 @@ bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
   return true;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

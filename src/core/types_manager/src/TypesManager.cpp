@@ -21,7 +21,7 @@
  */
 #include "noelle/core/TypesManager.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 TypesManager::TypesManager(Module &m) : program{ m } {
   return;
@@ -77,4 +77,4 @@ uint64_t TypesManager::getSizeOfType(Type *t) const {
   return s;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

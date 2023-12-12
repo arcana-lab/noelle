@@ -25,7 +25,7 @@
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/Utils.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 PDGAnalysis::PDGAnalysis()
   : ModulePass{ ID },
@@ -286,6 +286,17 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction(PDG *pdg, Function &F) {
 
   for (auto &B : F) {
     for (auto &I : B) {
+
+      /*
+       * Check if the instruction can access memory.
+       */
+      if (!PDGAnalysis::canAccessMemory(&I)) {
+        continue;
+      }
+
+      /*
+       * Check the memory dependences that start from @I
+       */
       if (auto store = dyn_cast<StoreInst>(&I)) {
         iterateInstForStore(pdg, F, AA, dfr, store);
       } else if (auto load = dyn_cast<LoadInst>(&I)) {
@@ -748,10 +759,20 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions(
   return false;
 }
 
+void PDGAnalysis::addAnalysis(DependenceAnalysis *a) {
+  this->ddAnalyses.insert(a);
+
+  return;
+}
+
+void PDGAnalysis::addAnalysis(CallGraphAnalysis *a) {
+  this->cgAnalyses.insert(a);
+}
+
 PDGAnalysis::~PDGAnalysis() {
   if (this->programDependenceGraph) {
     delete this->programDependenceGraph;
   }
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

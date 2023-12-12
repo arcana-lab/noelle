@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class SpilledLoopCarriedDependence {
 public:
@@ -42,4 +42,4 @@ private:
   PHINode *loopCarriedPHI;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

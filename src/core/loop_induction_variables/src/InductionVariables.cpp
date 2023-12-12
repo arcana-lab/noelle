@@ -22,7 +22,7 @@
 #include "noelle/core/InductionVariables.hpp"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
                                                    InvariantManager &IVM,
@@ -490,4 +490,4 @@ LoopGoverningInductionVariable *InductionVariableManager::
   return loopToGoverningIVAttrMap.at(&LS);
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

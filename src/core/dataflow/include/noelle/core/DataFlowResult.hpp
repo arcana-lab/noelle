@@ -23,7 +23,7 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class DataFlowResult {
 public:
@@ -44,4 +44,4 @@ private:
   std::map<Instruction *, std::set<Value *>> outs;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

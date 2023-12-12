@@ -22,7 +22,7 @@
 #include "noelle/tools/PartitionCostAnalysis.hpp"
 
 using namespace llvm;
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 const std::string PartitionCostAnalysis::prefix = "Heuristic:   PCA: ";
 

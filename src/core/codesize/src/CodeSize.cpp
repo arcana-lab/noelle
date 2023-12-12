@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 - 2022  Simone Campanoni
+ * Copyright 2021 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
  */
 #include "CodeSize.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 CodeSize::CodeSize() : ModulePass{ ID } {}
 
@@ -56,4 +56,4 @@ bool CodeSize::runOnModule(Module &M) {
   return false;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

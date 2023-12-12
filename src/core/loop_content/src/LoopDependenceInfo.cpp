@@ -27,28 +27,26 @@
 #include "LoopAwareMemDepAnalysis.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 LoopDependenceInfo::LoopDependenceInfo(
+    LDGAnalysis &ldgAnalysis,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopTree *loopNode,
     Loop *l,
     DominatorSummary &DS,
     ScalarEvolution &SE)
-  : LoopDependenceInfo{ compilationOptionsManager,
-                        fG,
-                        loopNode,
-                        l,
-                        DS,
-                        SE,
-                        Architecture::getNumberOfLogicalCores(),
-                        {},
-                        true } {
+  : LoopDependenceInfo{ ldgAnalysis, compilationOptionsManager,
+                        fG,          loopNode,
+                        l,           DS,
+                        SE,          Architecture::getNumberOfLogicalCores(),
+                        {},          true } {
   return;
 }
 
 LoopDependenceInfo::LoopDependenceInfo(
+    LDGAnalysis &ldgAnalysis,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopTree *loopNode,
@@ -56,14 +54,17 @@ LoopDependenceInfo::LoopDependenceInfo(
     DominatorSummary &DS,
     ScalarEvolution &SE,
     uint32_t maxCores)
-  : LoopDependenceInfo{
-      compilationOptionsManager, fG, loopNode, l, DS, SE, maxCores, {}, true
-    } {
+  : LoopDependenceInfo{ ldgAnalysis, compilationOptionsManager,
+                        fG,          loopNode,
+                        l,           DS,
+                        SE,          maxCores,
+                        {},          true } {
 
   return;
 }
 
 LoopDependenceInfo::LoopDependenceInfo(
+    LDGAnalysis &ldgAnalysis,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopTree *loopNode,
@@ -72,7 +73,8 @@ LoopDependenceInfo::LoopDependenceInfo(
     ScalarEvolution &SE,
     uint32_t maxCores,
     std::unordered_set<LoopDependenceInfoOptimization> optimizations)
-  : LoopDependenceInfo{ compilationOptionsManager,
+  : LoopDependenceInfo{ ldgAnalysis,
+                        compilationOptionsManager,
                         fG,
                         loopNode,
                         l,
@@ -86,6 +88,7 @@ LoopDependenceInfo::LoopDependenceInfo(
 }
 
 LoopDependenceInfo::LoopDependenceInfo(
+    LDGAnalysis &ldgAnalysis,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopTree *loopNode,
@@ -94,15 +97,17 @@ LoopDependenceInfo::LoopDependenceInfo(
     ScalarEvolution &SE,
     uint32_t maxCores,
     bool enableLoopAwareDependenceAnalyses)
-  : LoopDependenceInfo{
-      compilationOptionsManager,        fG, loopNode, l, DS, SE, maxCores, {},
-      enableLoopAwareDependenceAnalyses
-    } {
+  : LoopDependenceInfo{ ldgAnalysis, compilationOptionsManager,
+                        fG,          loopNode,
+                        l,           DS,
+                        SE,          maxCores,
+                        {},          enableLoopAwareDependenceAnalyses } {
 
   return;
 }
 
 LoopDependenceInfo::LoopDependenceInfo(
+    LDGAnalysis &ldgAnalysis,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopTree *loopNode,
@@ -112,7 +117,8 @@ LoopDependenceInfo::LoopDependenceInfo(
     uint32_t maxCores,
     std::unordered_set<LoopDependenceInfoOptimization> optimizations,
     bool enableLoopAwareDependenceAnalyses)
-  : LoopDependenceInfo(compilationOptionsManager,
+  : LoopDependenceInfo(ldgAnalysis,
+                       compilationOptionsManager,
                        fG,
                        loopNode,
                        l,
@@ -126,6 +132,7 @@ LoopDependenceInfo::LoopDependenceInfo(
 }
 
 LoopDependenceInfo::LoopDependenceInfo(
+    LDGAnalysis &ldgAnalysis,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopTree *loopNode,
@@ -169,7 +176,8 @@ LoopDependenceInfo::LoopDependenceInfo(
   this->fetchLoopAndBBInfo(l, SE);
   auto ls = this->getLoopStructure();
   auto loopExitBlocks = ls->getLoopExitBasicBlocks();
-  auto DGs = this->createDGsForLoop(compilationOptionsManager,
+  auto DGs = this->createDGsForLoop(ldgAnalysis,
+                                    compilationOptionsManager,
                                     l,
                                     loopNode,
                                     fG,
@@ -305,6 +313,7 @@ uint64_t LoopDependenceInfo::computeTripCounts(Loop *l, ScalarEvolution &SE) {
 }
 
 std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
+    LDGAnalysis &ldgAnalysis,
     CompilationOptionsManager *com,
     Loop *l,
     LoopTree *loopNode,
@@ -427,7 +436,8 @@ std::pair<PDG *, SCCDAG *> LoopDependenceInfo::createDGsForLoop(
    */
   auto domainSpace = LoopIterationSpaceAnalysis(loopNode, ivManager, SE);
   if (this->loopTransformationsManager->areLoopAwareAnalysesEnabled()) {
-    refinePDGWithLoopAwareMemDepAnalysis(loopDG,
+    refinePDGWithLoopAwareMemDepAnalysis(ldgAnalysis,
+                                         loopDG,
                                          l,
                                          loopStructure,
                                          loopNode,
@@ -787,4 +797,4 @@ LoopDependenceInfo::~LoopDependenceInfo() {
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

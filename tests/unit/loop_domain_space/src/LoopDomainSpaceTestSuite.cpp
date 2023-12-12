@@ -23,7 +23,7 @@
 
 using namespace parallelizertests;
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 // Register pass to "opt"
 char LoopDomainSpaceTestSuite::ID = 0;
@@ -270,4 +270,4 @@ void LoopDomainSpaceTestSuite::computeAnalysisWithSCEVSimplification(void) {
   modifiedCodeWithSCEVSimplification = true;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

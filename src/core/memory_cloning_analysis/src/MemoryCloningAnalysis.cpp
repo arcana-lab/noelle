@@ -21,7 +21,7 @@
  */
 #include "noelle/core/MemoryCloningAnalysis.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
                                              DominatorSummary &DS,
@@ -142,4 +142,4 @@ const std::unordered_set<ClonableMemoryObject *> MemoryCloningAnalysis::
   return locs;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2022  Simone Campanoni
+ * Copyright 2019 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
  */
 #include "noelle/core/Utils.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool Utils::isActualCode(Instruction *inst) {
   auto callInst = dyn_cast<CallBase>(inst);
@@ -188,4 +188,4 @@ Value *Utils::getFreedObject(CallBase *call) {
   abort();
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

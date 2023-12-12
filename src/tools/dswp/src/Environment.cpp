@@ -21,7 +21,7 @@
  */
 #include "noelle/tools/DSWP.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
 
@@ -136,4 +136,4 @@ void DSWP::collectLiveOutEnvInfo(LoopDependenceInfo *LDI) {
   }
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

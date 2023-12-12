@@ -25,7 +25,7 @@
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/InductionVariableSCC.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LinearInductionVariableSCC : public InductionVariableSCC {
 public:
@@ -44,4 +44,4 @@ protected:
   std::set<InductionVariable *> _IVs;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

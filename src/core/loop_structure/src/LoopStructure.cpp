@@ -22,7 +22,7 @@
 #include "noelle/core/LoopStructure.hpp"
 #include "noelle/core/MetadataManager.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 /*
  * Set the string for loop ID that we use as key to get the corresponding
@@ -277,4 +277,4 @@ uint64_t LoopStructure::numberOfExitBasicBlocks(void) const {
   return this->exitBlocks.size();
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

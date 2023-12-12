@@ -21,7 +21,7 @@
  */
 #include "noelle/tools/DSWPTask.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 DSWPTask::DSWPTask(FunctionType *taskSignature, Module &M)
   : Task{ taskSignature, M },
@@ -37,4 +37,4 @@ DSWPTask::DSWPTask(FunctionType *taskSignature, Module &M)
   return;
 }
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

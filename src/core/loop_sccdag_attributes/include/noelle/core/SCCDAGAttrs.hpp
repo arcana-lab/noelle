@@ -33,7 +33,7 @@
 #include "noelle/core/Variable.hpp"
 #include "noelle/core/MemoryCloningAnalysis.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class SCCDAGAttrs {
 public:
@@ -121,4 +121,4 @@ private:
   bool isClonableByInductionVars(SCC *scc) const;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

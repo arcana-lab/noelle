@@ -28,7 +28,7 @@
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/SubCFGs.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class LastLiveOutPeeler {
 public:
@@ -65,4 +65,4 @@ private:
   std::unordered_set<Value *> loopCarriedConsumers;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

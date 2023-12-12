@@ -22,7 +22,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "noelle/tools/LoopSize.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 bool LoopSize::doInitialization(Module &M) {
   return false;
@@ -57,4 +57,4 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle

@@ -25,7 +25,7 @@
 #include "noelle/core/TypesManager.hpp"
 #include "noelle/core/LoopStructure.hpp"
 
-namespace llvm::noelle {
+namespace arcana::noelle {
 
 class Linker {
 public:
@@ -54,4 +54,4 @@ private:
   TypesManager *tm;
 };
 
-} // namespace llvm::noelle
+} // namespace arcana::noelle
