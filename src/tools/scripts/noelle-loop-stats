@@ -1,6 +1,13 @@
 #!/bin/bash
 
-installDir
+SOURCE=${BASH_SOURCE[0]}
+while [ -L "${SOURCE}" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR=$( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd )
+  SOURCE=$(readlink "${SOURCE}")
+  # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+  [[ ${SOURCE} != /* ]] && SOURCE=$DIR/$SOURCE 
+done
+installDir=$(realpath $( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd )/..)
 
 # Check the inputs
 if test $# -lt 1 ; then

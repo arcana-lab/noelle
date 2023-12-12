@@ -19,6 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_CORE_LDG_ANALYSIS_LDGANALYSIS_H_
+#define NOELLE_SRC_CORE_LDG_ANALYSIS_LDGANALYSIS_H_
 #pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
@@ -44,3 +46,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_LDG_ANALYSIS_LDGANALYSIS_H_
