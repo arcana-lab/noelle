@@ -72,3 +72,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif
