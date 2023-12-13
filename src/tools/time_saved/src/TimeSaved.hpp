@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_TIME_SAVED_TIMESAVED_H_
 #define NOELLE_SRC_TOOLS_TIME_SAVED_TIMESAVED_H_
-#pragma once
 
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"

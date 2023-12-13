@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_PDG_STATS_PDGSTATS_H_
 #define NOELLE_SRC_TOOLS_PDG_STATS_PDGSTATS_H_
-#pragma once
 
 #include "noelle/core/Noelle.hpp"
 

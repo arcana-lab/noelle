@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_MAY_POINTS_TO_ANALYSIS_MPAUTILS_H_
 #define NOELLE_SRC_CORE_MAY_POINTS_TO_ANALYSIS_MPAUTILS_H_
-#pragma once
 
 #include "noelle/core/Utils.hpp"
 

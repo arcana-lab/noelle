@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_DOMINATORS_H_
 #define NOELLE_SRC_CORE_DOMINATORS_H_
-#pragma once
 
 #include "noelle/core/DominatorNode.hpp"
 #include "noelle/core/DominatorForest.hpp"

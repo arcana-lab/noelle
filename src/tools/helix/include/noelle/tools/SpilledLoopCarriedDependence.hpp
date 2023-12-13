@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_HELIX_SPILLEDLOOPCARRIEDDEPENDENCE_H_
 #define NOELLE_SRC_TOOLS_HELIX_SPILLEDLOOPCARRIEDDEPENDENCE_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 

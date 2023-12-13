@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_BASIC_UTILITIES_SYSTEMHEADERS_H_
 #define NOELLE_SRC_CORE_BASIC_UTILITIES_SYSTEMHEADERS_H_
-#pragma once
 
 /*
  * C and C++ headers.

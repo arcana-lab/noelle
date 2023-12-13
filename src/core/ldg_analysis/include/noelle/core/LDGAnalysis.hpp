@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_LDG_ANALYSIS_LDGANALYSIS_H_
 #define NOELLE_SRC_CORE_LDG_ANALYSIS_LDGANALYSIS_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DependenceAnalysis.hpp"

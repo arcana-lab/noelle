@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_DOALL_DOALLTASK_H_
 #define NOELLE_SRC_TOOLS_DOALL_DOALLTASK_H_
-#pragma once
 
 #include "noelle/core/Task.hpp"
 #include "noelle/core/SCCDAGAttrs.hpp"

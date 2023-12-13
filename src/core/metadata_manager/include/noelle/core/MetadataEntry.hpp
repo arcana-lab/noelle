@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_METADATA_MANAGER_METADATAENTRY_H_
 #define NOELLE_SRC_CORE_METADATA_MANAGER_METADATAENTRY_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 

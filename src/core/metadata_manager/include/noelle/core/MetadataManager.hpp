@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_METADATA_MANAGER_METADATAMANAGER_H_
 #define NOELLE_SRC_CORE_METADATA_MANAGER_METADATAMANAGER_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopStructure.hpp"

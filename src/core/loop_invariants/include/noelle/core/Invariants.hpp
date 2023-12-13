@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_LOOP_INVARIANTS_INVARIANTS_H_
 #define NOELLE_SRC_CORE_LOOP_INVARIANTS_INVARIANTS_H_
-#pragma once
 
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCC.hpp"

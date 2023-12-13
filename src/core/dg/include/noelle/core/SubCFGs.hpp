@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_DG_SUBCFGS_H_
 #define NOELLE_SRC_CORE_DG_SUBCFGS_H_
-#pragma once
 
 #include "llvm/IR/Module.h"
 #include "llvm/IR/BasicBlock.h"

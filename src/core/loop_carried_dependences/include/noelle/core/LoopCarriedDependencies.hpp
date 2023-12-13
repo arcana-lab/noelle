@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_LOOP_CARRIED_DEPENDENCES_LOOPCARRIEDDEPENDENCIES_H_
 #define NOELLE_SRC_CORE_LOOP_CARRIED_DEPENDENCES_LOOPCARRIEDDEPENDENCIES_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Dominators.hpp"

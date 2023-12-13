@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_HEURISTICS_INVOCATIONLATENCY_H_
 #define NOELLE_SRC_TOOLS_HEURISTICS_INVOCATIONLATENCY_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCC.hpp"

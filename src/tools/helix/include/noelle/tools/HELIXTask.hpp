@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_HELIX_HELIXTASK_H_
 #define NOELLE_SRC_TOOLS_HELIX_HELIXTASK_H_
-#pragma once
 
 #include "noelle/core/Task.hpp"
 #include "noelle/core/SCCDAGAttrs.hpp"

@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_LOOP_INDUCTION_VARIABLES_INDUCTIONVARIABLES_H_
 #define NOELLE_SRC_CORE_LOOP_INDUCTION_VARIABLES_INDUCTIONVARIABLES_H_
-#pragma once
 
 #include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "llvm/Analysis/IVDescriptors.h"

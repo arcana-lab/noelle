@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_LOOP_INVARIANT_CODE_MOTION_LASTLIVEOUTPEELER_H_
 #define NOELLE_SRC_TOOLS_LOOP_INVARIANT_CODE_MOTION_LASTLIVEOUTPEELER_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Noelle.hpp"

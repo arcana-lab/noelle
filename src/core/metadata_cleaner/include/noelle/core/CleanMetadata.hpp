@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_METADATA_CLEANER_CLEANMETADATA_H_
 #define NOELLE_SRC_CORE_METADATA_CLEANER_CLEANMETADATA_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 

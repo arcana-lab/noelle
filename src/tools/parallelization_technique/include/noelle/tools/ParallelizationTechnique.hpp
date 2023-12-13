@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_PARALLELIZATION_TECHNIQUE_PARALLELIZATIONTECHNIQUE_H_
 #define NOELLE_SRC_TOOLS_PARALLELIZATION_TECHNIQUE_PARALLELIZATIONTECHNIQUE_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "llvm/Analysis/ScalarEvolution.h"

@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_SCCDAG_SCCDAGGRAPHTRAITS_H_
 #define NOELLE_SRC_CORE_SCCDAG_SCCDAGGRAPHTRAITS_H_
-#pragma once
 
 #include "noelle/core/DGGraphTraits.hpp"
 #include "noelle/core/SCCDAG.hpp"

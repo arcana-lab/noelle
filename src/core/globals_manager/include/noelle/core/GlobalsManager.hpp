@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_GLOBALS_MANAGER_GLOBALSMANAGER_H_
 #define NOELLE_SRC_CORE_GLOBALS_MANAGER_GLOBALSMANAGER_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 

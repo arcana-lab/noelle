@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_PRIVATIZER_UTILS_H_
 #define NOELLE_SRC_TOOLS_PRIVATIZER_UTILS_H_
-#pragma once
 
 #include "noelle/core/Noelle.hpp"
 namespace arcana::noelle {

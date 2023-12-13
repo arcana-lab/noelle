@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_HOTPROFILER_HOT_H_
 #define NOELLE_SRC_CORE_HOTPROFILER_HOT_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopStructure.hpp"

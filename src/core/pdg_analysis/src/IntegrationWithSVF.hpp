@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_PDG_ANALYSIS_INTEGRATIONWITHSVF_H_
 #define NOELLE_SRC_CORE_PDG_ANALYSIS_INTEGRATIONWITHSVF_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/CallGraph.hpp"

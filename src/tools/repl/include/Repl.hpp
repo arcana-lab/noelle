@@ -21,12 +21,11 @@
  */
 #ifndef NOELLE_SRC_TOOLS_REPL_H_
 #define NOELLE_SRC_TOOLS_REPL_H_
-#pragma once
 
 #include "noelle/core/Noelle.hpp"
-#include "noelle/core/SystemHeaders.hpp"
 #include <iostream>
 #include <utility>
+
 using std::string, std::map, std::vector;
 
 // define the base virtual class of ReplAction

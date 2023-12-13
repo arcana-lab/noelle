@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_PDG_PRINTER_PDGPRINTER_H_
 #define NOELLE_SRC_CORE_PDG_PRINTER_PDGPRINTER_H_
-#pragma once
 
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"

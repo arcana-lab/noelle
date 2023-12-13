@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_DG_DGNODE_H_
 #define NOELLE_SRC_CORE_DG_DGNODE_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 

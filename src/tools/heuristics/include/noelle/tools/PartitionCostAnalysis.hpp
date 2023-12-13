@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_HEURISTICS_PARTITIONCOSTANALYSIS_H_
 #define NOELLE_SRC_TOOLS_HEURISTICS_PARTITIONCOSTANALYSIS_H_
-#pragma once
 
 #include "llvm/IR/Function.h"
 #include "llvm/IR/BasicBlock.h"

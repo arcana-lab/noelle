@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_TYPES_MANAGER_TYPESMANAGER_H_
 #define NOELLE_SRC_CORE_TYPES_MANAGER_TYPESMANAGER_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 

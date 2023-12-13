@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_HEURISTICS_HEURISTICSPASS_H_
 #define NOELLE_SRC_TOOLS_HEURISTICS_HEURISTICSPASS_H_
-#pragma once
 
 #include "llvm/IR/Module.h"
 #include "llvm/IR/BasicBlock.h"

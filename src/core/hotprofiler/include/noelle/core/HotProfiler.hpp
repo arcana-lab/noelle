@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_HOTPROFILER_H_
 #define NOELLE_SRC_CORE_HOTPROFILER_H_
-#pragma once
 
 #include "llvm/Analysis/BlockFrequencyInfo.h"
 #include "llvm/Analysis/BranchProbabilityInfo.h"

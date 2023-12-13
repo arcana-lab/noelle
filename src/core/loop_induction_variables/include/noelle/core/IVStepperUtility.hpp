@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_LOOP_INDUCTION_VARIABLES_IVSTEPPERUTILITY_H_
 #define NOELLE_SRC_CORE_LOOP_INDUCTION_VARIABLES_IVSTEPPERUTILITY_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/InductionVariables.hpp"

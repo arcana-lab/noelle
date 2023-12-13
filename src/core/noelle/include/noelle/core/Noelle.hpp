@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_H_
 #define NOELLE_H_
-#pragma once
 
 #include "noelle/core/Dominators.hpp"
 #include "noelle/core/LoopNestingGraph.hpp"

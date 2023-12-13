@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_DG_DGGRAPHTRAITS_H_
 #define NOELLE_SRC_CORE_DG_DGGRAPHTRAITS_H_
-#pragma once
 
 #include "noelle/core/DGBase.hpp"
 #include "noelle/core/PDG.hpp"

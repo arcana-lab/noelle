@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_BASIC_UTILITIES_QUEUE_H_
 #define NOELLE_SRC_CORE_BASIC_UTILITIES_QUEUE_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 

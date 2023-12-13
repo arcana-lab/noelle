@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_LOOP_TRANSFORMER_LOOPTRANSFORMER_H_
 #define NOELLE_SRC_CORE_LOOP_TRANSFORMER_LOOPTRANSFORMER_H_
-#pragma once
 
 #include "llvm/Transforms/Utils/LoopUtils.h"
 #include "llvm/Transforms/Utils/UnrollLoop.h"

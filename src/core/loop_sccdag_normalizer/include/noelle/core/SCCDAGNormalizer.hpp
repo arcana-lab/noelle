@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_LOOP_SCCDAG_NORMALIZER_SCCDAGNORMALIZER_H_
 #define NOELLE_SRC_CORE_LOOP_SCCDAG_NORMALIZER_SCCDAGNORMALIZER_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"

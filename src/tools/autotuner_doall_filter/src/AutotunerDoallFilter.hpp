@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_AUTOTUNER_DOALL_FILTER_AUTOTUNERDOALLFILTER_H_
 #define NOELLE_SRC_TOOLS_AUTOTUNER_DOALL_FILTER_AUTOTUNERDOALLFILTER_H_
-#pragma once
 
 #include "noelle/core/Noelle.hpp"
 #include "noelle/tools/DOALL.hpp"

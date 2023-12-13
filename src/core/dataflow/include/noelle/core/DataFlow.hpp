@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_DATAFLOW_H_
 #define NOELLE_SRC_CORE_DATAFLOW_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 

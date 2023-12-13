@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_TRANSFORMATIONS_H_
 #define NOELLE_SRC_CORE_TRANSFORMATIONS_H_
-#pragma once
 
 namespace arcana::noelle {
 

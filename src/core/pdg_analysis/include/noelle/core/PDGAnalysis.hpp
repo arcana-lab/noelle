@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_PDG_ANALYSIS_PDGANALYSIS_H_
 #define NOELLE_SRC_CORE_PDG_ANALYSIS_PDGANALYSIS_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"

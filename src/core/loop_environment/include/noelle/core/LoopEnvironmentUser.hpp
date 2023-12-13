@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_LOOP_ENVIRONMENT_LOOPENVIRONMENTUSER_H_
 #define NOELLE_SRC_CORE_LOOP_ENVIRONMENT_LOOPENVIRONMENTUSER_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 

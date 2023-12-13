@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_TIME_SAVED_TIMINGMODEL_H_
 #define NOELLE_SRC_TOOLS_TIME_SAVED_TIMINGMODEL_H_
-#pragma once
 
 #include "noelle/core/Noelle.hpp"
 

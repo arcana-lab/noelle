@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_LOOP_SCCDAG_ATTRIBUTES_SCCDAGPARTITION_H_
 #define NOELLE_SRC_CORE_LOOP_SCCDAG_ATTRIBUTES_SCCDAGPARTITION_H_
-#pragma once
 
 #include "noelle/core/LoopStructure.hpp"
 #include "noelle/core/SCC.hpp"

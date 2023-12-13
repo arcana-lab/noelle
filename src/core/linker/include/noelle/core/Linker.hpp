@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_LINKER_H_
 #define NOELLE_SRC_CORE_LINKER_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TypesManager.hpp"

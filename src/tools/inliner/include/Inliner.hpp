@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_INLINER_H_
 #define NOELLE_SRC_TOOLS_INLINER_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DGBase.hpp"

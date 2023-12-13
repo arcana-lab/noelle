@@ -1,6 +1,5 @@
 #ifndef NOELLE_SRC_CORE_UNIQUE_IR_MARKER_UNIQUEIRVERIFIER_H_
 #define NOELLE_SRC_CORE_UNIQUE_IR_MARKER_UNIQUEIRVERIFIER_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/UniqueIRConstants.hpp"

@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_CONSTANTS_MANAGER_CONSTANTSMANAGER_H_
 #define NOELLE_SRC_CORE_CONSTANTS_MANAGER_CONSTANTSMANAGER_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TypesManager.hpp"

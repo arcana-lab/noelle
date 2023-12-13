@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_DEADFUNCTIONELIMINATOR_H_
 #define NOELLE_SRC_TOOLS_DEADFUNCTIONELIMINATOR_H_
-#pragma once
 
 #include "noelle/core/Noelle.hpp"
 

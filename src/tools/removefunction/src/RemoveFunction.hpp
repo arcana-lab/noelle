@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_REMOVEFUNCTION_H_
 #define NOELLE_SRC_TOOLS_REMOVEFUNCTION_H_
-#pragma once
 
 #include "noelle/core/Noelle.hpp"
 

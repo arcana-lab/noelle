@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_INPUT_OUTPUT_INPUTOUTPUT_H_
 #define NOELLE_SRC_TOOLS_INPUT_OUTPUT_INPUTOUTPUT_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 

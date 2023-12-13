@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_OUTLINER_OUTLINERPASS_H_
 #define NOELLE_SRC_CORE_OUTLINER_OUTLINERPASS_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Outliner.hpp"

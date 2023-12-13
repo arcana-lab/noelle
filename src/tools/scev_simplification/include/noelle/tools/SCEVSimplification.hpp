@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_SCEV_SIMPLIFICATION_SCEVSIMPLIFICATION_H_
 #define NOELLE_SRC_TOOLS_SCEV_SIMPLIFICATION_SCEVSIMPLIFICATION_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Noelle.hpp"

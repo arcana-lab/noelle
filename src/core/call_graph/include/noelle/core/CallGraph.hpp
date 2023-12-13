@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_CALL_GRAPH_CALLGRAPH_H_
 #define NOELLE_SRC_CORE_CALL_GRAPH_CALLGRAPH_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/CallGraphNode.hpp"

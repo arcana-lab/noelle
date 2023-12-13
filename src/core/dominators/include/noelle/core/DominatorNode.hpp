@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_DOMINATORS_DOMINATORNODE_H_
 #define NOELLE_SRC_CORE_DOMINATORS_DOMINATORNODE_H_
-#pragma once
 
 #include "llvm/Analysis/PostDominators.h"
 #include "noelle/core/SystemHeaders.hpp"

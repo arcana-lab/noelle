@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_HELIX_SEQUENTIALSEGMENT_H_
 #define NOELLE_SRC_TOOLS_HELIX_SEQUENTIALSEGMENT_H_
-#pragma once
 
 #include "HELIX.hpp"
 #include "noelle/core/SCCDAGPartition.hpp"

@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_CORE_LOOP_CONTENT_CONTROLFLOWEQUIVALENCE_H_
 #define NOELLE_SRC_CORE_LOOP_CONTENT_CONTROLFLOWEQUIVALENCE_H_
-#pragma once
 
 #include <memory>
 #include "noelle/core/SystemHeaders.hpp"

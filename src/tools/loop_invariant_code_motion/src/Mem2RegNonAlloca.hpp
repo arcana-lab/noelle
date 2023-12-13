@@ -21,7 +21,6 @@
  */
 #ifndef NOELLE_SRC_TOOLS_LOOP_INVARIANT_CODE_MOTION_MEM2REGNONALLOCA_H_
 #define NOELLE_SRC_TOOLS_LOOP_INVARIANT_CODE_MOTION_MEM2REGNONALLOCA_H_
-#pragma once
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopContent.hpp"
