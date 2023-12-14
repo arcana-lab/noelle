@@ -31,12 +31,12 @@ Task::Task(FunctionType *taskSignature, Module &M)
    * Create the name of the function.
    */
   auto functionName = std::string{ "noelle_task_" };
-  functionName.append(std::to_string(this->ID));
+  functionName.append(std::to_string(Task::currentID));
 
   /*
    * Create the task.
    */
-  this->createTask(taskSignature, M, functionName);
+  this->createTask(taskSignature, M, functionName, Task::currentID);
 
   return;
 }
@@ -50,19 +50,20 @@ Task::Task(FunctionType *taskSignature,
   /*
    * Create the task.
    */
-  this->createTask(taskSignature, M, taskFunctionNameToUse);
+  this->createTask(taskSignature, M, taskFunctionNameToUse, Task::currentID);
 
   return;
 }
 
 void Task::createTask(FunctionType *taskSignature,
                       Module &M,
-                      const std::string &taskFunctionNameToUse) {
+                      const std::string &taskFunctionNameToUse,
+                      uint32_t taskID) {
 
   /*
    * Make task IDs unique
    */
-  this->ID = Task::currentID;
+  this->ID = taskID;
   Task::currentID++;
 
   /*

@@ -199,7 +199,8 @@ protected:
 
   void createTask(FunctionType *taskSignature,
                   Module &M,
-                  const std::string &taskFunctionNameToUse);
+                  const std::string &taskFunctionNameToUse,
+                  uint32_t taskID);
 
 private:
   static uint64_t currentID;
