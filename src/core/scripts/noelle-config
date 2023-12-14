@@ -1,5 +1,13 @@
 #!/bin/bash
 
+function print_usage {
+  echo "USAGE: `basename $0` <OPTION>..."; 
+  echo "" ;
+  echo "Options:" ;
+  echo "  --version         Print NOELLE version.";
+  echo "  --prefix          Print the installation prefix." ;
+}
+
 SOURCE=${BASH_SOURCE[0]}
 while [ -L "${SOURCE}" ]; do # resolve $SOURCE until the file is no longer a symlink
   DIR=$( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd )
@@ -9,4 +17,20 @@ while [ -L "${SOURCE}" ]; do # resolve $SOURCE until the file is no longer a sym
 done
 installDir=$(realpath $( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd )/..)
 
-echo $installDir
+# Fetch the inputs
+if test $# -lt 1; then
+  print_usage ;
+  exit 1;
+fi
+
+for p in $@ ; do
+  if test "$p" == "--prefix" ; then
+    echo "$installDir" ;
+
+  elif test "$p" == "--version" ; then
+    echo "9.11.0" ;
+
+  else
+    print_usage ;
+  fi
+done
