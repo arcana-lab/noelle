@@ -28,24 +28,51 @@ Task::Task(FunctionType *taskSignature, Module &M)
     envArg{ nullptr } {
 
   /*
-   * Make task IDs unique
-   */
-  this->ID = Task::currentID;
-  Task::currentID++;
-
-  /*
    * Create the name of the function.
    */
   auto functionName = std::string{ "noelle_task_" };
   functionName.append(std::to_string(this->ID));
 
   /*
+   * Create the task.
+   */
+  this->createTask(taskSignature, M, functionName);
+
+  return;
+}
+
+Task::Task(FunctionType *taskSignature,
+           Module &M,
+           const std::string &taskFunctionNameToUse)
+  : instanceIndexV{ nullptr },
+    envArg{ nullptr } {
+
+  /*
+   * Create the task.
+   */
+  this->createTask(taskSignature, M, taskFunctionNameToUse);
+
+  return;
+}
+
+void Task::createTask(FunctionType *taskSignature,
+                      Module &M,
+                      const std::string &taskFunctionNameToUse) {
+
+  /*
+   * Make task IDs unique
+   */
+  this->ID = Task::currentID;
+  Task::currentID++;
+
+  /*
    * Create the empty body of the task.
    */
-  auto functionCallee = M.getOrInsertFunction(functionName, taskSignature);
+  auto functionCallee =
+      M.getOrInsertFunction(taskFunctionNameToUse, taskSignature);
   this->F = cast<Function>(functionCallee.getCallee());
   if (!this->F->empty()) {
-    errs() << "Task: ERROR = function " << functionName
+    errs() << "Task: ERROR = function " << taskFunctionNameToUse
            << " already exists in the program.\n";
     abort();
   }

@@ -30,6 +30,10 @@ class Task {
 public:
   Task(FunctionType *taskSignature, Module &M);
 
+  Task(FunctionType *taskSignature,
+       Module &M,
+       const std::string &taskFunctionNameToUse);
+
   /*
    * IDs
    */
@@ -192,6 +196,10 @@ protected:
   std::vector<BasicBlock *> lastBlocks;
 
   LLVMContext &getLLVMContext(void) const;
+
+  void createTask(FunctionType *taskSignature,
+                  Module &M,
+                  const std::string &taskFunctionNameToUse);
 
 private:
   static uint64_t currentID;
