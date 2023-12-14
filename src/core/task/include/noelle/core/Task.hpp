@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_CORE_TASK_H_
+#define NOELLE_SRC_CORE_TASK_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 
@@ -28,6 +29,10 @@ namespace arcana::noelle {
 class Task {
 public:
   Task(FunctionType *taskSignature, Module &M);
+
+  Task(FunctionType *taskSignature,
+       Module &M,
+       const std::string &taskFunctionNameToUse);
 
   /*
    * IDs
@@ -192,8 +197,15 @@ protected:
 
   LLVMContext &getLLVMContext(void) const;
 
+  void createTask(FunctionType *taskSignature,
+                  Module &M,
+                  const std::string &taskFunctionNameToUse,
+                  uint32_t taskID);
+
 private:
   static uint64_t currentID;
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_TASK_H_

@@ -28,8 +28,8 @@
 namespace arcana::noelle {
 
 std::vector<SequentialSegment *> HELIX::identifySequentialSegments(
-    LoopDependenceInfo *originalLDI,
-    LoopDependenceInfo *LDI,
+    LoopContent *originalLDI,
+    LoopContent *LDI,
     DataFlowResult *reachabilityDFR,
     HELIXTask *helixTask) {
 

@@ -242,8 +242,8 @@ Instruction *Privatizer::getInitProgramPoint(
      *   globalVar[i] = some number;
      * }
      */
-    LoopDependenceInfo *LDI = nullptr;
-    for (auto ldi : *noelle.getLoops(storeInst->getFunction())) {
+    LoopContent *LDI = nullptr;
+    for (auto ldi : *noelle.getLoopContents(storeInst->getFunction())) {
       if (!ldi->getLoopStructure()->isIncluded(storeInst)) {
         continue;
       }

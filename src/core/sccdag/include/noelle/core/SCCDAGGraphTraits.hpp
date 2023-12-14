@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_CORE_SCCDAG_SCCDAGGRAPHTRAITS_H_
+#define NOELLE_SRC_CORE_SCCDAG_SCCDAGGRAPHTRAITS_H_
 
 #include "noelle/core/DGGraphTraits.hpp"
 #include "noelle/core/SCCDAG.hpp"
@@ -107,3 +108,5 @@ struct GraphTraits<DGGraphWrapper<SCCDAG, SCC> *>
                            SCC> {};
 
 } // namespace llvm
+
+#endif // NOELLE_SRC_CORE_SCCDAG_SCCDAGGRAPHTRAITS_H_

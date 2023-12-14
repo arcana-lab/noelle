@@ -19,10 +19,11 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_PARALLELIZER_H_
+#define NOELLE_SRC_TOOLS_PARALLELIZER_H_
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCDAG.hpp"
@@ -62,14 +63,15 @@ private:
   /*
    * Methods
    */
-  bool parallelizeLoop(LoopDependenceInfo *LDI, Noelle &par, Heuristics *h);
+  bool parallelizeLoop(LoopContent *LDI, Noelle &par, Heuristics *h);
 
   bool parallelizeLoops(Noelle &noelle, Heuristics *heuristics);
 
-  std::vector<LoopDependenceInfo *> getLoopsToParallelize(Module &M,
-                                                          Noelle &par);
+  std::vector<LoopContent *> getLoopsToParallelize(Module &M, Noelle &par);
 
   bool collectThreadPoolHelperFunctionsAndTypes(Module &M, Noelle &par);
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_PARALLELIZER_H_

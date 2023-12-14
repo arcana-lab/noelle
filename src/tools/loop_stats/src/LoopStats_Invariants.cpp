@@ -25,7 +25,7 @@ using namespace llvm;
 using namespace arcana::noelle;
 
 void LoopStats::collectStatsOnNoelleInvariants(Hot *profiles,
-                                               LoopDependenceInfo &LDI,
+                                               LoopContent &LDI,
                                                Stats *stats) {
   auto invariantManager = LDI.getInvariantManager();
   auto loopInvariants =

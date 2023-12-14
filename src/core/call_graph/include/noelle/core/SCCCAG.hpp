@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_CORE_CALL_GRAPH_SCCCAG_H_
+#define NOELLE_SRC_CORE_CALL_GRAPH_SCCCAG_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/CallGraph.hpp"
@@ -76,3 +77,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_CALL_GRAPH_SCCCAG_H_

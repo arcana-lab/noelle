@@ -19,11 +19,12 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_LOOP_INVARIANT_CODE_MOTION_LASTLIVEOUTPEELER_H_
+#define NOELLE_SRC_TOOLS_LOOP_INVARIANT_CODE_MOTION_LASTLIVEOUTPEELER_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Noelle.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/SubCFGs.hpp"
@@ -32,12 +33,12 @@ namespace arcana::noelle {
 
 class LastLiveOutPeeler {
 public:
-  LastLiveOutPeeler(LoopDependenceInfo const &LDI, Noelle &noelle);
+  LastLiveOutPeeler(LoopContent const &LDI, Noelle &noelle);
 
   bool peelLastLiveOutComputation();
 
 private:
-  LoopDependenceInfo const &LDI;
+  LoopContent const &LDI;
   Noelle &noelle;
 
   /*
@@ -66,3 +67,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_LOOP_INVARIANT_CODE_MOTION_LASTLIVEOUTPEELER_H_

@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_TIME_SAVED_TIMINGMODEL_H_
+#define NOELLE_SRC_TOOLS_TIME_SAVED_TIMINGMODEL_H_
 
 #include "noelle/core/Noelle.hpp"
 
@@ -27,7 +28,7 @@ namespace arcana::noelle {
 
 class LoopTimingModel {
 public:
-  LoopTimingModel(Noelle &noelle, LoopDependenceInfo &ldi);
+  LoopTimingModel(Noelle &noelle, LoopContent &ldi);
 
   uint64_t getTimeSavedByParallelizingLoop(void);
 
@@ -35,7 +36,9 @@ public:
 
 protected:
   Noelle &n;
-  LoopDependenceInfo &loop;
+  LoopContent &loop;
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_TIME_SAVED_TIMINGMODEL_H_

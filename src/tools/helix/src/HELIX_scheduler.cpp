@@ -31,7 +31,7 @@ using namespace arcana::noelle;
  * sequential segment by moving between control flow equivalent sets of basic
  * blocks
  */
-void HELIX::squeezeSequentialSegment(LoopDependenceInfo *LDI,
+void HELIX::squeezeSequentialSegment(LoopContent *LDI,
                                      DataFlowResult *reachabilityDFR,
                                      SequentialSegment *ss) {
 
@@ -51,7 +51,7 @@ void HELIX::squeezeSequentialSegment(LoopDependenceInfo *LDI,
   return;
 }
 
-void HELIX::squeezeSequentialSegments(LoopDependenceInfo *LDI,
+void HELIX::squeezeSequentialSegments(LoopContent *LDI,
                                       std::vector<SequentialSegment *> *sss,
                                       DataFlowResult *reachabilityDFR) {
 
@@ -76,7 +76,7 @@ void HELIX::squeezeSequentialSegments(LoopDependenceInfo *LDI,
   return;
 }
 
-void HELIX::scheduleSequentialSegments(LoopDependenceInfo *LDI,
+void HELIX::scheduleSequentialSegments(LoopContent *LDI,
                                        std::vector<SequentialSegment *> *sss,
                                        DataFlowResult *reachabilityDFR) {
   // TODO

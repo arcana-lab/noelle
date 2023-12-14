@@ -19,11 +19,12 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_CORE_SCHEDULER_SCCPARTITIONSCHEDULER_H_
+#define NOELLE_SRC_CORE_SCHEDULER_SCCPARTITIONSCHEDULER_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Dominators.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/DataFlowResult.hpp"
 #include "noelle/core/SCCDAGPartition.hpp"
 
@@ -67,3 +68,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_SCHEDULER_SCCPARTITIONSCHEDULER_H_

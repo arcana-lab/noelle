@@ -24,7 +24,7 @@
 namespace arcana::noelle {
 
 BasicBlock *DSWP::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     uint32_t taskIndex,
     BasicBlock &bb) {
   return &bb;

@@ -25,6 +25,17 @@ namespace arcana::noelle {
 
 DOALLTask::DOALLTask(FunctionType *taskSignature, Module &M)
   : Task{ taskSignature, M } {
+  this->initializeTask(this->F);
+}
+
+DOALLTask::DOALLTask(FunctionType *taskSignature,
+                     Module &M,
+                     const std::string &taskFunctionNameToUse)
+  : Task{ taskSignature, M, taskFunctionNameToUse } {
+  this->initializeTask(this->F);
+}
+
+void DOALLTask::initializeTask(Function *F) {
 
   /*
    * Fetch the arguments.
@@ -41,8 +52,6 @@ DOALLTask::DOALLTask(FunctionType *taskSignature, Module &M)
   this->taskInstanceID->setName("taskInstanceID");
   this->numTaskInstances->setName("numTaskInstances");
   this->chunkSizeArg->setName("chunkSize");
-
-  return;
 }
 
 } // namespace arcana::noelle

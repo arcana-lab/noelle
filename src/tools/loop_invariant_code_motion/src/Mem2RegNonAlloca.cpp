@@ -24,8 +24,7 @@
 
 namespace arcana::noelle {
 
-Mem2RegNonAlloca::Mem2RegNonAlloca(LoopDependenceInfo const &LDI,
-                                   Noelle &noelle)
+Mem2RegNonAlloca::Mem2RegNonAlloca(LoopContent const &LDI, Noelle &noelle)
   : LDI{ LDI },
     invariants{ *LDI.getInvariantManager() },
     noelle{ noelle } {

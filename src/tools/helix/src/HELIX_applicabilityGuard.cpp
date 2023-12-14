@@ -26,7 +26,7 @@
 
 namespace arcana::noelle {
 
-bool HELIX::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
+bool HELIX::canBeAppliedToLoop(LoopContent *LDI, Heuristics *h) const {
 
   /*
    * Check the parent class.

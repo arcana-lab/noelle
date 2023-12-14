@@ -26,7 +26,7 @@ namespace arcana::noelle {
 LoopTransformationsManager::LoopTransformationsManager(
     uint32_t maxNumberOfCores,
     uint32_t chunkSize,
-    std::unordered_set<LoopDependenceInfoOptimization> optimizations,
+    std::unordered_set<LoopContentOptimization> optimizations,
     bool enableLoopAwareDependenceAnalyses)
   : chunkSize{ chunkSize },
     maxCores{ maxNumberOfCores },
@@ -80,7 +80,7 @@ void LoopTransformationsManager::disableTransformation(
 }
 
 bool LoopTransformationsManager::isOptimizationEnabled(
-    LoopDependenceInfoOptimization optimization) const {
+    LoopContentOptimization optimization) const {
   auto enabled = this->enabledOptimizations.find(optimization)
                  != this->enabledOptimizations.end();
   return enabled;
@@ -90,7 +90,7 @@ bool LoopTransformationsManager::areLoopAwareAnalysesEnabled(void) const {
   return this->_areLoopAwareAnalysesEnabled;
 }
 
-std::unordered_set<LoopDependenceInfoOptimization> LoopTransformationsManager::
+std::unordered_set<LoopContentOptimization> LoopTransformationsManager::
     getOptimizationsEnabled(void) const {
   return this->enabledOptimizations;
 }

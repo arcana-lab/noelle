@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_HELIX_SEQUENTIALSEGMENT_H_
+#define NOELLE_SRC_TOOLS_HELIX_SEQUENTIALSEGMENT_H_
 
 #include "HELIX.hpp"
 #include "noelle/core/SCCDAGPartition.hpp"
@@ -30,7 +31,7 @@ namespace arcana::noelle {
 class SequentialSegment {
 public:
   SequentialSegment(Noelle &noelle,
-                    LoopDependenceInfo *LDI,
+                    LoopContent *LDI,
                     DataFlowResult *reachabilityDFR,
                     SCCSet *sccs,
                     int32_t ID,
@@ -55,7 +56,7 @@ private:
   Verbosity verbosity;
 
   void determineEntryAndExitFrontier(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       DominatorSummary *DS,
       DataFlowResult *dfr,
       std::unordered_set<Instruction *> &ssInstructions);
@@ -65,7 +66,7 @@ private:
    * more extensive testing
    */
   void determineEntriesAndExits(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       DataFlowResult *dfr,
       std::unordered_set<Instruction *> &ssInstructions);
 
@@ -73,9 +74,9 @@ private:
       Instruction *originalBarrierInst);
 
   std::unordered_map<Instruction *, std::unordered_set<Instruction *>>
-  computeBeforeInstructionMap(LoopDependenceInfo *LDI, DataFlowResult *dfr);
+  computeBeforeInstructionMap(LoopContent *LDI, DataFlowResult *dfr);
 
-  void printSCCInfo(LoopDependenceInfo *LDI,
+  void printSCCInfo(LoopContent *LDI,
                     std::unordered_set<Instruction *> &ssInstructions,
                     const std::string &prefixString);
 
@@ -86,3 +87,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_HELIX_SEQUENTIALSEGMENT_H_

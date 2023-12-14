@@ -47,7 +47,7 @@ void LoopStats::collectStatsOnLLVMSCCs(Hot *profiles,
 }
 
 void LoopStats::collectStatsOnNoelleSCCs(Hot *profiles,
-                                         LoopDependenceInfo &LDI,
+                                         LoopContent &LDI,
                                          Stats *statsForLoop,
                                          Loop &llvmLoop) {
 
@@ -104,7 +104,7 @@ void LoopStats::collectStatsOnNoelleSCCs(Hot *profiles,
 void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
                                      SCCDAG *sccdag,
                                      SCCDAGAttrs *sccdagAttrs,
-                                     LoopDependenceInfo *ldi,
+                                     LoopContent *ldi,
                                      Stats *statsForLoop) {
 
   /*

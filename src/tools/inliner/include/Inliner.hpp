@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_INLINER_H_
+#define NOELLE_SRC_TOOLS_INLINER_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DGBase.hpp"
@@ -27,7 +28,7 @@
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 #include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/Noelle.hpp"
 #include <fstream>
 
@@ -60,7 +61,7 @@ private:
                                                        noelle::CallGraph *pcg);
   bool inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(
       Function *F,
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       noelle::CallGraph *pcg,
       Noelle &noelle);
 
@@ -137,3 +138,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_INLINER_H_

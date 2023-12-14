@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_PDG_STATS_PDGSTATS_H_
+#define NOELLE_SRC_TOOLS_PDG_STATS_PDGSTATS_H_
 
 #include "noelle/core/Noelle.hpp"
 
@@ -61,13 +62,13 @@ private:
   void printRefinedLoopGraphsForFunction(
       Noelle &noelle,
       std::unordered_map<Function *, LoopForest *> &programLoops,
-      std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
+      std::unordered_map<LoopStructure *, LoopContent *> &lsToLDI,
       Function &F);
 
   void collectStatsForLoopEdges(
       Noelle &noelle,
       std::unordered_map<Function *, LoopForest *> &programLoops,
-      std::unordered_map<LoopStructure *, LoopDependenceInfo *> &lsToLDI,
+      std::unordered_map<LoopStructure *, LoopContent *> &lsToLDI,
       Function &F);
 
   void analyzeDependence(DGEdge<Value, Value> *edge);
@@ -80,3 +81,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_PDG_STATS_PDGSTATS_H_

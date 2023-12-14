@@ -24,7 +24,7 @@
 
 namespace arcana::noelle {
 
-bool DOALL::canBeAppliedToLoop(LoopDependenceInfo *LDI, Heuristics *h) const {
+bool DOALL::canBeAppliedToLoop(LoopContent *LDI, Heuristics *h) const {
   if (this->verbose != Verbosity::Disabled) {
     errs() << "DOALL: Checking if the loop is DOALL\n";
   }

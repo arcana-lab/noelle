@@ -19,10 +19,11 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_LOOP_INVARIANT_CODE_MOTION_MEM2REGNONALLOCA_H_
+#define NOELLE_SRC_TOOLS_LOOP_INVARIANT_CODE_MOTION_MEM2REGNONALLOCA_H_
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/Invariants.hpp"
 #include "noelle/core/Noelle.hpp"
 
@@ -34,12 +35,12 @@ namespace arcana::noelle {
 
 class Mem2RegNonAlloca {
 public:
-  Mem2RegNonAlloca(LoopDependenceInfo const &LDI, Noelle &noelle);
+  Mem2RegNonAlloca(LoopContent const &LDI, Noelle &noelle);
 
   bool promoteMemoryToRegister(void);
 
 private:
-  LoopDependenceInfo const &LDI;
+  LoopContent const &LDI;
   Noelle &noelle;
   InvariantManager &invariants;
 
@@ -68,3 +69,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_LOOP_INVARIANT_CODE_MOTION_MEM2REGNONALLOCA_H_

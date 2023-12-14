@@ -23,7 +23,7 @@
 
 namespace arcana::noelle {
 
-void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
+void DSWP::collectLiveInEnvInfo(LoopContent *LDI) {
 
   /*
    * Fetch the environment of the loop
@@ -85,7 +85,7 @@ void DSWP::collectLiveInEnvInfo(LoopDependenceInfo *LDI) {
   return;
 }
 
-void DSWP::collectLiveOutEnvInfo(LoopDependenceInfo *LDI) {
+void DSWP::collectLiveOutEnvInfo(LoopContent *LDI) {
 
   /*
    * Fetch the environment of the loop

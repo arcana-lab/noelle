@@ -25,7 +25,7 @@ using namespace llvm;
 using namespace arcana::noelle;
 
 void LoopStats::collectStatsOnNoelleIVs(Hot *profiles,
-                                        LoopDependenceInfo &LDI,
+                                        LoopContent &LDI,
                                         Stats *statsForLoop) {
   auto loopStructure = LDI.getLoopStructure();
   auto ivManager = LDI.getInductionVariableManager();

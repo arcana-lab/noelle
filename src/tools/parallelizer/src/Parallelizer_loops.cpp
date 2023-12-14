@@ -79,7 +79,7 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
    * Determine the parallelization order from the metadata.
    */
   auto mm = noelle.getMetadataManager();
-  std::map<uint32_t, LoopDependenceInfo *> loopParallelizationOrder;
+  std::map<uint32_t, LoopContent *> loopParallelizationOrder;
   for (auto tree : forest->getTrees()) {
     auto selector = [&noelle, &mm, &loopParallelizationOrder, &isSelected](
                         LoopTree *n,
@@ -93,11 +93,9 @@ bool Parallelizer::parallelizeLoops(Noelle &noelle, Heuristics *heuristics) {
       if (!isSelected(parallelizationOrderIndex)) {
         return false;
       }
-      auto optimizations = {
-        LoopDependenceInfoOptimization::MEMORY_CLONING_ID,
-        LoopDependenceInfoOptimization::THREAD_SAFE_LIBRARY_ID
-      };
-      auto ldi = noelle.getLoop(ls, optimizations);
+      auto optimizations = { LoopContentOptimization::MEMORY_CLONING_ID,
+                             LoopContentOptimization::THREAD_SAFE_LIBRARY_ID };
+      auto ldi = noelle.getLoopContent(ls, optimizations);
       loopParallelizationOrder[parallelizationOrderIndex] = ldi;
       return false;
     };

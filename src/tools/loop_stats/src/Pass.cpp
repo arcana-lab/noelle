@@ -50,7 +50,7 @@ bool LoopStats::runOnModule(Module &M) {
   /*
    * Fetch all program loops.
    */
-  auto programLoops = noelle.getLoops();
+  auto programLoops = noelle.getLoopContents();
 
   /*
    * Analyze the loops.

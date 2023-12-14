@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_LOOP_INVARIANT_CODE_MOTION_LOOPINVARIANTCODEMOTION_H_
+#define NOELLE_SRC_TOOLS_LOOP_INVARIANT_CODE_MOTION_LOOPINVARIANTCODEMOTION_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Noelle.hpp"
@@ -35,9 +36,9 @@ public:
    */
   LoopInvariantCodeMotion(Noelle &noelle);
 
-  bool extractInvariantsFromLoop(LoopDependenceInfo const &LDI);
+  bool extractInvariantsFromLoop(LoopContent const &LDI);
 
-  bool promoteMemoryLocationsToRegisters(LoopDependenceInfo const &LDI);
+  bool promoteMemoryLocationsToRegisters(LoopContent const &LDI);
 
 private:
   /*
@@ -48,13 +49,15 @@ private:
   /*
    * Methods
    */
-  bool hoistStoreOfLastValueLiveOut(LoopDependenceInfo const &LDI);
+  bool hoistStoreOfLastValueLiveOut(LoopContent const &LDI);
 
-  bool hoistInvariantValues(LoopDependenceInfo const &LDI);
+  bool hoistInvariantValues(LoopContent const &LDI);
 
   std::vector<Instruction *> getSourceDependenceInstructionsFrom(
-      LoopDependenceInfo const &LDI,
+      LoopContent const &LDI,
       Instruction &I);
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_LOOP_INVARIANT_CODE_MOTION_LOOPINVARIANTCODEMOTION_H_

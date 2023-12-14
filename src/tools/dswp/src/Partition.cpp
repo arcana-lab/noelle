@@ -24,7 +24,7 @@
 using namespace llvm;
 using namespace arcana::noelle;
 
-void DSWP::partitionSCCDAG(LoopDependenceInfo *LDI, Heuristics *h) {
+void DSWP::partitionSCCDAG(LoopContent *LDI, Heuristics *h) {
 
   /*
    * Prepare the initial partition.

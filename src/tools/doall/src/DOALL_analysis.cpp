@@ -25,9 +25,8 @@
 
 namespace arcana::noelle {
 
-std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(
-    LoopDependenceInfo *LDI,
-    Noelle &par) {
+std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(LoopContent *LDI,
+                                                           Noelle &par) {
   std::set<SCC *> sccs;
 
   /*

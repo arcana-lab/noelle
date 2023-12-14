@@ -29,7 +29,7 @@ LoopUnroll::LoopUnroll() {
   return;
 }
 
-bool LoopUnroll::fullyUnrollLoop(LoopDependenceInfo const &LDI,
+bool LoopUnroll::fullyUnrollLoop(LoopContent const &LDI,
                                  LoopInfo &LI,
                                  DominatorTree &DT,
                                  ScalarEvolution &SE,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_DOALL_DOALLTASK_H_
+#define NOELLE_SRC_TOOLS_DOALL_DOALLTASK_H_
 
 #include "noelle/core/Task.hpp"
 #include "noelle/core/SCCDAGAttrs.hpp"
@@ -29,6 +30,9 @@ namespace arcana::noelle {
 class DOALLTask : public Task {
 public:
   DOALLTask(FunctionType *taskSignature, Module &M);
+  DOALLTask(FunctionType *taskSignature,
+            Module &M,
+            const std::string &taskFunctionNameToUse);
 
   /*
    * Inner loop header/latch
@@ -48,6 +52,11 @@ public:
   CmpInst *cloneOfOriginalCmp;
   BranchInst *cloneOfOriginalBr;
   PHINode *outermostLoopIV;
+
+protected:
+  void initializeTask(Function *F);
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_DOALL_DOALLTASK_H_

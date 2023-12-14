@@ -25,7 +25,7 @@
 namespace arcana::noelle {
 
 BasicBlock *DOALL::getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     uint32_t taskIndex,
     BasicBlock &bb) {
   assert(LDI != nullptr);

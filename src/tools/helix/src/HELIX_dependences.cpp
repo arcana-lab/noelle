@@ -31,7 +31,7 @@ static void constructEdgesFromControlForFunction(
     const DominatorForest &postDominatorForest);
 
 PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
-    LoopDependenceInfo *LDI) {
+    LoopContent *LDI) {
 
   /*
    * Fetch the task.

@@ -19,13 +19,14 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_PARALLELIZATION_TECHNIQUE_PARALLELIZATIONTECHNIQUE_H_
+#define NOELLE_SRC_TOOLS_PARALLELIZATION_TECHNIQUE_PARALLELIZATIONTECHNIQUE_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "noelle/core/Noelle.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "Heuristics.hpp"
 #include "noelle/core/Task.hpp"
 #include "noelle/core/Hot.hpp"
@@ -41,25 +42,24 @@ public:
    */
   ParallelizationTechnique(Noelle &n);
 
-  Value *getEnvArray(void) const;
+  virtual Value *getEnvArray(void) const;
 
-  uint32_t getIndexOfEnvironmentVariable(uint32_t id) const;
+  virtual uint32_t getIndexOfEnvironmentVariable(uint32_t id) const;
 
-  BasicBlock *getParLoopEntryPoint(void) const;
+  virtual BasicBlock *getParLoopEntryPoint(void) const;
 
-  BasicBlock *getParLoopExitPoint(void) const;
+  virtual BasicBlock *getParLoopExitPoint(void) const;
 
   /*
    * Apply the parallelization technique to the loop LDI.
    */
-  virtual bool apply(LoopDependenceInfo *LDI, Heuristics *h) = 0;
+  virtual bool apply(LoopContent *LDI, Heuristics *h) = 0;
 
   /*
    * Can the current parallelization technique be applied to parallelize loop
    * LDI?
    */
-  virtual bool canBeAppliedToLoop(LoopDependenceInfo *LDI,
-                                  Heuristics *h) const = 0;
+  virtual bool canBeAppliedToLoop(LoopContent *LDI, Heuristics *h) const = 0;
 
   virtual uint32_t getMinimumNumberOfIdleCores(void) const = 0;
 
@@ -82,114 +82,110 @@ protected:
    * - one basic block per loop exit, which will jump to the exit block
    */
   virtual void addPredecessorAndSuccessorsBasicBlocksToTasks(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       std::vector<Task *> taskStructs);
 
   /*
    * Loop's environment
    */
-  void initializeEnvironmentBuilder(LoopDependenceInfo *LDI,
-                                    std::set<uint32_t> nonReducableVars);
+  virtual void initializeEnvironmentBuilder(
+      LoopContent *LDI,
+      std::set<uint32_t> nonReducableVars);
 
-  void initializeEnvironmentBuilder(LoopDependenceInfo *LDI,
-                                    std::set<uint32_t> simpleVars,
-                                    std::set<uint32_t> reducableVars);
+  virtual void initializeEnvironmentBuilder(LoopContent *LDI,
+                                            std::set<uint32_t> simpleVars,
+                                            std::set<uint32_t> reducableVars);
 
-  void initializeEnvironmentBuilder(
-      LoopDependenceInfo *LDI,
+  virtual void initializeEnvironmentBuilder(
+      LoopContent *LDI,
       std::function<bool(uint32_t variableID, bool isLiveOut)>
           shouldThisVariableBeReduced);
 
-  void initializeEnvironmentBuilder(
-      LoopDependenceInfo *LDI,
+  virtual void initializeEnvironmentBuilder(
+      LoopContent *LDI,
       std::function<bool(uint32_t variableID, bool isLiveOut)>
           shouldThisVariableBeReduced,
       std::function<bool(uint32_t variableID, bool isLiveOut)>
           shouldThisVariableBeSkipped);
 
-  void initializeLoopEnvironmentUsers(void);
+  virtual void initializeLoopEnvironmentUsers(void);
 
-  void allocateEnvironmentArray(LoopDependenceInfo *LDI);
+  virtual void allocateEnvironmentArray(LoopContent *LDI);
 
-  void populateLiveInEnvironment(LoopDependenceInfo *LDI);
+  virtual void populateLiveInEnvironment(LoopContent *LDI);
 
   virtual BasicBlock *performReductionToAllReducableLiveOutVariables(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       Value *numberOfThreadsExecuted);
 
   /*
    * Task helpers for manipulating loop body clones
    */
-  virtual void cloneSequentialLoop(LoopDependenceInfo *LDI, int taskIndex);
-  virtual void cloneSequentialLoopSubset(LoopDependenceInfo *LDI,
+  virtual void cloneSequentialLoop(LoopContent *LDI, int taskIndex);
+  virtual void cloneSequentialLoopSubset(LoopContent *LDI,
                                          int taskIndex,
                                          std::set<Instruction *> subset);
 
-  void cloneMemoryLocationsLocallyAndRewireLoop(LoopDependenceInfo *LDI,
-                                                int taskIndex);
+  virtual void cloneMemoryLocationsLocallyAndRewireLoop(LoopContent *LDI,
+                                                        int taskIndex);
 
-  std::unordered_map<InductionVariable *, Value *> cloneIVStepValueComputation(
-      LoopDependenceInfo *LDI,
-      int taskIndex,
-      IRBuilder<> &insertBlock);
+  virtual std::unordered_map<InductionVariable *, Value *>
+  cloneIVStepValueComputation(LoopContent *LDI,
+                              int taskIndex,
+                              IRBuilder<> &insertBlock);
 
-  void adjustStepValueOfPointerTypeIVToReflectPointerArithmetic(
+  virtual void adjustStepValueOfPointerTypeIVToReflectPointerArithmetic(
       std::unordered_map<InductionVariable *, Value *> clonedStepValueMap,
       IRBuilder<> &insertBlock);
 
   /*
    * Task helpers for environment usage
    */
-  virtual void generateCodeToLoadLiveInVariables(LoopDependenceInfo *LDI,
+  virtual void generateCodeToLoadLiveInVariables(LoopContent *LDI,
                                                  int taskIndex);
 
-  virtual void generateCodeToStoreLiveOutVariables(LoopDependenceInfo *LDI,
+  virtual void generateCodeToStoreLiveOutVariables(LoopContent *LDI,
                                                    int taskIndex);
 
-  Instruction *
+  virtual Instruction *
   fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       int taskIndex,
       int envID,
       BasicBlock *insertBasicBlock,
       DominatorSummary &taskDS);
 
-  void generateCodeToStoreExitBlockIndex(LoopDependenceInfo *LDI,
-                                         int taskIndex);
+  virtual void generateCodeToStoreExitBlockIndex(LoopContent *LDI,
+                                                 int taskIndex);
 
-  std::set<BasicBlock *> determineLatestPointsToInsertLiveOutStore(
-      LoopDependenceInfo *LDI,
+  virtual std::set<BasicBlock *> determineLatestPointsToInsertLiveOutStore(
+      LoopContent *LDI,
       int taskIndex,
       Instruction *liveOut,
       bool isReduced,
       DominatorSummary &taskDS);
 
-  void setReducableVariablesToBeginAtIdentityValue(LoopDependenceInfo *LDI,
-                                                   int taskIndex);
+  virtual void setReducableVariablesToBeginAtIdentityValue(LoopContent *LDI,
+                                                           int taskIndex);
 
-  Value *castToCorrectReducibleType(IRBuilder<> &builder,
-                                    Value *value,
-                                    Type *targetType);
+  virtual Value *castToCorrectReducibleType(IRBuilder<> &builder,
+                                            Value *value,
+                                            Type *targetType);
 
   virtual BasicBlock *getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       uint32_t taskIndex,
       BasicBlock &bb) = 0;
 
   /*
-   * Partition SCCDAG.
-   */
-  void partitionSCCDAG(LoopDependenceInfo *LDI);
-
-  /*
    * General purpose helpers (that should be moved to parallelization_utils)
    */
-  void doNestedInlineOfCalls(Function *F, std::set<CallInst *> &calls);
+  virtual void doNestedInlineOfCalls(Function *F, std::set<CallInst *> &calls);
 
-  float computeSequentialFractionOfExecution(LoopDependenceInfo *LDI) const;
+  virtual float computeSequentialFractionOfExecution(LoopContent *LDI) const;
 
-  float computeSequentialFractionOfExecution(
-      LoopDependenceInfo *LDI,
+  virtual float computeSequentialFractionOfExecution(
+      LoopContent *LDI,
       std::function<bool(GenericSCC *scc)> doesItRunSequentially) const;
 
   virtual void makePRVGsReentrant(void);
@@ -213,3 +209,5 @@ protected:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_PARALLELIZATION_TECHNIQUE_PARALLELIZATIONTECHNIQUE_H_

@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_HEURISTICS_HEURISTICSPASS_H_
+#define NOELLE_SRC_TOOLS_HEURISTICS_HEURISTICSPASS_H_
 
 #include "llvm/IR/Module.h"
 #include "llvm/IR/BasicBlock.h"
@@ -45,3 +46,5 @@ public:
   Heuristics *getHeuristics(Noelle &noelle);
 };
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_HEURISTICS_HEURISTICSPASS_H_

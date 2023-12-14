@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_DSWP_H_
+#define NOELLE_SRC_TOOLS_DSWP_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"
@@ -30,7 +31,7 @@
 #include "HeuristicsPass.hpp"
 #include "noelle/tools/ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences.hpp"
 #include "DSWPTask.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 
 namespace arcana::noelle {
 
@@ -42,10 +43,9 @@ public:
    */
   DSWP(Noelle &par, bool forceParallelization, bool enableSCCMerging);
 
-  bool apply(LoopDependenceInfo *LDI, Heuristics *h) override;
+  bool apply(LoopContent *LDI, Heuristics *h) override;
 
-  bool canBeAppliedToLoop(LoopDependenceInfo *LDI,
-                          Heuristics *h) const override;
+  bool canBeAppliedToLoop(LoopContent *LDI, Heuristics *h) const override;
 
   uint32_t getMinimumNumberOfIdleCores(void) const override;
 
@@ -58,7 +58,7 @@ public:
 
 protected:
   BasicBlock *getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       uint32_t taskIndex,
       BasicBlock &bb) override;
 
@@ -98,20 +98,20 @@ private:
   /*
    * Pipeline
    */
-  void partitionSCCDAG(LoopDependenceInfo *LDI, Heuristics *h);
-  void clusterSubloops(LoopDependenceInfo *LDI);
-  void generateStagesFromPartitionedSCCs(LoopDependenceInfo *LDI);
-  void addClonableSCCsToStages(LoopDependenceInfo *LDI);
-  bool isCompleteAndValidStageStructure(LoopDependenceInfo *LDI) const;
-  void generateLoopSubsetForStage(LoopDependenceInfo *LDI, int taskIndex);
+  void partitionSCCDAG(LoopContent *LDI, Heuristics *h);
+  void clusterSubloops(LoopContent *LDI);
+  void generateStagesFromPartitionedSCCs(LoopContent *LDI);
+  void addClonableSCCsToStages(LoopContent *LDI);
+  bool isCompleteAndValidStageStructure(LoopContent *LDI) const;
+  void generateLoopSubsetForStage(LoopContent *LDI, int taskIndex);
   void generateLoadsOfQueuePointers(Noelle &par, int taskIndex);
-  void popValueQueues(LoopDependenceInfo *LDI, Noelle &par, int taskIndex);
-  void pushValueQueues(LoopDependenceInfo *LDI, Noelle &par, int taskIndex);
-  void createPipelineFromStages(LoopDependenceInfo *LDI, Noelle &par);
-  Value *createStagesArrayFromStages(LoopDependenceInfo *LDI,
+  void popValueQueues(LoopContent *LDI, Noelle &par, int taskIndex);
+  void pushValueQueues(LoopContent *LDI, Noelle &par, int taskIndex);
+  void createPipelineFromStages(LoopContent *LDI, Noelle &par);
+  Value *createStagesArrayFromStages(LoopContent *LDI,
                                      IRBuilder<> &funcBuilder,
                                      Noelle &par);
-  Value *createQueueSizesArrayFromStages(LoopDependenceInfo *LDI,
+  Value *createQueueSizesArrayFromStages(LoopContent *LDI,
                                          IRBuilder<> &funcBuilder,
                                          Noelle &par);
 
@@ -126,32 +126,33 @@ private:
   /*
    * Information collection helpers
    */
-  void collectDataAndMemoryQueueInfo(LoopDependenceInfo *LDI, Noelle &par);
-  void collectControlQueueInfo(LoopDependenceInfo *LDI, Noelle &par);
+  void collectDataAndMemoryQueueInfo(LoopContent *LDI, Noelle &par);
+  void collectControlQueueInfo(LoopContent *LDI, Noelle &par);
   std::set<Task *> collectTransitivelyControlledTasks(
-      LoopDependenceInfo *LDI,
+      LoopContent *LDI,
       DGNode<Value> *conditionalBranchNodei);
   void registerQueue(Noelle &par,
-                     LoopDependenceInfo *LDI,
+                     LoopContent *LDI,
                      DSWPTask *fromStage,
                      DSWPTask *toStage,
                      Instruction *producer,
                      Instruction *consumer,
                      bool isMemoryDependence);
-  void collectLiveInEnvInfo(LoopDependenceInfo *LDI);
-  void collectLiveOutEnvInfo(LoopDependenceInfo *LDI);
+  void collectLiveInEnvInfo(LoopContent *LDI);
+  void collectLiveOutEnvInfo(LoopContent *LDI);
   bool areQueuesAcyclical() const;
 
   /*
    * Debug utilities
    */
-  void printStageSCCs(LoopDependenceInfo *LDI) const;
-  void printStageQueues(LoopDependenceInfo *LDI) const;
-  void printEnv(LoopDependenceInfo *LDI) const;
-  void writeStageGraphsAsDot(LoopDependenceInfo &LDI) const;
-  void writeStageQueuesAsDot(const LoopDependenceInfo &LDI) const;
-  void printStageClonedValues(const LoopDependenceInfo &LDI,
-                              int taskIndex) const;
+  void printStageSCCs(LoopContent *LDI) const;
+  void printStageQueues(LoopContent *LDI) const;
+  void printEnv(LoopContent *LDI) const;
+  void writeStageGraphsAsDot(LoopContent &LDI) const;
+  void writeStageQueuesAsDot(const LoopContent &LDI) const;
+  void printStageClonedValues(const LoopContent &LDI, int taskIndex) const;
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_DSWP_H_

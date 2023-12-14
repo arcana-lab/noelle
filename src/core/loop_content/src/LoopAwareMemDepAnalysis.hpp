@@ -19,8 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
-#pragma once
+#ifndef NOELLE_SRC_CORE_LOOP_CONTENT_LOOPAWAREMEMDEPANALYSIS_H_
+#define NOELLE_SRC_CORE_LOOP_CONTENT_LOOPAWAREMEMDEPANALYSIS_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"
@@ -47,3 +47,5 @@ void refinePDGWithLIDS(PDG *loopDG,
                        LoopIterationSpaceAnalysis *LIDS);
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_LOOP_CONTENT_LOOPAWAREMEMDEPANALYSIS_H_

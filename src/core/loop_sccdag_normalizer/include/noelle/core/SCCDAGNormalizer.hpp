@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_CORE_LOOP_SCCDAG_NORMALIZER_SCCDAGNORMALIZER_H_
+#define NOELLE_SRC_CORE_LOOP_SCCDAG_NORMALIZER_SCCDAGNORMALIZER_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"
@@ -63,3 +64,5 @@ private:
   void collapseIntroducedCycles(void);
 };
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_LOOP_SCCDAG_NORMALIZER_SCCDAGNORMALIZER_H_

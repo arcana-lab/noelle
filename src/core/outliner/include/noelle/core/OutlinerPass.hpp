@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_CORE_OUTLINER_OUTLINERPASS_H_
+#define NOELLE_SRC_CORE_OUTLINER_OUTLINERPASS_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Outliner.hpp"
@@ -47,3 +48,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_OUTLINER_OUTLINERPASS_H_

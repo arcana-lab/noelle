@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_CORE_TRANSFORMATIONS_H_
+#define NOELLE_SRC_CORE_TRANSFORMATIONS_H_
 
 namespace arcana::noelle {
 
@@ -42,9 +43,8 @@ enum Transformation {
   Last = DEVIRTUALIZER_ID
 };
 
-enum LoopDependenceInfoOptimization {
-  MEMORY_CLONING_ID,
-  THREAD_SAFE_LIBRARY_ID
-};
+enum LoopContentOptimization { MEMORY_CLONING_ID, THREAD_SAFE_LIBRARY_ID };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_TRANSFORMATIONS_H_

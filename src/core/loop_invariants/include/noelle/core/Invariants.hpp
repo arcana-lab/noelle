@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_CORE_LOOP_INVARIANTS_INVARIANTS_H_
+#define NOELLE_SRC_CORE_LOOP_INVARIANTS_INVARIANTS_H_
 
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCC.hpp"
@@ -84,3 +85,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_LOOP_INVARIANTS_INVARIANTS_H_

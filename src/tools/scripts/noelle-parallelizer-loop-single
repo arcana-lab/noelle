@@ -1,21 +1,29 @@
 #!/bin/bash
 
-installDir
+SOURCE=${BASH_SOURCE[0]}
+while [ -L "${SOURCE}" ]; do # resolve $SOURCE until the file is no longer a symlink
+  DIR=$( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd )
+  SOURCE=$(readlink "${SOURCE}")
+  # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+  [[ ${SOURCE} != /* ]] && SOURCE=$DIR/$SOURCE 
+done
+installDir=$(realpath $( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd )/..)
 
 usage() {
   echo "USAGE: `basename $0` INPUT_BC [OPTIONS]..."
   echo
   echo "Tool for parallelizing one loop at a time and running the binary."
   echo
-  echo "INPUT_BC        Input bitcode with parallel plan and API already linked."
-  echo "                Generally this file is code_to_parallelize.bc"
+  echo "INPUT_BC              Input bitcode with parallel plan and API already linked."
+  echo "                      Generally this file is code_to_parallelize.bc"
   echo
   echo "Options:"
-  echo "--timeout       Seconds after which the executable will be interruped"
-  echo "                causing a non-zero return code."
-  echo "                If not specified the binary will not be run."
-  echo "--args          Arguments to the executable."
-  echo "--help          Display this message."
+  echo "--timeout             Seconds after which the executable will be interruped"
+  echo "                      causing a non-zero return code."
+  echo "                      If not specified the binary will not be run."
+  echo "--args                Arguments to the executable."
+  echo "--show-binary-output  Arguments to the executable."
+  echo "--help                Display this message."
 }
 
 showReturnCode() {
@@ -49,6 +57,7 @@ fi
 #
 timeout=600 # 10 minutes
 executeBin="n"
+showBinOutput="n"
 args=""
 
 # Parsing arguments
@@ -64,6 +73,10 @@ for arg in "$@"; do
     --timeout=*)
       timeout="${arg#*=}"
       executeBin="y"
+      shift
+      ;;
+    --show-binary-output)
+      showBinOutput="y"
       shift
       ;;
     --help)
@@ -128,9 +141,12 @@ for ((i=0; i<numLoops; i++)); do
   # Conditionally run the executable
   #
   if [ "$executeBin" == "y" ]; then
-    echo "${prefix}   running binary ${outputName}"
-    timeout ${timeout}s ./${outputName} "$args" \
-      > /dev/null
+    echo "${prefix}   running binary ${outputName}" 
+    if [ "$showBinOutput" == "y" ]; then
+      timeout ${timeout}s ./${outputName} $args
+    else
+      timeout ${timeout}s ./${outputName} $args > /dev/null
+    fi
 
     showReturnCode $prefix $?
   fi

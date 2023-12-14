@@ -48,7 +48,7 @@ void LoopStats::collectStatsForLoop(Hot *profiles,
 }
 
 void LoopStats::collectStatsForLoop(Hot *profiles,
-                                    LoopDependenceInfo &LDI,
+                                    LoopContent &LDI,
                                     Loop &llvmLoop) {
   auto loopStructure = LDI.getLoopStructure();
   auto loopIDOpt = loopStructure->getID();

@@ -38,7 +38,7 @@ void LoopTransformer::setPDG(PDG *programDependenceGraph) {
   return;
 }
 
-LoopUnrollResult LoopTransformer::unrollLoop(LoopDependenceInfo *loop,
+LoopUnrollResult LoopTransformer::unrollLoop(LoopContent *loop,
                                              uint32_t unrollFactor) {
 
   /*
@@ -46,6 +46,11 @@ LoopUnrollResult LoopTransformer::unrollLoop(LoopDependenceInfo *loop,
    */
   auto ls = loop->getLoopStructure();
   auto lsFunction = ls->getFunction();
+
+  /*
+   * Fetch the trip count.
+   */
+  auto loopTripCount = (uint32_t)loop->getCompileTimeTripCount();
 
   /*
    * Fetch the LLVM loop abstractions.
@@ -68,20 +73,23 @@ LoopUnrollResult LoopTransformer::unrollLoop(LoopDependenceInfo *loop,
    */
   UnrollLoopOptions opts;
   opts.Count = unrollFactor;
+  opts.TripCount = loopTripCount;
   opts.Force = false;
-  opts.Runtime = false;
+  opts.AllowRuntime = false;
   opts.AllowExpensiveTripCount = true;
+  opts.PreserveCondBr = false;
+  opts.TripMultiple = SE.getSmallConstantTripMultiple(llvmLoop);
+  opts.PeelCount = 0;
   opts.UnrollRemainder = false;
   opts.ForgetAllSCEV = true;
   OptimizationRemarkEmitter ORE(lsFunction);
-  TargetTransformInfo TTI(lsFunction->getParent()->getDataLayout());
   auto unrolled =
-      UnrollLoop(llvmLoop, opts, &LLVMLoops, &SE, &DT, &AC, &TTI, &ORE, true);
+      UnrollLoop(llvmLoop, opts, &LLVMLoops, &SE, &DT, &AC, &ORE, true);
 
   return unrolled;
 }
 
-bool LoopTransformer::fullyUnrollLoop(LoopDependenceInfo *loop) {
+bool LoopTransformer::fullyUnrollLoop(LoopContent *loop) {
 
   /*
    * Fetch the unroller
@@ -103,7 +111,7 @@ bool LoopTransformer::fullyUnrollLoop(LoopDependenceInfo *loop) {
   return modified;
 }
 
-bool LoopTransformer::whilifyLoop(LoopDependenceInfo *loop) {
+bool LoopTransformer::whilifyLoop(LoopContent *loop) {
   assert(this->pdg != nullptr);
 
   /*
@@ -134,7 +142,7 @@ LoopTransformer::~LoopTransformer() {
   return;
 }
 
-bool LoopTransformer::splitLoop(LoopDependenceInfo *loop,
+bool LoopTransformer::splitLoop(LoopContent *loop,
                                 std::set<SCC *> const &SCCsToPullOut,
                                 std::set<Instruction *> &instructionsRemoved,
                                 std::set<Instruction *> &instructionsAdded) {

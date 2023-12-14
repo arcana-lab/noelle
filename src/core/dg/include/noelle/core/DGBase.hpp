@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_CORE_DG_DGBASE_H_
+#define NOELLE_SRC_CORE_DG_DGBASE_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Assumptions.hpp"
@@ -619,3 +620,5 @@ uint64_t DG<T>::numEdges(void) const {
 }
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_DG_DGBASE_H_

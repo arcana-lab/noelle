@@ -23,8 +23,7 @@
 
 namespace arcana::noelle {
 
-bool LoopInvariantCodeMotion::hoistInvariantValues(
-    LoopDependenceInfo const &LDI) {
+bool LoopInvariantCodeMotion::hoistInvariantValues(LoopContent const &LDI) {
   auto modified = false;
   errs() << "LICM: Start\n";
 
@@ -433,7 +432,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(
 }
 
 std::vector<Instruction *> LoopInvariantCodeMotion::
-    getSourceDependenceInstructionsFrom(LoopDependenceInfo const &LDI,
+    getSourceDependenceInstructionsFrom(LoopContent const &LDI,
                                         Instruction &I) {
   std::vector<Instruction *> s;
 

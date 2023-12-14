@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_CORE_ALLOC_AA_MEMORYSITE_H_
+#define NOELLE_SRC_CORE_ALLOC_AA_MEMORYSITE_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 
@@ -75,3 +76,5 @@ struct MemoryReference {
   int32_t offsetInBits;
 };
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_ALLOC_AA_MEMORYSITE_H_

@@ -55,7 +55,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences(
     /*
      * Fetch all loops of the current function.
      */
-    auto allLoops = noelle.getLoops(F);
+    auto allLoops = noelle.getLoopContents(F);
 
     /*
      * Sort the loops by size.
@@ -180,7 +180,7 @@ bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependences(
  */
 bool Inliner::inlineCallsInvolvedInLoopCarriedDataDependencesWithinLoop(
     Function *F,
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     noelle::CallGraph *pcg,
     Noelle &noelle) {
   assert(pcg != nullptr);

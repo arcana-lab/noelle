@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_HEURISTICS_INVOCATIONLATENCY_H_
+#define NOELLE_SRC_TOOLS_HEURISTICS_INVOCATIONLATENCY_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCC.hpp"
@@ -63,3 +64,5 @@ private:
   std::unordered_map<SCC *, std::set<SCC *>> clonableParents;
 };
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_HEURISTICS_INVOCATIONLATENCY_H_

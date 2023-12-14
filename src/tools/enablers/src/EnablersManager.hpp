@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_ENABLERS_ENABLERSMANAGER_H_
+#define NOELLE_SRC_TOOLS_ENABLERS_ENABLERSMANAGER_H_
 
 #include "noelle/core/Noelle.hpp"
 #include "noelle/tools/LoopInvariantCodeMotion.hpp"
@@ -51,26 +52,25 @@ private:
   /*
    * Methods
    */
-  std::vector<LoopDependenceInfo *> getLoopsToParallelize(Module &M,
-                                                          Noelle &par);
+  std::vector<LoopContent *> getLoopsToParallelize(Module &M, Noelle &par);
 
-  bool applyEnablers(LoopDependenceInfo *LDI,
+  bool applyEnablers(LoopContent *LDI,
                      Noelle &par,
                      LoopTransformer &LoopTransformer,
                      LoopInvariantCodeMotion &loopInvariantCodeMotion,
                      SCEVSimplification &scevSimplification);
 
-  bool applyLoopWhilifier(LoopDependenceInfo *LDI,
+  bool applyLoopWhilifier(LoopContent *LDI,
                           Noelle &par,
                           LoopTransformer &LoopTransformer);
 
-  bool applyLoopDistribution(LoopDependenceInfo *LDI,
+  bool applyLoopDistribution(LoopContent *LDI,
                              Noelle &par,
                              LoopTransformer &LoopTransformer);
 
-  bool applyDevirtualizer(LoopDependenceInfo *LDI,
-                          Noelle &par,
-                          LoopTransformer &lt);
+  bool applyDevirtualizer(LoopContent *LDI, Noelle &par, LoopTransformer &lt);
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_ENABLERS_ENABLERSMANAGER_H_

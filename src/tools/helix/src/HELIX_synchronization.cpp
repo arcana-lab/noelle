@@ -24,7 +24,7 @@
 
 namespace arcana::noelle {
 
-void HELIX::addSynchronizations(LoopDependenceInfo *LDI,
+void HELIX::addSynchronizations(LoopContent *LDI,
                                 std::vector<SequentialSegment *> *sss,
                                 HELIXTask *helixTask) {
 

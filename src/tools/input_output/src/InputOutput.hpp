@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_INPUT_OUTPUT_INPUTOUTPUT_H_
+#define NOELLE_SRC_TOOLS_INPUT_OUTPUT_INPUTOUTPUT_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 
@@ -49,3 +50,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_INPUT_OUTPUT_INPUTOUTPUT_H_

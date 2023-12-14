@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_CORE_DG_SUBCFGS_H_
+#define NOELLE_SRC_CORE_DG_SUBCFGS_H_
 
 #include "llvm/IR/Module.h"
 #include "llvm/IR/BasicBlock.h"
@@ -68,3 +69,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_DG_SUBCFGS_H_

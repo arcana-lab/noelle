@@ -25,7 +25,7 @@
 namespace arcana::noelle {
 
 bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut(
-    LoopDependenceInfo const &LDI) {
+    LoopContent const &LDI) {
 
   bool modified = false;
 

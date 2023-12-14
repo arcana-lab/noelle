@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_BINARYREDUCTIONSCC_H_
+#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_BINARYREDUCTIONSCC_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/ReductionSCC.hpp"
@@ -65,3 +66,5 @@ protected:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_BINARYREDUCTIONSCC_H_

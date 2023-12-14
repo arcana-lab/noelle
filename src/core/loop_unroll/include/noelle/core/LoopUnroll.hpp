@@ -19,11 +19,12 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_CORE_LOOP_UNROLL_LOOPUNROLL_H_
+#define NOELLE_SRC_CORE_LOOP_UNROLL_LOOPUNROLL_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCC.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 
 namespace arcana::noelle {
 
@@ -37,7 +38,7 @@ public:
   /*
    * Fully unroll the loop.
    */
-  bool fullyUnrollLoop(LoopDependenceInfo const &LDI,
+  bool fullyUnrollLoop(LoopContent const &LDI,
                        LoopInfo &LI,
                        DominatorTree &DT,
                        ScalarEvolution &SE,
@@ -54,3 +55,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_LOOP_UNROLL_LOOPUNROLL_H_

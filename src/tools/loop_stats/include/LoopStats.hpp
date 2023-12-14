@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_LOOP_STATS_LOOPSTATS_H_
+#define NOELLE_SRC_TOOLS_LOOP_STATS_LOOPSTATS_H_
 
 #include "noelle/core/Noelle.hpp"
 
@@ -83,16 +84,14 @@ private:
   std::unordered_map<int, Stats *> statsByLoopAccordingToNoelle;
 
   void collectStatsForLoops(Noelle &noelle,
-                            std::vector<LoopDependenceInfo *> const &loops);
+                            std::vector<LoopContent *> const &loops);
 
   void collectStatsForLoop(Hot *profiles,
                            int id,
                            ScalarEvolution &SE,
                            PDG *loopDG,
                            Loop &llvmLoop);
-  void collectStatsForLoop(Hot *profiles,
-                           LoopDependenceInfo &LDI,
-                           Loop &llvmLoop);
+  void collectStatsForLoop(Hot *profiles, LoopContent &LDI, Loop &llvmLoop);
 
   void collectStatsOnLLVMSCCs(Hot *profiles, PDG *loopDG, Stats *statsForLoop);
   void collectStatsOnLLVMIVs(Hot *profiles,
@@ -103,21 +102,19 @@ private:
                                     Loop &llvmLoop,
                                     Stats *stats);
 
-  void collectStatsOnNoelleIVs(Hot *profiles,
-                               LoopDependenceInfo &LDI,
-                               Stats *stats);
+  void collectStatsOnNoelleIVs(Hot *profiles, LoopContent &LDI, Stats *stats);
   void collectStatsOnNoelleSCCs(Hot *profiles,
-                                LoopDependenceInfo &LDI,
+                                LoopContent &LDI,
                                 Stats *stats,
                                 Loop &llvmLoop);
   void collectStatsOnNoelleInvariants(Hot *profiles,
-                                      LoopDependenceInfo &LDI,
+                                      LoopContent &LDI,
                                       Stats *stats);
 
   void collectStatsOnSCCDAG(Hot *profiles,
                             SCCDAG *sccdag,
                             SCCDAGAttrs *sccdagAttrs,
-                            LoopDependenceInfo *ldi,
+                            LoopContent *ldi,
                             Stats *statsForLoop);
 
   void printPerLoopStats(Hot *profiles, Stats *stats);
@@ -125,3 +122,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_LOOP_STATS_LOOPSTATS_H_

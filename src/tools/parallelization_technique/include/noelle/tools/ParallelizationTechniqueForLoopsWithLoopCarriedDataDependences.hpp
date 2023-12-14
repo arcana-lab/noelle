@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_PARALLELIZATION_TECHNIQUE_PARALLELIZATIONTECHNIQUEFORLOOPSWITHLOOPCARRIEDDATADEPENDENCES_H_
+#define NOELLE_SRC_TOOLS_PARALLELIZATION_TECHNIQUE_PARALLELIZATIONTECHNIQUEFORLOOPSWITHLOOPCARRIEDDATADEPENDENCES_H_
 
 #include "noelle/core/SCCDAGPartition.hpp"
 #include "noelle/tools/ParallelizationTechnique.hpp"
@@ -36,8 +37,7 @@ public:
       Noelle &n,
       bool forceParallelization);
 
-  bool canBeAppliedToLoop(LoopDependenceInfo *LDI,
-                          Heuristics *h) const override;
+  bool canBeAppliedToLoop(LoopContent *LDI, Heuristics *h) const override;
 
   /*
    * Destructor.
@@ -54,14 +54,16 @@ protected:
   /*
    * Partition SCCDAG.
    */
-  void partitionSCCDAG(LoopDependenceInfo *LDI);
-  void partitionSCCDAG(LoopDependenceInfo *LDI,
+  void partitionSCCDAG(LoopContent *LDI);
+  void partitionSCCDAG(LoopContent *LDI,
                        std::function<bool(GenericSCC *scc)> skipSCC);
 
   void printSequentialCode(raw_ostream &stream,
                            const std::string &prefixString,
-                           LoopDependenceInfo *LDI,
+                           LoopContent *LDI,
                            const std::set<SCC *> &sequentialSCCs);
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_PARALLELIZATION_TECHNIQUE_PARALLELIZATIONTECHNIQUEFORLOOPSWITHLOOPCARRIEDDATADEPENDENCES_H_

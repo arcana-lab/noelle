@@ -19,12 +19,13 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_REPL_H_
+#define NOELLE_SRC_TOOLS_REPL_H_
 
 #include "noelle/core/Noelle.hpp"
-#include "noelle/core/SystemHeaders.hpp"
 #include <iostream>
 #include <utility>
+
 using std::string, std::map, std::vector;
 
 // define the base virtual class of ReplAction
@@ -216,7 +217,7 @@ protected:
   Noelle &noelle;
 
   Hot *profiles;
-  std::vector<llvm::noelle::LoopDependenceInfo *> *loops;
+  std::vector<llvm::noelle::LoopContent *> *loops;
 
   ReplParser parser;
   /// The Driver State
@@ -229,7 +230,7 @@ protected:
   int selectedLoopId = -1;
   // the selected information
   llvm::Function *selectedFunction; // TODO: not used yet
-  LoopDependenceInfo *selectedLoop;
+  LoopContent *selectedLoop;
   unique_ptr<PDG> selectedPDG;
   unique_ptr<SCCDAG> selectedSCCDAG;
 
@@ -239,7 +240,7 @@ protected:
   using DepIdReverseMap_t = map<DGEdge<Value, Value> *, unsigned>;
 
   // store the loopID
-  map<unsigned, LoopDependenceInfo *> loopIdMap;
+  map<unsigned, LoopContent *> loopIdMap;
 
   unique_ptr<InstIdMap_t> instIdMap;
   unique_ptr<InstIdReverseMap_t> instIdLookupMap;
@@ -342,7 +343,7 @@ public:
   // get all loops and assign them id based on hotness decrementally
   virtual void createLoopMap() {
     profiles = noelle.getProfiles();
-    loops = noelle.getLoops();
+    loops = noelle.getLoopContents();
     noelle.sortByHotness(*loops);
     unsigned loopId = 0;
     for (auto loop : *loops) {
@@ -390,3 +391,5 @@ public:
 };
 
 } // namespace Repl
+
+#endif // NOELLE_SRC_TOOLS_REPL_H_

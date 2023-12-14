@@ -19,10 +19,11 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_PARALLELIZATION_PLANNER_PLANNER_H_
+#define NOELLE_SRC_TOOLS_PARALLELIZATION_PLANNER_PLANNER_H_
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCDAG.hpp"
@@ -57,14 +58,13 @@ private:
    * Methods
    */
 
-  std::vector<LoopDependenceInfo *> getLoopsToParallelize(Module &M,
-                                                          Noelle &par);
+  std::vector<LoopContent *> getLoopsToParallelize(Module &M, Noelle &par);
 
   void removeLoopsNotWorthParallelizing(Noelle &noelle,
                                         Hot *profiles,
                                         LoopForest *f);
 
-  std::vector<LoopDependenceInfo *> selectTheOrderOfLoopsToParallelize(
+  std::vector<LoopContent *> selectTheOrderOfLoopsToParallelize(
       Noelle &noelle,
       Hot *profiles,
       noelle::LoopTree *tree,
@@ -84,3 +84,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_PARALLELIZATION_PLANNER_PLANNER_H_

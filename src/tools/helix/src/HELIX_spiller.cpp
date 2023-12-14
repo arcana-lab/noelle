@@ -25,7 +25,7 @@
 
 namespace arcana::noelle {
 
-void HELIX::spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
+void HELIX::spillLoopCarriedDataDependencies(LoopContent *LDI,
                                              DataFlowResult *reachabilityDFR,
                                              HELIXTask *helixTask) {
 
@@ -176,7 +176,7 @@ void HELIX::spillLoopCarriedDataDependencies(LoopDependenceInfo *LDI,
 }
 
 void HELIX::createLoadsAndStoresToSpilledLCD(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     DataFlowResult *reachabilityDFR,
     std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
     SpilledLoopCarriedDependence *spill,
@@ -224,7 +224,7 @@ void HELIX::createLoadsAndStoresToSpilledLCD(
 }
 
 void HELIX::insertStoresToSpilledLCD(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
     SpilledLoopCarriedDependence *spill,
     Value *spillEnvPtr) {
@@ -271,7 +271,7 @@ void HELIX::insertStoresToSpilledLCD(
 }
 
 void HELIX::defineFrontierForLoadsToSpilledLCD(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     DataFlowResult *reachabilityDFR,
     std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
     SpilledLoopCarriedDependence *spill,
@@ -422,7 +422,7 @@ void HELIX::defineFrontierForLoadsToSpilledLCD(
 }
 
 void HELIX::replaceUsesOfSpilledPHIWithLoads(
-    LoopDependenceInfo *LDI,
+    LoopContent *LDI,
     std::unordered_map<BasicBlock *, BasicBlock *> &cloneToOriginalBlockMap,
     SpilledLoopCarriedDependence *spill,
     Value *spillEnvPtr,

@@ -25,7 +25,7 @@
 using namespace llvm;
 using namespace arcana::noelle;
 
-void DSWP::printStageSCCs(LoopDependenceInfo *LDI) const {
+void DSWP::printStageSCCs(LoopContent *LDI) const {
   if (this->verbose == Verbosity::Disabled) {
     return;
   }
@@ -46,7 +46,7 @@ void DSWP::printStageSCCs(LoopDependenceInfo *LDI) const {
   return;
 }
 
-void DSWP::printStageQueues(LoopDependenceInfo *LDI) const {
+void DSWP::printStageQueues(LoopContent *LDI) const {
 
   /*
    * Check if we should print.
@@ -93,7 +93,7 @@ void DSWP::printStageQueues(LoopDependenceInfo *LDI) const {
   return;
 }
 
-void DSWP::printEnv(LoopDependenceInfo *LDI) const {
+void DSWP::printEnv(LoopContent *LDI) const {
 
   /*
    * Check if we should print.
@@ -127,7 +127,7 @@ void DSWP::printEnv(LoopDependenceInfo *LDI) const {
   return;
 }
 
-void DSWP::writeStageGraphsAsDot(LoopDependenceInfo &LDI) const {
+void DSWP::writeStageGraphsAsDot(LoopContent &LDI) const {
 
   DG<DGString> stageGraph;
   std::set<DGString *> elements;
@@ -202,7 +202,7 @@ void DSWP::writeStageGraphsAsDot(LoopDependenceInfo &LDI) const {
     delete elem;
 }
 
-void DSWP::writeStageQueuesAsDot(const LoopDependenceInfo &LDI) const {
+void DSWP::writeStageQueuesAsDot(const LoopContent &LDI) const {
 
   DG<DGString> queueGraph;
   std::set<DGString *> elements;
@@ -240,8 +240,7 @@ void DSWP::writeStageQueuesAsDot(const LoopDependenceInfo &LDI) const {
     delete elem;
 }
 
-void DSWP::printStageClonedValues(const LoopDependenceInfo &LDI,
-                                  int taskIndex) const {
+void DSWP::printStageClonedValues(const LoopContent &LDI, int taskIndex) const {
   raw_ostream &stream = errs();
   auto task = (DSWPTask *)this->tasks[taskIndex];
 

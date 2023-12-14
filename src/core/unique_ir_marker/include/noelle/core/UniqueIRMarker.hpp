@@ -1,7 +1,7 @@
-#pragma once
+#ifndef NOELLE_SRC_CORE_UNIQUE_IR_MARKER_UNIQUEIRMARKER_H_
+#define NOELLE_SRC_CORE_UNIQUE_IR_MARKER_UNIQUEIRMARKER_H_
 
 #include "noelle/core/SystemHeaders.hpp"
-
 #include "noelle/core/UniqueIRConstants.hpp"
 #include "noelle/core/UniqueIRMarkerReader.hpp"
 
@@ -36,3 +36,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_UNIQUE_IR_MARKER_UNIQUEIRMARKER_H_

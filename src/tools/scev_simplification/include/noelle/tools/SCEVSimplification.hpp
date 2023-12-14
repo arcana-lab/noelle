@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,11 +19,12 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_SCEV_SIMPLIFICATION_SCEVSIMPLIFICATION_H_
+#define NOELLE_SRC_TOOLS_SCEV_SIMPLIFICATION_SCEVSIMPLIFICATION_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Noelle.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 
 namespace arcana::noelle {
 
@@ -31,16 +32,16 @@ class SCEVSimplification {
 public:
   SCEVSimplification(Noelle &noelle);
 
-  bool simplifyIVRelatedSCEVs(LoopDependenceInfo const &LDI);
+  bool simplifyIVRelatedSCEVs(LoopContent const &LDI);
 
   bool simplifyIVRelatedSCEVs(LoopTree *rootLoopNode,
                               InvariantManager *invariantManager,
                               InductionVariableManager *ivManager);
 
-  bool simplifyLoopGoverningIVGuards(LoopDependenceInfo const &LDI,
+  bool simplifyLoopGoverningIVGuards(LoopContent const &LDI,
                                      ScalarEvolution &SE);
 
-  bool simplifyConstantPHIs(LoopDependenceInfo const &LDI);
+  bool simplifyConstantPHIs(LoopContent const &LDI);
 
 private:
   const SCEV *getOffsetBetween(ScalarEvolution &SE,
@@ -104,3 +105,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_SCEV_SIMPLIFICATION_SCEVSIMPLIFICATION_H_

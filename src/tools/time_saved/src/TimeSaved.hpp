@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_TOOLS_TIME_SAVED_TIMESAVED_H_
+#define NOELLE_SRC_TOOLS_TIME_SAVED_TIMESAVED_H_
 
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
@@ -41,7 +42,7 @@
 #include "llvm/IR/IRBuilder.h"
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCDAG.hpp"
@@ -76,7 +77,7 @@ private:
    * Methods
    */
 
-  std::vector<LoopDependenceInfo *> selectTheOrderOfLoopsToParallelize(
+  std::vector<LoopContent *> selectTheOrderOfLoopsToParallelize(
       Noelle &noelle,
       Hot *profiles,
       noelle::LoopTree *tree,
@@ -96,3 +97,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_TOOLS_TIME_SAVED_TIMESAVED_H_

@@ -33,9 +33,8 @@ SCEVSimplification::SCEVSimplification(Noelle &noelle) : noelle{ noelle } {
   this->intTypeForPtrSize = IntegerType::get(cxt, this->ptrSizeInBits);
 }
 
-bool SCEVSimplification::simplifyLoopGoverningIVGuards(
-    LoopDependenceInfo const &LDI,
-    ScalarEvolution &SE) {
+bool SCEVSimplification::simplifyLoopGoverningIVGuards(LoopContent const &LDI,
+                                                       ScalarEvolution &SE) {
 
   if (noelle.getVerbosity() != Verbosity::Disabled) {
     errs()
@@ -253,7 +252,7 @@ const SCEV *SCEVSimplification::getOffsetBetween(ScalarEvolution &SE,
   return offset;
 }
 
-bool SCEVSimplification::simplifyIVRelatedSCEVs(LoopDependenceInfo const &LDI) {
+bool SCEVSimplification::simplifyIVRelatedSCEVs(LoopContent const &LDI) {
   auto rootLoop = LDI.getLoopHierarchyStructures();
   auto invariantManager = LDI.getInvariantManager();
   auto ivManager = LDI.getInductionVariableManager();
@@ -1129,7 +1128,7 @@ bool SCEVSimplification::isPartOfShlShrTruncationPair(Instruction *I) const {
   return true;
 }
 
-bool SCEVSimplification::simplifyConstantPHIs(LoopDependenceInfo const &LDI) {
+bool SCEVSimplification::simplifyConstantPHIs(LoopContent const &LDI) {
   auto modified = false;
 
   /*

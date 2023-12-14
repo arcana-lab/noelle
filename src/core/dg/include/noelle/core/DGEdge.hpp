@@ -19,7 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#pragma once
+#ifndef NOELLE_SRC_CORE_DG_DGEDGE_H_
+#define NOELLE_SRC_CORE_DG_DGEDGE_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DGNode.hpp"
@@ -350,3 +351,5 @@ bool DGEdge<T, SubT>::isLoopCarriedDependence() const {
 }
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_DG_DGEDGE_H_

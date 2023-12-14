@@ -25,7 +25,7 @@
 
 namespace arcana::noelle {
 
-void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
+void HELIX::rewireLoopForIVsToIterateNthIterations(LoopContent *LDI) {
 
   /*
    * Fetch the loop environment.
@@ -485,7 +485,7 @@ void HELIX::rewireLoopForIVsToIterateNthIterations(LoopDependenceInfo *LDI) {
   }
 }
 
-void HELIX::rewireLoopForPeriodicVariables(LoopDependenceInfo *LDI) {
+void HELIX::rewireLoopForPeriodicVariables(LoopContent *LDI) {
 
   /*
    * Fetch the loop environment.

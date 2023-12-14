@@ -21,7 +21,7 @@
  */
 #include "Repl.hpp"
 #include "noelle/core/Noelle.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
 

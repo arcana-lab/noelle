@@ -20,7 +20,8 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#pragma once
+#ifndef NOELLE_SRC_CORE_MEMORY_CLONING_ANALYSIS_MEMORYCLONINGANALYSIS_H_
+#define NOELLE_SRC_CORE_MEMORY_CLONING_ANALYSIS_MEMORYCLONINGANALYSIS_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"
@@ -47,3 +48,5 @@ private:
 };
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_MEMORY_CLONING_ANALYSIS_MEMORYCLONINGANALYSIS_H_
