@@ -42,6 +42,8 @@ public:
   virtual CallStrength canThisFunctionBeACallee(CallBase *caller,
                                                 Function &potentialCallee);
 
+  virtual ~CallGraphAnalysis();
+
 private:
   std::string analysisName;
 };
