@@ -32,7 +32,7 @@
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
-#include "noelle/core/LoopDependenceInfo.hpp"
+#include "noelle/core/LoopContent.hpp"
 #include "noelle/core/Noelle.hpp"
 #include "noelle/tools/LoopInvariantCodeMotion.hpp"
 
@@ -67,7 +67,7 @@ private:
   Module *M;
   Function *mainF;
   PDG *fdg;
-  LoopDependenceInfo *ldi;
+  LoopContent *ldi;
   LoopInvariantCodeMotion *licm;
 };
 } // namespace arcana::noelle

@@ -118,16 +118,15 @@ bool SCCDAGAttrTestSuite::runOnModule(Module &M) {
   auto pdg = getAnalysis<PDGAnalysis>().getPDG();
   this->fdg = pdg->createFunctionSubgraph(*mainFunction);
   LDGAnalysis ldg{};
-  this->ldi =
-      new LoopDependenceInfo(ldg,
-                             this->noelle->getCompilationOptionsManager(),
-                             fdg,
-                             loopNode,
-                             topLoop,
-                             *DS,
-                             *SE,
-                             true,
-                             true);
+  this->ldi = new LoopContent(ldg,
+                              this->noelle->getCompilationOptionsManager(),
+                              fdg,
+                              loopNode,
+                              topLoop,
+                              *DS,
+                              *SE,
+                              true,
+                              true);
   auto sccManager = this->ldi->getSCCManager();
 
   this->sccdag = sccManager->getSCCDAG();
