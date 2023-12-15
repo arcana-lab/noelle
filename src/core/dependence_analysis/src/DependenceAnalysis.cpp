@@ -78,4 +78,6 @@ bool DependenceAnalysis::canThisDependenceBeLoopCarried(
   return true;
 }
 
+DependenceAnalysis::~DependenceAnalysis() {}
+
 } // namespace arcana::noelle

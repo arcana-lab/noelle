@@ -67,6 +67,8 @@ public:
   virtual bool canThisDependenceBeLoopCarried(DGEdge<Value, Value> *dep,
                                               LoopStructure &loop);
 
+  virtual ~DependenceAnalysis();
+
 private:
   std::string analysisName;
 };

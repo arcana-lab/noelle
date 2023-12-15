@@ -44,4 +44,6 @@ CallStrength CallGraphAnalysis::canThisFunctionBeACallee(
   return CallStrength::CS_MAY_EXIST;
 }
 
+CallGraphAnalysis::~CallGraphAnalysis() {}
+
 } // namespace arcana::noelle
