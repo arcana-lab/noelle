@@ -101,8 +101,7 @@ bool LICMTestSuite::runOnModule(Module &M) {
   DominatorSummary DS{ DT, PDT };
   auto om = noelle.getCompilationOptionsManager();
   LDGAnalysis ldg{};
-  this->ldi =
-      new LoopDependenceInfo(ldg, om, fdg, loopNode, l, DS, SE, true, false);
+  this->ldi = new LoopContent(ldg, om, fdg, loopNode, l, DS, SE, true, false);
   this->licm = new LoopInvariantCodeMotion(noelle);
 
   // PDGPrinter pdgPrinter;

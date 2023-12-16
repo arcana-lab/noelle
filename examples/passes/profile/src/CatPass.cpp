@@ -7,7 +7,7 @@
 
 #include "noelle/core/Noelle.hpp"
 
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 namespace {
 
@@ -69,7 +69,7 @@ struct CAT : public ModulePass {
     /*
      * Use the profiles.
      */
-    auto loops = noelle.getLoops();
+    auto loops = noelle.getLoopContents();
     for (auto loop : *loops) {
 
       /*

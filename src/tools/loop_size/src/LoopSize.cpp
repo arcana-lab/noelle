@@ -36,7 +36,7 @@ bool LoopSize::runOnModule(Module &M) {
   /*
    * Fetch the forest of loops of the program being compiled.
    */
-  auto forest = noelle.getProgramLoopsNestingForest();
+  auto forest = noelle.getLoopNestingForest();
 
   /*
    * Compute the code size.

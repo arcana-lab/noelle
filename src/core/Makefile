@@ -1,7 +1,8 @@
 UTILS=transformations basic_utilities types_manager globals_manager functions_manager constants_manager compilation_options_manager linker dominators task loop_induction_variables loop_carried_dependences may_points_to_analysis memory_cloning_analysis loop_scc_attributes loop_sccdag_attributes loop_sccdag_normalizer ldg_analysis loop_content loop_nesting_graph architecture metadata_cleaner call_graph scheduler metadata_manager loop_transformer alias_analysis_engine codesize
 ANALYSIS=dg pdg sccdag pdg_printer pdg_analysis talkdown alloc_aa dataflow loop_structure loop_environment loop_forest loop_invariants dependence_analysis call_graph_analysis
 ENABLERS=loop_distribution loop_unroll loop_whilifier outliner cfg_analysis cfg_transformer
-ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) loop_metadata hotprofiler unique_ir_marker noelle scripts
+TOOLS=noelle_config
+ALL=$(UTILS) $(ANALYSIS) $(ENABLERS) loop_metadata hotprofiler unique_ir_marker noelle $(TOOLS) scripts
 
 all: $(ALL)
 
@@ -162,6 +163,9 @@ metadata_cleaner:
 	cd $@ ; ../../scripts/run_me.sh
 
 codesize:
+	cd $@ ; ../../scripts/run_me.sh
+
+noelle_config:
 	cd $@ ; ../../scripts/run_me.sh
 
 clean:

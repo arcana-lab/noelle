@@ -90,7 +90,7 @@ private:
   PDG *fdg;
   SCCDAG *sccdag;
   SCCDAGAttrs *attrs;
-  LoopDependenceInfo *ldi;
+  LoopContent *ldi;
   Noelle *noelle;
 };
 } // namespace arcana::noelle

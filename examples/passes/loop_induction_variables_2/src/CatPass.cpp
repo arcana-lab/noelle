@@ -6,7 +6,7 @@
 
 #include "noelle/core/Noelle.hpp"
 
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 namespace {
 
@@ -50,7 +50,7 @@ struct CAT : public ModulePass {
      */
     noelle.sortByHotness(*loops);
     auto hottestLoopLS = loops->front();
-    auto hottestLoop = noelle.getLoop(hottestLoopLS);
+    auto hottestLoop = noelle.getLoopContent(hottestLoopLS);
     auto entryInst = hottestLoopLS->getEntryInstruction();
     auto hottestLoopNode = hottestLoop->getLoopHierarchyStructures();
 

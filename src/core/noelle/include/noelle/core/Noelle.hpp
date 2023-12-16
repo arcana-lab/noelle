@@ -169,8 +169,6 @@ public:
 
   void sortByStaticNumberOfInstructions(std::vector<LoopContent *> &loops);
 
-  LoopForest *getProgramLoopsNestingForest(void);
-
   LoopForest *organizeLoopsInTheirNestingForest(
       std::vector<LoopStructure *> const &loops);
 
