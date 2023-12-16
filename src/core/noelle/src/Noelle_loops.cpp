@@ -1471,21 +1471,6 @@ void Noelle::filterOutLoops(noelle::LoopForest *f,
   return;
 }
 
-LoopForest *Noelle::getProgramLoopsNestingForest(void) {
-
-  /*
-   * Fetch all the loops
-   */
-  auto allLoops = this->getLoopStructures();
-
-  /*
-   * Organize the loops into a forest
-   */
-  auto forest = this->organizeLoopsInTheirNestingForest(*allLoops);
-
-  return forest;
-}
-
 LoopForest *Noelle::organizeLoopsInTheirNestingForest(
     std::vector<LoopStructure *> const &loops) {
 
