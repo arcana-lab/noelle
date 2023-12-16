@@ -7,7 +7,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/Task.hpp"
 
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 namespace {
 
@@ -58,7 +58,7 @@ struct CAT : public ModulePass {
      * Fetch the hottest loop that has a single successor.
      */
     noelle.sortByHotness(*loops);
-    LoopDependenceInfo *hottestLoop = nullptr;
+    LoopContent *hottestLoop = nullptr;
     for (auto tmpLoop : *loops) {
 
       /*
@@ -70,7 +70,7 @@ struct CAT : public ModulePass {
         /*
          * This example only handles loops with no live-outs.
          */
-        auto tmpLoopContent = noelle.getLoop(tmpLoop);
+        auto tmpLoopContent = noelle.getLoopContent(tmpLoop);
         auto env = tmpLoopContent->getEnvironment();
         if (env->getNumberOfLiveOuts() == 0) {
           hottestLoop = tmpLoopContent;

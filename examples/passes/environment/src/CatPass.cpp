@@ -8,7 +8,7 @@
 
 #include "noelle/core/Noelle.hpp"
 
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 namespace {
 
@@ -38,7 +38,7 @@ struct CAT : public ModulePass {
      * fetch the loops with all their abstractions
      * (e.g., loop dependence graph, sccdag)
      */
-    auto forest = noelle.getProgramLoopsNestingForest();
+    auto forest = noelle.getLoopNestingForest();
 
     /*
      * Print loop induction variables and invariant.
@@ -64,7 +64,7 @@ struct CAT : public ModulePass {
         /*
          * Fetch the LoopDependenceInfo
          */
-        auto loop = noelle.getLoop(LS);
+        auto loop = noelle.getLoopContent(LS);
 
         /*
          * Fetch the loop environment

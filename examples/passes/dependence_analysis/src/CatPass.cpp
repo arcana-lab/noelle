@@ -7,7 +7,7 @@
 
 #include "noelle/core/Noelle.hpp"
 
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 namespace {
 
@@ -111,7 +111,7 @@ struct CAT : public ModulePass {
       errs() << "Example:   Fetch the LDG of the hottest loop\n";
       noelle.sortByHotness(*allLoops);
       auto hottestLoop = (*allLoops)[0];
-      auto ldi = noelle.getLoop(hottestLoop);
+      auto ldi = noelle.getLoopContent(hottestLoop);
     }
 
     errs() << "Example: Exit\n";

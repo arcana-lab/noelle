@@ -7,18 +7,18 @@
 
 #include "noelle/core/Noelle.hpp"
 
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 namespace {
 
-class MyCallGraphAnalysis : public noelle::CallGraphAnalysis {
+class MyCallGraphAnalysis : public arcana::noelle::CallGraphAnalysis {
 public:
   MyCallGraphAnalysis()
     : CallGraphAnalysis("Example of call graph analysis"),
       c{ 0 } {}
-  
+
   CallStrength canThisFunctionBeACallee(CallBase *caller,
-                                        Function &potentialCallee) override{
+                                        Function &potentialCallee) override {
     auto f = caller->getFunction();
     errs() << this->prefix << "canThereBeAMemoryDataDependence: Function "
            << f->getName() << "\n";

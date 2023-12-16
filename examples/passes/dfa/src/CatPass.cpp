@@ -7,7 +7,7 @@
 
 #include "noelle/core/Noelle.hpp"
 
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 namespace {
 

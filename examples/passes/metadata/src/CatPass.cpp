@@ -13,7 +13,7 @@
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 #include "noelle/core/MemoryClonableSCC.hpp"
 
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 namespace {
 

@@ -10,7 +10,7 @@
 #include "noelle/core/Noelle.hpp"
 #include "noelle/tools/DOALL.hpp"
 
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 namespace {
 
@@ -37,7 +37,7 @@ struct CAT : public ModulePass {
     std::string indent = std::string(level * 3, ic);
     std::string spacedent = std::string(level * 3, ' ');
     auto LS = node->getLoop();
-    auto LDI = noelle->getLoop(LS);
+    auto LDI = noelle->getLoopContent(LS);
     bool doallable = doall.canBeAppliedToLoop(LDI, nullptr);
     // bool isOMP = LDI->isOMPLoop();
 
@@ -87,7 +87,7 @@ struct CAT : public ModulePass {
     }
     allNodes.erase(node);
 
-    for (auto child : node->getSrcEdges()) {
+    for (auto child : node->getOutgoingEdges()) {
       bool must = child->isAMustEdge();
       printGraph(child->getChild(),
                  level + 1,
@@ -112,6 +112,7 @@ struct CAT : public ModulePass {
     auto &noelle = getAnalysis<Noelle>();
     auto profiles = noelle.getProfiles();
     DOALL doall{ noelle };
+
     /*
      * Fetch the loop nesting graph
      */
@@ -120,7 +121,7 @@ struct CAT : public ModulePass {
 
     auto allNodes = lng->getLoopNodes();
     for (auto parent : lng->getLoopNodes()) {
-      if (parent->getDstEdges().size() == 0) {
+      if (parent->getIncomingEdges().size() == 0) {
         rootNodes.push_back(parent);
       }
     }

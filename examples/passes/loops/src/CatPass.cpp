@@ -13,7 +13,7 @@
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 #include "noelle/core/MemoryClonableSCC.hpp"
 
-using namespace llvm::noelle;
+using namespace arcana::noelle;
 
 namespace {
 
@@ -53,7 +53,7 @@ struct CAT : public ModulePass {
       /*
        * Fetch the LoopDependenceInfo
        */
-      auto loop = noelle.getLoop(LS);
+      auto loop = noelle.getLoopContent(LS);
       auto loopNode = loop->getLoopHierarchyStructures();
 
       /*
@@ -118,7 +118,7 @@ struct CAT : public ModulePass {
       /*
        * Get the LoopDependenceInfo
        */
-      auto ldi = noelle.getLoop(l);
+      auto ldi = noelle.getLoopContent(l);
     }
 
     return false;
