@@ -46,9 +46,6 @@ MDNode *PDGAnalysis::getEdgeMetadata(
     MDNode::get(
         C,
         MDString::get(C, edge->isLoopCarriedDependence() ? "true" : "false")),
-    MDNode::get(
-        C,
-        MDString::get(C, edge->isRemovableDependence() ? "true" : "false")),
     getSubEdgesMetadata(edge, C, nodeIDMap)
   };
 
@@ -78,9 +75,6 @@ MDNode *PDGAnalysis::getSubEdgesMetadata(
       MDNode::get(
           C,
           MDString::get(C, edge->isLoopCarriedDependence() ? "true" : "false")),
-      MDNode::get(
-          C,
-          MDString::get(C, edge->isRemovableDependence() ? "true" : "false")),
     };
     subEdgesVec.push_back(MDNode::get(C, subEdgeM));
   }
@@ -163,15 +157,15 @@ void PDGAnalysis::constructEdgesFromMetadata(
   /*
    * Construct edges and set attributes
    */
-  if (MDNode *edgesM = F.getMetadata("noelle.pdg.edges")) {
+  if (auto edgesM = F.getMetadata("noelle.pdg.edges")) {
     for (auto &operand : edgesM->operands()) {
-      if (MDNode *edgeM = dyn_cast<MDNode>(operand)) {
+      if (auto edgeM = dyn_cast<MDNode>(operand)) {
         auto edge = constructEdgeFromMetadata(pdg, edgeM, IDNodeMap);
 
         /*
          * Construct subEdges and set attributes
          */
-        if (MDNode *subEdgesM = dyn_cast<MDNode>(edgeM->getOperand(8))) {
+        if (auto subEdgesM = dyn_cast<MDNode>(edgeM->getOperand(7))) {
           for (auto &subOperand : subEdgesM->operands()) {
             if (MDNode *subEdgeM = dyn_cast<MDNode>(subOperand)) {
               DGEdge<Value, Value> *subEdge =
@@ -222,9 +216,6 @@ DGEdge<Value, Value> *PDGAnalysis::constructEdgeFromMetadata(
                   ->getString()
               == "true",
           cast<MDString>(cast<MDNode>(edgeM->getOperand(6))->getOperand(0))
-                  ->getString()
-              == "true",
-          cast<MDString>(cast<MDNode>(edgeM->getOperand(7))->getOperand(0))
                   ->getString()
               == "true");
     }

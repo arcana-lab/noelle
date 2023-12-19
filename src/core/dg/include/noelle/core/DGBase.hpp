@@ -23,7 +23,6 @@
 #define NOELLE_SRC_CORE_DG_DGBASE_H_
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Assumptions.hpp"
 #include "noelle/core/DGNode.hpp"
 #include "noelle/core/DGEdge.hpp"
 

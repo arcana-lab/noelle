@@ -66,7 +66,6 @@ bool PDGAnalysis::compareEdges(
           && edge1->isControlDependence() == edge2->isControlDependence()
           && edge1->isLoopCarriedDependence()
                  == edge2->isLoopCarriedDependence()
-          && edge1->isRemovableDependence() == edge2->isRemovableDependence()
           && edge1->dataDependenceType() == edge2->dataDependenceType()) {
         match = true;
         break;
