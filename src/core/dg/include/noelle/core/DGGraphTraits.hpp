@@ -23,7 +23,6 @@
 #define NOELLE_SRC_CORE_DG_DGGRAPHTRAITS_H_
 
 #include "noelle/core/DGBase.hpp"
-#include "noelle/core/PDG.hpp"
 #include "noelle/core/SubCFGs.hpp"
 
 namespace arcana::noelle {
@@ -246,22 +245,6 @@ namespace llvm {
  * Specializations for GraphTraits and DOTGraphTraits using GraphTraitsBase and
  * ElementTraits
  */
-
-template <>
-struct DOTGraphTraits<DGGraphWrapper<PDG, Value> *>
-  : public ElementTraits<DGGraphWrapper<PDG, Value>,
-                         DGNodeWrapper<Value>,
-                         Value> {
-  DOTGraphTraits(bool isSimple = false)
-    : ElementTraits<DGGraphWrapper<PDG, Value>, DGNodeWrapper<Value>, Value>(
-        isSimple) {}
-};
-template <>
-struct GraphTraits<DGGraphWrapper<PDG, Value> *>
-  : public GraphTraitsBase<DGGraphWrapper<PDG, Value>,
-                           DGNodeWrapper<Value>,
-                           Value> {};
-
 template <>
 struct DOTGraphTraits<DGGraphWrapper<DG<DGString>, DGString> *>
   : public ElementTraits<DGGraphWrapper<DG<DGString>, DGString>,

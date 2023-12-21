@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Yian Su, Simone Campanoni
+ * Copyright 2016 - 2023  Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +23,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "PDGStats.hpp"
 
-using namespace llvm;
-using namespace arcana::noelle;
+namespace arcana::noelle {
 
 bool PDGStats::runOnModule(Module &M) {
 
@@ -369,3 +368,5 @@ void PDGStats::analyzeDependence(DGEdge<Value, Value> *edge) {
 PDGStats::~PDGStats() {
   return;
 }
+
+} // namespace arcana::noelle

@@ -12,6 +12,7 @@ add_subdirectory(src)
 install(
   FILES
   include/noelle/core/PDG.hpp
+  include/noelle/core/PDGTraits.hpp
   DESTINATION 
   include/noelle/core
   )

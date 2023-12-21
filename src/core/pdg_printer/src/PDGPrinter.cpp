@@ -34,9 +34,7 @@
 #include "llvm/Support/GraphWriter.h"
 #include "llvm/Support/DOTGraphTraits.h"
 
-#include <set>
-#include <queue>
-
+#include "noelle/core/PDGTraits.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/SCCDAGGraphTraits.hpp"
