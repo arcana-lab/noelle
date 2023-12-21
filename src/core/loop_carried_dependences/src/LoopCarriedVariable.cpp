@@ -129,7 +129,7 @@ LoopCarriedVariable::LoopCarriedVariable(const LoopStructure &loop,
     }
 
     for (auto edge : node->getOutgoingEdges()) {
-      if (!edge->isControlDependence())
+      if (!isa<ControlDependence<Value, Value>>(edge))
         continue;
 
       /*
@@ -273,7 +273,7 @@ PDG *LoopCarriedVariable::produceDataAndMemoryOnlyDGFromVariableDG(
     auto node = nodePair.second;
     auto producesControlDependency = false;
     for (auto edge : node->getOutgoingEdges()) {
-      if (edge->isControlDependence()) {
+      if (isa<ControlDependence<Value, Value>>(edge)){
         producesControlDependency = true;
         break;
       }

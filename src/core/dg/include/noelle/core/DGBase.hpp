@@ -25,6 +25,9 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DGNode.hpp"
 #include "noelle/core/DGEdge.hpp"
+#include "noelle/core/DataDependence.hpp"
+#include "noelle/core/ControlDependence.hpp"
+#include "noelle/core/UndefinedDependence.hpp"
 
 namespace arcana::noelle {
 
@@ -148,7 +151,10 @@ public:
   DGNode<T> *fetchNode(T *theT);
   const DGNode<T> *fetchConstNode(T *theT) const;
 
-  DGEdge<T, T> *addEdge(T *from, T *to);
+  DGEdge<T, T> *addVariableDataDependenceEdge(T *from, T *to);
+  DGEdge<T, T> *addMemoryDataDependenceEdge(T *from, T *to);
+  DGEdge<T, T> *addControlDependenceEdge(T *from, T *to);
+  DGEdge<T, T> *addUndefinedDependenceEdge(T *from, T *to);
   std::unordered_set<DGEdge<T, T> *> fetchEdges(DGNode<T> *From, DGNode<T> *To);
   DGEdge<T, T> *copyAddEdge(DGEdge<T, T> &edgeToCopy);
 
@@ -252,10 +258,43 @@ const DGNode<T> *DG<T>::fetchConstNode(T *theT) const {
 }
 
 template <class T>
-DGEdge<T, T> *DG<T>::addEdge(T *from, T *to) {
+DGEdge<T, T> *DG<T>::addVariableDataDependenceEdge(T *from, T *to) {
   auto fromNode = this->fetchNode(from);
   auto toNode = this->fetchNode(to);
-  auto edge = new DGEdge<T, T>(fromNode, toNode);
+  auto edge = new DataDependence<T, T>(DGEdge<T,T>::DependenceKind::VARIABLE_DEPENDENCE, fromNode, toNode);
+  allEdges.insert(edge);
+  fromNode->addOutgoingEdge(edge);
+  toNode->addIncomingEdge(edge);
+  return edge;
+}
+
+template <class T>
+DGEdge<T, T> *DG<T>::addMemoryDataDependenceEdge(T *from, T *to) {
+  auto fromNode = this->fetchNode(from);
+  auto toNode = this->fetchNode(to);
+  auto edge = new DataDependence<T, T>(DGEdge<T,T>::DependenceKind::MEMORY_DEPENDENCE, fromNode, toNode);
+  allEdges.insert(edge);
+  fromNode->addOutgoingEdge(edge);
+  toNode->addIncomingEdge(edge);
+  return edge;
+}
+
+template <class T>
+DGEdge<T, T> *DG<T>::addControlDependenceEdge(T *from, T *to) {
+  auto fromNode = this->fetchNode(from);
+  auto toNode = this->fetchNode(to);
+  auto edge = new ControlDependence<T, T>(fromNode, toNode);
+  allEdges.insert(edge);
+  fromNode->addOutgoingEdge(edge);
+  toNode->addIncomingEdge(edge);
+  return edge;
+}
+
+template <class T>
+DGEdge<T, T> *DG<T>::addUndefinedDependenceEdge(T *from, T *to){
+  auto fromNode = this->fetchNode(from);
+  auto toNode = this->fetchNode(to);
+  auto edge = new UndefinedDependence<T, T>(fromNode, toNode);
   allEdges.insert(edge);
   fromNode->addOutgoingEdge(edge);
   toNode->addIncomingEdge(edge);
@@ -278,7 +317,14 @@ std::unordered_set<DGEdge<T, T> *> DG<T>::fetchEdges(DGNode<T> *From,
 
 template <class T>
 DGEdge<T, T> *DG<T>::copyAddEdge(DGEdge<T, T> &edgeToCopy) {
-  auto edge = new DGEdge<T, T>(edgeToCopy);
+  DGEdge<T, T> *edge = nullptr;
+  if (isa<ControlDependence<T, T>>(&edgeToCopy)){
+    auto edgeToCopyAsCD = cast<ControlDependence<T, T>>(edgeToCopy);
+    edge = new ControlDependence<T, T>(edgeToCopyAsCD);
+  } else {
+    auto edgeToCopyAsDD = cast<DataDependence<T, T>>(edgeToCopy);
+    edge = new DataDependence<T, T>(edgeToCopyAsDD);
+  }
   allEdges.insert(edge);
 
   /*

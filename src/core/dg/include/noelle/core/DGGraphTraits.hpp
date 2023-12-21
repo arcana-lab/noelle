@@ -23,7 +23,6 @@
 #define NOELLE_SRC_CORE_DG_DGGRAPHTRAITS_H_
 
 #include "noelle/core/DGBase.hpp"
-#include "noelle/core/PDG.hpp"
 #include "noelle/core/SubCFGs.hpp"
 
 namespace arcana::noelle {
@@ -172,9 +171,11 @@ struct ElementTraitsBase : public DefaultDOTGraphTraits {
     const std::string varColor = "color=black";
     std::string attrsStr;
     raw_string_ostream ros(attrsStr);
-    ros << (edge->isControlDependence()
-                ? cntColor
-                : (edge->isMemoryDependence() ? memColor : varColor));
+    if (isa<ControlDependence<T, T>>(edge)){
+      ros << cntColor;
+    } else {
+      ros << (edge->isMemoryDependence() ? memColor : varColor);
+    }
     if (edge->isLoopCarriedDependence())
       ros << ", penwidth=2";
     if (dg->isExternal(edge->getSrc()) || dg->isExternal(edge->getDst()))

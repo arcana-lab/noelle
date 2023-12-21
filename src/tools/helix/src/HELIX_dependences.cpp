@@ -54,15 +54,9 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
 
   auto copyEdgeUsingTaskClonedValues =
       [&](DGEdge<Value, Value> *originalEdge) -> void {
-    DGEdge<Value, Value> edgeToPointToClones{ *originalEdge };
 
     /*
-     * Loop carry dependencies will be recomputed
-     */
-    edgeToPointToClones.setLoopCarried(false);
-
-    /*
-     * Add the edge to the task internal dependence graph
+     * Fetch the clones of the instructions related to @originalEdge that are in the task.
      */
     auto cloneOutgoingInst = helixTask->getCloneOfOriginalInstruction(
         cast<Instruction>(originalEdge->getSrc()));
@@ -74,8 +68,29 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
     assert(cloneOutgoingNode != nullptr);
     auto cloneIncomingNode = taskFunctionDG->fetchNode(cloneIncomingInst);
     assert(cloneIncomingNode != nullptr);
-    edgeToPointToClones.setNodePair(cloneOutgoingNode, cloneIncomingNode);
-    taskFunctionDG->copyAddEdge(edgeToPointToClones);
+
+    /*
+     * Allocate the new dependence within the task to be the clone of @originalEdge.
+     */
+    DGEdge<Value, Value> *edgeToPointToClones = nullptr;
+    if (isa<ControlDependence<Value, Value>>(originalEdge)){
+      auto originalEdgeAsCD = cast<ControlDependence<Value, Value>>(originalEdge);
+      edgeToPointToClones = new ControlDependence<Value, Value>(*originalEdgeAsCD);
+    } else {
+      auto originalEdgeAsDD = cast<DataDependence<Value, Value>>(originalEdge);
+      edgeToPointToClones = new DataDependence<Value, Value>(*originalEdgeAsDD);
+    }
+    edgeToPointToClones->setNodePair(cloneOutgoingNode, cloneIncomingNode);
+
+    /*
+     * Loop carry dependencies will be recomputed
+     */
+    edgeToPointToClones->setLoopCarried(false);
+
+    /*
+     * Add the edge to the task internal dependence graph
+     */
+    taskFunctionDG->copyAddEdge(*edgeToPointToClones);
   };
 
   /*
@@ -91,7 +106,7 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
     /*
      * We only care about instructions that can generate memory dependences.
      */
-    if (true && (!isa<StoreInst>(value)) && (!isa<LoadInst>(value))
+    if ((!isa<StoreInst>(value)) && (!isa<LoadInst>(value))
         && (!isa<CallInst>(value))) {
       continue;
     }
@@ -229,8 +244,7 @@ static void constructEdgesFromControlForFunction(
         }
         auto controlTerminator = predBB->getTerminator();
         for (auto &I : B) {
-          auto edge = pdg->addEdge((Value *)controlTerminator, (Value *)&I);
-          edge->setControl(true);
+          pdg->addControlDependence(controlTerminator, &I);
         }
       }
     }

@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/LoopGoverningInductionVariable.hpp"
+#include "noelle/core/DataDependence.hpp"
 
 namespace arcana::noelle {
 
@@ -212,7 +213,7 @@ LoopGoverningInductionVariable::LoopGoverningInductionVariable(
 
       auto valueNodeInSCC = scc.fetchNode(value);
       for (auto edge : valueNodeInSCC->getIncomingEdges()) {
-        if (!edge->isDataDependence()) {
+        if (!isa<DataDependence<Value,Value>>(edge)) {
           continue;
         }
 

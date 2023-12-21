@@ -350,7 +350,7 @@ void PDGStats::analyzeDependence(DGEdge<Value, Value> *edge) {
   /*
    * Handle variable dependences.
    */
-  if (edge->isDataDependence()) {
+  if (isa<DataDependence<Value, Value>>(edge)){
     this->numberOfVariableDependence++;
     return;
   }
@@ -358,7 +358,7 @@ void PDGStats::analyzeDependence(DGEdge<Value, Value> *edge) {
   /*
    * Handle control dependences.
    */
-  if (edge->isControlDependence()) {
+  if (isa<ControlDependence<Value, Value>>(edge)){
     this->numberOfControlDependence++;
     return;
   }

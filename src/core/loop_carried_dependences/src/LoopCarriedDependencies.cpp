@@ -102,7 +102,7 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
    * If the dependence is a control one and the two instructions belong to a
    * subloop, then this cannot be a loop-carried one for the target loop.
    */
-  if (edge->isControlDependence() && (producerLoop != loopNode->getLoop())
+  if (isa<ControlDependence<Value, Value>>(edge) && (producerLoop != loopNode->getLoop())
       && (consumerLoop != loopNode->getLoop())) {
     return false;
   }
@@ -175,7 +175,7 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
     /*
      * Check if the dependence is data and via variable.
      */
-    if (!edge->isMemoryDependence() && edge->isDataDependence()) {
+    if (!edge->isMemoryDependence() && isa<DataDependence<Value, Value>>(edge)) {
 
       /*
        * The data dependence is variable based

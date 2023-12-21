@@ -436,7 +436,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     store,
                                                     F);
       if (!noDep) {
-        pdg->addEdge(call, store)->setMemMustType(true, mustExist, DG_DATA_WAR);
+        pdg->addMemoryDataDependenceEdge(call, store)->setMemMustType(true, mustExist, DG_DATA_WAR);
       }
 
     } else {
@@ -459,7 +459,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                       store,
                                                       F);
         if (!noDep) {
-          pdg->addEdge(store, call)
+          pdg->addMemoryDataDependenceEdge(store, call)
               ->setMemMustType(true, mustExist, DG_DATA_RAW);
         }
       }
@@ -480,7 +480,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     store,
                                                     F);
       if (!noDep) {
-        pdg->addEdge(call, store)->setMemMustType(true, mustExist, DG_DATA_WAW);
+        pdg->addMemoryDataDependenceEdge(call, store)->setMemMustType(true, mustExist, DG_DATA_WAW);
       }
 
     } else {
@@ -503,7 +503,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                       store,
                                                       F);
         if (!noDep) {
-          pdg->addEdge(store, call)
+          pdg->addMemoryDataDependenceEdge(store, call)
               ->setMemMustType(true, mustExist, DG_DATA_WAW);
         }
       }
@@ -602,7 +602,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
     auto [noDep, mustExist] =
         this->isThereThisMemoryDataDependenceType(DG_DATA_RAW, call, load, F);
     if (!noDep) {
-      pdg->addEdge(call, load)->setMemMustType(true, false, DG_DATA_RAW);
+      pdg->addMemoryDataDependenceEdge(call, load)->setMemMustType(true, false, DG_DATA_RAW);
     }
 
   } else {
@@ -622,7 +622,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
       auto [noDep, mustExist] =
           this->isThereThisMemoryDataDependenceType(DG_DATA_WAR, call, load, F);
       if (!noDep) {
-        pdg->addEdge(load, call)->setMemMustType(true, false, DG_DATA_WAR);
+        pdg->addMemoryDataDependenceEdge(load, call)->setMemMustType(true, false, DG_DATA_WAR);
       }
     }
   }
@@ -914,7 +914,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                   otherCall,
                                                   F);
     if (!noDep) {
-      pdg->addEdge(call, otherCall)
+      pdg->addMemoryDataDependenceEdge(call, otherCall)
           ->setMemMustType(true, mustExist, DG_DATA_RAW);
     }
 
@@ -936,7 +936,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     otherCall,
                                                     F);
       if (!noDep) {
-        pdg->addEdge(call, otherCall)
+        pdg->addMemoryDataDependenceEdge(call, otherCall)
             ->setMemMustType(true, mustExist, DG_DATA_WAR);
       }
     }
@@ -977,7 +977,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     otherCall,
                                                     F);
       if (!noDep) {
-        pdg->addEdge(call, otherCall)
+        pdg->addMemoryDataDependenceEdge(call, otherCall)
             ->setMemMustType(true, mustExist, DG_DATA_WAR);
       }
 
@@ -998,7 +998,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     otherCall,
                                                     F);
       if (!noDep) {
-        pdg->addEdge(call, otherCall)
+        pdg->addMemoryDataDependenceEdge(call, otherCall)
             ->setMemMustType(true, mustExist, DG_DATA_WAW);
       }
 
@@ -1031,7 +1031,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     otherCall,
                                                     F);
       if (!noDep) {
-        pdg->addEdge(call, otherCall)
+        pdg->addMemoryDataDependenceEdge(call, otherCall)
             ->setMemMustType(true, mustExist, DG_DATA_WAR);
       }
       auto [noDep2, mustExist2] =
@@ -1040,7 +1040,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     otherCall,
                                                     F);
       if (!noDep2) {
-        pdg->addEdge(call, otherCall)
+        pdg->addMemoryDataDependenceEdge(call, otherCall)
             ->setMemMustType(true, mustExist2, DG_DATA_WAW);
       }
     }
@@ -1082,7 +1082,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     otherCall,
                                                     F);
       if (!noDep) {
-        pdg->addEdge(call, otherCall)
+        pdg->addMemoryDataDependenceEdge(call, otherCall)
             ->setMemMustType(true, mustExist, DG_DATA_RAW);
       }
       auto [noDep2, mustExist2] =
@@ -1091,7 +1091,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     otherCall,
                                                     F);
       if (!noDep2) {
-        pdg->addEdge(call, otherCall)
+        pdg->addMemoryDataDependenceEdge(call, otherCall)
             ->setMemMustType(true, mustExist2, DG_DATA_WAW);
       }
 
@@ -1113,7 +1113,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                       otherCall,
                                                       F);
         if (!noDep) {
-          pdg->addEdge(call, otherCall)
+          pdg->addMemoryDataDependenceEdge(call, otherCall)
               ->setMemMustType(true, mustExist, DG_DATA_RAW);
         }
       }
@@ -1124,7 +1124,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                       otherCall,
                                                       F);
         if (!noDep) {
-          pdg->addEdge(call, otherCall)
+          pdg->addMemoryDataDependenceEdge(call, otherCall)
               ->setMemMustType(true, mustExist, DG_DATA_WAW);
         }
       }
@@ -1135,7 +1135,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                       otherCall,
                                                       F);
         if (!noDep) {
-          pdg->addEdge(call, otherCall)
+          pdg->addMemoryDataDependenceEdge(call, otherCall)
               ->setMemMustType(true, mustExist, DG_DATA_WAR);
         }
       }
@@ -1173,7 +1173,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                       otherCall,
                                                       F);
         if (!noDep) {
-          pdg->addEdge(call, otherCall)
+          pdg->addMemoryDataDependenceEdge(call, otherCall)
               ->setMemMustType(true, mustExist, DG_DATA_RAW);
         }
       }
@@ -1184,7 +1184,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                       otherCall,
                                                       F);
         if (!noDep) {
-          pdg->addEdge(call, otherCall)
+          pdg->addMemoryDataDependenceEdge(call, otherCall)
               ->setMemMustType(true, mustExist, DG_DATA_WAW);
         }
       }
@@ -1263,7 +1263,7 @@ void PDGAnalysis::addEdgeFromMemoryAlias(
   /*
    * There is a dependence.
    */
-  pdg->addEdge(instI, instJ)->setMemMustType(true, must, dataDependenceType);
+  pdg->addMemoryDataDependenceEdge(instI, instJ)->setMemMustType(true, must, dataDependenceType);
 
   return;
 }

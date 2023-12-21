@@ -225,7 +225,7 @@ void PDGAnalysis::constructEdgesFromUseDefs(PDG *pdg) {
       auto user = U.getUser();
 
       if (isa<Instruction>(user) || isa<Argument>(user)) {
-        auto edge = pdg->addEdge(pdgValue, user);
+        auto edge = pdg->addVariableDataDependenceEdge(pdgValue, user);
         edge->setMemMustType(false, true, DG_DATA_RAW);
       }
     }

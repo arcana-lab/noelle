@@ -124,8 +124,12 @@ void PDGAnalysis::constructEdgesFromControlForFunction(PDG *pdg, Function &F) {
          * Add the control dependences.
          */
         for (auto &I : B) {
-          auto edge = pdg->addEdge((Value *)controlTerminator, (Value *)&I);
-          edge->setControl(true);
+          auto srcNode = pdg->fetchNode(controlTerminator);
+          auto dstNode = pdg->fetchNode(&I);
+          assert(srcNode != nullptr);
+          assert(dstNode != nullptr);
+          ControlDependence<Value, Value> edge{srcNode, dstNode};
+          pdg->copyAddEdge(edge);
         }
       }
     }
@@ -135,7 +139,7 @@ void PDGAnalysis::constructEdgesFromControlForFunction(PDG *pdg, Function &F) {
     std::unordered_set<Value *> controlProducers;
     auto node = pdg->fetchNode(V);
     for (auto edge : node->getIncomingEdges()) {
-      if (!edge->isControlDependence())
+      if (!isa<ControlDependence<Value, Value>>(edge))
         continue;
       auto controlProducer = edge->getSrc();
       controlProducers.insert(controlProducer);
@@ -182,11 +186,16 @@ void PDGAnalysis::constructEdgesFromControlForFunction(PDG *pdg, Function &F) {
           getControlProducers(&phi);
       for (auto producer : controlProducers) {
         if (currentControlProducersOnPHI.find(producer)
-            != currentControlProducersOnPHI.end())
+            != currentControlProducersOnPHI.end()){
           continue;
+        }
 
-        auto edge = pdg->addEdge(producer, &phi);
-        edge->setControl(true);
+        auto srcNode = pdg->fetchNode(producer);
+        auto dstNode = pdg->fetchNode(&phi);
+        assert(srcNode != nullptr);
+        assert(dstNode != nullptr);
+        ControlDependence<Value, Value> edge{srcNode, dstNode};
+        pdg->copyAddEdge(edge);
       }
     }
   }

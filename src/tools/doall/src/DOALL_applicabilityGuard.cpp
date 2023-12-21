@@ -135,7 +135,7 @@ bool DOALL::canBeAppliedToLoop(LoopContent *LDI, Heuristics *h) const {
           if (auto loopCarriedSCC = dyn_cast<LoopCarriedSCC>(sccInfo)) {
             errs() << "DOALL:     Loop-carried data dependences\n";
             for (auto dep : loopCarriedSCC->getLoopCarriedDependences()) {
-              if (dep->isControlDependence()) {
+              if (isa<ControlDependence<Value, Value>>(dep)){
                 continue;
               }
               auto fromInst = dep->getSrc();

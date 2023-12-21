@@ -116,11 +116,6 @@ public:
           functionToInvokePerDependence);
 
   /*
-   * Add the edge from "from" to "to" to the PDG.
-   */
-  DGEdge<Value, Value> *addEdge(Value *from, Value *to);
-
-  /*
    * Creating Program Dependence Subgraphs
    */
   PDG *createFunctionSubgraph(Function &F);

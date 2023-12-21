@@ -102,8 +102,9 @@ void DSWP::collectControlQueueInfo(LoopContent *LDI, Noelle &par) {
     auto scc = sccNode->getT();
 
     for (auto controlEdge : scc->getEdges()) {
-      if (!controlEdge->isControlDependence())
+      if (!isa<ControlDependence<Value, Value>>(controlEdge)){
         continue;
+      }
 
       auto controlNode = controlEdge->getSrcNode();
       auto controlSCC = sccdag->sccOfValue(controlNode->getT());
@@ -118,8 +119,9 @@ void DSWP::collectControlQueueInfo(LoopContent *LDI, Noelle &par) {
       bool hasDataDependency = false;
       for (auto conditionOrReturnValueDependency :
            controlNode->getIncomingEdges()) {
-        if (conditionOrReturnValueDependency->isControlDependence())
+        if (isa<ControlDependence<Value, Value>>(conditionOrReturnValueDependency)){
           continue;
+        }
         hasDataDependency = true;
         break;
       }
@@ -142,8 +144,9 @@ void DSWP::collectControlQueueInfo(LoopContent *LDI, Noelle &par) {
       assert(
           !conditionToBranchDependency->isMemoryDependence()
           && "Node producing control dependencies is expected not to consume a memory dependence");
-      if (conditionToBranchDependency->isControlDependence())
+      if (isa<ControlDependence<Value, Value>>(conditionToBranchDependency)){
         continue;
+      }
 
       auto condition = conditionToBranchDependency->getSrc();
       auto conditionSCC = sccdag->sccOfValue(condition);
@@ -276,8 +279,9 @@ void DSWP::collectDataAndMemoryQueueInfo(LoopContent *LDI, Noelle &par) {
          * consumers
          */
         for (auto instructionEdge : sccEdge->getSubEdges()) {
-          if (instructionEdge->isControlDependence())
+          if (isa<ControlDependence<Value, Value>>(instructionEdge)){
             continue;
+          }
 
           auto producer = cast<Instruction>(instructionEdge->getSrc());
           auto consumer = cast<Instruction>(instructionEdge->getDst());

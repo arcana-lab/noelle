@@ -227,7 +227,7 @@ std::set<LoopCarriedSCC *> SCCDAGAttrs::
      */
     auto isControl = false;
     for (auto dep : deps) {
-      if (dep->isControlDependence()) {
+      if (isa<ControlDependence<Value, Value>>(dep)){
         isControl = true;
         break;
       }
@@ -266,7 +266,7 @@ std::set<LoopCarriedSCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies(
      */
     auto isData = false;
     for (auto dep : deps) {
-      if (dep->isDataDependence()) {
+      if (isa<DataDependence<Value, Value>>(dep)) {
         isData = true;
         break;
       }
@@ -561,7 +561,7 @@ std::tuple<bool, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
     /*
      * Only look for loop-carried data dependencies.
      */
-    if (!edge->isLoopCarriedDependence() || edge->isControlDependence())
+    if (!edge->isLoopCarriedDependence() || isa<ControlDependence<Value, Value>>(edge))
       continue;
 
     Value *initialValue;
@@ -684,7 +684,7 @@ LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(SCC *scc,
      * Ignore external control dependencies, do not allow internal ones
      */
     auto producer = dependency->getSrc();
-    if (dependency->isControlDependence()) {
+    if (isa<ControlDependence<Value, Value>>(dependency)){
       if (scc->isInternal(producer)) {
         return nullptr;
       }

@@ -29,12 +29,34 @@ namespace arcana::noelle {
 
 enum DataDependenceType { DG_DATA_NONE, DG_DATA_RAW, DG_DATA_WAR, DG_DATA_WAW };
 
+/*
+ * This is the top of the class hierarchy that organizes dependences.
+ *
+ * https://llvm.org/docs/HowToSetUpLLVMStyleRTTI.html
+ */
 template <class T, class SubT>
 class DGEdge {
 public:
-  DGEdge(DGNode<T> *src, DGNode<T> *dst);
 
-  DGEdge(const DGEdge<T, SubT> &oldEdge);
+  /*
+   * Concrete sub-classes.
+   */
+  enum DependenceKind {
+    CONTROL_DEPENDENCE,
+
+    FIRST_DATA_DEPENDENCE,
+    VARIABLE_DEPENDENCE,
+    MEMORY_DEPENDENCE,
+    LAST_DATA_DEPENDENCE,
+
+    UNDEFINED_DEPENDENCE
+  };
+
+  /*
+   * No public constructors.
+   * Only objects of sub-classes can be allocated.
+   */
+  DGEdge() = delete;
 
   using edges_iterator =
       typename std::unordered_set<DGEdge<SubT, SubT> *>::iterator;
@@ -95,20 +117,8 @@ public:
     return dataDepType == DG_DATA_WAW;
   }
 
-  bool isControlDependence() const {
-    return isControl;
-  }
-
-  bool isDataDependence() const {
-    return !isControl;
-  }
-
   DataDependenceType dataDependenceType() const {
     return dataDepType;
-  }
-
-  void setControl(bool ctrl) {
-    isControl = ctrl;
   }
 
   void setMemMustType(bool mem, bool must, DataDependenceType dataDepType);
@@ -120,10 +130,8 @@ public:
   void setEdgeAttributes(bool mem,
                          bool must,
                          std::string str,
-                         bool ctrl,
                          bool lc) {
     setMemMustType(mem, must, stringToDataDep(str));
-    setControl(ctrl);
     setLoopCarried(lc);
 
     return;
@@ -137,11 +145,13 @@ public:
 
   void removeSubEdges(void);
 
-  std::string toString(void);
-
   std::string dataDepToString(void);
 
+  virtual std::string toString(void) = 0;
+
   raw_ostream &print(raw_ostream &stream, std::string linePrefix = "");
+
+  DependenceKind getKind(void) const;
 
   static DataDependenceType stringToDataDep(std::string &str);
 
@@ -153,34 +163,42 @@ protected:
   DataDependenceType dataDepType;
   bool memory;
   bool must;
-  bool isControl;
+
+  DGEdge(DependenceKind k, DGNode<T> *src, DGNode<T> *dst);
+  DGEdge(const DGEdge<T, SubT> &edgeToCopy);
+
+private:
+  DependenceKind kind;
 };
 
 template <class T, class SubT>
-DGEdge<T, SubT>::DGEdge(DGNode<T> *src, DGNode<T> *dst)
+DGEdge<T, SubT>::DGEdge(DependenceKind k, DGNode<T> *src, DGNode<T> *dst)
   : from(src),
     to(dst),
     subEdges{},
     memory{ false },
     must{ false },
-    isControl(false),
     isLoopCarried(false),
-    dataDepType{ DG_DATA_NONE } {
+    dataDepType{ DG_DATA_NONE },
+    kind{k} {
   return;
 }
 
 template <class T, class SubT>
-DGEdge<T, SubT>::DGEdge(const DGEdge<T, SubT> &oldEdge) {
-  auto nodePair = oldEdge.getNodePair();
+DGEdge<T, SubT>::DGEdge(const DGEdge<T, SubT> &edgeToCopy){
+  auto nodePair = edgeToCopy.getNodePair();
   from = nodePair.first;
   to = nodePair.second;
-  setMemMustType(oldEdge.isMemoryDependence(),
-                 oldEdge.isMustDependence(),
-                 oldEdge.dataDependenceType());
-  setControl(oldEdge.isControlDependence());
-  setLoopCarried(oldEdge.isLoopCarriedDependence());
-  for (auto subEdge : oldEdge.subEdges)
+  setMemMustType(edgeToCopy.isMemoryDependence(),
+                 edgeToCopy.isMustDependence(),
+                 edgeToCopy.dataDependenceType());
+  setLoopCarried(edgeToCopy.isLoopCarriedDependence());
+  for (auto subEdge : edgeToCopy.subEdges){
     addSubEdge(subEdge);
+  }
+  this->kind = edgeToCopy.kind;
+
+  return ;
 }
 
 template <class T, class SubT>
@@ -217,35 +235,6 @@ std::string DGEdge<T, SubT>::dataDepToString(void) {
     return "WAW";
   else
     return "NONE";
-}
-
-template <class T, class SubT>
-std::string DGEdge<T, SubT>::toString(void) {
-  if (this->subEdges.size() > 0) {
-    std::string edgesStr;
-    raw_string_ostream ros(edgesStr);
-    for (auto edge : this->subEdges)
-      ros << edge->toString();
-    return ros.str();
-  }
-  std::string edgeStr;
-  raw_string_ostream ros(edgeStr);
-  ros << "Attributes: ";
-  if (this->isLoopCarried) {
-    ros << "Loop-carried ";
-  }
-  if (this->isControlDependence()) {
-    ros << "Control ";
-
-  } else {
-    ros << "Data ";
-    ros << this->dataDepToString();
-    ros << (must ? " (must)" : " (may)");
-    ros << (memory ? " from memory " : "");
-  }
-  ros << "\n";
-  ros.flush();
-  return edgeStr;
 }
 
 template <class T, class SubT>
@@ -299,6 +288,11 @@ T *DGEdge<T, SubT>::getDst(void) const {
 template <class T, class SubT>
 bool DGEdge<T, SubT>::isLoopCarriedDependence() const {
   return isLoopCarried;
+}
+  
+template <class T, class SubT>
+typename DGEdge<T, SubT>::DependenceKind DGEdge<T, SubT>::getKind(void) const{
+  return this->kind;
 }
 
 } // namespace arcana::noelle

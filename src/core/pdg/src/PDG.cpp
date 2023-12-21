@@ -116,10 +116,6 @@ void PDG::setEntryPointAt(Function &F) {
   assert(entryNode != nullptr);
 }
 
-DGEdge<Value, Value> *PDG::addEdge(Value *from, Value *to) {
-  return this->DG<Value>::addEdge(from, to);
-}
-
 PDG *PDG::createFunctionSubgraph(Function &F) {
 
   /*
@@ -262,7 +258,7 @@ bool PDG::iterateOverDependencesFrom(
     /*
      * Check if this is a control dependence.
      */
-    if (true && includeControlDependences && edge->isControlDependence()) {
+    if (includeControlDependences && isa<ControlDependence<Value, Value>>(edge)){
       if (functionToInvokePerDependence(destValue, edge)) {
         return true;
       }
@@ -272,7 +268,7 @@ bool PDG::iterateOverDependencesFrom(
     /*
      * Check if this is a memory dependence.
      */
-    if (true && includeMemoryDataDependences && edge->isMemoryDependence()) {
+    if (includeMemoryDataDependences && edge->isMemoryDependence()) {
       if (functionToInvokePerDependence(destValue, edge)) {
         return true;
       }
@@ -282,8 +278,8 @@ bool PDG::iterateOverDependencesFrom(
     /*
      * Check if this is a register dependence.
      */
-    if (true && includeRegisterDataDependences && (!edge->isMemoryDependence())
-        && (!edge->isControlDependence())) {
+    if (includeRegisterDataDependences && (!edge->isMemoryDependence())
+        && (!isa<ControlDependence<Value, Value>>(edge))) {
       assert(edge->dataDependenceType() != DG_DATA_NONE);
       if (functionToInvokePerDependence(destValue, edge)) {
         return true;
@@ -327,7 +323,7 @@ bool PDG::iterateOverDependencesTo(
     /*
      * Check if this is a control dependence.
      */
-    if (true && includeControlDependences && edge->isControlDependence()) {
+    if (includeControlDependences && isa<ControlDependence<Value, Value>>(edge)) {
       if (functionToInvokePerDependence(srcValue, edge)) {
         return true;
       }
@@ -337,7 +333,7 @@ bool PDG::iterateOverDependencesTo(
     /*
      * Check if this is a memory dependence.
      */
-    if (true && includeMemoryDataDependences && edge->isMemoryDependence()) {
+    if (includeMemoryDataDependences && edge->isMemoryDependence()) {
       if (functionToInvokePerDependence(srcValue, edge)) {
         return true;
       }
@@ -347,8 +343,8 @@ bool PDG::iterateOverDependencesTo(
     /*
      * Check if this is a register dependence.
      */
-    if (true && includeRegisterDataDependences && (!edge->isMemoryDependence())
-        && (!edge->isControlDependence())) {
+    if (includeRegisterDataDependences && (!edge->isMemoryDependence())
+        && (!isa<ControlDependence<Value, Value>>(edge))) {
       assert(edge->dataDependenceType() != DG_DATA_NONE);
       if (functionToInvokePerDependence(srcValue, edge)) {
         return true;

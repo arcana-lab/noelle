@@ -238,7 +238,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
       /*
        * Control dependences.
        */
-      if (dep->isControlDependence()) {
+      if (isa<ControlDependence<Value, Value>>(dep)){
         stream << " control\n";
         continue;
       }
@@ -279,7 +279,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
     /*
      * Control dependences.
      */
-    if (dep->isControlDependence()) {
+    if (isa<ControlDependence<Value, Value>>(dep)){
       stream << " control\n";
       continue;
     }

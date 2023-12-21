@@ -63,7 +63,7 @@ bool PDGAnalysis::compareEdges(
     for (auto &edge2 : edgeSet) {
       if (edge1->isMemoryDependence() == edge2->isMemoryDependence()
           && edge1->isMustDependence() == edge2->isMustDependence()
-          && edge1->isControlDependence() == edge2->isControlDependence()
+          && edge1->getKind() == edge2->getKind()
           && edge1->isLoopCarriedDependence()
                  == edge2->isLoopCarriedDependence()
           && edge1->dataDependenceType() == edge2->dataDependenceType()) {
