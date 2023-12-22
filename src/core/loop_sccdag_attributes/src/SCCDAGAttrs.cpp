@@ -543,7 +543,7 @@ std::set<InductionVariable *> SCCDAGAttrs::
 std::tuple<bool, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
     SCC *scc,
     LoopTree *loopNode) {
-  auto notPeriodic = make_tuple(false, nullptr, nullptr, nullptr);
+  auto notPeriodic = std::make_tuple(false, nullptr, nullptr, nullptr);
 
   if (this->sccToLoopCarriedDependencies.find(scc)
       == this->sccToLoopCarriedDependencies.end()) {
@@ -643,7 +643,7 @@ std::tuple<bool, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
     // errs() << "periodic variable with initial value " << *initialValue <<
     // "\n"; errs() << "                          and period " << *period <<
     // "\n"; errs() << "                            and step " << *step << "\n";
-    return make_tuple(true, initialValue, period, step);
+    return std::make_tuple(true, initialValue, period, step);
   }
 
   /*

@@ -372,11 +372,11 @@ bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value, Value> *edge) {
     }
 
     auto fname = calleeFunc->getName();
-    unordered_set<string> printFuncs = { "printf",
-                                         "fprintf",
-                                         "puts",
-                                         "putc",
-                                         "putchar" };
+    std::unordered_set<std::string> printFuncs = { "printf",
+                                                   "fprintf",
+                                                   "puts",
+                                                   "putc",
+                                                   "putchar" };
     for (auto printFunc : printFuncs) {
       if (fname == printFunc || fname == (printFunc + "_unlocked")) {
         return true;

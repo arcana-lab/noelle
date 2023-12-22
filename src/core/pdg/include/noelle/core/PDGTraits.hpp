@@ -29,25 +29,26 @@ namespace llvm {
 
 /*
  * Specializations for GraphTraits and DOTGraphTraits using GraphTraitsBase and
- * ElementTraits
+ * ElementTraits.
  */
 template <>
 struct DOTGraphTraits<
     arcana::noelle::DGGraphWrapper<arcana::noelle::PDG, Value> *>
-  : public ElementTraits<
+  : public arcana::noelle::ElementTraits<
         arcana::noelle::DGGraphWrapper<arcana::noelle::PDG, Value>,
-        DGNodeWrapper<Value>,
+        arcana::noelle::DGNodeWrapper<Value>,
         Value> {
   DOTGraphTraits(bool isSimple = false)
-    : ElementTraits<arcana::noelle::DGGraphWrapper<arcana::noelle::PDG, Value>,
-                    DGNodeWrapper<Value>,
-                    Value>(isSimple) {}
+    : arcana::noelle::ElementTraits<
+        arcana::noelle::DGGraphWrapper<arcana::noelle::PDG, Value>,
+        arcana::noelle::DGNodeWrapper<Value>,
+        Value>(isSimple) {}
 };
 template <>
 struct GraphTraits<arcana::noelle::DGGraphWrapper<arcana::noelle::PDG, Value> *>
-  : public GraphTraitsBase<
+  : public arcana::noelle::GraphTraitsBase<
         arcana::noelle::DGGraphWrapper<arcana::noelle::PDG, Value>,
-        DGNodeWrapper<Value>,
+        arcana::noelle::DGNodeWrapper<Value>,
         Value> {};
 
 } // namespace llvm

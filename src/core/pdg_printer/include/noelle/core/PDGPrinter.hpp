@@ -92,12 +92,13 @@ private:
   static void addClusteringToDotFile(std::string inputFileName,
                                      std::string outputFileName);
   static void groupNodesByCluster(
-      unordered_map<std::string, std::set<std::string>> &clusterNodes,
+      std::unordered_map<std::string, std::set<std::string>> &clusterNodes,
       int &numLines,
-      ifstream &ifile);
+      std::ifstream &ifile);
   static void writeClusterToFile(
-      const unordered_map<std::string, std::set<std::string>> &clusterNodes,
-      ofstream &cfile);
+      const std::unordered_map<std::string, std::set<std::string>>
+          &clusterNodes,
+      std::ofstream &cfile);
 };
 
 class PDGPrinter {

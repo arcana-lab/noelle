@@ -29,7 +29,7 @@ namespace arcana::noelle {
 MDNode *PDGAnalysis::getEdgeMetadata(
     DGEdge<Value, Value> *edge,
     LLVMContext &C,
-    unordered_map<Value *, MDNode *> &nodeIDMap) {
+    std::unordered_map<Value *, MDNode *> &nodeIDMap) {
   assert(edge != nullptr);
   Metadata *edgeM[] = {
     nodeIDMap[edge->getSrc()],
@@ -55,8 +55,8 @@ MDNode *PDGAnalysis::getEdgeMetadata(
 MDNode *PDGAnalysis::getSubEdgesMetadata(
     DGEdge<Value, Value> *edge,
     LLVMContext &C,
-    unordered_map<Value *, MDNode *> &nodeIDMap) {
-  vector<Metadata *> subEdgesVec;
+    std::unordered_map<Value *, MDNode *> &nodeIDMap) {
+  std::vector<Metadata *> subEdgesVec;
 
   for (auto &subEdge : edge->getSubEdges()) {
     Metadata *subEdgeM[] = {
@@ -122,7 +122,7 @@ PDG *PDGAnalysis::constructPDGFromMetadata(Module &M) {
 void PDGAnalysis::constructNodesFromMetadata(
     PDG *pdg,
     Function &F,
-    unordered_map<MDNode *, Value *> &IDNodeMap) {
+    std::unordered_map<MDNode *, Value *> &IDNodeMap) {
 
   /*
    * Construct id to node map and add nodes of arguments to pdg
@@ -152,7 +152,7 @@ void PDGAnalysis::constructNodesFromMetadata(
 void PDGAnalysis::constructEdgesFromMetadata(
     PDG *pdg,
     Function &F,
-    unordered_map<MDNode *, Value *> &IDNodeMap) {
+    std::unordered_map<MDNode *, Value *> &IDNodeMap) {
 
   /*
    * Construct edges and set attributes
@@ -194,7 +194,7 @@ void PDGAnalysis::constructEdgesFromMetadata(
 DGEdge<Value, Value> *PDGAnalysis::constructEdgeFromMetadata(
     PDG *pdg,
     MDNode *edgeM,
-    unordered_map<MDNode *, Value *> &IDNodeMap) {
+    std::unordered_map<MDNode *, Value *> &IDNodeMap) {
   DGEdge<Value, Value> *edge = nullptr;
 
   if (MDNode *fromM = dyn_cast<MDNode>(edgeM->getOperand(0))) {

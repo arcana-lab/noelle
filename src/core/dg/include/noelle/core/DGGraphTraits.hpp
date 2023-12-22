@@ -246,36 +246,54 @@ namespace llvm {
  * ElementTraits
  */
 template <>
-struct DOTGraphTraits<DGGraphWrapper<DG<DGString>, DGString> *>
-  : public ElementTraits<DGGraphWrapper<DG<DGString>, DGString>,
-                         DGNodeWrapper<DGString>,
-                         DGString> {
+struct DOTGraphTraits<
+    arcana::noelle::DGGraphWrapper<arcana::noelle::DG<arcana::noelle::DGString>,
+                                   arcana::noelle::DGString> *>
+  : public arcana::noelle::ElementTraits<
+        arcana::noelle::DGGraphWrapper<
+            arcana::noelle::DG<arcana::noelle::DGString>,
+            arcana::noelle::DGString>,
+        arcana::noelle::DGNodeWrapper<arcana::noelle::DGString>,
+        arcana::noelle::DGString> {
   DOTGraphTraits(bool isSimple = false)
-    : ElementTraits<DGGraphWrapper<DG<DGString>, DGString>,
-                    DGNodeWrapper<DGString>,
-                    DGString>(isSimple) {}
+    : arcana::noelle::ElementTraits<
+        arcana::noelle::DGGraphWrapper<
+            arcana::noelle::DG<arcana::noelle::DGString>,
+            arcana::noelle::DGString>,
+        arcana::noelle::DGNodeWrapper<arcana::noelle::DGString>,
+        arcana::noelle::DGString>(isSimple) {}
 };
 template <>
-struct GraphTraits<DGGraphWrapper<DG<DGString>, DGString> *>
-  : public GraphTraitsBase<DGGraphWrapper<DG<DGString>, DGString>,
-                           DGNodeWrapper<DGString>,
-                           DGString> {};
+struct GraphTraits<
+    arcana::noelle::DGGraphWrapper<arcana::noelle::DG<arcana::noelle::DGString>,
+                                   arcana::noelle::DGString> *>
+  : public arcana::noelle::GraphTraitsBase<
+        arcana::noelle::DGGraphWrapper<
+            arcana::noelle::DG<arcana::noelle::DGString>,
+            arcana::noelle::DGString>,
+        arcana::noelle::DGNodeWrapper<arcana::noelle::DGString>,
+        arcana::noelle::DGString> {};
 
 template <>
-struct DOTGraphTraits<DGGraphWrapper<SubCFGs, BasicBlock> *>
-  : public ElementTraits<DGGraphWrapper<SubCFGs, BasicBlock>,
-                         DGNodeWrapper<BasicBlock>,
-                         BasicBlock> {
+struct DOTGraphTraits<
+    arcana::noelle::DGGraphWrapper<arcana::noelle::SubCFGs, BasicBlock> *>
+  : public arcana::noelle::ElementTraits<
+        arcana::noelle::DGGraphWrapper<arcana::noelle::SubCFGs, BasicBlock>,
+        arcana::noelle::DGNodeWrapper<BasicBlock>,
+        BasicBlock> {
   DOTGraphTraits(bool isSimple = false)
-    : ElementTraits<DGGraphWrapper<SubCFGs, BasicBlock>,
-                    DGNodeWrapper<BasicBlock>,
-                    BasicBlock>(isSimple) {}
+    : arcana::noelle::ElementTraits<
+        arcana::noelle::DGGraphWrapper<arcana::noelle::SubCFGs, BasicBlock>,
+        arcana::noelle::DGNodeWrapper<BasicBlock>,
+        BasicBlock>(isSimple) {}
 };
 template <>
-struct GraphTraits<DGGraphWrapper<SubCFGs, BasicBlock> *>
-  : public GraphTraitsBase<DGGraphWrapper<SubCFGs, BasicBlock>,
-                           DGNodeWrapper<BasicBlock>,
-                           BasicBlock> {};
+struct GraphTraits<
+    arcana::noelle::DGGraphWrapper<arcana::noelle::SubCFGs, BasicBlock> *>
+  : public arcana::noelle::GraphTraitsBase<
+        arcana::noelle::DGGraphWrapper<arcana::noelle::SubCFGs, BasicBlock>,
+        arcana::noelle::DGNodeWrapper<BasicBlock>,
+        BasicBlock> {};
 
 } // namespace llvm
 
