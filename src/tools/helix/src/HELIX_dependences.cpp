@@ -54,9 +54,9 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
 
   auto copyEdgeUsingTaskClonedValues =
       [&](DGEdge<Value, Value> *originalEdge) -> void {
-
     /*
-     * Fetch the clones of the instructions related to @originalEdge that are in the task.
+     * Fetch the clones of the instructions related to @originalEdge that are in
+     * the task.
      */
     auto cloneOutgoingInst = helixTask->getCloneOfOriginalInstruction(
         cast<Instruction>(originalEdge->getSrc()));
@@ -70,12 +70,15 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
     assert(cloneIncomingNode != nullptr);
 
     /*
-     * Allocate the new dependence within the task to be the clone of @originalEdge.
+     * Allocate the new dependence within the task to be the clone of
+     * @originalEdge.
      */
     DGEdge<Value, Value> *edgeToPointToClones = nullptr;
-    if (isa<ControlDependence<Value, Value>>(originalEdge)){
-      auto originalEdgeAsCD = cast<ControlDependence<Value, Value>>(originalEdge);
-      edgeToPointToClones = new ControlDependence<Value, Value>(*originalEdgeAsCD);
+    if (isa<ControlDependence<Value, Value>>(originalEdge)) {
+      auto originalEdgeAsCD =
+          cast<ControlDependence<Value, Value>>(originalEdge);
+      edgeToPointToClones =
+          new ControlDependence<Value, Value>(*originalEdgeAsCD);
     } else {
       auto originalEdgeAsDD = cast<DataDependence<Value, Value>>(originalEdge);
       edgeToPointToClones = new DataDependence<Value, Value>(*originalEdgeAsDD);
@@ -160,18 +163,18 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
           std::unordered_set<LoadInst *> &loads) -> void {
     for (auto store : stores) {
       for (auto other : stores) {
-        taskFunctionDG->addEdge(store, other)
+        taskFunctionDG->addMemoryDataDependenceEdge(store, other)
             ->setMemMustType(true, true, DataDependenceType::DG_DATA_WAW);
-        taskFunctionDG->addEdge(other, store)
+        taskFunctionDG->addMemoryDataDependenceEdge(other, store)
             ->setMemMustType(true, true, DataDependenceType::DG_DATA_WAW);
       }
     }
 
     for (auto store : stores) {
       for (auto load : loads) {
-        taskFunctionDG->addEdge(store, load)
+        taskFunctionDG->addMemoryDataDependenceEdge(store, load)
             ->setMemMustType(true, true, DataDependenceType::DG_DATA_RAW);
-        taskFunctionDG->addEdge(load, store)
+        taskFunctionDG->addMemoryDataDependenceEdge(load, store)
             ->setMemMustType(true, true, DataDependenceType::DG_DATA_WAR);
       }
     }
@@ -208,7 +211,7 @@ static void constructEdgesFromUseDefs(PDG *pdg) {
       auto user = U.getUser();
 
       if (isa<Instruction>(user) || isa<Argument>(user)) {
-        auto edge = pdg->addEdge(pdgValue, user);
+        auto edge = pdg->addVariableDataDependenceEdge(pdgValue, user);
         edge->setMemMustType(false, true, DG_DATA_RAW);
       }
     }
@@ -244,7 +247,7 @@ static void constructEdgesFromControlForFunction(
         }
         auto controlTerminator = predBB->getTerminator();
         for (auto &I : B) {
-          pdg->addControlDependence(controlTerminator, &I);
+          pdg->addControlDependenceEdge(controlTerminator, &I);
         }
       }
     }

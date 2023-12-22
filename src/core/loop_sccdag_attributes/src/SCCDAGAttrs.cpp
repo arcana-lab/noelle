@@ -227,7 +227,7 @@ std::set<LoopCarriedSCC *> SCCDAGAttrs::
      */
     auto isControl = false;
     for (auto dep : deps) {
-      if (isa<ControlDependence<Value, Value>>(dep)){
+      if (isa<ControlDependence<Value, Value>>(dep)) {
         isControl = true;
         break;
       }
@@ -561,7 +561,8 @@ std::tuple<bool, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
     /*
      * Only look for loop-carried data dependencies.
      */
-    if (!edge->isLoopCarriedDependence() || isa<ControlDependence<Value, Value>>(edge))
+    if (!edge->isLoopCarriedDependence()
+        || isa<ControlDependence<Value, Value>>(edge))
       continue;
 
     Value *initialValue;
@@ -684,7 +685,7 @@ LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(SCC *scc,
      * Ignore external control dependencies, do not allow internal ones
      */
     auto producer = dependency->getSrc();
-    if (isa<ControlDependence<Value, Value>>(dependency)){
+    if (isa<ControlDependence<Value, Value>>(dependency)) {
       if (scc->isInternal(producer)) {
         return nullptr;
       }
@@ -948,7 +949,7 @@ void SCCDAGAttrs::dumpToFile(int id) {
   for (auto sccEdge : sccdag->getEdges()) {
     auto outgoingDesc = sccToDescriptionMap.at(sccEdge->getSrcNode())->getT();
     auto incomingDesc = sccToDescriptionMap.at(sccEdge->getDstNode())->getT();
-    stageGraph.addEdge(outgoingDesc, incomingDesc);
+    stageGraph.addUndefinedDependenceEdge(outgoingDesc, incomingDesc);
   }
 
   DGPrinter::writeGraph<DG<DGString>, DGString>(filename, &stageGraph);
