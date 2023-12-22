@@ -163,8 +163,10 @@ void SCCDAG::markEdgesAndSubEdges(void) {
           continue;
         edgeSet.insert(edge);
       }
-      auto sccEdge = edgeSet.empty() ? this->addEdge(outgoingSCC, incomingSCC)
-                                     : (*edgeSet.begin());
+      auto sccEdge =
+          edgeSet.empty()
+              ? this->addUndefinedDependenceEdge(outgoingSCC, incomingSCC)
+              : (*edgeSet.begin());
 
       /*
        * Clear out subedges if not already done once; add all currently existing

@@ -107,8 +107,9 @@ private:
 
 template <>
 class DGEdge<SCC, SCC> : public DGEdge<SCC, Value> {
-public:
-  DGEdge(DGNode<SCC> *src, DGNode<SCC> *dst) : DGEdge<SCC, Value>(src, dst) {}
+protected:
+  DGEdge(DependenceKind k, DGNode<SCC> *src, DGNode<SCC> *dst)
+    : DGEdge<SCC, Value>(k, src, dst) {}
   DGEdge(const DGEdge<SCC, SCC> &oldEdge) : DGEdge<SCC, Value>(oldEdge) {}
 };
 
