@@ -74,7 +74,7 @@ std::pair<bool, bool> PDGAnalysis::isThereThisMemoryDataDependenceType(
     }
   }
 
-  return make_pair(noDep, mustExist);
+  return std::make_pair(noDep, mustExist);
 }
 
 void PDGAnalysis::iterateInstForStore(PDG *pdg,

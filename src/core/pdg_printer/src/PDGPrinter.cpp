@@ -34,9 +34,7 @@
 #include "llvm/Support/GraphWriter.h"
 #include "llvm/Support/DOTGraphTraits.h"
 
-#include <set>
-#include <queue>
-
+#include "noelle/core/PDGTraits.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/SCCDAGGraphTraits.hpp"
@@ -167,8 +165,8 @@ void PDGPrinter::printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI) {
 
 void DGPrinter::addClusteringToDotFile(std::string inputFileName,
                                        std::string outputFileName) {
-  ifstream ifile(inputFileName);
-  unordered_map<std::string, std::set<std::string>> clusterNodes;
+  std::ifstream ifile(inputFileName);
+  std::unordered_map<std::string, std::set<std::string>> clusterNodes;
 
   if (!ifile.is_open()) {
     errs() << "ERROR: Couldn't open dot file: " << inputFileName << "\n";
@@ -185,9 +183,9 @@ void DGPrinter::addClusteringToDotFile(std::string inputFileName,
   }
 
   ifile.clear();
-  ifile.seekg(0, ios::beg);
+  ifile.seekg(0, std::ios::beg);
 
-  ofstream cfile;
+  std::ofstream cfile;
   cfile.open(outputFileName);
   if (!cfile.is_open()) {
     errs() << "ERROR: Couldn't open dot files: " << inputFileName << ","
@@ -196,7 +194,7 @@ void DGPrinter::addClusteringToDotFile(std::string inputFileName,
     return;
   }
 
-  string line;
+  std::string line;
   for (int i = 0; i < numLines - 1; ++i) {
     getline(ifile, line);
     cfile << line << "\n";
@@ -211,8 +209,8 @@ void DGPrinter::addClusteringToDotFile(std::string inputFileName,
 }
 
 void DGPrinter::writeClusterToFile(
-    const unordered_map<std::string, std::set<std::string>> &clusterNodes,
-    ofstream &cfile) {
+    const std::unordered_map<std::string, std::set<std::string>> &clusterNodes,
+    std::ofstream &cfile) {
   for (auto clusterNodesPair : clusterNodes) {
     std::string indent = "    ";
     cfile << "\n";
@@ -227,9 +225,9 @@ void DGPrinter::writeClusterToFile(
 }
 
 void DGPrinter::groupNodesByCluster(
-    unordered_map<std::string, std::set<std::string>> &clusterNodes,
+    std::unordered_map<std::string, std::set<std::string>> &clusterNodes,
     int &numLines,
-    ifstream &ifile) {
+    std::ifstream &ifile) {
   std::string CLUSTER_KEY = "cluster=";
   std::string NODE_NAME = "Node";
   std::string line;

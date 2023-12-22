@@ -153,10 +153,12 @@ namespace llvm {
 
 template <>
 struct GraphTraits<
-    DGGraphWrapper<arcana::noelle::SCCDAGPartition, arcana::noelle::SCCSet> *>
-  : public GraphTraitsBase<
-        DGGraphWrapper<arcana::noelle::SCCDAGPartition, arcana::noelle::SCCSet>,
-        DGNodeWrapper<arcana::noelle::SCCSet>,
+    arcana::noelle::DGGraphWrapper<arcana::noelle::SCCDAGPartition,
+                                   arcana::noelle::SCCSet> *>
+  : public arcana::noelle::GraphTraitsBase<
+        arcana::noelle::DGGraphWrapper<arcana::noelle::SCCDAGPartition,
+                                       arcana::noelle::SCCSet>,
+        arcana::noelle::DGNodeWrapper<arcana::noelle::SCCSet>,
         arcana::noelle::SCCSet> {};
 
 } // namespace llvm

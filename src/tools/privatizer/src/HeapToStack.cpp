@@ -48,7 +48,7 @@ LiveMemorySummary Privatizer::getLiveMemorySummary(Noelle &noelle,
   heapAllocInsts.insert(funcSum->callocInsts.begin(),
                         funcSum->callocInsts.end());
 
-  unordered_set<CallBase *> allocable;
+  std::unordered_set<CallBase *> allocable;
 
   /*
    * 1. Only fixed size @malloc(), such as %1 = tail call i8* @malloc(i64 8),
@@ -74,7 +74,8 @@ LiveMemorySummary Privatizer::getLiveMemorySummary(Noelle &noelle,
     allocable.insert(heapAllocInst);
   }
 
-  auto mayFreeNonAllocable = [&](unordered_set<Value *> mayBeFreed) -> bool {
+  auto mayFreeNonAllocable =
+      [&](std::unordered_set<Value *> mayBeFreed) -> bool {
     for (auto memobj : mayBeFreed) {
       if (!memobj) {
         return true;
@@ -134,7 +135,7 @@ LiveMemorySummary Privatizer::getLiveMemorySummary(Noelle &noelle,
    * If a @free() inst can only free memory objects allocated by the remaining
    * allocable, we can safely remove the @free() inst.
    */
-  unordered_set<CallBase *> removable;
+  std::unordered_set<CallBase *> removable;
   for (auto freeInst : funcSum->freeInsts) {
     auto mayBeFreed = mpa.getPointees(freeInst->getArgOperand(0), f);
     if (!mayFreeNonAllocable(mayBeFreed)) {
@@ -149,12 +150,12 @@ LiveMemorySummary Privatizer::getLiveMemorySummary(Noelle &noelle,
   return memSum;
 }
 
-unordered_map<Function *, LiveMemorySummary> Privatizer::collectH2S(
+std::unordered_map<Function *, LiveMemorySummary> Privatizer::collectH2S(
     Noelle &noelle) {
 
   auto hotFuncs = hotFunctions(noelle);
 
-  unordered_set<Function *> heapAllocUsers;
+  std::unordered_set<Function *> heapAllocUsers;
   for (auto &F : *M) {
     if (F.getName() != "malloc" && F.getName() != "calloc") {
       continue;
@@ -169,7 +170,7 @@ unordered_map<Function *, LiveMemorySummary> Privatizer::collectH2S(
     }
   }
 
-  unordered_map<Function *, LiveMemorySummary> result;
+  std::unordered_map<Function *, LiveMemorySummary> result;
 
   for (auto f : heapAllocUsers) {
     auto fname = f->getName();

@@ -44,9 +44,9 @@ void PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
 void PDGAnalysis::embedNodesAsMetadata(
     PDG *pdg,
     LLVMContext &C,
-    unordered_map<Value *, MDNode *> &nodeIDMap) {
+    std::unordered_map<Value *, MDNode *> &nodeIDMap) {
   uint64_t i = 0;
-  unordered_map<Function *, unordered_map<uint64_t, Metadata *>>
+  std::unordered_map<Function *, std::unordered_map<uint64_t, Metadata *>>
       functionArgsIDMap;
 
   /*
@@ -89,7 +89,7 @@ void PDGAnalysis::embedNodesAsMetadata(
    * Embed metadta of argument nodes to function
    */
   for (auto &funArgs : functionArgsIDMap) {
-    vector<Metadata *> argsVec;
+    std::vector<Metadata *> argsVec;
     for (uint64_t i = 0; i < funArgs.second.size(); i++) {
       argsVec.push_back(funArgs.second[i]);
     }
@@ -104,8 +104,8 @@ void PDGAnalysis::embedNodesAsMetadata(
 void PDGAnalysis::embedEdgesAsMetadata(
     PDG *pdg,
     LLVMContext &C,
-    unordered_map<Value *, MDNode *> &nodeIDMap) {
-  std::unordered_map<Function *, vector<Metadata *>> functionEdgesMap;
+    std::unordered_map<Value *, MDNode *> &nodeIDMap) {
+  std::unordered_map<Function *, std::vector<Metadata *>> functionEdgesMap;
 
   /*
    * Construct edge metadata

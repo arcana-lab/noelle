@@ -33,7 +33,7 @@ bool Privatizer::applyG2S(Noelle &noelle) {
   return modified;
 }
 
-unordered_set<Function *> Privatizer::getPrivatizableFunctions(
+std::unordered_set<Function *> Privatizer::getPrivatizableFunctions(
     Noelle &noelle,
     GlobalVariable *globalVar) {
 
@@ -138,7 +138,7 @@ bool Privatizer::initializedBeforeAllUse(Noelle &noelle,
    */
   auto initDominateAllUsers = [&](StoreInst *storeInst) {
     auto DS = noelle.getDominators(currentF);
-    unordered_set<Instruction *> initializers;
+    std::unordered_set<Instruction *> initializers;
     auto initProgramPoint =
         getInitProgramPoint(noelle, DS, globalVar, storeInst, initializers);
     if (!initProgramPoint) {
@@ -156,7 +156,7 @@ bool Privatizer::initializedBeforeAllUse(Noelle &noelle,
     return true;
   };
 
-  unordered_set<StoreInst *> notInitCandidates;
+  std::unordered_set<StoreInst *> notInitCandidates;
   for (auto storeInst : initCandidates) {
     if (!initDominateAllUsers(storeInst)) {
       notInitCandidates.insert(storeInst);
@@ -186,7 +186,7 @@ Instruction *Privatizer::getInitProgramPoint(
     DominatorSummary *DS,
     GlobalVariable *globalVar,
     StoreInst *storeInst,
-    unordered_set<Instruction *> &initializers) {
+    std::unordered_set<Instruction *> &initializers) {
 
   auto globalVarType = globalVar->getValueType();
   auto pointer = storeInst->getPointerOperand();
@@ -356,10 +356,10 @@ Instruction *Privatizer::getInitProgramPoint(
   return nullptr;
 };
 
-unordered_map<GlobalVariable *, unordered_set<Function *>> Privatizer::
-    collectG2S(Noelle &noelle) {
+std::unordered_map<GlobalVariable *, std::unordered_set<Function *>>
+Privatizer::collectG2S(Noelle &noelle) {
 
-  unordered_map<GlobalVariable *, unordered_set<Function *>> result;
+  std::unordered_map<GlobalVariable *, std::unordered_set<Function *>> result;
 
   for (auto &G : M->globals()) {
 
@@ -391,12 +391,13 @@ unordered_map<GlobalVariable *, unordered_set<Function *>> Privatizer::
 
 bool Privatizer::transformG2S(Noelle &noelle,
                               GlobalVariable *globalVar,
-                              unordered_set<Function *> privatizable) {
+                              std::unordered_set<Function *> privatizable) {
   bool modified = false;
 
-  unordered_map<Function *, unordered_set<Instruction *>> directUses;
-  unordered_map<Function *,
-                unordered_map<BitCastOperator *, unordered_set<Instruction *>>>
+  std::unordered_map<Function *, std::unordered_set<Instruction *>> directUses;
+  std::unordered_map<
+      Function *,
+      std::unordered_map<BitCastOperator *, std::unordered_set<Instruction *>>>
       indirectUses;
 
   for (auto currentF : privatizable) {
@@ -420,8 +421,9 @@ bool Privatizer::transformG2S(Noelle &noelle,
     auto usersToReplace = UserSummary(globalVar, noelle).users[currentF];
     assert(!usersToReplace.empty());
 
-    unordered_set<Instruction *> instUsers;
-    unordered_map<BitCastOperator *, unordered_set<Instruction *>> user2insts;
+    std::unordered_set<Instruction *> instUsers;
+    std::unordered_map<BitCastOperator *, std::unordered_set<Instruction *>>
+        user2insts;
     for (auto user : usersToReplace) {
       if (isa<Instruction>(user)) {
         instUsers.insert(dyn_cast<Instruction>(user));
