@@ -22,6 +22,7 @@
 #include "MyTestSuite.hpp"
 
 using namespace llvm;
+using namespace arcana::noelle;
 
 // Register pass to "opt"
 char MyTestSuite::ID = 0;
