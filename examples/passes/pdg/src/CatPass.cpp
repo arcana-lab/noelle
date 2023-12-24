@@ -49,10 +49,10 @@ struct CAT : public ModulePass {
       } else {
         errs() << " MAY ";
       }
-      if (dep->isControlDependence()) {
+      if (isa<ControlDependence<Value, Value>>(dep)) {
         errs() << " CONTROL ";
       }
-      if (dep->isDataDependence()) {
+      if (isa<DataDependence<Value, Value>>(dep)) {
         errs() << " DATA ";
         if (dep->isRAWDependence()) {
           errs() << " RAW ";
@@ -64,7 +64,7 @@ struct CAT : public ModulePass {
           errs() << " WAW ";
         }
       }
-      if (dep->isMemoryDependence()) {
+      if (isa<MemoryDependence<Value, Value>>(dep)) {
         errs() << " MEMORY ";
       }
 
@@ -85,6 +85,7 @@ struct CAT : public ModulePass {
     for (auto &inst : instructions(mainF)) {
       for (auto &inst2 : instructions(mainF)) {
         for (auto dep : FDG->getDependences(&inst, &inst2)) {
+          errs() << "A " << sizeof(*dep) << "\n";
         }
       }
     }
