@@ -171,10 +171,10 @@ struct ElementTraitsBase : public DefaultDOTGraphTraits {
     const std::string varColor = "color=black";
     std::string attrsStr;
     raw_string_ostream ros(attrsStr);
-    if (isa<ControlDependence<T, T>>(edge)){
+    if (isa<ControlDependence<T, T>>(edge)) {
       ros << cntColor;
     } else {
-      ros << (edge->isMemoryDependence() ? memColor : varColor);
+      ros << (isa<MemoryDependence<T, T>>(edge) ? memColor : varColor);
     }
     if (edge->isLoopCarriedDependence())
       ros << ", penwidth=2";

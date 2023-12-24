@@ -226,7 +226,7 @@ void PDGAnalysis::constructEdgesFromUseDefs(PDG *pdg) {
 
       if (isa<Instruction>(user) || isa<Argument>(user)) {
         auto edge = pdg->addVariableDataDependenceEdge(pdgValue, user);
-        edge->setMemMustType(false, true, DG_DATA_RAW);
+        edge->setMemMustType(true, DG_DATA_RAW);
       }
     }
   }
@@ -333,7 +333,8 @@ void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
      * Check if the dependence can be removed because the instructions accessing
      * separate memory regions.
      */
-    if (edge->isMemoryDependence() && this->canMemoryEdgeBeRemoved(pdg, edge)) {
+    if (isa<MemoryDependence<Value, Value>>(edge)
+        && this->canMemoryEdgeBeRemoved(pdg, edge)) {
       removeEdges.insert(edge);
       continue;
     }
@@ -512,7 +513,7 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency(
   /*
    * Check if this is a memory dependence.
    */
-  if (!edge->isMemoryDependence()) {
+  if (!isa<MemoryDependence<Value, Value>>(edge)) {
     return false;
   }
 
@@ -671,7 +672,7 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions(
   /*
    * Check if this is a memory dependence.
    */
-  if (!edge->isMemoryDependence()) {
+  if (!isa<MemoryDependence<Value, Value>>(edge)) {
     return false;
   }
 

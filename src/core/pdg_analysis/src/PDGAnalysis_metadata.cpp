@@ -36,13 +36,17 @@ MDNode *PDGAnalysis::getEdgeMetadata(
     nodeIDMap[edge->getDst()],
     MDNode::get(
         C,
-        MDString::get(C, edge->isMemoryDependence() ? "true" : "false")),
+        MDString::get(
+            C,
+            isa<MemoryDependence<Value, Value>>(edge) ? "true" : "false")),
     MDNode::get(C,
                 MDString::get(C, edge->isMustDependence() ? "true" : "false")),
     MDNode::get(C, MDString::get(C, edge->dataDepToString())),
     MDNode::get(
         C,
-        MDString::get(C, isa<ControlDependence<Value,Value>>(edge) ? "true" : "false")),
+        MDString::get(
+            C,
+            isa<ControlDependence<Value, Value>>(edge) ? "true" : "false")),
     MDNode::get(
         C,
         MDString::get(C, edge->isLoopCarriedDependence() ? "true" : "false")),
@@ -64,14 +68,18 @@ MDNode *PDGAnalysis::getSubEdgesMetadata(
       nodeIDMap[subEdge->getDst()],
       MDNode::get(
           C,
-          MDString::get(C, edge->isMemoryDependence() ? "true" : "false")),
+          MDString::get(
+              C,
+              isa<MemoryDependence<Value, Value>>(edge) ? "true" : "false")),
       MDNode::get(
           C,
           MDString::get(C, edge->isMustDependence() ? "true" : "false")),
       MDNode::get(C, MDString::get(C, edge->dataDepToString())),
       MDNode::get(
           C,
-          MDString::get(C, isa<ControlDependence<Value, Value>>(edge) ? "true" : "false")),
+          MDString::get(
+              C,
+              isa<ControlDependence<Value, Value>>(edge) ? "true" : "false")),
       MDNode::get(
           C,
           MDString::get(C, edge->isLoopCarriedDependence() ? "true" : "false")),
@@ -168,7 +176,8 @@ void PDGAnalysis::constructEdgesFromMetadata(
         if (auto subEdgesM = dyn_cast<MDNode>(edgeM->getOperand(7))) {
           for (auto &subOperand : subEdgesM->operands()) {
             if (MDNode *subEdgeM = dyn_cast<MDNode>(subOperand)) {
-              auto subEdge = constructEdgeFromMetadata(pdg, subEdgeM, IDNodeMap);
+              auto subEdge =
+                  constructEdgeFromMetadata(pdg, subEdgeM, IDNodeMap);
               edge->addSubEdge(subEdge);
             }
           }
@@ -204,30 +213,42 @@ DGEdge<Value, Value> *PDGAnalysis::constructEdgeFromMetadata(
       /*
        * Fetch the attributes.
        */
-      auto isMemoryDependence = cast<MDString>(cast<MDNode>(edgeM->getOperand(2))->getOperand(0))->getString() == "true";
-      auto isControl = cast<MDString>(cast<MDNode>(edgeM->getOperand(5))->getOperand(0))->getString() == "true";
-      auto isLoopCarried = cast<MDString>(cast<MDNode>(edgeM->getOperand(6))->getOperand(0))->getString() == "true";
+      auto isMemoryDependence =
+          cast<MDString>(cast<MDNode>(edgeM->getOperand(2))->getOperand(0))
+              ->getString()
+          == "true";
+      auto isControl =
+          cast<MDString>(cast<MDNode>(edgeM->getOperand(5))->getOperand(0))
+              ->getString()
+          == "true";
+      auto isLoopCarried =
+          cast<MDString>(cast<MDNode>(edgeM->getOperand(6))->getOperand(0))
+              ->getString()
+          == "true";
 
       /*
        * Allocate the dependence.
        */
-      if (isControl){
-        edge = new ControlDependence<Value, Value>(pdg->fetchNode(from), pdg->fetchNode(to));
+      if (isControl) {
+        edge = new ControlDependence<Value, Value>(pdg->fetchNode(from),
+                                                   pdg->fetchNode(to));
       } else {
-        auto k = DGEdge<Value, Value>::DependenceKind::VARIABLE_DEPENDENCE;
-        if (isMemoryDependence){
-          k = DGEdge<Value, Value>::DependenceKind::MEMORY_DEPENDENCE;
+        if (isMemoryDependence) {
+          edge = new MemoryDependence<Value, Value>(pdg->fetchNode(from),
+                                                    pdg->fetchNode(to));
+        } else {
+          edge = new VariableDependence<Value, Value>(pdg->fetchNode(from),
+                                                      pdg->fetchNode(to));
         }
-        edge = new DataDependence<Value, Value>(k, pdg->fetchNode(from), pdg->fetchNode(to));
+        edge->setEdgeAttributes(
+            cast<MDString>(cast<MDNode>(edgeM->getOperand(3))->getOperand(0))
+                    ->getString()
+                == "true",
+            cast<MDString>(cast<MDNode>(edgeM->getOperand(4))->getOperand(0))
+                ->getString()
+                .str());
       }
-      edge->setEdgeAttributes(
-          isMemoryDependence,
-          cast<MDString>(cast<MDNode>(edgeM->getOperand(3))->getOperand(0))
-                  ->getString()
-              == "true",
-          cast<MDString>(cast<MDNode>(edgeM->getOperand(4))->getOperand(0))->getString().str(),
-          isLoopCarried
-          );
+      edge->setLoopCarried(isLoopCarried);
     }
   }
 

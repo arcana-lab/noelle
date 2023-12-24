@@ -81,7 +81,16 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
           new ControlDependence<Value, Value>(*originalEdgeAsCD);
     } else {
       auto originalEdgeAsDD = cast<DataDependence<Value, Value>>(originalEdge);
-      edgeToPointToClones = new DataDependence<Value, Value>(*originalEdgeAsDD);
+      if (auto originalEdgeAsVD =
+              dyn_cast<VariableDependence<Value, Value>>(originalEdgeAsDD)) {
+        edgeToPointToClones =
+            new VariableDependence<Value, Value>(*originalEdgeAsVD);
+      } else {
+        auto originalEdgeAsMD =
+            cast<MemoryDependence<Value, Value>>(originalEdgeAsDD);
+        edgeToPointToClones =
+            new MemoryDependence<Value, Value>(*originalEdgeAsMD);
+      }
     }
     edgeToPointToClones->setNodePair(cloneOutgoingNode, cloneIncomingNode);
 
@@ -122,7 +131,7 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
       /*
        * We only care about memory dependences.
        */
-      if (!edge->isMemoryDependence()) {
+      if (!isa<MemoryDependence<Value, Value>>(edge)) {
         continue;
       }
 
@@ -164,18 +173,18 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
     for (auto store : stores) {
       for (auto other : stores) {
         taskFunctionDG->addMemoryDataDependenceEdge(store, other)
-            ->setMemMustType(true, true, DataDependenceType::DG_DATA_WAW);
+            ->setMemMustType(true, DataDependenceType::DG_DATA_WAW);
         taskFunctionDG->addMemoryDataDependenceEdge(other, store)
-            ->setMemMustType(true, true, DataDependenceType::DG_DATA_WAW);
+            ->setMemMustType(true, DataDependenceType::DG_DATA_WAW);
       }
     }
 
     for (auto store : stores) {
       for (auto load : loads) {
         taskFunctionDG->addMemoryDataDependenceEdge(store, load)
-            ->setMemMustType(true, true, DataDependenceType::DG_DATA_RAW);
+            ->setMemMustType(true, DataDependenceType::DG_DATA_RAW);
         taskFunctionDG->addMemoryDataDependenceEdge(load, store)
-            ->setMemMustType(true, true, DataDependenceType::DG_DATA_WAR);
+            ->setMemMustType(true, DataDependenceType::DG_DATA_WAR);
       }
     }
   };
@@ -212,7 +221,7 @@ static void constructEdgesFromUseDefs(PDG *pdg) {
 
       if (isa<Instruction>(user) || isa<Argument>(user)) {
         auto edge = pdg->addVariableDataDependenceEdge(pdgValue, user);
-        edge->setMemMustType(false, true, DG_DATA_RAW);
+        edge->setMemMustType(true, DG_DATA_RAW);
       }
     }
   }

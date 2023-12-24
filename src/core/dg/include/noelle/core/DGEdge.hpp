@@ -37,7 +37,6 @@ enum DataDependenceType { DG_DATA_NONE, DG_DATA_RAW, DG_DATA_WAR, DG_DATA_WAW };
 template <class T, class SubT>
 class DGEdge {
 public:
-
   /*
    * Concrete sub-classes.
    */
@@ -97,10 +96,6 @@ public:
 
   T *getDst(void) const;
 
-  bool isMemoryDependence() const {
-    return memory;
-  }
-
   bool isMustDependence() const {
     return must;
   }
@@ -121,19 +116,14 @@ public:
     return dataDepType;
   }
 
-  void setMemMustType(bool mem, bool must, DataDependenceType dataDepType);
+  void setMemMustType(bool must, DataDependenceType dataDepType);
 
   void setLoopCarried(bool lc) {
     isLoopCarried = lc;
   }
 
-  void setEdgeAttributes(bool mem,
-                         bool must,
-                         std::string str,
-                         bool lc) {
-    setMemMustType(mem, must, stringToDataDep(str));
-    setLoopCarried(lc);
-
+  void setEdgeAttributes(bool must, std::string str) {
+    setMemMustType(must, stringToDataDep(str));
     return;
   }
 
@@ -161,7 +151,6 @@ protected:
   std::unordered_set<DGEdge<SubT, SubT> *> subEdges;
   bool isLoopCarried;
   DataDependenceType dataDepType;
-  bool memory;
   bool must;
 
   DGEdge(DependenceKind k, DGNode<T> *src, DGNode<T> *dst);
@@ -176,29 +165,27 @@ DGEdge<T, SubT>::DGEdge(DependenceKind k, DGNode<T> *src, DGNode<T> *dst)
   : from(src),
     to(dst),
     subEdges{},
-    memory{ false },
     must{ false },
     isLoopCarried(false),
     dataDepType{ DG_DATA_NONE },
-    kind{k} {
+    kind{ k } {
   return;
 }
 
 template <class T, class SubT>
-DGEdge<T, SubT>::DGEdge(const DGEdge<T, SubT> &edgeToCopy){
+DGEdge<T, SubT>::DGEdge(const DGEdge<T, SubT> &edgeToCopy) {
   auto nodePair = edgeToCopy.getNodePair();
   from = nodePair.first;
   to = nodePair.second;
-  setMemMustType(edgeToCopy.isMemoryDependence(),
-                 edgeToCopy.isMustDependence(),
+  setMemMustType(edgeToCopy.isMustDependence(),
                  edgeToCopy.dataDependenceType());
   setLoopCarried(edgeToCopy.isLoopCarriedDependence());
-  for (auto subEdge : edgeToCopy.subEdges){
+  for (auto subEdge : edgeToCopy.subEdges) {
     addSubEdge(subEdge);
   }
   this->kind = edgeToCopy.kind;
 
-  return ;
+  return;
 }
 
 template <class T, class SubT>
@@ -217,10 +204,8 @@ void DGEdge<T, SubT>::removeSubEdges(void) {
 }
 
 template <class T, class SubT>
-void DGEdge<T, SubT>::setMemMustType(bool mem,
-                                     bool must,
+void DGEdge<T, SubT>::setMemMustType(bool must,
                                      DataDependenceType dataDepType) {
-  this->memory = mem;
   this->must = must;
   this->dataDepType = dataDepType;
 }
@@ -289,9 +274,9 @@ template <class T, class SubT>
 bool DGEdge<T, SubT>::isLoopCarriedDependence() const {
   return isLoopCarried;
 }
-  
+
 template <class T, class SubT>
-typename DGEdge<T, SubT>::DependenceKind DGEdge<T, SubT>::getKind(void) const{
+typename DGEdge<T, SubT>::DependenceKind DGEdge<T, SubT>::getKind(void) const {
   return this->kind;
 }
 

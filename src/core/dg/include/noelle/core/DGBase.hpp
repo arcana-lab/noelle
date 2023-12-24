@@ -26,6 +26,8 @@
 #include "noelle/core/DGNode.hpp"
 #include "noelle/core/DGEdge.hpp"
 #include "noelle/core/DataDependence.hpp"
+#include "noelle/core/MemoryDependence.hpp"
+#include "noelle/core/VariableDependence.hpp"
 #include "noelle/core/ControlDependence.hpp"
 #include "noelle/core/UndefinedDependence.hpp"
 
@@ -261,7 +263,7 @@ template <class T>
 DGEdge<T, T> *DG<T>::addVariableDataDependenceEdge(T *from, T *to) {
   auto fromNode = this->fetchNode(from);
   auto toNode = this->fetchNode(to);
-  auto edge = new DataDependence<T, T>(DGEdge<T,T>::DependenceKind::VARIABLE_DEPENDENCE, fromNode, toNode);
+  auto edge = new VariableDependence<T, T>(fromNode, toNode);
   allEdges.insert(edge);
   fromNode->addOutgoingEdge(edge);
   toNode->addIncomingEdge(edge);
@@ -272,7 +274,7 @@ template <class T>
 DGEdge<T, T> *DG<T>::addMemoryDataDependenceEdge(T *from, T *to) {
   auto fromNode = this->fetchNode(from);
   auto toNode = this->fetchNode(to);
-  auto edge = new DataDependence<T, T>(DGEdge<T,T>::DependenceKind::MEMORY_DEPENDENCE, fromNode, toNode);
+  auto edge = new MemoryDependence<T, T>(fromNode, toNode);
   allEdges.insert(edge);
   fromNode->addOutgoingEdge(edge);
   toNode->addIncomingEdge(edge);
@@ -291,7 +293,7 @@ DGEdge<T, T> *DG<T>::addControlDependenceEdge(T *from, T *to) {
 }
 
 template <class T>
-DGEdge<T, T> *DG<T>::addUndefinedDependenceEdge(T *from, T *to){
+DGEdge<T, T> *DG<T>::addUndefinedDependenceEdge(T *from, T *to) {
   auto fromNode = this->fetchNode(from);
   auto toNode = this->fetchNode(to);
   auto edge = new UndefinedDependence<T, T>(fromNode, toNode);
@@ -318,12 +320,17 @@ std::unordered_set<DGEdge<T, T> *> DG<T>::fetchEdges(DGNode<T> *From,
 template <class T>
 DGEdge<T, T> *DG<T>::copyAddEdge(DGEdge<T, T> &edgeToCopy) {
   DGEdge<T, T> *edge = nullptr;
-  if (isa<ControlDependence<T, T>>(&edgeToCopy)){
-    auto edgeToCopyAsCD = cast<ControlDependence<T, T>>(edgeToCopy);
-    edge = new ControlDependence<T, T>(edgeToCopyAsCD);
+  if (isa<ControlDependence<T, T>>(&edgeToCopy)) {
+    auto edgeToCopyAsCD = cast<ControlDependence<T, T>>(&edgeToCopy);
+    edge = new ControlDependence<T, T>(*edgeToCopyAsCD);
   } else {
-    auto edgeToCopyAsDD = cast<DataDependence<T, T>>(edgeToCopy);
-    edge = new DataDependence<T, T>(edgeToCopyAsDD);
+    if (isa<VariableDependence<T, T>>(&edgeToCopy)) {
+      auto edgeToCopyAsVD = cast<VariableDependence<T, T>>(&edgeToCopy);
+      edge = new VariableDependence<T, T>(*edgeToCopyAsVD);
+    } else {
+      auto edgeToCopyAsMD = cast<MemoryDependence<T, T>>(&edgeToCopy);
+      edge = new MemoryDependence<T, T>(*edgeToCopyAsMD);
+    }
   }
   allEdges.insert(edge);
 

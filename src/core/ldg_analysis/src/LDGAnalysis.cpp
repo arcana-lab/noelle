@@ -77,10 +77,10 @@ void LDGAnalysis::removeDependences(PDG *loopDG, LoopStructure *loop) {
     /*
      * We only aim to remove memory dependences.
      */
-    if (isa<ControlDependence<Value, Value>>(dep)){
+    if (isa<ControlDependence<Value, Value>>(dep)) {
       continue;
     }
-    if (!dep->isMemoryDependence()) {
+    if (!isa<MemoryDependence<Value, Value>>(dep)) {
       continue;
     }
 

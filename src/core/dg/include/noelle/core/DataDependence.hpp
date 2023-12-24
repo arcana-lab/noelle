@@ -28,60 +28,41 @@ namespace arcana::noelle {
 
 template <class T, class SubT>
 class DataDependence : public DGEdge<T, SubT> {
-  public:
-    DataDependence(typename DGEdge<T, SubT>::DependenceKind k, DGNode<T> *src, DGNode<T> *dst);
+public:
+  DataDependence() = delete;
 
-    DataDependence(const DataDependence<T, SubT> &edgeToCopy);
+  static bool classof(const DGEdge<T, SubT> *s);
 
-    DataDependence() = delete;
-
-    std::string toString(void) override ;
-
-    static bool classof(const DGEdge<T, SubT> *s);
+protected:
+  DataDependence(typename DGEdge<T, SubT>::DependenceKind k,
+                 DGNode<T> *src,
+                 DGNode<T> *dst);
+  DataDependence(const DataDependence<T, SubT> &edgeToCopy);
 };
 
 template <class T, class SubT>
-DataDependence<T, SubT>::DataDependence(typename DGEdge<T, SubT>::DependenceKind k, DGNode<T> *src, DGNode<T> *dst)
-  : DGEdge<T, SubT>(k, src, dst){
-  return ;
+DataDependence<T, SubT>::DataDependence(
+    typename DGEdge<T, SubT>::DependenceKind k,
+    DGNode<T> *src,
+    DGNode<T> *dst)
+  : DGEdge<T, SubT>(k, src, dst) {
+  return;
 }
 
 template <class T, class SubT>
-DataDependence<T, SubT>::DataDependence(const DataDependence<T, SubT> &edgeToCopy)
-  : DGEdge<T, SubT>(edgeToCopy){
-  return ;
-}
-
-template <class T, class SubT>
-std::string DataDependence<T, SubT>::toString(void) {
-  if (this->subEdges.size() > 0) {
-    std::string edgesStr;
-    raw_string_ostream ros(edgesStr);
-    for (auto edge : this->subEdges)
-      ros << edge->toString();
-    return ros.str();
-  }
-  std::string edgeStr;
-  raw_string_ostream ros(edgeStr);
-  ros << "Attributes: ";
-  if (this->isLoopCarried) {
-    ros << "Loop-carried ";
-  }
-  ros << "Data ";
-  ros << this->dataDepToString();
-  ros << (this->must ? " (must)" : " (may)");
-  ros << (this->memory ? " from memory " : "");
-  ros << "\n";
-  ros.flush();
-  return edgeStr;
+DataDependence<T, SubT>::DataDependence(
+    const DataDependence<T, SubT> &edgeToCopy)
+  : DGEdge<T, SubT>(edgeToCopy) {
+  return;
 }
 
 template <class T, class SubT>
 bool DataDependence<T, SubT>::classof(const DGEdge<T, SubT> *s) {
   auto sKind = s->getKind();
-  return (sKind >= DGEdge<T, SubT>::DependenceKind::FIRST_DATA_DEPENDENCE) && (sKind <= DGEdge<T, SubT>::DependenceKind::LAST_DATA_DEPENDENCE);
+  return (sKind >= DGEdge<T, SubT>::DependenceKind::FIRST_DATA_DEPENDENCE)
+         && (sKind <= DGEdge<T, SubT>::DependenceKind::LAST_DATA_DEPENDENCE);
 }
 
-}
+} // namespace arcana::noelle
 
 #endif

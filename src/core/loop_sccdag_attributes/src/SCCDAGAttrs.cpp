@@ -677,7 +677,7 @@ LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(SCC *scc,
     /*
      * We do not handle reducibility of memory locations
      */
-    if (dependency->isMemoryDependence()) {
+    if (isa<MemoryDependence<Value, Value>>(dependency)) {
       return nullptr;
     }
 
@@ -790,7 +790,7 @@ std::set<Instruction *> SCCDAGAttrs::checkIfRecomputable(
    * Make sure there is no memory dependences within the SCC.
    */
   for (auto edge : scc->getEdges()) {
-    if (edge->isMemoryDependence()) {
+    if (isa<MemoryDependence<Value, Value>>(edge)) {
       return {};
     }
   }

@@ -689,8 +689,9 @@ void SCCDAGPartitioner::mergeAlongMemoryEdges(void) {
 
     bool containsMemoryDependence = false;
     for (auto subEdge : edge->getSubEdges()) {
-      if (!subEdge->isMemoryDependence())
+      if (!isa<MemoryDependence<Value, Value>>(subEdge)) {
         continue;
+      }
       containsMemoryDependence = true;
       break;
     }

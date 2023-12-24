@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/InductionVariable.hpp"
-#include "noelle/core/DataDependence.hpp"
+#include "noelle/core/MemoryDependence.hpp"
 
 namespace arcana::noelle {
 
@@ -148,8 +148,12 @@ void InductionVariable::traverseCycleThroughLoopEntryPHIToGetAllIVInstructions(
      * and thus must be intermediate values
      */
     for (auto edge : node->getIncomingEdges()) {
-      if (!isa<DataDependence<Value,Value>>(edge) || edge->isMemoryDependence())
+      if (!isa<DataDependence<Value, Value>>(edge)) {
         continue;
+      }
+      if (isa<MemoryDependence<Value, Value>>(edge)) {
+        continue;
+      }
       auto otherNode = edge->getSrcNode();
       auto otherValue = otherNode->getT();
       if (!scc.isInternal(otherValue))

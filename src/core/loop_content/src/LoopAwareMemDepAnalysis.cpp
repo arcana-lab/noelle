@@ -127,7 +127,7 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l) {
     /*
      * If the dependence is not via memory, then SCAF cannot help.
      */
-    if (!edge->isMemoryDependence()) {
+    if (!isa<MemoryDependence<Value, Value>>(edge)) {
       continue;
     }
 
@@ -300,8 +300,9 @@ void refinePDGWithLIDS(PDG *loopDG,
     /*
      * Do not waste time on edges that aren't memory dependencies
      */
-    if (!dependency->isMemoryDependence())
+    if (!isa<MemoryDependence<Value, Value>>(dependency)) {
       continue;
+    }
 
     auto fromInst = dyn_cast<Instruction>(dependency->getSrc());
     auto toInst = dyn_cast<Instruction>(dependency->getDst());

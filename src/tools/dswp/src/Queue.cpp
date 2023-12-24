@@ -102,7 +102,7 @@ void DSWP::collectControlQueueInfo(LoopContent *LDI, Noelle &par) {
     auto scc = sccNode->getT();
 
     for (auto controlEdge : scc->getEdges()) {
-      if (!isa<ControlDependence<Value, Value>>(controlEdge)){
+      if (!isa<ControlDependence<Value, Value>>(controlEdge)) {
         continue;
       }
 
@@ -119,7 +119,8 @@ void DSWP::collectControlQueueInfo(LoopContent *LDI, Noelle &par) {
       bool hasDataDependency = false;
       for (auto conditionOrReturnValueDependency :
            controlNode->getIncomingEdges()) {
-        if (isa<ControlDependence<Value, Value>>(conditionOrReturnValueDependency)){
+        if (isa<ControlDependence<Value, Value>>(
+                conditionOrReturnValueDependency)) {
           continue;
         }
         hasDataDependency = true;
@@ -142,9 +143,9 @@ void DSWP::collectControlQueueInfo(LoopContent *LDI, Noelle &par) {
     for (auto conditionToBranchDependency :
          conditionalBranchNode->getIncomingEdges()) {
       assert(
-          !conditionToBranchDependency->isMemoryDependence()
+          (!isa<MemoryDependence<Value, Value>>(conditionToBranchDependency))
           && "Node producing control dependencies is expected not to consume a memory dependence");
-      if (isa<ControlDependence<Value, Value>>(conditionToBranchDependency)){
+      if (isa<ControlDependence<Value, Value>>(conditionToBranchDependency)) {
         continue;
       }
 
@@ -279,7 +280,7 @@ void DSWP::collectDataAndMemoryQueueInfo(LoopContent *LDI, Noelle &par) {
          * consumers
          */
         for (auto instructionEdge : sccEdge->getSubEdges()) {
-          if (isa<ControlDependence<Value, Value>>(instructionEdge)){
+          if (isa<ControlDependence<Value, Value>>(instructionEdge)) {
             continue;
           }
 
@@ -289,7 +290,8 @@ void DSWP::collectDataAndMemoryQueueInfo(LoopContent *LDI, Noelle &par) {
           /*
            * TODO: Handle memory dependencies and enable synchronization queues
            */
-          auto isMemoryDependence = instructionEdge->isMemoryDependence();
+          auto isMemoryDependence =
+              isa<MemoryDependence<Value, Value>>(instructionEdge);
           assert(!isMemoryDependence
                  && "FIXME: Support memory synchronization with queues");
 

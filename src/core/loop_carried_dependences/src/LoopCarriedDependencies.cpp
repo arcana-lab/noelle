@@ -102,7 +102,8 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
    * If the dependence is a control one and the two instructions belong to a
    * subloop, then this cannot be a loop-carried one for the target loop.
    */
-  if (isa<ControlDependence<Value, Value>>(edge) && (producerLoop != loopNode->getLoop())
+  if (isa<ControlDependence<Value, Value>>(edge)
+      && (producerLoop != loopNode->getLoop())
       && (consumerLoop != loopNode->getLoop())) {
     return false;
   }
@@ -112,7 +113,7 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
    * location) in the same iteration
    */
   auto doTheyTouchTheSameElementInTheSameIteration = true;
-  if (edge->isMemoryDependence()) {
+  if (isa<MemoryDependence<Value, Value>>(edge)) {
 
     /*
      * Fetch the pointer of the location accessed by the producer.
@@ -175,7 +176,7 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
     /*
      * Check if the dependence is data and via variable.
      */
-    if (!edge->isMemoryDependence() && isa<DataDependence<Value, Value>>(edge)) {
+    if (isa<VariableDependence<Value, Value>>(edge)) {
 
       /*
        * The data dependence is variable based

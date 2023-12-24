@@ -61,8 +61,7 @@ bool PDGAnalysis::compareEdges(
 
     auto match = false;
     for (auto &edge2 : edgeSet) {
-      if (edge1->isMemoryDependence() == edge2->isMemoryDependence()
-          && edge1->isMustDependence() == edge2->isMustDependence()
+      if (edge1->isMustDependence() == edge2->isMustDependence()
           && edge1->getKind() == edge2->getKind()
           && edge1->isLoopCarriedDependence()
                  == edge2->isLoopCarriedDependence()

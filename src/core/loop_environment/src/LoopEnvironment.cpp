@@ -62,7 +62,8 @@ LoopEnvironment::LoopEnvironment(PDG *loopDG,
        * Memory and control dependences can be skipped as they do not dictate
        * live-in values.
        */
-      if (edge->isMemoryDependence() || isa<ControlDependence<Value, Value>>(edge)){
+      if (isa<MemoryDependence<Value, Value>>(edge)
+          || isa<ControlDependence<Value, Value>>(edge)) {
         continue;
       }
 
@@ -92,7 +93,8 @@ LoopEnvironment::LoopEnvironment(PDG *loopDG,
      * Determine whether the external value is a consumer (i.e., live-out).
      */
     for (auto edge : externalNode->getIncomingEdges()) {
-      if (edge->isMemoryDependence() || isa<ControlDependence<Value, Value>>(edge)){
+      if (isa<MemoryDependence<Value, Value>>(edge)
+          || isa<ControlDependence<Value, Value>>(edge)) {
         continue;
       }
       auto internalValue = edge->getSrc();

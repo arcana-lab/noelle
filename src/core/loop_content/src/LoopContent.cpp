@@ -334,7 +334,7 @@ std::pair<PDG *, SCCDAG *> LoopContent::createDGsForLoop(
   if (com->arePRVGsNonDeterministic()) {
     std::set<DGEdge<Value, Value> *> toDelete;
     for (auto edge : loopDG->getEdges()) {
-      if (!edge->isMemoryDependence()) {
+      if (!isa<MemoryDependence<Value, Value>>(edge)) {
         continue;
       }
       auto vo = edge->getSrc();
@@ -520,7 +520,7 @@ void LoopContent::removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions(
     /*
      * Only memory dependences can be removed.
      */
-    if (!edge->isMemoryDependence()) {
+    if (!isa<MemoryDependence<Value, Value>>(edge)) {
       continue;
     }
 
@@ -593,7 +593,7 @@ void LoopContent::removeUnnecessaryDependenciesThatCloningMemoryNegates(
     /*
      * Only memory dependences can be removed by cloning memory objects.
      */
-    if (!edge->isMemoryDependence()) {
+    if (!isa<MemoryDependence<Value, Value>>(edge)) {
       continue;
     }
 
@@ -749,7 +749,7 @@ SCCDAG *LoopContent::computeSCCDAGWithOnlyVariableAndControlDependences(
    */
   std::unordered_set<DGEdge<Value, Value> *> memDeps{};
   for (auto currentDependence : loopDG->getSortedDependences()) {
-    if (currentDependence->isMemoryDependence()) {
+    if (isa<MemoryDependence<Value, Value>>(currentDependence)) {
       memDeps.insert(currentDependence);
     }
   }

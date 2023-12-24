@@ -338,7 +338,7 @@ void PDGStats::analyzeDependence(DGEdge<Value, Value> *edge) {
   /*
    * Handle memory dependences.
    */
-  if (edge->isMemoryDependence()) {
+  if (isa<MemoryDependence<Value, Value>>(edge)) {
     this->numberOfMemoryDependence++;
     if (edge->isMustDependence()) {
       this->numberOfMemoryMustDependence++;
@@ -349,7 +349,7 @@ void PDGStats::analyzeDependence(DGEdge<Value, Value> *edge) {
   /*
    * Handle variable dependences.
    */
-  if (isa<DataDependence<Value, Value>>(edge)){
+  if (isa<DataDependence<Value, Value>>(edge)) {
     this->numberOfVariableDependence++;
     return;
   }
@@ -357,7 +357,7 @@ void PDGStats::analyzeDependence(DGEdge<Value, Value> *edge) {
   /*
    * Handle control dependences.
    */
-  if (isa<ControlDependence<Value, Value>>(edge)){
+  if (isa<ControlDependence<Value, Value>>(edge)) {
     this->numberOfControlDependence++;
     return;
   }
