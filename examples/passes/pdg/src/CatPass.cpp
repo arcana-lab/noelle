@@ -85,7 +85,7 @@ struct CAT : public ModulePass {
     for (auto &inst : instructions(mainF)) {
       for (auto &inst2 : instructions(mainF)) {
         for (auto dep : FDG->getDependences(&inst, &inst2)) {
-          errs() << "A " << sizeof(*dep) << "\n";
+          errs() << "A " << dep->getKind() << " = " << sizeof(*dep) << "\n";
         }
       }
     }

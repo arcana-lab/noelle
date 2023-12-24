@@ -28,43 +28,47 @@ namespace arcana::noelle {
 
 template <class T, class SubT>
 class ControlDependence : public DGEdge<T, SubT> {
-  public:
-    ControlDependence(DGNode<T> *src, DGNode<T> *dst);
+public:
+  ControlDependence(DGNode<T> *src, DGNode<T> *dst);
 
-    ControlDependence(const ControlDependence<T, SubT> &edgeToCopy);
+  ControlDependence(const ControlDependence<T, SubT> &edgeToCopy);
 
-    ControlDependence() = delete;
+  ControlDependence() = delete;
 
-    std::string toString(void) override ;
+  std::string toString(void) override;
 
-    static bool classof(const DGEdge<T, SubT> *s);
+  static bool classof(const DGEdge<T, SubT> *s);
 };
 
 template <class T, class SubT>
 ControlDependence<T, SubT>::ControlDependence(DGNode<T> *src, DGNode<T> *dst)
-  : DGEdge<T, SubT>(DGEdge<T, SubT>::DependenceKind::CONTROL_DEPENDENCE, src, dst){
-  return ;
+  : DGEdge<T, SubT>(DGEdge<T, SubT>::DependenceKind::CONTROL_DEPENDENCE,
+                    src,
+                    dst) {
+  return;
 }
 
 template <class T, class SubT>
-ControlDependence<T, SubT>::ControlDependence(const ControlDependence<T, SubT> &edgeToCopy)
-  : DGEdge<T, SubT>(edgeToCopy){
-  return ;
+ControlDependence<T, SubT>::ControlDependence(
+    const ControlDependence<T, SubT> &edgeToCopy)
+  : DGEdge<T, SubT>(edgeToCopy) {
+  return;
 }
 
 template <class T, class SubT>
 std::string ControlDependence<T, SubT>::toString(void) {
-  if (this->subEdges.size() > 0) {
+  if (this->getNumberOfSubEdges() > 0) {
     std::string edgesStr;
     raw_string_ostream ros(edgesStr);
-    for (auto edge : this->subEdges)
+    for (auto edge : this->getSubEdges()) {
       ros << edge->toString();
+    }
     return ros.str();
   }
   std::string edgeStr;
   raw_string_ostream ros(edgeStr);
   ros << "Attributes: ";
-  if (this->isLoopCarried) {
+  if (this->isLoopCarriedDependence()) {
     ros << "Loop-carried ";
   }
   ros << "Control\n";
@@ -77,6 +81,6 @@ bool ControlDependence<T, SubT>::classof(const DGEdge<T, SubT> *s) {
   return (s->getKind() == DGEdge<T, SubT>::DependenceKind::CONTROL_DEPENDENCE);
 }
 
-}
+} // namespace arcana::noelle
 
 #endif

@@ -57,17 +57,18 @@ MemoryDependence<T, SubT>::MemoryDependence(
 
 template <class T, class SubT>
 std::string MemoryDependence<T, SubT>::toString(void) {
-  if (this->subEdges.size() > 0) {
+  if (this->getNumberOfSubEdges() > 0) {
     std::string edgesStr;
     raw_string_ostream ros(edgesStr);
-    for (auto edge : this->subEdges)
+    for (auto edge : this->getSubEdges()) {
       ros << edge->toString();
+    }
     return ros.str();
   }
   std::string edgeStr;
   raw_string_ostream ros(edgeStr);
   ros << "Attributes: ";
-  if (this->isLoopCarried) {
+  if (this->isLoopCarriedDependence()) {
     ros << "Loop-carried ";
   }
   ros << "Data ";

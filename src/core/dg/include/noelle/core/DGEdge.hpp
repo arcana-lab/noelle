@@ -75,9 +75,11 @@ public:
     return subEdges.end();
   }
 
-  iterator_range<edges_iterator> getSubEdges() {
+  iterator_range<edges_iterator> getSubEdges(void) {
     return make_range(subEdges.begin(), subEdges.end());
   }
+
+  uint64_t getNumberOfSubEdges(void) const;
 
   std::pair<DGNode<T> *, DGNode<T> *> getNodePair() const {
     return std::make_pair(from, to);
@@ -122,11 +124,6 @@ public:
     isLoopCarried = lc;
   }
 
-  void setEdgeAttributes(bool must, std::string str) {
-    setMemMustType(must, stringToDataDep(str));
-    return;
-  }
-
   bool isLoopCarriedDependence() const;
 
   void addSubEdge(DGEdge<SubT, SubT> *edge);
@@ -146,10 +143,6 @@ public:
   static DataDependenceType stringToDataDep(std::string &str);
 
 protected:
-  DGNode<T> *from;
-  DGNode<T> *to;
-  std::unordered_set<DGEdge<SubT, SubT> *> subEdges;
-  bool isLoopCarried;
   DataDependenceType dataDepType;
   bool must;
 
@@ -158,6 +151,10 @@ protected:
 
 private:
   DependenceKind kind;
+  DGNode<T> *from;
+  DGNode<T> *to;
+  std::unordered_set<DGEdge<SubT, SubT> *> subEdges;
+  bool isLoopCarried;
 };
 
 template <class T, class SubT>
@@ -273,6 +270,11 @@ T *DGEdge<T, SubT>::getDst(void) const {
 template <class T, class SubT>
 bool DGEdge<T, SubT>::isLoopCarriedDependence() const {
   return isLoopCarried;
+}
+
+template <class T, class SubT>
+uint64_t DGEdge<T, SubT>::getNumberOfSubEdges(void) const {
+  return this->subEdges.size();
 }
 
 template <class T, class SubT>

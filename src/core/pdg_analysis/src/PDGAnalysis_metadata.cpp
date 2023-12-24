@@ -240,13 +240,17 @@ DGEdge<Value, Value> *PDGAnalysis::constructEdgeFromMetadata(
           edge = new VariableDependence<Value, Value>(pdg->fetchNode(from),
                                                       pdg->fetchNode(to));
         }
-        edge->setEdgeAttributes(
+        auto dataDepTypeString =
+            cast<MDString>(cast<MDNode>(edgeM->getOperand(4))->getOperand(0))
+                ->getString()
+                .str();
+        auto dataDepType =
+            DGEdge<Value, Value>::stringToDataDep(dataDepTypeString);
+        edge->setMemMustType(
             cast<MDString>(cast<MDNode>(edgeM->getOperand(3))->getOperand(0))
                     ->getString()
                 == "true",
-            cast<MDString>(cast<MDNode>(edgeM->getOperand(4))->getOperand(0))
-                ->getString()
-                .str());
+            dataDepType);
       }
       edge->setLoopCarried(isLoopCarried);
     }
