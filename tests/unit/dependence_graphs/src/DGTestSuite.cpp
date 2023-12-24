@@ -122,9 +122,10 @@ Values DGTestSuite::pdgHasAllDGEdgesInProgram(ModulePass &pass,
   for (auto edge : dgPass.fdg->getEdges()) {
     std::string outName = suite.valueToString(edge->getSrc());
     std::string inName = suite.valueToString(edge->getDst());
-    std::string type = edge->isControlDependence()
-                           ? "control"
-                           : (edge->isMemoryDependence() ? "memory" : "data");
+    std::string type =
+        isa<ControlDependence<Value, Value>>(edge)
+            ? "control"
+            : (isa<MemoryDependence<Value, Value>>(edge) ? "memory" : "data");
     std::string delim = suite.orderedValueDelimiter;
     valueNames.insert(outName + delim + inName + delim + type);
   }
