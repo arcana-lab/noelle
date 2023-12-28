@@ -153,8 +153,13 @@ public:
   DGNode<T> *fetchNode(T *theT);
   const DGNode<T> *fetchConstNode(T *theT) const;
 
-  DGEdge<T, T> *addVariableDataDependenceEdge(T *from, T *to);
-  DGEdge<T, T> *addMemoryDataDependenceEdge(T *from, T *to);
+  DGEdge<T, T> *addVariableDataDependenceEdge(T *from,
+                                              T *to,
+                                              DataDependenceType t);
+  DGEdge<T, T> *addMemoryDataDependenceEdge(T *from,
+                                            T *to,
+                                            DataDependenceType t,
+                                            bool isMust);
   DGEdge<T, T> *addControlDependenceEdge(T *from, T *to);
   DGEdge<T, T> *addUndefinedDependenceEdge(T *from, T *to);
   std::unordered_set<DGEdge<T, T> *> fetchEdges(DGNode<T> *From, DGNode<T> *To);
@@ -260,10 +265,12 @@ const DGNode<T> *DG<T>::fetchConstNode(T *theT) const {
 }
 
 template <class T>
-DGEdge<T, T> *DG<T>::addVariableDataDependenceEdge(T *from, T *to) {
+DGEdge<T, T> *DG<T>::addVariableDataDependenceEdge(T *from,
+                                                   T *to,
+                                                   DataDependenceType t) {
   auto fromNode = this->fetchNode(from);
   auto toNode = this->fetchNode(to);
-  auto edge = new VariableDependence<T, T>(fromNode, toNode);
+  auto edge = new VariableDependence<T, T>(fromNode, toNode, t);
   allEdges.insert(edge);
   fromNode->addOutgoingEdge(edge);
   toNode->addIncomingEdge(edge);
@@ -271,10 +278,13 @@ DGEdge<T, T> *DG<T>::addVariableDataDependenceEdge(T *from, T *to) {
 }
 
 template <class T>
-DGEdge<T, T> *DG<T>::addMemoryDataDependenceEdge(T *from, T *to) {
+DGEdge<T, T> *DG<T>::addMemoryDataDependenceEdge(T *from,
+                                                 T *to,
+                                                 DataDependenceType t,
+                                                 bool isMust) {
   auto fromNode = this->fetchNode(from);
   auto toNode = this->fetchNode(to);
-  auto edge = new MemoryDependence<T, T>(fromNode, toNode);
+  auto edge = new MemoryDependence<T, T>(fromNode, toNode, t, isMust);
   allEdges.insert(edge);
   fromNode->addOutgoingEdge(edge);
   toNode->addIncomingEdge(edge);
@@ -337,9 +347,8 @@ DGEdge<T, T> *DG<T>::copyAddEdge(DGEdge<T, T> &edgeToCopy) {
   /*
    * Point copy of edge to equivalent nodes in this graph
    */
-  auto nodePair = edgeToCopy.getNodePair();
-  auto fromNode = fetchNode(nodePair.first->getT());
-  auto toNode = fetchNode(nodePair.second->getT());
+  auto fromNode = fetchNode(edgeToCopy.getSrc());
+  auto toNode = fetchNode(edgeToCopy.getDst());
   edge->setNodePair(fromNode, toNode);
 
   fromNode->addOutgoingEdge(edge);

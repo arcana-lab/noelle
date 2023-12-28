@@ -77,17 +77,15 @@ void LDGAnalysis::removeDependences(PDG *loopDG, LoopStructure *loop) {
     /*
      * We only aim to remove memory dependences.
      */
-    if (isa<ControlDependence<Value, Value>>(dep)) {
-      continue;
-    }
     if (!isa<MemoryDependence<Value, Value>>(dep)) {
       continue;
     }
+    auto memDep = cast<MemoryDependence<Value, Value>>(dep);
 
     /*
      * We only aim to remove memory dependences that are "may"
      */
-    if (dep->isMustDependence()) {
+    if (memDep->isMustDependence()) {
       continue;
     }
 
@@ -96,18 +94,18 @@ void LDGAnalysis::removeDependences(PDG *loopDG, LoopStructure *loop) {
      */
     for (auto dda : this->ddAnalyses) {
       if (!dda->canThereBeAMemoryDataDependence(srcInst, dstInst, *loop)) {
-        toDelete.insert(dep);
+        toDelete.insert(memDep);
         break;
       }
-      auto r =
-          dda->isThereThisMemoryDataDependenceType(dep->dataDependenceType(),
-                                                   srcInst,
-                                                   dstInst,
-                                                   *loop);
+      auto r = dda->isThereThisMemoryDataDependenceType(
+          memDep->getDataDependenceType(),
+          srcInst,
+          dstInst,
+          *loop);
       switch (r) {
 
         case MemoryDataDependenceStrength::CANNOT_EXIST:
-          toDelete.insert(dep);
+          toDelete.insert(memDep);
           break;
       }
     }

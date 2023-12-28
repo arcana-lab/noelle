@@ -29,22 +29,37 @@ namespace arcana::noelle {
 template <class T, class SubT>
 class MemoryDependence : public DataDependence<T, SubT> {
 public:
-  MemoryDependence(DGNode<T> *src, DGNode<T> *dst);
+  MemoryDependence(DGNode<T> *src,
+                   DGNode<T> *dst,
+                   DataDependenceType t,
+                   bool isMust);
 
   MemoryDependence(const MemoryDependence<T, SubT> &edgeToCopy);
 
   MemoryDependence() = delete;
 
+  bool isMustDependence(void) const {
+    return must;
+  }
+
   std::string toString(void) override;
 
   static bool classof(const DGEdge<T, SubT> *s);
+
+private:
+  bool must;
 };
 
 template <class T, class SubT>
-MemoryDependence<T, SubT>::MemoryDependence(DGNode<T> *src, DGNode<T> *dst)
+MemoryDependence<T, SubT>::MemoryDependence(DGNode<T> *src,
+                                            DGNode<T> *dst,
+                                            DataDependenceType t,
+                                            bool isMust)
   : DataDependence<T, SubT>(DGEdge<T, SubT>::DependenceKind::MEMORY_DEPENDENCE,
                             src,
-                            dst) {
+                            dst,
+                            t),
+    must{ isMust } {
   return;
 }
 
@@ -52,6 +67,7 @@ template <class T, class SubT>
 MemoryDependence<T, SubT>::MemoryDependence(
     const MemoryDependence<T, SubT> &edgeToCopy)
   : DataDependence<T, SubT>(edgeToCopy) {
+  this->must = edgeToCopy.isMustDependence();
   return;
 }
 

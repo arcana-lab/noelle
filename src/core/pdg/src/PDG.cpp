@@ -187,9 +187,8 @@ void PDG::copyEdgesInto(
       continue;
     }
 
-    auto nodePair = oldEdge->getNodePair();
-    auto fromT = nodePair.first->getT();
-    auto toT = nodePair.second->getT();
+    auto fromT = oldEdge->getSrc();
+    auto toT = oldEdge->getDst();
 
     /*
      * Check whether edge belongs to nodes within function F
@@ -282,7 +281,6 @@ bool PDG::iterateOverDependencesFrom(
      */
     if (includeRegisterDataDependences
         && isa<VariableDependence<Value, Value>>(edge)) {
-      assert(edge->dataDependenceType() != DG_DATA_NONE);
       if (functionToInvokePerDependence(destValue, edge)) {
         return true;
       }
@@ -349,7 +347,6 @@ bool PDG::iterateOverDependencesTo(
      */
     if (includeRegisterDataDependences
         && isa<VariableDependence<Value, Value>>(edge)) {
-      assert(edge->dataDependenceType() != DG_DATA_NONE);
       if (functionToInvokePerDependence(srcValue, edge)) {
         return true;
       }

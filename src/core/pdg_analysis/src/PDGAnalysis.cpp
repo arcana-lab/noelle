@@ -225,8 +225,7 @@ void PDGAnalysis::constructEdgesFromUseDefs(PDG *pdg) {
       auto user = U.getUser();
 
       if (isa<Instruction>(user) || isa<Argument>(user)) {
-        auto edge = pdg->addVariableDataDependenceEdge(pdgValue, user);
-        edge->setMemMustType(true, DG_DATA_RAW);
+        pdg->addVariableDataDependenceEdge(pdgValue, user, DG_DATA_RAW);
       }
     }
   }
@@ -516,12 +515,13 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency(
   if (!isa<MemoryDependence<Value, Value>>(edge)) {
     return false;
   }
+  auto memDep = cast<MemoryDependence<Value, Value>>(edge);
 
   /*
    * Fetch the source and destination of the dependence.
    */
-  auto outgoingT = edge->getSrc();
-  auto incomingT = edge->getDst();
+  auto outgoingT = memDep->getSrc();
+  auto incomingT = memDep->getDst();
 
   /*
    * Handle only memory instructions.
@@ -533,22 +533,22 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency(
   /*
    * Assert: must be a WAR load-store OR a RAW store-load
    */
-  if (edge->isWARDependence()) {
+  if (memDep->isWARDependence()) {
     assert(isa<StoreInst>(incomingT) && isa<LoadInst>(outgoingT));
-  } else if (edge->isRAWDependence()) {
+  } else if (memDep->isRAWDependence()) {
     assert(isa<LoadInst>(incomingT) && isa<StoreInst>(outgoingT));
   }
 
   auto loopCarried = true;
-  if (isMemoryAccessIntoDifferentArrays(edge)
-      || isBackedgeIntoSameGlobal(edge)) {
+  if (isMemoryAccessIntoDifferentArrays(memDep)
+      || isBackedgeIntoSameGlobal(memDep)) {
     loopCarried = false;
   }
 
   if (!loopCarried) {
     // NOTE: We are actually removing must dependencies, but only those that are
     // backedges where by the next iteration, the access is at a different
-    // memory location assert(!edge->isMustDependence()
+    // memory location assert(!memDep->isMustDependence()
     //  && "LLVM AA states load store pair is a must dependence! Bad
     //  PDGAnalysis.");
     if (verbose >= PDGVerbosity::Maximal) {

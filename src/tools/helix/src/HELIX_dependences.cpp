@@ -172,19 +172,31 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
           std::unordered_set<LoadInst *> &loads) -> void {
     for (auto store : stores) {
       for (auto other : stores) {
-        taskFunctionDG->addMemoryDataDependenceEdge(store, other)
-            ->setMemMustType(true, DataDependenceType::DG_DATA_WAW);
-        taskFunctionDG->addMemoryDataDependenceEdge(other, store)
-            ->setMemMustType(true, DataDependenceType::DG_DATA_WAW);
+        taskFunctionDG->addMemoryDataDependenceEdge(
+            store,
+            other,
+            DataDependenceType::DG_DATA_WAW,
+            true);
+        taskFunctionDG->addMemoryDataDependenceEdge(
+            other,
+            store,
+            DataDependenceType::DG_DATA_WAW,
+            true);
       }
     }
 
     for (auto store : stores) {
       for (auto load : loads) {
-        taskFunctionDG->addMemoryDataDependenceEdge(store, load)
-            ->setMemMustType(true, DataDependenceType::DG_DATA_RAW);
-        taskFunctionDG->addMemoryDataDependenceEdge(load, store)
-            ->setMemMustType(true, DataDependenceType::DG_DATA_WAR);
+        taskFunctionDG->addMemoryDataDependenceEdge(
+            store,
+            load,
+            DataDependenceType::DG_DATA_RAW,
+            true);
+        taskFunctionDG->addMemoryDataDependenceEdge(
+            load,
+            store,
+            DataDependenceType::DG_DATA_WAR,
+            true);
       }
     }
   };
@@ -220,8 +232,8 @@ static void constructEdgesFromUseDefs(PDG *pdg) {
       auto user = U.getUser();
 
       if (isa<Instruction>(user) || isa<Argument>(user)) {
-        auto edge = pdg->addVariableDataDependenceEdge(pdgValue, user);
-        edge->setMemMustType(true, DG_DATA_RAW);
+        auto edge =
+            pdg->addVariableDataDependenceEdge(pdgValue, user, DG_DATA_RAW);
       }
     }
   }

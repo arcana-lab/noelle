@@ -31,6 +31,25 @@ MDNode *PDGAnalysis::getEdgeMetadata(
     LLVMContext &C,
     std::unordered_map<Value *, MDNode *> &nodeIDMap) {
   assert(edge != nullptr);
+
+  /*
+   * Check if the dependence is a must.
+   */
+  auto isMust = true;
+  if (auto memDep = dyn_cast<MemoryDependence<Value, Value>>(edge)) {
+    isMust = memDep->isMustDependence();
+  }
+
+  /*
+   * Get the data dependence type.
+   */
+  std::string dataDepType{};
+  if (auto dataDep = dyn_cast<DataDependence<Value, Value>>(edge)) {
+    dataDepType = dataDep->dataDepToString();
+  } else {
+    dataDepType = "NONE";
+  }
+
   Metadata *edgeM[] = {
     nodeIDMap[edge->getSrc()],
     nodeIDMap[edge->getDst()],
@@ -39,9 +58,8 @@ MDNode *PDGAnalysis::getEdgeMetadata(
         MDString::get(
             C,
             isa<MemoryDependence<Value, Value>>(edge) ? "true" : "false")),
-    MDNode::get(C,
-                MDString::get(C, edge->isMustDependence() ? "true" : "false")),
-    MDNode::get(C, MDString::get(C, edge->dataDepToString())),
+    MDNode::get(C, MDString::get(C, isMust ? "true" : "false")),
+    MDNode::get(C, MDString::get(C, dataDepType)),
     MDNode::get(
         C,
         MDString::get(
@@ -62,6 +80,24 @@ MDNode *PDGAnalysis::getSubEdgesMetadata(
     std::unordered_map<Value *, MDNode *> &nodeIDMap) {
   std::vector<Metadata *> subEdgesVec;
 
+  /*
+   * Check if the dependence is a must.
+   */
+  auto isMust = true;
+  if (auto memDep = dyn_cast<MemoryDependence<Value, Value>>(edge)) {
+    isMust = memDep->isMustDependence();
+  }
+
+  /*
+   * Get the data dependence type.
+   */
+  std::string dataDepType{};
+  if (auto dataDep = dyn_cast<DataDependence<Value, Value>>(edge)) {
+    dataDepType = dataDep->dataDepToString();
+  } else {
+    dataDepType = "NONE";
+  }
+
   for (auto &subEdge : edge->getSubEdges()) {
     Metadata *subEdgeM[] = {
       nodeIDMap[subEdge->getSrc()],
@@ -71,10 +107,8 @@ MDNode *PDGAnalysis::getSubEdgesMetadata(
           MDString::get(
               C,
               isa<MemoryDependence<Value, Value>>(edge) ? "true" : "false")),
-      MDNode::get(
-          C,
-          MDString::get(C, edge->isMustDependence() ? "true" : "false")),
-      MDNode::get(C, MDString::get(C, edge->dataDepToString())),
+      MDNode::get(C, MDString::get(C, isMust ? "true" : "false")),
+      MDNode::get(C, MDString::get(C, dataDepType)),
       MDNode::get(
           C,
           MDString::get(
@@ -233,24 +267,43 @@ DGEdge<Value, Value> *PDGAnalysis::constructEdgeFromMetadata(
         edge = new ControlDependence<Value, Value>(pdg->fetchNode(from),
                                                    pdg->fetchNode(to));
       } else {
-        if (isMemoryDependence) {
-          edge = new MemoryDependence<Value, Value>(pdg->fetchNode(from),
-                                                    pdg->fetchNode(to));
-        } else {
-          edge = new VariableDependence<Value, Value>(pdg->fetchNode(from),
-                                                      pdg->fetchNode(to));
-        }
+
+        /*
+         * This is a data dependence.
+         *
+         * Fetch its type (e.g., RAW).
+         */
         auto dataDepTypeString =
             cast<MDString>(cast<MDNode>(edgeM->getOperand(4))->getOperand(0))
                 ->getString()
                 .str();
         auto dataDepType =
-            DGEdge<Value, Value>::stringToDataDep(dataDepTypeString);
-        edge->setMemMustType(
-            cast<MDString>(cast<MDNode>(edgeM->getOperand(3))->getOperand(0))
-                    ->getString()
-                == "true",
-            dataDepType);
+            DataDependence<Value, Value>::stringToDataDep(dataDepTypeString);
+
+        /*
+         * Allocate the data dependence.
+         */
+        if (isMemoryDependence) {
+
+          /*
+           * This is a memory data dependence.
+           *
+           * Fetch whether it is a must or a may dependence.
+           */
+          auto isMust =
+              (cast<MDString>(cast<MDNode>(edgeM->getOperand(3))->getOperand(0))
+                   ->getString()
+               == "true");
+
+          edge = new MemoryDependence<Value, Value>(pdg->fetchNode(from),
+                                                    pdg->fetchNode(to),
+                                                    dataDepType,
+                                                    isMust);
+        } else {
+          edge = new VariableDependence<Value, Value>(pdg->fetchNode(from),
+                                                      pdg->fetchNode(to),
+                                                      dataDepType);
+        }
       }
       edge->setLoopCarried(isLoopCarried);
     }

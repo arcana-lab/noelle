@@ -27,8 +27,6 @@
 
 namespace arcana::noelle {
 
-enum DataDependenceType { DG_DATA_NONE, DG_DATA_RAW, DG_DATA_WAR, DG_DATA_WAW };
-
 /*
  * This is the top of the class hierarchy that organizes dependences.
  *
@@ -81,10 +79,6 @@ public:
 
   uint64_t getNumberOfSubEdges(void) const;
 
-  std::pair<DGNode<T> *, DGNode<T> *> getNodePair() const {
-    return std::make_pair(from, to);
-  }
-
   void setNodePair(DGNode<T> *from, DGNode<T> *to) {
     this->from = from;
     this->to = to;
@@ -98,33 +92,9 @@ public:
 
   T *getDst(void) const;
 
-  bool isMustDependence() const {
-    return must;
-  }
+  bool isLoopCarriedDependence(void) const;
 
-  bool isRAWDependence() const {
-    return dataDepType == DG_DATA_RAW;
-  }
-
-  bool isWARDependence() const {
-    return dataDepType == DG_DATA_WAR;
-  }
-
-  bool isWAWDependence() const {
-    return dataDepType == DG_DATA_WAW;
-  }
-
-  DataDependenceType dataDependenceType() const {
-    return dataDepType;
-  }
-
-  void setMemMustType(bool must, DataDependenceType dataDepType);
-
-  void setLoopCarried(bool lc) {
-    isLoopCarried = lc;
-  }
-
-  bool isLoopCarriedDependence() const;
+  void setLoopCarried(bool lc);
 
   void addSubEdge(DGEdge<SubT, SubT> *edge);
 
@@ -132,20 +102,13 @@ public:
 
   void removeSubEdges(void);
 
-  std::string dataDepToString(void);
-
   virtual std::string toString(void) = 0;
 
   raw_ostream &print(raw_ostream &stream, std::string linePrefix = "");
 
   DependenceKind getKind(void) const;
 
-  static DataDependenceType stringToDataDep(std::string &str);
-
 protected:
-  DataDependenceType dataDepType;
-  bool must;
-
   DGEdge(DependenceKind k, DGNode<T> *src, DGNode<T> *dst);
   DGEdge(const DGEdge<T, SubT> &edgeToCopy);
 
@@ -162,23 +125,18 @@ DGEdge<T, SubT>::DGEdge(DependenceKind k, DGNode<T> *src, DGNode<T> *dst)
   : from(src),
     to(dst),
     subEdges{},
-    must{ false },
     isLoopCarried(false),
-    dataDepType{ DG_DATA_NONE },
     kind{ k } {
   return;
 }
 
 template <class T, class SubT>
 DGEdge<T, SubT>::DGEdge(const DGEdge<T, SubT> &edgeToCopy) {
-  auto nodePair = edgeToCopy.getNodePair();
-  from = nodePair.first;
-  to = nodePair.second;
-  setMemMustType(edgeToCopy.isMustDependence(),
-                 edgeToCopy.dataDependenceType());
-  setLoopCarried(edgeToCopy.isLoopCarriedDependence());
+  this->from = edgeToCopy.getSrcNode();
+  this->to = edgeToCopy.getDstNode();
+  this->setLoopCarried(edgeToCopy.isLoopCarriedDependence());
   for (auto subEdge : edgeToCopy.subEdges) {
-    addSubEdge(subEdge);
+    this->addSubEdge(subEdge);
   }
   this->kind = edgeToCopy.kind;
 
@@ -201,25 +159,6 @@ void DGEdge<T, SubT>::removeSubEdges(void) {
 }
 
 template <class T, class SubT>
-void DGEdge<T, SubT>::setMemMustType(bool must,
-                                     DataDependenceType dataDepType) {
-  this->must = must;
-  this->dataDepType = dataDepType;
-}
-
-template <class T, class SubT>
-std::string DGEdge<T, SubT>::dataDepToString(void) {
-  if (this->isRAWDependence())
-    return "RAW";
-  else if (this->isWARDependence())
-    return "WAR";
-  else if (this->isWAWDependence())
-    return "WAW";
-  else
-    return "NONE";
-}
-
-template <class T, class SubT>
 raw_ostream &DGEdge<T, SubT>::print(raw_ostream &stream,
                                     std::string linePrefix) {
   from->print(stream << linePrefix << "From:\t") << "\n";
@@ -233,18 +172,6 @@ void DGEdge<T, SubT>::addSubEdge(DGEdge<SubT, SubT> *edge) {
   subEdges.insert(edge);
   isLoopCarried |= edge->isLoopCarriedDependence();
   return;
-}
-
-template <class T, class SubT>
-DataDependenceType DGEdge<T, SubT>::stringToDataDep(std::string &str) {
-  if (str == "RAW")
-    return DG_DATA_RAW;
-  else if (str == "WAR")
-    return DG_DATA_WAR;
-  else if (str == "WAW")
-    return DG_DATA_WAW;
-  else
-    return DG_DATA_NONE;
 }
 
 template <class T, class SubT>
@@ -268,8 +195,14 @@ T *DGEdge<T, SubT>::getDst(void) const {
 }
 
 template <class T, class SubT>
-bool DGEdge<T, SubT>::isLoopCarriedDependence() const {
+bool DGEdge<T, SubT>::isLoopCarriedDependence(void) const {
   return isLoopCarried;
+}
+
+template <class T, class SubT>
+void DGEdge<T, SubT>::setLoopCarried(bool lc) {
+  this->isLoopCarried = lc;
+  return;
 }
 
 template <class T, class SubT>

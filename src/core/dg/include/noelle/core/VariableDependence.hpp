@@ -29,7 +29,7 @@ namespace arcana::noelle {
 template <class T, class SubT>
 class VariableDependence : public DataDependence<T, SubT> {
 public:
-  VariableDependence(DGNode<T> *src, DGNode<T> *dst);
+  VariableDependence(DGNode<T> *src, DGNode<T> *dst, DataDependenceType t);
 
   VariableDependence(const VariableDependence<T, SubT> &edgeToCopy);
 
@@ -41,11 +41,14 @@ public:
 };
 
 template <class T, class SubT>
-VariableDependence<T, SubT>::VariableDependence(DGNode<T> *src, DGNode<T> *dst)
+VariableDependence<T, SubT>::VariableDependence(DGNode<T> *src,
+                                                DGNode<T> *dst,
+                                                DataDependenceType t)
   : DataDependence<T, SubT>(
       DGEdge<T, SubT>::DependenceKind::VARIABLE_DEPENDENCE,
       src,
-      dst) {
+      dst,
+      t) {
   return;
 }
 

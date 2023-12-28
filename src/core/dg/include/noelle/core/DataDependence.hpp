@@ -26,26 +26,52 @@
 
 namespace arcana::noelle {
 
+enum DataDependenceType { DG_DATA_RAW, DG_DATA_WAR, DG_DATA_WAW };
+
 template <class T, class SubT>
 class DataDependence : public DGEdge<T, SubT> {
 public:
   DataDependence() = delete;
 
+  DataDependenceType getDataDependenceType(void) const;
+
+  bool isRAWDependence() const {
+    return dataDepType == DG_DATA_RAW;
+  }
+
+  bool isWARDependence() const {
+    return dataDepType == DG_DATA_WAR;
+  }
+
+  bool isWAWDependence() const {
+    return dataDepType == DG_DATA_WAW;
+  }
+
+  std::string dataDepToString(void);
+
   static bool classof(const DGEdge<T, SubT> *s);
+
+  static DataDependenceType stringToDataDep(std::string &str);
 
 protected:
   DataDependence(typename DGEdge<T, SubT>::DependenceKind k,
                  DGNode<T> *src,
-                 DGNode<T> *dst);
+                 DGNode<T> *dst,
+                 DataDependenceType t);
   DataDependence(const DataDependence<T, SubT> &edgeToCopy);
+
+private:
+  DataDependenceType dataDepType;
 };
 
 template <class T, class SubT>
 DataDependence<T, SubT>::DataDependence(
     typename DGEdge<T, SubT>::DependenceKind k,
     DGNode<T> *src,
-    DGNode<T> *dst)
-  : DGEdge<T, SubT>(k, src, dst) {
+    DGNode<T> *dst,
+    DataDependenceType t)
+  : DGEdge<T, SubT>(k, src, dst),
+    dataDepType{ t } {
   return;
 }
 
@@ -53,7 +79,13 @@ template <class T, class SubT>
 DataDependence<T, SubT>::DataDependence(
     const DataDependence<T, SubT> &edgeToCopy)
   : DGEdge<T, SubT>(edgeToCopy) {
+  this->dataDepType = edgeToCopy.getDataDependenceType();
   return;
+}
+
+template <class T, class SubT>
+DataDependenceType DataDependence<T, SubT>::getDataDependenceType(void) const {
+  return this->dataDepType;
 }
 
 template <class T, class SubT>
@@ -61,6 +93,30 @@ bool DataDependence<T, SubT>::classof(const DGEdge<T, SubT> *s) {
   auto sKind = s->getKind();
   return (sKind >= DGEdge<T, SubT>::DependenceKind::FIRST_DATA_DEPENDENCE)
          && (sKind <= DGEdge<T, SubT>::DependenceKind::LAST_DATA_DEPENDENCE);
+}
+
+template <class T, class SubT>
+std::string DataDependence<T, SubT>::dataDepToString(void) {
+  if (this->isRAWDependence()) {
+    return "RAW";
+  } else if (this->isWARDependence()) {
+    return "WAR";
+  } else if (this->isWAWDependence()) {
+    return "WAW";
+  }
+  abort();
+}
+
+template <class T, class SubT>
+DataDependenceType DataDependence<T, SubT>::stringToDataDep(std::string &str) {
+  if (str == "RAW") {
+    return DG_DATA_RAW;
+  } else if (str == "WAR") {
+    return DG_DATA_WAR;
+  } else if (str == "WAW") {
+    return DG_DATA_WAW;
+  }
+  abort();
 }
 
 } // namespace arcana::noelle

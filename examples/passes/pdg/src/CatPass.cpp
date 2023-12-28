@@ -44,28 +44,29 @@ struct CAT : public ModulePass {
      */
     auto iterF = [](Value *src, DGEdge<Value, Value> *dep) -> bool {
       errs() << "   " << *src << " ";
-      if (dep->isMustDependence()) {
-        errs() << " MUST ";
-      } else {
-        errs() << " MAY ";
-      }
       if (isa<ControlDependence<Value, Value>>(dep)) {
         errs() << " CONTROL ";
-      }
-      if (isa<DataDependence<Value, Value>>(dep)) {
+      } else {
         errs() << " DATA ";
-        if (dep->isRAWDependence()) {
+        auto dataDep = cast<DataDependence<Value, Value>>(dep);
+        if (dataDep->isRAWDependence()) {
           errs() << " RAW ";
         }
-        if (dep->isWARDependence()) {
+        if (dataDep->isWARDependence()) {
           errs() << " WAR ";
         }
-        if (dep->isWAWDependence()) {
+        if (dataDep->isWAWDependence()) {
           errs() << " WAW ";
         }
-      }
-      if (isa<MemoryDependence<Value, Value>>(dep)) {
-        errs() << " MEMORY ";
+        if (isa<MemoryDependence<Value, Value>>(dataDep)) {
+          errs() << " MEMORY ";
+          auto memDep = cast<MemoryDependence<Value, Value>>(dataDep);
+          if (memDep->isMustDependence()) {
+            errs() << " MUST ";
+          } else {
+            errs() << " MAY ";
+          }
+        }
       }
 
       errs() << "\n";
@@ -85,10 +86,21 @@ struct CAT : public ModulePass {
     for (auto &inst : instructions(mainF)) {
       for (auto &inst2 : instructions(mainF)) {
         for (auto dep : FDG->getDependences(&inst, &inst2)) {
-          errs() << "A " << dep->getKind() << " = " << sizeof(*dep) << "\n";
         }
       }
     }
+    errs() << "A DGEdge  = " << sizeof(DGEdge<Value, Value>) << "\n";
+    errs()
+        << "A Control  = " << sizeof(ControlDependence<Value, Value>) << "\n";
+    errs()
+        << "A Variable  = " << sizeof(VariableDependence<Value, Value>) << "\n";
+    errs() << "A Memory  = " << sizeof(MemoryDependence<Value, Value>) << "\n";
+    errs() << "A field set = "
+           << sizeof(std::unordered_set<DGEdge<Value, Value> *>) << "\n";
+    errs() << "A kind set = " << sizeof(DGEdge<Value, Value>::DependenceKind)
+           << "\n";
+    errs() << "A bool set = " << sizeof(bool) << "\n";
+    errs() << "A pointer = " << sizeof(DGNode<Value> *) << "\n";
 
     return false;
   }
