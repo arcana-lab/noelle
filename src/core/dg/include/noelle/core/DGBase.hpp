@@ -349,7 +349,8 @@ DGEdge<T, T> *DG<T>::copyAddEdge(DGEdge<T, T> &edgeToCopy) {
    */
   auto fromNode = fetchNode(edgeToCopy.getSrc());
   auto toNode = fetchNode(edgeToCopy.getDst());
-  edge->setNodePair(fromNode, toNode);
+  edge->setSrcNode(fromNode);
+  edge->setDstNode(toNode);
 
   fromNode->addOutgoingEdge(edge);
   toNode->addIncomingEdge(edge);

@@ -92,7 +92,8 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
             new MemoryDependence<Value, Value>(*originalEdgeAsMD);
       }
     }
-    edgeToPointToClones->setNodePair(cloneOutgoingNode, cloneIncomingNode);
+    edgeToPointToClones->setSrcNode(cloneOutgoingNode);
+    edgeToPointToClones->setDstNode(cloneIncomingNode);
 
     /*
      * Loop carry dependencies will be recomputed

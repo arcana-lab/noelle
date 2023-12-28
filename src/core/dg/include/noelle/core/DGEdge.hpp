@@ -55,34 +55,9 @@ public:
    */
   DGEdge() = delete;
 
-  using edges_iterator =
-      typename std::unordered_set<DGEdge<SubT, SubT> *>::iterator;
-  using edges_const_iterator =
-      typename std::unordered_set<DGEdge<SubT, SubT> *>::const_iterator;
-
-  edges_iterator begin_sub_edges() {
-    return subEdges.begin();
-  }
-  edges_iterator end_sub_edges() {
-    return subEdges.end();
-  }
-  edges_const_iterator begin_sub_edges() const {
-    return subEdges.begin();
-  }
-  edges_const_iterator end_sub_edges() const {
-    return subEdges.end();
-  }
-
-  iterator_range<edges_iterator> getSubEdges(void) {
-    return make_range(subEdges.begin(), subEdges.end());
-  }
+  std::unordered_set<DGEdge<SubT, SubT> *> getSubEdges(void) const ;
 
   uint64_t getNumberOfSubEdges(void) const;
-
-  void setNodePair(DGNode<T> *from, DGNode<T> *to) {
-    this->from = from;
-    this->to = to;
-  }
 
   DGNode<T> *getSrcNode(void) const;
 
@@ -91,6 +66,10 @@ public:
   T *getSrc(void) const;
 
   T *getDst(void) const;
+
+  void setSrcNode (DGNode<T> *from);
+
+  void setDstNode (DGNode<T> *to);
 
   bool isLoopCarriedDependence(void) const;
 
@@ -108,6 +87,8 @@ public:
 
   DependenceKind getKind(void) const;
 
+  virtual ~DGEdge();
+
 protected:
   DGEdge(DependenceKind k, DGNode<T> *src, DGNode<T> *dst);
   DGEdge(const DGEdge<T, SubT> &edgeToCopy);
@@ -116,43 +97,79 @@ private:
   DependenceKind kind;
   DGNode<T> *from;
   DGNode<T> *to;
-  std::unordered_set<DGEdge<SubT, SubT> *> subEdges;
+  std::unordered_set<DGEdge<SubT, SubT> *> *subEdges;
   bool isLoopCarried;
 };
 
 template <class T, class SubT>
 DGEdge<T, SubT>::DGEdge(DependenceKind k, DGNode<T> *src, DGNode<T> *dst)
-  : from(src),
-    to(dst),
-    subEdges{},
-    isLoopCarried(false),
-    kind{ k } {
+  : kind{ k },
+    from{src},
+    to{dst},
+    subEdges{nullptr},
+    isLoopCarried(false) {
   return;
 }
 
 template <class T, class SubT>
-DGEdge<T, SubT>::DGEdge(const DGEdge<T, SubT> &edgeToCopy) {
+DGEdge<T, SubT>::DGEdge(const DGEdge<T, SubT> &edgeToCopy) 
+  : subEdges{ nullptr} {
+
+  /*
+   * Copy the vertices.
+   */
   this->from = edgeToCopy.getSrcNode();
   this->to = edgeToCopy.getDstNode();
+
+  /*
+   * Copy the attributes.
+   */
   this->setLoopCarried(edgeToCopy.isLoopCarriedDependence());
-  for (auto subEdge : edgeToCopy.subEdges) {
-    this->addSubEdge(subEdge);
-  }
   this->kind = edgeToCopy.kind;
+
+  /*
+   * Copy the sub-edges.
+   */
+  if (edgeToCopy.subEdges != nullptr){
+    for (auto subEdge : (*edgeToCopy.subEdges)) {
+      this->addSubEdge(subEdge);
+    }
+  }
 
   return;
 }
 
 template <class T, class SubT>
 void DGEdge<T, SubT>::removeSubEdge(DGEdge<SubT, SubT> *edge) {
-  subEdges.erase(edge);
+
+  /*
+   * Remove the sub-edge
+   */
+  if (this->subEdges == nullptr){
+    abort();
+  }
+  this->subEdges->erase(edge);
+
+  /*
+   * Check if we can remove the set.
+   */
+  if (this->getNumberOfSubEdges() == 0){
+    this->removeSubEdges();
+  }
 
   return;
 }
 
 template <class T, class SubT>
 void DGEdge<T, SubT>::removeSubEdges(void) {
-  subEdges.clear();
+  if (this->subEdges == nullptr){
+    return ;
+  }
+
+  this->subEdges->clear();
+  delete this->subEdges;
+  this->subEdges = nullptr;
+
   setLoopCarried(false);
 
   return;
@@ -169,8 +186,25 @@ raw_ostream &DGEdge<T, SubT>::print(raw_ostream &stream,
 
 template <class T, class SubT>
 void DGEdge<T, SubT>::addSubEdge(DGEdge<SubT, SubT> *edge) {
-  subEdges.insert(edge);
+
+  /*
+   * Make sure there is a set allocated.
+   */
+  if (this->subEdges == nullptr){
+    this->subEdges = new std::unordered_set<DGEdge<SubT, SubT> *>();
+  }
+  assert(this->subEdges != nullptr);
+
+  /*
+   * Add the sub-edge.
+   */
+  this->subEdges->insert(edge);
+
+  /*
+   * Set the attributes.
+   */
   isLoopCarried |= edge->isLoopCarriedDependence();
+
   return;
 }
 
@@ -182,6 +216,16 @@ DGNode<T> *DGEdge<T, SubT>::getSrcNode(void) const {
 template <class T, class SubT>
 DGNode<T> *DGEdge<T, SubT>::getDstNode(void) const {
   return to;
+}
+
+template <class T, class SubT>
+void DGEdge<T, SubT>::setSrcNode (DGNode<T> *f){
+  this->from = f;
+}
+
+template <class T, class SubT>
+void DGEdge<T, SubT>::setDstNode (DGNode<T> *t){
+  this->to = t;
 }
 
 template <class T, class SubT>
@@ -199,6 +243,20 @@ bool DGEdge<T, SubT>::isLoopCarriedDependence(void) const {
   return isLoopCarried;
 }
 
+
+template <class T, class SubT>
+std::unordered_set<DGEdge<SubT, SubT> *> DGEdge<T, SubT>::getSubEdges(void) const {
+  std::unordered_set<DGEdge<SubT, SubT> *> s;
+
+  if (this->subEdges != nullptr){
+    for (auto subEdge : *(this->subEdges)){
+      s.insert(subEdge);
+    }
+  }
+
+  return s;
+}
+
 template <class T, class SubT>
 void DGEdge<T, SubT>::setLoopCarried(bool lc) {
   this->isLoopCarried = lc;
@@ -207,12 +265,21 @@ void DGEdge<T, SubT>::setLoopCarried(bool lc) {
 
 template <class T, class SubT>
 uint64_t DGEdge<T, SubT>::getNumberOfSubEdges(void) const {
-  return this->subEdges.size();
+  if (this->subEdges == nullptr){
+    return 0;
+  }
+
+  return this->subEdges->size();
 }
 
 template <class T, class SubT>
 typename DGEdge<T, SubT>::DependenceKind DGEdge<T, SubT>::getKind(void) const {
   return this->kind;
+}
+  
+template <class T, class SubT>
+DGEdge<T, SubT>::~DGEdge(){
+  return ;
 }
 
 } // namespace arcana::noelle
