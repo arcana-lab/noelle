@@ -61,7 +61,7 @@ struct CAT : public ModulePass {
         if (isa<MemoryDependence<Value, Value>>(dataDep)) {
           errs() << " MEMORY ";
           auto memDep = cast<MemoryDependence<Value, Value>>(dataDep);
-          if (memDep->isMustDependence()) {
+          if (isa<MustMemoryDependence<Value, Value>>(memDep)) {
             errs() << " MUST ";
           } else {
             errs() << " MAY ";
