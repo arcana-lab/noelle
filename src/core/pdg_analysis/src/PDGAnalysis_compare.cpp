@@ -73,13 +73,6 @@ bool PDGAnalysis::compareEdges(
             areEquals = false;
           }
         }
-        if (isa<MemoryDependence<Value, Value>>(edge1)) {
-          auto data1 = cast<MemoryDependence<Value, Value>>(edge1);
-          auto data2 = cast<MemoryDependence<Value, Value>>(edge2);
-          if (data1->isMustDependence() != data2->isMustDependence()) {
-            areEquals = false;
-          }
-        }
         if (areEquals) {
           match = true;
           break;

@@ -29,37 +29,26 @@ namespace arcana::noelle {
 template <class T, class SubT>
 class MemoryDependence : public DataDependence<T, SubT> {
 public:
-  MemoryDependence(DGNode<T> *src,
-                   DGNode<T> *dst,
-                   DataDependenceType t,
-                   bool isMust);
-
-  MemoryDependence(const MemoryDependence<T, SubT> &edgeToCopy);
-
   MemoryDependence() = delete;
-
-  bool isMustDependence(void) const {
-    return must;
-  }
-
-  std::string toString(void) override;
 
   static bool classof(const DGEdge<T, SubT> *s);
 
-private:
-  bool must;
+protected:
+  MemoryDependence(typename DGEdge<T, SubT>::DependenceKind k,
+                   DGNode<T> *src,
+                   DGNode<T> *dst,
+                   DataDependenceType t);
+
+  MemoryDependence(const MemoryDependence<T, SubT> &edgeToCopy);
 };
 
 template <class T, class SubT>
-MemoryDependence<T, SubT>::MemoryDependence(DGNode<T> *src,
-                                            DGNode<T> *dst,
-                                            DataDependenceType t,
-                                            bool isMust)
-  : DataDependence<T, SubT>(DGEdge<T, SubT>::DependenceKind::MEMORY_DEPENDENCE,
-                            src,
-                            dst,
-                            t),
-    must{ isMust } {
+MemoryDependence<T, SubT>::MemoryDependence(
+    typename DGEdge<T, SubT>::DependenceKind k,
+    DGNode<T> *src,
+    DGNode<T> *dst,
+    DataDependenceType t)
+  : DataDependence<T, SubT>(k, src, dst, t) {
   return;
 }
 
@@ -67,39 +56,14 @@ template <class T, class SubT>
 MemoryDependence<T, SubT>::MemoryDependence(
     const MemoryDependence<T, SubT> &edgeToCopy)
   : DataDependence<T, SubT>(edgeToCopy) {
-  this->must = edgeToCopy.isMustDependence();
   return;
-}
-
-template <class T, class SubT>
-std::string MemoryDependence<T, SubT>::toString(void) {
-  if (this->getNumberOfSubEdges() > 0) {
-    std::string edgesStr;
-    raw_string_ostream ros(edgesStr);
-    for (auto edge : this->getSubEdges()) {
-      ros << edge->toString();
-    }
-    return ros.str();
-  }
-  std::string edgeStr;
-  raw_string_ostream ros(edgeStr);
-  ros << "Attributes: ";
-  if (this->isLoopCarriedDependence()) {
-    ros << "Loop-carried ";
-  }
-  ros << "Data ";
-  ros << this->dataDepToString();
-  ros << (this->must ? " (must)" : " (may)");
-  ros << " from memory ";
-  ros << "\n";
-  ros.flush();
-  return edgeStr;
 }
 
 template <class T, class SubT>
 bool MemoryDependence<T, SubT>::classof(const DGEdge<T, SubT> *s) {
   auto sKind = s->getKind();
-  return (sKind == DGEdge<T, SubT>::DependenceKind::MEMORY_DEPENDENCE);
+  return (sKind >= DGEdge<T, SubT>::DependenceKind::FIRST_MEMORY_DEPENDENCE)
+         && (sKind <= DGEdge<T, SubT>::DependenceKind::LAST_MEMORY_DEPENDENCE);
 }
 
 } // namespace arcana::noelle

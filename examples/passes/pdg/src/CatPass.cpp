@@ -61,7 +61,7 @@ struct CAT : public ModulePass {
         if (isa<MemoryDependence<Value, Value>>(dataDep)) {
           errs() << " MEMORY ";
           auto memDep = cast<MemoryDependence<Value, Value>>(dataDep);
-          if (memDep->isMustDependence()) {
+          if (isa<MustMemoryDependence<Value, Value>>(memDep)) {
             errs() << " MUST ";
           } else {
             errs() << " MAY ";
@@ -95,12 +95,6 @@ struct CAT : public ModulePass {
     errs()
         << "A Variable  = " << sizeof(VariableDependence<Value, Value>) << "\n";
     errs() << "A Memory  = " << sizeof(MemoryDependence<Value, Value>) << "\n";
-    errs() << "A field set = "
-           << sizeof(std::unordered_set<DGEdge<Value, Value> *>) << "\n";
-    errs() << "A kind set = " << sizeof(DGEdge<Value, Value>::DependenceKind)
-           << "\n";
-    errs() << "A bool set = " << sizeof(bool) << "\n";
-    errs() << "A pointer = " << sizeof(DGNode<Value> *) << "\n";
 
     return false;
   }

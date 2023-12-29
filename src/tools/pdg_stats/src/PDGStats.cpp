@@ -340,10 +340,8 @@ void PDGStats::analyzeDependence(DGEdge<Value, Value> *edge) {
    */
   if (isa<MemoryDependence<Value, Value>>(edge)) {
     this->numberOfMemoryDependence++;
-    if (auto memDep = dyn_cast<MemoryDependence<Value, Value>>(edge)) {
-      if (memDep->isMustDependence()) {
-        this->numberOfMemoryMustDependence++;
-      }
+    if (isa<MustMemoryDependence<Value, Value>>(edge)) {
+      this->numberOfMemoryMustDependence++;
     }
     return;
   }

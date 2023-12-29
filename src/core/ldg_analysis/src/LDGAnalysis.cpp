@@ -85,7 +85,7 @@ void LDGAnalysis::removeDependences(PDG *loopDG, LoopStructure *loop) {
     /*
      * We only aim to remove memory dependences that are "may"
      */
-    if (memDep->isMustDependence()) {
+    if (isa<MustMemoryDependence<Value, Value>>(memDep)) {
       continue;
     }
 

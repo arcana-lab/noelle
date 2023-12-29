@@ -26,7 +26,8 @@
 #include "noelle/core/DGNode.hpp"
 #include "noelle/core/DGEdge.hpp"
 #include "noelle/core/DataDependence.hpp"
-#include "noelle/core/MemoryDependence.hpp"
+#include "noelle/core/MayMemoryDependence.hpp"
+#include "noelle/core/MustMemoryDependence.hpp"
 #include "noelle/core/VariableDependence.hpp"
 #include "noelle/core/ControlDependence.hpp"
 #include "noelle/core/UndefinedDependence.hpp"
@@ -284,7 +285,14 @@ DGEdge<T, T> *DG<T>::addMemoryDataDependenceEdge(T *from,
                                                  bool isMust) {
   auto fromNode = this->fetchNode(from);
   auto toNode = this->fetchNode(to);
-  auto edge = new MemoryDependence<T, T>(fromNode, toNode, t, isMust);
+  DGEdge<T, T> *edge = nullptr;
+  if (isMust) {
+    edge = new MustMemoryDependence<T, T>(fromNode, toNode, t);
+  } else {
+    edge = new MayMemoryDependence<T, T>(fromNode, toNode, t);
+  }
+  assert(edge != nullptr);
+
   allEdges.insert(edge);
   fromNode->addOutgoingEdge(edge);
   toNode->addIncomingEdge(edge);
@@ -337,9 +345,12 @@ DGEdge<T, T> *DG<T>::copyAddEdge(DGEdge<T, T> &edgeToCopy) {
     if (isa<VariableDependence<T, T>>(&edgeToCopy)) {
       auto edgeToCopyAsVD = cast<VariableDependence<T, T>>(&edgeToCopy);
       edge = new VariableDependence<T, T>(*edgeToCopyAsVD);
+    } else if (isa<MayMemoryDependence<T, T>>(&edgeToCopy)) {
+      auto edgeToCopyAsMD = cast<MayMemoryDependence<T, T>>(&edgeToCopy);
+      edge = new MayMemoryDependence<T, T>(*edgeToCopyAsMD);
     } else {
-      auto edgeToCopyAsMD = cast<MemoryDependence<T, T>>(&edgeToCopy);
-      edge = new MemoryDependence<T, T>(*edgeToCopyAsMD);
+      auto edgeToCopyAsMD = cast<MustMemoryDependence<T, T>>(&edgeToCopy);
+      edge = new MustMemoryDependence<T, T>(*edgeToCopyAsMD);
     }
   }
   allEdges.insert(edge);
@@ -349,7 +360,8 @@ DGEdge<T, T> *DG<T>::copyAddEdge(DGEdge<T, T> &edgeToCopy) {
    */
   auto fromNode = fetchNode(edgeToCopy.getSrc());
   auto toNode = fetchNode(edgeToCopy.getDst());
-  edge->setNodePair(fromNode, toNode);
+  edge->setSrcNode(fromNode);
+  edge->setDstNode(toNode);
 
   fromNode->addOutgoingEdge(edge);
   toNode->addIncomingEdge(edge);
