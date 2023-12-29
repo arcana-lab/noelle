@@ -85,11 +85,16 @@ PDG *HELIX::constructTaskInternalDependenceGraphFromOriginalLoopDG(
               dyn_cast<VariableDependence<Value, Value>>(originalEdgeAsDD)) {
         edgeToPointToClones =
             new VariableDependence<Value, Value>(*originalEdgeAsVD);
-      } else {
-        auto originalEdgeAsMD =
-            cast<MemoryDependence<Value, Value>>(originalEdgeAsDD);
+      } else if (auto originalEdgeAsMD =
+                     dyn_cast<MayMemoryDependence<Value, Value>>(
+                         originalEdgeAsDD)) {
         edgeToPointToClones =
-            new MemoryDependence<Value, Value>(*originalEdgeAsMD);
+            new MayMemoryDependence<Value, Value>(*originalEdgeAsMD);
+      } else {
+        auto originalEdgeAsMustMD =
+            cast<MustMemoryDependence<Value, Value>>(originalEdgeAsDD);
+        edgeToPointToClones =
+            new MustMemoryDependence<Value, Value>(*originalEdgeAsMustMD);
       }
     }
     edgeToPointToClones->setSrcNode(cloneOutgoingNode);

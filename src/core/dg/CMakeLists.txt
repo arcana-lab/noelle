@@ -18,6 +18,8 @@ install(
   include/noelle/core/DataDependence.hpp
   include/noelle/core/VariableDependence.hpp
   include/noelle/core/MemoryDependence.hpp
+  include/noelle/core/MayMemoryDependence.hpp
+  include/noelle/core/MustMemoryDependence.hpp
   include/noelle/core/UndefinedDependence.hpp
   include/noelle/core/DGGraphTraits.hpp
   include/noelle/core/SubCFGs.hpp

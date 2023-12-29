@@ -35,10 +35,7 @@ MDNode *PDGAnalysis::getEdgeMetadata(
   /*
    * Check if the dependence is a must.
    */
-  auto isMust = true;
-  if (auto memDep = dyn_cast<MemoryDependence<Value, Value>>(edge)) {
-    isMust = memDep->isMustDependence();
-  }
+  auto isMust = isa<MustMemoryDependence<Value, Value>>(edge);
 
   /*
    * Get the data dependence type.
@@ -83,10 +80,7 @@ MDNode *PDGAnalysis::getSubEdgesMetadata(
   /*
    * Check if the dependence is a must.
    */
-  auto isMust = true;
-  if (auto memDep = dyn_cast<MemoryDependence<Value, Value>>(edge)) {
-    isMust = memDep->isMustDependence();
-  }
+  auto isMust = isa<MustMemoryDependence<Value, Value>>(edge);
 
   /*
    * Get the data dependence type.
@@ -295,10 +289,16 @@ DGEdge<Value, Value> *PDGAnalysis::constructEdgeFromMetadata(
                    ->getString()
                == "true");
 
-          edge = new MemoryDependence<Value, Value>(pdg->fetchNode(from),
-                                                    pdg->fetchNode(to),
-                                                    dataDepType,
-                                                    isMust);
+          if (isMust) {
+            edge = new MustMemoryDependence<Value, Value>(pdg->fetchNode(from),
+                                                          pdg->fetchNode(to),
+                                                          dataDepType);
+          } else {
+            edge = new MayMemoryDependence<Value, Value>(pdg->fetchNode(from),
+                                                         pdg->fetchNode(to),
+                                                         dataDepType);
+          }
+
         } else {
           edge = new VariableDependence<Value, Value>(pdg->fetchNode(from),
                                                       pdg->fetchNode(to),
