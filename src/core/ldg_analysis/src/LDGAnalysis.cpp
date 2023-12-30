@@ -107,6 +107,9 @@ void LDGAnalysis::removeDependences(PDG *loopDG, LoopStructure *loop) {
         case MemoryDataDependenceStrength::CANNOT_EXIST:
           toDelete.insert(memDep);
           break;
+
+        default:
+          break;
       }
     }
   }
