@@ -62,21 +62,21 @@ public:
 
   LoopEnvironmentBuilder() = delete;
 
-  void addVariableToEnvironment(uint64_t varID, Type *varType);
+  virtual void addVariableToEnvironment(uint64_t varID, Type *varType);
 
   /*
    * Generate code to create environment array/variable allocations
    */
-  void allocateEnvironmentArray(IRBuilder<> builder);
-  void generateEnvVariables(IRBuilder<> builder);
+  virtual void allocateEnvironmentArray(IRBuilder<> &builder);
+  virtual void generateEnvVariables(IRBuilder<> &builder);
 
   /*
    * Reduce live out variables given binary operators to reduce
    * with and initial values to start at
    */
-  BasicBlock *reduceLiveOutVariables(
+  virtual BasicBlock *reduceLiveOutVariables(
       BasicBlock *bb,
-      IRBuilder<> builder,
+      IRBuilder<> &builder,
       const std::unordered_map<uint32_t, BinaryReductionSCC *> &reductions,
       Value *numberOfThreadsExecuted,
       std::function<Value *(ReductionSCC *scc)> castingInitialValue);
@@ -85,23 +85,24 @@ public:
    * As all users of the environment know its structure, pass around the
    * equivalent of a void pointer
    */
-  Value *getEnvironmentArrayVoidPtr(void) const;
-  Value *getEnvironmentArray(void) const;
-  ArrayType *getEnvironmentArrayType(void) const;
+  virtual Value *getEnvironmentArrayVoidPtr(void) const;
+  virtual Value *getEnvironmentArray(void) const;
+  virtual ArrayType *getEnvironmentArrayType(void) const;
 
-  LoopEnvironmentUser *getUser(uint32_t user) const;
-  uint32_t getNumberOfUsers(void) const;
+  virtual LoopEnvironmentUser *getUser(uint32_t user) const;
+  virtual uint32_t getNumberOfUsers(void) const;
 
-  Value *getEnvironmentVariable(uint32_t id) const;
-  uint32_t getIndexOfEnvironmentVariable(uint32_t id) const;
-  bool isIncludedEnvironmentVariable(uint32_t id) const;
-  Value *getAccumulatedReducedEnvironmentVariable(uint32_t id) const;
-  Value *getReducedEnvironmentVariable(uint32_t id, uint32_t reducerInd) const;
-  bool hasVariableBeenReduced(uint32_t id) const;
+  virtual Value *getEnvironmentVariable(uint32_t id) const;
+  virtual uint32_t getIndexOfEnvironmentVariable(uint32_t id) const;
+  virtual bool isIncludedEnvironmentVariable(uint32_t id) const;
+  virtual Value *getAccumulatedReducedEnvironmentVariable(uint32_t id) const;
+  virtual Value *getReducedEnvironmentVariable(uint32_t id,
+                                               uint32_t reducerInd) const;
+  virtual bool hasVariableBeenReduced(uint32_t id) const;
 
-  ~LoopEnvironmentBuilder();
+  virtual ~LoopEnvironmentBuilder();
 
-private:
+protected:
   /*
    * The environment array, owned by this builder
    */
@@ -132,13 +133,13 @@ private:
    */
   std::vector<LoopEnvironmentUser *> envUsers;
 
-  void initializeBuilder(const std::vector<Type *> &varTypes,
-                         const std::set<uint32_t> &singleVarIDs,
-                         const std::set<uint32_t> &reducableVarIDs,
-                         uint64_t reducerCount,
-                         uint64_t numberOfUsers);
+  virtual void initializeBuilder(const std::vector<Type *> &varTypes,
+                                 const std::set<uint32_t> &singleVarIDs,
+                                 const std::set<uint32_t> &reducableVarIDs,
+                                 uint64_t reducerCount,
+                                 uint64_t numberOfUsers);
 
-  void createUsers(uint32_t numUsers);
+  virtual void createUsers(uint32_t numUsers);
 };
 
 } // namespace arcana::noelle

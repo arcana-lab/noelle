@@ -279,4 +279,8 @@ uint64_t LoopEnvironment::getNumberOfLiveOuts(void) const {
   return numberOfLiveOuts;
 }
 
+LoopEnvironment::~LoopEnvironment() {
+  return;
+}
+
 } // namespace arcana::noelle

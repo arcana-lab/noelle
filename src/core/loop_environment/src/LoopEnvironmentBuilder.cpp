@@ -254,7 +254,7 @@ void LoopEnvironmentBuilder::addVariableToEnvironment(uint64_t varID,
   return;
 }
 
-void LoopEnvironmentBuilder::allocateEnvironmentArray(IRBuilder<> builder) {
+void LoopEnvironmentBuilder::allocateEnvironmentArray(IRBuilder<> &builder) {
 
   /*
    * Check that we have an environment.
@@ -274,7 +274,7 @@ void LoopEnvironmentBuilder::allocateEnvironmentArray(IRBuilder<> builder) {
   return;
 }
 
-void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> builder) {
+void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> &builder) {
 
   /*
    * Check the environment array.
@@ -390,7 +390,7 @@ void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> builder) {
 
 BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
     BasicBlock *bb,
-    IRBuilder<> builder,
+    IRBuilder<> &builder,
     const std::unordered_map<uint32_t, BinaryReductionSCC *> &reductions,
     Value *numberOfThreadsExecuted,
     std::function<Value *(ReductionSCC *scc)> castingInitialValue) {

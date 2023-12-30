@@ -37,54 +37,62 @@ public:
 
   LoopEnvironment() = delete;
 
-  iterator_range<std::vector<Value *>::iterator> getProducers(void);
+  virtual iterator_range<std::vector<Value *>::iterator> getProducers(void);
 
-  iterator_range<std::set<int>::iterator> getEnvIDsOfLiveInVars(void) const;
+  virtual iterator_range<std::set<int>::iterator> getEnvIDsOfLiveInVars(
+      void) const;
 
-  iterator_range<std::set<int>::iterator> getEnvIDsOfLiveOutVars(void) const;
+  virtual iterator_range<std::set<int>::iterator> getEnvIDsOfLiveOutVars(
+      void) const;
 
   /*
    * One per live-in variables + one per live-out variable + one to track the
    * exit block (if needed)
    */
-  uint64_t size(void) const;
+  virtual uint64_t size(void) const;
 
-  uint64_t getNumberOfLiveIns(void) const;
+  virtual uint64_t getNumberOfLiveIns(void) const;
 
-  uint64_t getNumberOfLiveOuts(void) const;
+  virtual uint64_t getNumberOfLiveOuts(void) const;
 
-  int64_t getExitBlockID(void) const;
+  virtual int64_t getExitBlockID(void) const;
 
-  Type *typeOfEnvironmentLocation(uint64_t id) const;
+  virtual Type *typeOfEnvironmentLocation(uint64_t id) const;
 
-  std::vector<Type *> getTypesOfEnvironmentLocations(void) const;
+  virtual std::vector<Type *> getTypesOfEnvironmentLocations(void) const;
 
-  bool isLiveIn(Value *val) const;
+  virtual bool isLiveIn(Value *val) const;
 
-  Value *getProducer(uint64_t id) const;
+  virtual Value *getProducer(uint64_t id) const;
 
-  std::set<Value *> consumersOf(Value *prod) const;
+  virtual std::set<Value *> consumersOf(Value *prod) const;
 
-  bool isProducer(Value *producer) const;
+  virtual bool isProducer(Value *producer) const;
 
-  uint64_t addLiveInValue(Value *newLiveInValue,
-                          const std::unordered_set<Instruction *> &consumers);
+  virtual uint64_t addLiveInValue(
+      Value *newLiveInValue,
+      const std::unordered_set<Instruction *> &consumers);
 
-private:
-  uint64_t addLiveInProducer(Value *producer);
-  void addLiveOutProducer(Value *producer);
-  uint64_t addProducer(Value *producer, bool liveIn);
+  virtual ~LoopEnvironment();
 
+protected:
+  /*
+   * Fields.
+   */
   std::vector<Value *> envProducers;
   std::unordered_map<Value *, int> producerIDMap;
-
   std::set<int> liveInIDs;
   std::set<int> liveOutIDs;
-
   std::unordered_map<Value *, std::set<Value *>> prodConsumers;
-
   bool hasExitBlockEnv;
   Type *exitBlockType;
+
+  /*
+   * Methods
+   */
+  virtual uint64_t addLiveInProducer(Value *producer);
+  virtual void addLiveOutProducer(Value *producer);
+  virtual uint64_t addProducer(Value *producer, bool liveIn);
 };
 
 } // namespace arcana::noelle
