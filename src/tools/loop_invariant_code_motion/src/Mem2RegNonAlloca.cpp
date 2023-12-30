@@ -227,8 +227,9 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations(
         auto consumer = edge->getDst();
         if (scc->isInternal(consumer) && scc->isInternal(producer))
           continue;
-        if (!edge->isMemoryDependence())
+        if (!isa<MemoryDependence<Value, Value>>(edge)) {
           continue;
+        }
 
         hasExternalMemoryDependence = true;
         break;

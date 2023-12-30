@@ -68,7 +68,7 @@ SCCDAGPartition::SCCDAGPartition(
 
       if (this->fetchEdges(parentNode, selfNode).size() != 0)
         continue;
-      this->addEdge(parentSet, selfSet);
+      this->addUndefinedDependenceEdge(parentSet, selfSet);
     }
   }
 }
@@ -146,7 +146,7 @@ void SCCDAGPartition::mergeSets(std::unordered_set<SCCSet *> sets) {
 
       if (this->fetchEdges(parentNode, mergedSetNode).size() != 0)
         continue;
-      this->addEdge(parentSet, mergedSet);
+      this->addUndefinedDependenceEdge(parentSet, mergedSet);
     }
 
     for (auto edge : setNode->getOutgoingEdges()) {
@@ -159,7 +159,7 @@ void SCCDAGPartition::mergeSets(std::unordered_set<SCCSet *> sets) {
 
       if (this->fetchEdges(mergedSetNode, childNode).size() != 0)
         continue;
-      this->addEdge(mergedSet, childSet);
+      this->addUndefinedDependenceEdge(mergedSet, childSet);
     }
   }
 
@@ -689,8 +689,9 @@ void SCCDAGPartitioner::mergeAlongMemoryEdges(void) {
 
     bool containsMemoryDependence = false;
     for (auto subEdge : edge->getSubEdges()) {
-      if (!subEdge->isMemoryDependence())
+      if (!isa<MemoryDependence<Value, Value>>(subEdge)) {
         continue;
+      }
       containsMemoryDependence = true;
       break;
     }

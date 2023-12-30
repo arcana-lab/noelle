@@ -1271,7 +1271,7 @@ LoopNestingGraph *Noelle::getLoopNestingGraphForProgram() {
     tree->visitPreOrder(f);
   }
 
-  std::map<Function *, unordered_set<LoopStructure *>> outermostLoopsMap;
+  std::map<Function *, std::unordered_set<LoopStructure *>> outermostLoopsMap;
   // filter out all loops not outermost loop (if loop->getNestingLevel==1)
   for (auto loop : allLoops) {
     if (loop->getNestingLevel() == 1) {

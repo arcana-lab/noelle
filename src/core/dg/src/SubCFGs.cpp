@@ -64,7 +64,7 @@ void SubCFGs::connectBasicBlockNodes() {
     auto bb = node->getT();
     for (auto succBB : successors(bb)) {
       fetchOrAddNode(succBB, false);
-      addEdge(bb, succBB);
+      addUndefinedDependenceEdge(bb, succBB);
     }
   }
 }

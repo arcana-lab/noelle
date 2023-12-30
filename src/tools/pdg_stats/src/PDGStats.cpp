@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Yian Su, Simone Campanoni
+ * Copyright 2016 - 2023  Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -23,8 +23,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "PDGStats.hpp"
 
-using namespace llvm;
-using namespace arcana::noelle;
+namespace arcana::noelle {
 
 bool PDGStats::runOnModule(Module &M) {
 
@@ -339,9 +338,9 @@ void PDGStats::analyzeDependence(DGEdge<Value, Value> *edge) {
   /*
    * Handle memory dependences.
    */
-  if (edge->isMemoryDependence()) {
+  if (isa<MemoryDependence<Value, Value>>(edge)) {
     this->numberOfMemoryDependence++;
-    if (edge->isMustDependence()) {
+    if (isa<MustMemoryDependence<Value, Value>>(edge)) {
       this->numberOfMemoryMustDependence++;
     }
     return;
@@ -350,7 +349,7 @@ void PDGStats::analyzeDependence(DGEdge<Value, Value> *edge) {
   /*
    * Handle variable dependences.
    */
-  if (edge->isDataDependence()) {
+  if (isa<DataDependence<Value, Value>>(edge)) {
     this->numberOfVariableDependence++;
     return;
   }
@@ -358,7 +357,7 @@ void PDGStats::analyzeDependence(DGEdge<Value, Value> *edge) {
   /*
    * Handle control dependences.
    */
-  if (edge->isControlDependence()) {
+  if (isa<ControlDependence<Value, Value>>(edge)) {
     this->numberOfControlDependence++;
     return;
   }
@@ -369,3 +368,5 @@ void PDGStats::analyzeDependence(DGEdge<Value, Value> *edge) {
 PDGStats::~PDGStats() {
   return;
 }
+
+} // namespace arcana::noelle

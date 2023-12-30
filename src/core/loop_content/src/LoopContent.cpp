@@ -334,7 +334,7 @@ std::pair<PDG *, SCCDAG *> LoopContent::createDGsForLoop(
   if (com->arePRVGsNonDeterministic()) {
     std::set<DGEdge<Value, Value> *> toDelete;
     for (auto edge : loopDG->getEdges()) {
-      if (!edge->isMemoryDependence()) {
+      if (!isa<MemoryDependence<Value, Value>>(edge)) {
         continue;
       }
       auto vo = edge->getSrc();
@@ -520,7 +520,7 @@ void LoopContent::removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions(
     /*
      * Only memory dependences can be removed.
      */
-    if (!edge->isMemoryDependence()) {
+    if (!isa<MemoryDependence<Value, Value>>(edge)) {
       continue;
     }
 
@@ -593,16 +593,17 @@ void LoopContent::removeUnnecessaryDependenciesThatCloningMemoryNegates(
     /*
      * Only memory dependences can be removed by cloning memory objects.
      */
-    if (!edge->isMemoryDependence()) {
+    if (!isa<MemoryDependence<Value, Value>>(edge)) {
       continue;
     }
+    auto memoryDep = cast<MemoryDependence<Value, Value>>(edge);
 
     /*
      * Only dependences between instructions can be removed by cloning memory
      * objects.
      */
-    auto producer = dyn_cast<Instruction>(edge->getSrc());
-    auto consumer = dyn_cast<Instruction>(edge->getDst());
+    auto producer = dyn_cast<Instruction>(memoryDep->getSrc());
+    auto consumer = dyn_cast<Instruction>(memoryDep->getDst());
     if (!producer || !consumer) {
       continue;
     }
@@ -617,7 +618,7 @@ void LoopContent::removeUnnecessaryDependenciesThatCloningMemoryNegates(
     auto isRAW = false;
     for (auto locationP : locationsProducer) {
       for (auto locationC : locationsConsumer) {
-        if (edge->isRAWDependence()
+        if (memoryDep->isRAWDependence()
             && locationP->isInstructionStoringLocation(producer)
             && locationC->isInstructionLoadingLocation(consumer))
           isRAW = true;
@@ -626,7 +627,7 @@ void LoopContent::removeUnnecessaryDependenciesThatCloningMemoryNegates(
     auto isWAR = false;
     for (auto locationP : locationsProducer) {
       for (auto locationC : locationsConsumer) {
-        if (edge->isWARDependence()
+        if (memoryDep->isWARDependence()
             && locationP->isInstructionLoadingLocation(producer)
             && locationC->isInstructionStoringLocation(consumer))
           isWAR = true;
@@ -635,7 +636,7 @@ void LoopContent::removeUnnecessaryDependenciesThatCloningMemoryNegates(
     auto isWAW = false;
     for (auto locationP : locationsProducer) {
       for (auto locationC : locationsConsumer) {
-        if (edge->isWAWDependence()
+        if (memoryDep->isWAWDependence()
             && locationP->isInstructionStoringLocation(producer)
             && locationC->isInstructionStoringLocation(consumer))
           isWAW = true;
@@ -652,7 +653,7 @@ void LoopContent::removeUnnecessaryDependenciesThatCloningMemoryNegates(
     // locationConsumer->getAllocation()->print(errs() << "Alloca: "); errs() <<
     // "\n";
 
-    edgesToRemove.insert(edge);
+    edgesToRemove.insert(memoryDep);
   }
 
   /*
@@ -749,7 +750,7 @@ SCCDAG *LoopContent::computeSCCDAGWithOnlyVariableAndControlDependences(
    */
   std::unordered_set<DGEdge<Value, Value> *> memDeps{};
   for (auto currentDependence : loopDG->getSortedDependences()) {
-    if (currentDependence->isMemoryDependence()) {
+    if (isa<MemoryDependence<Value, Value>>(currentDependence)) {
       memDeps.insert(currentDependence);
     }
   }

@@ -57,10 +57,10 @@ std::set<SCC *> DOALL::getSCCsThatBlockDOALLToBeApplicable(LoopContent *LDI,
     auto areAllDataLCDsFromDisjointMemoryAccesses = true;
     auto domainSpaceAnalysis = LDI->getLoopIterationSpaceAnalysis();
     for (auto dep : sccInfo->getLoopCarriedDependences()) {
-      if (dep->isControlDependence()) {
+      if (isa<ControlDependence<Value, Value>>(dep)) {
         continue;
       }
-      if (!dep->isMemoryDependence()) {
+      if (!isa<MemoryDependence<Value, Value>>(dep)) {
         areAllDataLCDsFromDisjointMemoryAccesses = false;
         break;
       }

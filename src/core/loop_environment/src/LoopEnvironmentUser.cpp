@@ -167,7 +167,7 @@ void LoopEnvironmentUser::addLiveOut(uint32_t id) {
   return;
 }
 
-Instruction *LoopEnvironmentUser::getEnvPtr(uint32_t id) const {
+Instruction *LoopEnvironmentUser::getEnvPtr(uint32_t id) {
 
   /*
    * Mapping from envID to index

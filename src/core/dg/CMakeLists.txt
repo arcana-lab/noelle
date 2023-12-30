@@ -11,10 +11,16 @@ add_subdirectory(src)
 # Install
 install(
   FILES
-  include/noelle/core/Assumptions.hpp
   include/noelle/core/DGBase.hpp
   include/noelle/core/DGNode.hpp
   include/noelle/core/DGEdge.hpp
+  include/noelle/core/ControlDependence.hpp
+  include/noelle/core/DataDependence.hpp
+  include/noelle/core/VariableDependence.hpp
+  include/noelle/core/MemoryDependence.hpp
+  include/noelle/core/MayMemoryDependence.hpp
+  include/noelle/core/MustMemoryDependence.hpp
+  include/noelle/core/UndefinedDependence.hpp
   include/noelle/core/DGGraphTraits.hpp
   include/noelle/core/SubCFGs.hpp
   DESTINATION 

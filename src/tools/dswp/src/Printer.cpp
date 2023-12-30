@@ -187,7 +187,7 @@ void DSWP::writeStageGraphsAsDot(LoopContent &LDI) const {
   for (auto sccEdge : sccdag->getEdges()) {
     auto outgoingDesc = sccToDescriptionMap.at(sccEdge->getSrcNode())->getT();
     auto incomingDesc = sccToDescriptionMap.at(sccEdge->getDstNode())->getT();
-    stageGraph.addEdge(outgoingDesc, incomingDesc);
+    stageGraph.addUndefinedDependenceEdge(outgoingDesc, incomingDesc);
   }
 
   auto loopStructure = LDI.getLoopStructure();
@@ -224,7 +224,8 @@ void DSWP::writeStageQueuesAsDot(const LoopContent &LDI) const {
     auto producerNode = addNode(queue->fromStage, queue->producer);
     for (auto consumerI : queue->consumers) {
       auto consumerNode = addNode(queue->toStage, consumerI);
-      queueGraph.addEdge(producerNode->getT(), consumerNode->getT());
+      queueGraph.addUndefinedDependenceEdge(producerNode->getT(),
+                                            consumerNode->getT());
     }
   }
 

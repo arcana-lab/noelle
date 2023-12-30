@@ -227,7 +227,7 @@ std::set<LoopCarriedSCC *> SCCDAGAttrs::
      */
     auto isControl = false;
     for (auto dep : deps) {
-      if (dep->isControlDependence()) {
+      if (isa<ControlDependence<Value, Value>>(dep)) {
         isControl = true;
         break;
       }
@@ -266,7 +266,7 @@ std::set<LoopCarriedSCC *> SCCDAGAttrs::getSCCsWithLoopCarriedDataDependencies(
      */
     auto isData = false;
     for (auto dep : deps) {
-      if (dep->isDataDependence()) {
+      if (isa<DataDependence<Value, Value>>(dep)) {
         isData = true;
         break;
       }
@@ -543,7 +543,7 @@ std::set<InductionVariable *> SCCDAGAttrs::
 std::tuple<bool, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
     SCC *scc,
     LoopTree *loopNode) {
-  auto notPeriodic = make_tuple(false, nullptr, nullptr, nullptr);
+  auto notPeriodic = std::make_tuple(false, nullptr, nullptr, nullptr);
 
   if (this->sccToLoopCarriedDependencies.find(scc)
       == this->sccToLoopCarriedDependencies.end()) {
@@ -561,7 +561,8 @@ std::tuple<bool, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
     /*
      * Only look for loop-carried data dependencies.
      */
-    if (!edge->isLoopCarriedDependence() || edge->isControlDependence())
+    if (!edge->isLoopCarriedDependence()
+        || isa<ControlDependence<Value, Value>>(edge))
       continue;
 
     Value *initialValue;
@@ -643,7 +644,7 @@ std::tuple<bool, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
     // errs() << "periodic variable with initial value " << *initialValue <<
     // "\n"; errs() << "                          and period " << *period <<
     // "\n"; errs() << "                            and step " << *step << "\n";
-    return make_tuple(true, initialValue, period, step);
+    return std::make_tuple(true, initialValue, period, step);
   }
 
   /*
@@ -676,7 +677,7 @@ LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(SCC *scc,
     /*
      * We do not handle reducibility of memory locations
      */
-    if (dependency->isMemoryDependence()) {
+    if (isa<MemoryDependence<Value, Value>>(dependency)) {
       return nullptr;
     }
 
@@ -684,7 +685,7 @@ LoopCarriedVariable *SCCDAGAttrs::checkIfReducible(SCC *scc,
      * Ignore external control dependencies, do not allow internal ones
      */
     auto producer = dependency->getSrc();
-    if (dependency->isControlDependence()) {
+    if (isa<ControlDependence<Value, Value>>(dependency)) {
       if (scc->isInternal(producer)) {
         return nullptr;
       }
@@ -789,7 +790,7 @@ std::set<Instruction *> SCCDAGAttrs::checkIfRecomputable(
    * Make sure there is no memory dependences within the SCC.
    */
   for (auto edge : scc->getEdges()) {
-    if (edge->isMemoryDependence()) {
+    if (isa<MemoryDependence<Value, Value>>(edge)) {
       return {};
     }
   }
@@ -948,7 +949,7 @@ void SCCDAGAttrs::dumpToFile(int id) {
   for (auto sccEdge : sccdag->getEdges()) {
     auto outgoingDesc = sccToDescriptionMap.at(sccEdge->getSrcNode())->getT();
     auto incomingDesc = sccToDescriptionMap.at(sccEdge->getDstNode())->getT();
-    stageGraph.addEdge(outgoingDesc, incomingDesc);
+    stageGraph.addUndefinedDependenceEdge(outgoingDesc, incomingDesc);
   }
 
   DGPrinter::writeGraph<DG<DGString>, DGString>(filename, &stageGraph);

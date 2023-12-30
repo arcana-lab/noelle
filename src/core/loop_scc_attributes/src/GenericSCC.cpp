@@ -39,7 +39,7 @@ GenericSCC::GenericSCC(SCCKind K, SCC *s, LoopStructure *loop)
    * Check if the SCC has memory dependences.
    */
   for (auto edge : this->scc->getEdges()) {
-    if (edge->isMemoryDependence()) {
+    if (isa<MemoryDependence<Value, Value>>(edge)) {
       this->hasMemoryDependences = true;
       break;
     }

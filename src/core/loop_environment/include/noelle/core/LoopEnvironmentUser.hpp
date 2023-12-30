@@ -32,31 +32,33 @@ public:
 
   LoopEnvironmentUser() = delete;
 
-  void setEnvironmentArray(Value *envArr);
+  virtual void setEnvironmentArray(Value *envArr);
 
-  Instruction *createEnvironmentVariablePointer(IRBuilder<> &b,
-                                                uint32_t envID,
-                                                Type *type);
+  virtual Instruction *createEnvironmentVariablePointer(IRBuilder<> &b,
+                                                        uint32_t envID,
+                                                        Type *type);
 
-  void createReducableEnvPtr(IRBuilder<> &b,
-                             uint32_t envID,
-                             Type *type,
-                             uint32_t reducerCount,
-                             Value *reducerIndV);
+  virtual void createReducableEnvPtr(IRBuilder<> &b,
+                                     uint32_t envID,
+                                     Type *type,
+                                     uint32_t reducerCount,
+                                     Value *reducerIndV);
 
-  void addLiveIn(uint32_t id);
+  virtual void addLiveIn(uint32_t id);
 
-  void addLiveOut(uint32_t id);
+  virtual void addLiveOut(uint32_t id);
 
-  iterator_range<std::set<uint32_t>::iterator> getEnvIDsOfLiveInVars(void);
+  virtual iterator_range<std::set<uint32_t>::iterator> getEnvIDsOfLiveInVars(
+      void);
 
-  iterator_range<std::set<uint32_t>::iterator> getEnvIDsOfLiveOutVars(void);
+  virtual iterator_range<std::set<uint32_t>::iterator> getEnvIDsOfLiveOutVars(
+      void);
 
-  Instruction *getEnvPtr(uint32_t id) const;
+  virtual Instruction *getEnvPtr(uint32_t id);
 
-  ~LoopEnvironmentUser();
+  virtual ~LoopEnvironmentUser();
 
-private:
+protected:
   Value *envArray;
 
   /*

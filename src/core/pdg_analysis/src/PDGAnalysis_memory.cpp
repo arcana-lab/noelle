@@ -74,7 +74,7 @@ std::pair<bool, bool> PDGAnalysis::isThereThisMemoryDataDependenceType(
     }
   }
 
-  return make_pair(noDep, mustExist);
+  return std::make_pair(noDep, mustExist);
 }
 
 void PDGAnalysis::iterateInstForStore(PDG *pdg,
@@ -436,7 +436,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     store,
                                                     F);
       if (!noDep) {
-        pdg->addEdge(call, store)->setMemMustType(true, mustExist, DG_DATA_WAR);
+        pdg->addMemoryDataDependenceEdge(call, store, DG_DATA_WAR, mustExist);
       }
 
     } else {
@@ -459,8 +459,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                       store,
                                                       F);
         if (!noDep) {
-          pdg->addEdge(store, call)
-              ->setMemMustType(true, mustExist, DG_DATA_RAW);
+          pdg->addMemoryDataDependenceEdge(store, call, DG_DATA_RAW, mustExist);
         }
       }
     }
@@ -480,7 +479,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     store,
                                                     F);
       if (!noDep) {
-        pdg->addEdge(call, store)->setMemMustType(true, mustExist, DG_DATA_WAW);
+        pdg->addMemoryDataDependenceEdge(call, store, DG_DATA_WAW, mustExist);
       }
 
     } else {
@@ -503,8 +502,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                       store,
                                                       F);
         if (!noDep) {
-          pdg->addEdge(store, call)
-              ->setMemMustType(true, mustExist, DG_DATA_WAW);
+          pdg->addMemoryDataDependenceEdge(store, call, DG_DATA_WAW, mustExist);
         }
       }
     }
@@ -602,7 +600,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
     auto [noDep, mustExist] =
         this->isThereThisMemoryDataDependenceType(DG_DATA_RAW, call, load, F);
     if (!noDep) {
-      pdg->addEdge(call, load)->setMemMustType(true, false, DG_DATA_RAW);
+      pdg->addMemoryDataDependenceEdge(call, load, DG_DATA_RAW, false);
     }
 
   } else {
@@ -622,7 +620,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
       auto [noDep, mustExist] =
           this->isThereThisMemoryDataDependenceType(DG_DATA_WAR, call, load, F);
       if (!noDep) {
-        pdg->addEdge(load, call)->setMemMustType(true, false, DG_DATA_WAR);
+        pdg->addMemoryDataDependenceEdge(load, call, DG_DATA_WAR, false);
       }
     }
   }
@@ -914,8 +912,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                   otherCall,
                                                   F);
     if (!noDep) {
-      pdg->addEdge(call, otherCall)
-          ->setMemMustType(true, mustExist, DG_DATA_RAW);
+      pdg->addMemoryDataDependenceEdge(call, otherCall, DG_DATA_RAW, mustExist);
     }
 
     /*
@@ -936,8 +933,10 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     otherCall,
                                                     F);
       if (!noDep) {
-        pdg->addEdge(call, otherCall)
-            ->setMemMustType(true, mustExist, DG_DATA_WAR);
+        pdg->addMemoryDataDependenceEdge(call,
+                                         otherCall,
+                                         DG_DATA_WAR,
+                                         mustExist);
       }
     }
 
@@ -977,8 +976,10 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     otherCall,
                                                     F);
       if (!noDep) {
-        pdg->addEdge(call, otherCall)
-            ->setMemMustType(true, mustExist, DG_DATA_WAR);
+        pdg->addMemoryDataDependenceEdge(call,
+                                         otherCall,
+                                         DG_DATA_WAR,
+                                         mustExist);
       }
 
     } else if (rbv[1]) {
@@ -998,8 +999,10 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     otherCall,
                                                     F);
       if (!noDep) {
-        pdg->addEdge(call, otherCall)
-            ->setMemMustType(true, mustExist, DG_DATA_WAW);
+        pdg->addMemoryDataDependenceEdge(call,
+                                         otherCall,
+                                         DG_DATA_WAW,
+                                         mustExist);
       }
 
     } else {
@@ -1031,8 +1034,10 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     otherCall,
                                                     F);
       if (!noDep) {
-        pdg->addEdge(call, otherCall)
-            ->setMemMustType(true, mustExist, DG_DATA_WAR);
+        pdg->addMemoryDataDependenceEdge(call,
+                                         otherCall,
+                                         DG_DATA_WAR,
+                                         mustExist);
       }
       auto [noDep2, mustExist2] =
           this->isThereThisMemoryDataDependenceType(DG_DATA_WAW,
@@ -1040,8 +1045,10 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     otherCall,
                                                     F);
       if (!noDep2) {
-        pdg->addEdge(call, otherCall)
-            ->setMemMustType(true, mustExist2, DG_DATA_WAW);
+        pdg->addMemoryDataDependenceEdge(call,
+                                         otherCall,
+                                         DG_DATA_WAW,
+                                         mustExist2);
       }
     }
 
@@ -1082,8 +1089,10 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     otherCall,
                                                     F);
       if (!noDep) {
-        pdg->addEdge(call, otherCall)
-            ->setMemMustType(true, mustExist, DG_DATA_RAW);
+        pdg->addMemoryDataDependenceEdge(call,
+                                         otherCall,
+                                         DG_DATA_RAW,
+                                         mustExist);
       }
       auto [noDep2, mustExist2] =
           this->isThereThisMemoryDataDependenceType(DG_DATA_WAW,
@@ -1091,8 +1100,10 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                     otherCall,
                                                     F);
       if (!noDep2) {
-        pdg->addEdge(call, otherCall)
-            ->setMemMustType(true, mustExist2, DG_DATA_WAW);
+        pdg->addMemoryDataDependenceEdge(call,
+                                         otherCall,
+                                         DG_DATA_WAW,
+                                         mustExist2);
       }
 
     } else if (rbv[2]) {
@@ -1113,8 +1124,10 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                       otherCall,
                                                       F);
         if (!noDep) {
-          pdg->addEdge(call, otherCall)
-              ->setMemMustType(true, mustExist, DG_DATA_RAW);
+          pdg->addMemoryDataDependenceEdge(call,
+                                           otherCall,
+                                           DG_DATA_RAW,
+                                           mustExist);
         }
       }
       {
@@ -1124,8 +1137,10 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                       otherCall,
                                                       F);
         if (!noDep) {
-          pdg->addEdge(call, otherCall)
-              ->setMemMustType(true, mustExist, DG_DATA_WAW);
+          pdg->addMemoryDataDependenceEdge(call,
+                                           otherCall,
+                                           DG_DATA_WAW,
+                                           mustExist);
         }
       }
       {
@@ -1135,8 +1150,10 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                       otherCall,
                                                       F);
         if (!noDep) {
-          pdg->addEdge(call, otherCall)
-              ->setMemMustType(true, mustExist, DG_DATA_WAR);
+          pdg->addMemoryDataDependenceEdge(call,
+                                           otherCall,
+                                           DG_DATA_WAR,
+                                           mustExist);
         }
       }
 
@@ -1173,8 +1190,10 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                       otherCall,
                                                       F);
         if (!noDep) {
-          pdg->addEdge(call, otherCall)
-              ->setMemMustType(true, mustExist, DG_DATA_RAW);
+          pdg->addMemoryDataDependenceEdge(call,
+                                           otherCall,
+                                           DG_DATA_RAW,
+                                           mustExist);
         }
       }
       {
@@ -1184,8 +1203,10 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
                                                       otherCall,
                                                       F);
         if (!noDep) {
-          pdg->addEdge(call, otherCall)
-              ->setMemMustType(true, mustExist, DG_DATA_WAW);
+          pdg->addMemoryDataDependenceEdge(call,
+                                           otherCall,
+                                           DG_DATA_WAW,
+                                           mustExist);
         }
       }
     }
@@ -1263,7 +1284,7 @@ void PDGAnalysis::addEdgeFromMemoryAlias(
   /*
    * There is a dependence.
    */
-  pdg->addEdge(instI, instJ)->setMemMustType(true, must, dataDependenceType);
+  pdg->addMemoryDataDependenceEdge(instI, instJ, dataDependenceType, must);
 
   return;
 }

@@ -599,6 +599,11 @@ bool ClonableMemoryObject::isThereRAWThroughMemoryBetweenLoopIterations(
      */
     auto functor = [loop](Value *fromValue, DGEdge<Value, Value> *d) -> bool {
       /*
+       * @d must be a memory dependence.
+       */
+      auto memDep = cast<MemoryDependence<Value, Value>>(d);
+
+      /*
        * Check if the source of the dependence is with an instruction.
        */
       auto inst = dyn_cast<Instruction>(fromValue);
@@ -625,7 +630,7 @@ bool ClonableMemoryObject::isThereRAWThroughMemoryBetweenLoopIterations(
        *
        * Check if the dependence is a RAW.
        */
-      if (!d->isRAWDependence()) {
+      if (!memDep->isRAWDependence()) {
         return false;
       }
 
@@ -633,7 +638,7 @@ bool ClonableMemoryObject::isThereRAWThroughMemoryBetweenLoopIterations(
        * We found a memory RAW data dependence to @inst.
        * Check if it is a loop-carried one.
        */
-      if (!d->isLoopCarriedDependence()) {
+      if (!memDep->isLoopCarriedDependence()) {
         return false;
       }
 
@@ -686,6 +691,11 @@ bool ClonableMemoryObject::isThereRAWThroughMemoryFromOutsideToLoop(
       assert(d != nullptr);
 
       /*
+       * @d must be a memory dependence.
+       */
+      auto memDep = cast<MemoryDependence<Value, Value>>(d);
+
+      /*
        * Check if the source of the dependence is with an instruction.
        */
       auto inst = dyn_cast<Instruction>(fromValue);
@@ -712,7 +722,7 @@ bool ClonableMemoryObject::isThereRAWThroughMemoryFromOutsideToLoop(
        *
        * Check if the dependence is a RAW.
        */
-      if (!d->isRAWDependence()) {
+      if (!memDep->isRAWDependence()) {
         return false;
       }
 
@@ -767,6 +777,11 @@ bool ClonableMemoryObject::isThereRAWThroughMemoryFromLoopToOutside(
       assert(d != nullptr);
 
       /*
+       * @d must be a memory dependence.
+       */
+      auto memDep = cast<MemoryDependence<Value, Value>>(d);
+
+      /*
        * Check if the source of the dependence is with an instruction.
        */
       auto inst = dyn_cast<Instruction>(fromValue);
@@ -793,7 +808,7 @@ bool ClonableMemoryObject::isThereRAWThroughMemoryFromLoopToOutside(
        *
        * Check if the dependence is a RAW.
        */
-      if (!d->isRAWDependence()) {
+      if (!memDep->isRAWDependence()) {
         return false;
       }
 

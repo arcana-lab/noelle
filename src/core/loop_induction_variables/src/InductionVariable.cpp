@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/InductionVariable.hpp"
+#include "noelle/core/MemoryDependence.hpp"
 
 namespace arcana::noelle {
 
@@ -147,8 +148,12 @@ void InductionVariable::traverseCycleThroughLoopEntryPHIToGetAllIVInstructions(
      * and thus must be intermediate values
      */
     for (auto edge : node->getIncomingEdges()) {
-      if (!edge->isDataDependence() || edge->isMemoryDependence())
+      if (!isa<DataDependence<Value, Value>>(edge)) {
         continue;
+      }
+      if (isa<MemoryDependence<Value, Value>>(edge)) {
+        continue;
+      }
       auto otherNode = edge->getSrcNode();
       auto otherValue = otherNode->getT();
       if (!scc.isInternal(otherValue))

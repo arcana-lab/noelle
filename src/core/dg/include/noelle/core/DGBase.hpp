@@ -23,9 +23,14 @@
 #define NOELLE_SRC_CORE_DG_DGBASE_H_
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Assumptions.hpp"
 #include "noelle/core/DGNode.hpp"
 #include "noelle/core/DGEdge.hpp"
+#include "noelle/core/DataDependence.hpp"
+#include "noelle/core/MayMemoryDependence.hpp"
+#include "noelle/core/MustMemoryDependence.hpp"
+#include "noelle/core/VariableDependence.hpp"
+#include "noelle/core/ControlDependence.hpp"
+#include "noelle/core/UndefinedDependence.hpp"
 
 namespace arcana::noelle {
 
@@ -149,7 +154,15 @@ public:
   DGNode<T> *fetchNode(T *theT);
   const DGNode<T> *fetchConstNode(T *theT) const;
 
-  DGEdge<T, T> *addEdge(T *from, T *to);
+  DGEdge<T, T> *addVariableDataDependenceEdge(T *from,
+                                              T *to,
+                                              DataDependenceType t);
+  DGEdge<T, T> *addMemoryDataDependenceEdge(T *from,
+                                            T *to,
+                                            DataDependenceType t,
+                                            bool isMust);
+  DGEdge<T, T> *addControlDependenceEdge(T *from, T *to);
+  DGEdge<T, T> *addUndefinedDependenceEdge(T *from, T *to);
   std::unordered_set<DGEdge<T, T> *> fetchEdges(DGNode<T> *From, DGNode<T> *To);
   DGEdge<T, T> *copyAddEdge(DGEdge<T, T> &edgeToCopy);
 
@@ -253,10 +266,55 @@ const DGNode<T> *DG<T>::fetchConstNode(T *theT) const {
 }
 
 template <class T>
-DGEdge<T, T> *DG<T>::addEdge(T *from, T *to) {
+DGEdge<T, T> *DG<T>::addVariableDataDependenceEdge(T *from,
+                                                   T *to,
+                                                   DataDependenceType t) {
   auto fromNode = this->fetchNode(from);
   auto toNode = this->fetchNode(to);
-  auto edge = new DGEdge<T, T>(fromNode, toNode);
+  auto edge = new VariableDependence<T, T>(fromNode, toNode, t);
+  allEdges.insert(edge);
+  fromNode->addOutgoingEdge(edge);
+  toNode->addIncomingEdge(edge);
+  return edge;
+}
+
+template <class T>
+DGEdge<T, T> *DG<T>::addMemoryDataDependenceEdge(T *from,
+                                                 T *to,
+                                                 DataDependenceType t,
+                                                 bool isMust) {
+  auto fromNode = this->fetchNode(from);
+  auto toNode = this->fetchNode(to);
+  DGEdge<T, T> *edge = nullptr;
+  if (isMust) {
+    edge = new MustMemoryDependence<T, T>(fromNode, toNode, t);
+  } else {
+    edge = new MayMemoryDependence<T, T>(fromNode, toNode, t);
+  }
+  assert(edge != nullptr);
+
+  allEdges.insert(edge);
+  fromNode->addOutgoingEdge(edge);
+  toNode->addIncomingEdge(edge);
+  return edge;
+}
+
+template <class T>
+DGEdge<T, T> *DG<T>::addControlDependenceEdge(T *from, T *to) {
+  auto fromNode = this->fetchNode(from);
+  auto toNode = this->fetchNode(to);
+  auto edge = new ControlDependence<T, T>(fromNode, toNode);
+  allEdges.insert(edge);
+  fromNode->addOutgoingEdge(edge);
+  toNode->addIncomingEdge(edge);
+  return edge;
+}
+
+template <class T>
+DGEdge<T, T> *DG<T>::addUndefinedDependenceEdge(T *from, T *to) {
+  auto fromNode = this->fetchNode(from);
+  auto toNode = this->fetchNode(to);
+  auto edge = new UndefinedDependence<T, T>(fromNode, toNode);
   allEdges.insert(edge);
   fromNode->addOutgoingEdge(edge);
   toNode->addIncomingEdge(edge);
@@ -279,16 +337,31 @@ std::unordered_set<DGEdge<T, T> *> DG<T>::fetchEdges(DGNode<T> *From,
 
 template <class T>
 DGEdge<T, T> *DG<T>::copyAddEdge(DGEdge<T, T> &edgeToCopy) {
-  auto edge = new DGEdge<T, T>(edgeToCopy);
+  DGEdge<T, T> *edge = nullptr;
+  if (isa<ControlDependence<T, T>>(&edgeToCopy)) {
+    auto edgeToCopyAsCD = cast<ControlDependence<T, T>>(&edgeToCopy);
+    edge = new ControlDependence<T, T>(*edgeToCopyAsCD);
+  } else {
+    if (isa<VariableDependence<T, T>>(&edgeToCopy)) {
+      auto edgeToCopyAsVD = cast<VariableDependence<T, T>>(&edgeToCopy);
+      edge = new VariableDependence<T, T>(*edgeToCopyAsVD);
+    } else if (isa<MayMemoryDependence<T, T>>(&edgeToCopy)) {
+      auto edgeToCopyAsMD = cast<MayMemoryDependence<T, T>>(&edgeToCopy);
+      edge = new MayMemoryDependence<T, T>(*edgeToCopyAsMD);
+    } else {
+      auto edgeToCopyAsMD = cast<MustMemoryDependence<T, T>>(&edgeToCopy);
+      edge = new MustMemoryDependence<T, T>(*edgeToCopyAsMD);
+    }
+  }
   allEdges.insert(edge);
 
   /*
    * Point copy of edge to equivalent nodes in this graph
    */
-  auto nodePair = edgeToCopy.getNodePair();
-  auto fromNode = fetchNode(nodePair.first->getT());
-  auto toNode = fetchNode(nodePair.second->getT());
-  edge->setNodePair(fromNode, toNode);
+  auto fromNode = fetchNode(edgeToCopy.getSrc());
+  auto toNode = fetchNode(edgeToCopy.getDst());
+  edge->setSrcNode(fromNode);
+  edge->setDstNode(toNode);
 
   fromNode->addOutgoingEdge(edge);
   toNode->addIncomingEdge(edge);

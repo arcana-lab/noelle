@@ -44,28 +44,29 @@ struct CAT : public ModulePass {
      */
     auto iterF = [](Value *src, DGEdge<Value, Value> *dep) -> bool {
       errs() << "   " << *src << " ";
-      if (dep->isMustDependence()) {
-        errs() << " MUST ";
-      } else {
-        errs() << " MAY ";
-      }
-      if (dep->isControlDependence()) {
+      if (isa<ControlDependence<Value, Value>>(dep)) {
         errs() << " CONTROL ";
-      }
-      if (dep->isDataDependence()) {
+      } else {
         errs() << " DATA ";
-        if (dep->isRAWDependence()) {
+        auto dataDep = cast<DataDependence<Value, Value>>(dep);
+        if (dataDep->isRAWDependence()) {
           errs() << " RAW ";
         }
-        if (dep->isWARDependence()) {
+        if (dataDep->isWARDependence()) {
           errs() << " WAR ";
         }
-        if (dep->isWAWDependence()) {
+        if (dataDep->isWAWDependence()) {
           errs() << " WAW ";
         }
-      }
-      if (dep->isMemoryDependence()) {
-        errs() << " MEMORY ";
+        if (isa<MemoryDependence<Value, Value>>(dataDep)) {
+          errs() << " MEMORY ";
+          auto memDep = cast<MemoryDependence<Value, Value>>(dataDep);
+          if (isa<MustMemoryDependence<Value, Value>>(memDep)) {
+            errs() << " MUST ";
+          } else {
+            errs() << " MAY ";
+          }
+        }
       }
 
       errs() << "\n";
@@ -88,6 +89,12 @@ struct CAT : public ModulePass {
         }
       }
     }
+    errs() << "A DGEdge  = " << sizeof(DGEdge<Value, Value>) << "\n";
+    errs()
+        << "A Control  = " << sizeof(ControlDependence<Value, Value>) << "\n";
+    errs()
+        << "A Variable  = " << sizeof(VariableDependence<Value, Value>) << "\n";
+    errs() << "A Memory  = " << sizeof(MemoryDependence<Value, Value>) << "\n";
 
     return false;
   }

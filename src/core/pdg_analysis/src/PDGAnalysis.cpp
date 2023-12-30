@@ -225,8 +225,7 @@ void PDGAnalysis::constructEdgesFromUseDefs(PDG *pdg) {
       auto user = U.getUser();
 
       if (isa<Instruction>(user) || isa<Argument>(user)) {
-        auto edge = pdg->addEdge(pdgValue, user);
-        edge->setMemMustType(false, true, DG_DATA_RAW);
+        pdg->addVariableDataDependenceEdge(pdgValue, user, DG_DATA_RAW);
       }
     }
   }
@@ -333,7 +332,8 @@ void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
      * Check if the dependence can be removed because the instructions accessing
      * separate memory regions.
      */
-    if (edge->isMemoryDependence() && this->canMemoryEdgeBeRemoved(pdg, edge)) {
+    if (isa<MemoryDependence<Value, Value>>(edge)
+        && this->canMemoryEdgeBeRemoved(pdg, edge)) {
       removeEdges.insert(edge);
       continue;
     }
@@ -372,11 +372,11 @@ bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value, Value> *edge) {
     }
 
     auto fname = calleeFunc->getName();
-    unordered_set<string> printFuncs = { "printf",
-                                         "fprintf",
-                                         "puts",
-                                         "putc",
-                                         "putchar" };
+    std::unordered_set<std::string> printFuncs = { "printf",
+                                                   "fprintf",
+                                                   "puts",
+                                                   "putc",
+                                                   "putchar" };
     for (auto printFunc : printFuncs) {
       if (fname == printFunc || fname == (printFunc + "_unlocked")) {
         return true;
@@ -512,15 +512,16 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency(
   /*
    * Check if this is a memory dependence.
    */
-  if (!edge->isMemoryDependence()) {
+  if (!isa<MemoryDependence<Value, Value>>(edge)) {
     return false;
   }
+  auto memDep = cast<MemoryDependence<Value, Value>>(edge);
 
   /*
    * Fetch the source and destination of the dependence.
    */
-  auto outgoingT = edge->getSrc();
-  auto incomingT = edge->getDst();
+  auto outgoingT = memDep->getSrc();
+  auto incomingT = memDep->getDst();
 
   /*
    * Handle only memory instructions.
@@ -532,22 +533,22 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency(
   /*
    * Assert: must be a WAR load-store OR a RAW store-load
    */
-  if (edge->isWARDependence()) {
+  if (memDep->isWARDependence()) {
     assert(isa<StoreInst>(incomingT) && isa<LoadInst>(outgoingT));
-  } else if (edge->isRAWDependence()) {
+  } else if (memDep->isRAWDependence()) {
     assert(isa<LoadInst>(incomingT) && isa<StoreInst>(outgoingT));
   }
 
   auto loopCarried = true;
-  if (isMemoryAccessIntoDifferentArrays(edge)
-      || isBackedgeIntoSameGlobal(edge)) {
+  if (isMemoryAccessIntoDifferentArrays(memDep)
+      || isBackedgeIntoSameGlobal(memDep)) {
     loopCarried = false;
   }
 
   if (!loopCarried) {
     // NOTE: We are actually removing must dependencies, but only those that are
     // backedges where by the next iteration, the access is at a different
-    // memory location assert(!edge->isMustDependence()
+    // memory location assert(!memDep->isMustDependence()
     //  && "LLVM AA states load store pair is a must dependence! Bad
     //  PDGAnalysis.");
     if (verbose >= PDGVerbosity::Maximal) {
@@ -671,7 +672,7 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions(
   /*
    * Check if this is a memory dependence.
    */
-  if (!edge->isMemoryDependence()) {
+  if (!isa<MemoryDependence<Value, Value>>(edge)) {
     return false;
   }
 

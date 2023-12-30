@@ -243,7 +243,7 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue(
    * Memory allocators and deallocators cannot be invariants.
    */
   if (auto callInst = dyn_cast<CallInst>(toInst)) {
-    if (false || Utils::isAllocator(callInst) || Utils::isReallocator(callInst)
+    if (Utils::isAllocator(callInst) || Utils::isReallocator(callInst)
         || Utils::isDeallocator(callInst)) {
       return true;
     }
@@ -252,7 +252,7 @@ bool InvariantManager::InvarianceChecker::isEvolvingValue(
   /*
    * If the instruction is a memory dependence, the value may evolve.
    */
-  if (dep->isMemoryDependence()) {
+  if (isa<MemoryDependence<Value, Value>>(dep)) {
     return true;
   }
 

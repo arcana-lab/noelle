@@ -33,12 +33,12 @@ public:
   /*
    * All functions that use globalVar.
    */
-  unordered_set<Function *> userFunctions;
+  std::unordered_set<Function *> userFunctions;
   /*
    * All users of globalVar classified by function,
    * a user can be an Instruction or an Operator.
    */
-  unordered_map<Function *, unordered_set<User *>> users;
+  std::unordered_map<Function *, std::unordered_set<User *>> users;
   /*
    * All instructions that use globalVar in each function.
    * Instructions may use globalVar directly or indirectly.
@@ -56,7 +56,7 @@ public:
    * of @array will contain the loadInst and `i8** bitcast (i64** @array to
    * i8**)`.
    */
-  unordered_map<Function *, unordered_set<Instruction *>> userInsts;
+  std::unordered_map<Function *, std::unordered_set<Instruction *>> userInsts;
 };
 
 bool isFixedSizedHeapAllocation(CallBase *heapAllocInst);
@@ -70,12 +70,12 @@ uint64_t getAllocationSize(Value *allocationSource);
  * Collected all functions that are called directly or indirectly by caller.
  * Caller itself will not be included unless it's called recursively.
  */
-unordered_set<Function *> functionsInvokedFrom(Noelle &noelle,
-                                               Function *caller);
+std::unordered_set<Function *> functionsInvokedFrom(Noelle &noelle,
+                                                    Function *caller);
 /*
  * All functions reachable from @main.
  */
-unordered_set<Function *> hotFunctions(Noelle &noelle);
+std::unordered_set<Function *> hotFunctions(Noelle &noelle);
 
 } // namespace arcana::noelle
 

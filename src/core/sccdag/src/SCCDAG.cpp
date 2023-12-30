@@ -21,6 +21,7 @@
  */
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DGGraphTraits.hpp"
+#include "noelle/core/PDGTraits.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "llvm/InitializePasses.h"
 
@@ -162,8 +163,10 @@ void SCCDAG::markEdgesAndSubEdges(void) {
           continue;
         edgeSet.insert(edge);
       }
-      auto sccEdge = edgeSet.empty() ? this->addEdge(outgoingSCC, incomingSCC)
-                                     : (*edgeSet.begin());
+      auto sccEdge =
+          edgeSet.empty()
+              ? this->addUndefinedDependenceEdge(outgoingSCC, incomingSCC)
+              : (*edgeSet.begin());
 
       /*
        * Clear out subedges if not already done once; add all currently existing

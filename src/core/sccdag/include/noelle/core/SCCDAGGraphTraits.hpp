@@ -80,33 +80,49 @@ struct ElementTraits<GraphType, NodeType, SCC>
 namespace llvm {
 
 template <>
-struct DOTGraphTraits<DGGraphWrapper<SCC, Value> *>
-  : public ElementTraits<DGGraphWrapper<SCC, Value>,
-                         DGNodeWrapper<Value>,
-                         Value> {
+struct DOTGraphTraits<
+    arcana::noelle::DGGraphWrapper<arcana::noelle::SCC, Value> *>
+  : public arcana::noelle::ElementTraits<
+        arcana::noelle::DGGraphWrapper<arcana::noelle::SCC, Value>,
+        arcana::noelle::DGNodeWrapper<Value>,
+        Value> {
   DOTGraphTraits(bool isSimple = false)
-    : ElementTraits<DGGraphWrapper<SCC, Value>, DGNodeWrapper<Value>, Value>(
-        isSimple) {}
+    : arcana::noelle::ElementTraits<
+        arcana::noelle::DGGraphWrapper<arcana::noelle::SCC, Value>,
+        arcana::noelle::DGNodeWrapper<Value>,
+        Value>(isSimple) {}
 };
 template <>
-struct GraphTraits<DGGraphWrapper<SCC, Value> *>
-  : public GraphTraitsBase<DGGraphWrapper<SCC, Value>,
-                           DGNodeWrapper<Value>,
-                           Value> {};
+struct GraphTraits<arcana::noelle::DGGraphWrapper<arcana::noelle::SCC, Value> *>
+  : public arcana::noelle::GraphTraitsBase<
+        arcana::noelle::DGGraphWrapper<arcana::noelle::SCC, Value>,
+        arcana::noelle::DGNodeWrapper<Value>,
+        Value> {};
 
 template <>
-struct DOTGraphTraits<DGGraphWrapper<SCCDAG, SCC> *>
-  : public ElementTraits<DGGraphWrapper<SCCDAG, SCC>, DGNodeWrapper<SCC>, SCC> {
+struct DOTGraphTraits<arcana::noelle::DGGraphWrapper<arcana::noelle::SCCDAG,
+                                                     arcana::noelle::SCC> *>
+  : public arcana::noelle::ElementTraits<
+        arcana::noelle::DGGraphWrapper<arcana::noelle::SCCDAG,
+                                       arcana::noelle::SCC>,
+        arcana::noelle::DGNodeWrapper<arcana::noelle::SCC>,
+        arcana::noelle::SCC> {
   DOTGraphTraits(bool isSimple = false)
-    : ElementTraits<DGGraphWrapper<SCCDAG, SCC>, DGNodeWrapper<SCC>, SCC>(
-        isSimple) {}
+    : arcana::noelle::ElementTraits<
+        arcana::noelle::DGGraphWrapper<arcana::noelle::SCCDAG,
+                                       arcana::noelle::SCC>,
+        arcana::noelle::DGNodeWrapper<arcana::noelle::SCC>,
+        arcana::noelle::SCC>(isSimple) {}
 };
 template <>
-struct GraphTraits<DGGraphWrapper<SCCDAG, SCC> *>
-  : public GraphTraitsBase<DGGraphWrapper<SCCDAG, SCC>,
-                           DGNodeWrapper<SCC>,
-                           SCC> {};
+struct GraphTraits<arcana::noelle::DGGraphWrapper<arcana::noelle::SCCDAG,
+                                                  arcana::noelle::SCC> *>
+  : public arcana::noelle::GraphTraitsBase<
+        arcana::noelle::DGGraphWrapper<arcana::noelle::SCCDAG,
+                                       arcana::noelle::SCC>,
+        arcana::noelle::DGNodeWrapper<arcana::noelle::SCC>,
+        arcana::noelle::SCC> {};
 
 } // namespace llvm
 
-#endif // NOELLE_SRC_CORE_SCCDAG_SCCDAGGRAPHTRAITS_H_
+#endif // NOELLE_SRC_CORE_arcana::noelle::SCCDAG_arcana::noelle::SCCDAGGRAPHTRAITS_H_

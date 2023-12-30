@@ -25,9 +25,9 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"
 #include "noelle/core/AllocAA.hpp"
+#include "noelle/core/PDG.hpp"
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/DataFlow.hpp"
-#include "noelle/core/PDG.hpp"
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
 #include "noelle/core/MayPointsToAnalysis.hpp"
@@ -115,28 +115,28 @@ private:
   PDG *constructPDGFromMetadata(Module &);
   void constructNodesFromMetadata(PDG *,
                                   Function &,
-                                  unordered_map<MDNode *, Value *> &);
+                                  std::unordered_map<MDNode *, Value *> &);
   void constructEdgesFromMetadata(PDG *,
                                   Function &,
-                                  unordered_map<MDNode *, Value *> &);
+                                  std::unordered_map<MDNode *, Value *> &);
   DGEdge<Value, Value> *constructEdgeFromMetadata(
       PDG *,
       MDNode *,
-      unordered_map<MDNode *, Value *> &);
+      std::unordered_map<MDNode *, Value *> &);
 
   void embedPDGAsMetadata(PDG *);
   void embedNodesAsMetadata(PDG *,
                             LLVMContext &,
-                            unordered_map<Value *, MDNode *> &);
+                            std::unordered_map<Value *, MDNode *> &);
   void embedEdgesAsMetadata(PDG *,
                             LLVMContext &,
-                            unordered_map<Value *, MDNode *> &);
+                            std::unordered_map<Value *, MDNode *> &);
   MDNode *getEdgeMetadata(DGEdge<Value, Value> *,
                           LLVMContext &,
-                          unordered_map<Value *, MDNode *> &);
+                          std::unordered_map<Value *, MDNode *> &);
   MDNode *getSubEdgesMetadata(DGEdge<Value, Value> *,
                               LLVMContext &,
-                              unordered_map<Value *, MDNode *> &);
+                              std::unordered_map<Value *, MDNode *> &);
 
   void trimDGUsingCustomAliasAnalysis(PDG *pdg);
 

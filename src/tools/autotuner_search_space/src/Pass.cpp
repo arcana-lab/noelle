@@ -55,7 +55,7 @@ bool AutotunerSearchSpace::runOnModule(Module &M) {
    * Write autotuner space file (i.e., number of loops that makes sense to
    * parallelize)
    */
-  ofstream file;
+  std::ofstream file;
   file.open(fileName);
 
   /*
@@ -114,23 +114,23 @@ void AutotunerSearchSpace::getAnalysisUsage(AnalysisUsage &AU) const {
 
 // Next there is code to register your pass to "opt"
 char arcana::noelle::AutotunerSearchSpace::ID = 0;
-static RegisterPass<AutotunerSearchSpace> X(
+static RegisterPass<arcana::noelle::AutotunerSearchSpace> X(
     "autotunersearchspace",
     "Generate file with number of loops that can be parallelized");
 
 // Next there is code to register your pass to "clang"
-static AutotunerSearchSpace *_PassMaker = NULL;
+static arcana::noelle::AutotunerSearchSpace *_PassMaker = NULL;
 static RegisterStandardPasses _RegPass1(
     PassManagerBuilder::EP_OptimizerLast,
     [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
       if (!_PassMaker) {
-        PM.add(_PassMaker = new AutotunerSearchSpace());
+        PM.add(_PassMaker = new arcana::noelle::AutotunerSearchSpace());
       }
     }); // ** for -Ox
 static RegisterStandardPasses _RegPass2(
     PassManagerBuilder::EP_EnabledOnOptLevel0,
     [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
       if (!_PassMaker) {
-        PM.add(_PassMaker = new AutotunerSearchSpace());
+        PM.add(_PassMaker = new arcana::noelle::AutotunerSearchSpace());
       }
     }); // ** for -O0

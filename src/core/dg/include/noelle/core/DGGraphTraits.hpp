@@ -23,7 +23,6 @@
 #define NOELLE_SRC_CORE_DG_DGGRAPHTRAITS_H_
 
 #include "noelle/core/DGBase.hpp"
-#include "noelle/core/PDG.hpp"
 #include "noelle/core/SubCFGs.hpp"
 
 namespace arcana::noelle {
@@ -172,9 +171,11 @@ struct ElementTraitsBase : public DefaultDOTGraphTraits {
     const std::string varColor = "color=black";
     std::string attrsStr;
     raw_string_ostream ros(attrsStr);
-    ros << (edge->isControlDependence()
-                ? cntColor
-                : (edge->isMemoryDependence() ? memColor : varColor));
+    if (isa<ControlDependence<T, T>>(edge)) {
+      ros << cntColor;
+    } else {
+      ros << (isa<MemoryDependence<T, T>>(edge) ? memColor : varColor);
+    }
     if (edge->isLoopCarriedDependence())
       ros << ", penwidth=2";
     if (dg->isExternal(edge->getSrc()) || dg->isExternal(edge->getDst()))
@@ -246,53 +247,55 @@ namespace llvm {
  * Specializations for GraphTraits and DOTGraphTraits using GraphTraitsBase and
  * ElementTraits
  */
-
 template <>
-struct DOTGraphTraits<DGGraphWrapper<PDG, Value> *>
-  : public ElementTraits<DGGraphWrapper<PDG, Value>,
-                         DGNodeWrapper<Value>,
-                         Value> {
+struct DOTGraphTraits<
+    arcana::noelle::DGGraphWrapper<arcana::noelle::DG<arcana::noelle::DGString>,
+                                   arcana::noelle::DGString> *>
+  : public arcana::noelle::ElementTraits<
+        arcana::noelle::DGGraphWrapper<
+            arcana::noelle::DG<arcana::noelle::DGString>,
+            arcana::noelle::DGString>,
+        arcana::noelle::DGNodeWrapper<arcana::noelle::DGString>,
+        arcana::noelle::DGString> {
   DOTGraphTraits(bool isSimple = false)
-    : ElementTraits<DGGraphWrapper<PDG, Value>, DGNodeWrapper<Value>, Value>(
-        isSimple) {}
+    : arcana::noelle::ElementTraits<
+        arcana::noelle::DGGraphWrapper<
+            arcana::noelle::DG<arcana::noelle::DGString>,
+            arcana::noelle::DGString>,
+        arcana::noelle::DGNodeWrapper<arcana::noelle::DGString>,
+        arcana::noelle::DGString>(isSimple) {}
 };
 template <>
-struct GraphTraits<DGGraphWrapper<PDG, Value> *>
-  : public GraphTraitsBase<DGGraphWrapper<PDG, Value>,
-                           DGNodeWrapper<Value>,
-                           Value> {};
+struct GraphTraits<
+    arcana::noelle::DGGraphWrapper<arcana::noelle::DG<arcana::noelle::DGString>,
+                                   arcana::noelle::DGString> *>
+  : public arcana::noelle::GraphTraitsBase<
+        arcana::noelle::DGGraphWrapper<
+            arcana::noelle::DG<arcana::noelle::DGString>,
+            arcana::noelle::DGString>,
+        arcana::noelle::DGNodeWrapper<arcana::noelle::DGString>,
+        arcana::noelle::DGString> {};
 
 template <>
-struct DOTGraphTraits<DGGraphWrapper<DG<DGString>, DGString> *>
-  : public ElementTraits<DGGraphWrapper<DG<DGString>, DGString>,
-                         DGNodeWrapper<DGString>,
-                         DGString> {
+struct DOTGraphTraits<
+    arcana::noelle::DGGraphWrapper<arcana::noelle::SubCFGs, BasicBlock> *>
+  : public arcana::noelle::ElementTraits<
+        arcana::noelle::DGGraphWrapper<arcana::noelle::SubCFGs, BasicBlock>,
+        arcana::noelle::DGNodeWrapper<BasicBlock>,
+        BasicBlock> {
   DOTGraphTraits(bool isSimple = false)
-    : ElementTraits<DGGraphWrapper<DG<DGString>, DGString>,
-                    DGNodeWrapper<DGString>,
-                    DGString>(isSimple) {}
+    : arcana::noelle::ElementTraits<
+        arcana::noelle::DGGraphWrapper<arcana::noelle::SubCFGs, BasicBlock>,
+        arcana::noelle::DGNodeWrapper<BasicBlock>,
+        BasicBlock>(isSimple) {}
 };
 template <>
-struct GraphTraits<DGGraphWrapper<DG<DGString>, DGString> *>
-  : public GraphTraitsBase<DGGraphWrapper<DG<DGString>, DGString>,
-                           DGNodeWrapper<DGString>,
-                           DGString> {};
-
-template <>
-struct DOTGraphTraits<DGGraphWrapper<SubCFGs, BasicBlock> *>
-  : public ElementTraits<DGGraphWrapper<SubCFGs, BasicBlock>,
-                         DGNodeWrapper<BasicBlock>,
-                         BasicBlock> {
-  DOTGraphTraits(bool isSimple = false)
-    : ElementTraits<DGGraphWrapper<SubCFGs, BasicBlock>,
-                    DGNodeWrapper<BasicBlock>,
-                    BasicBlock>(isSimple) {}
-};
-template <>
-struct GraphTraits<DGGraphWrapper<SubCFGs, BasicBlock> *>
-  : public GraphTraitsBase<DGGraphWrapper<SubCFGs, BasicBlock>,
-                           DGNodeWrapper<BasicBlock>,
-                           BasicBlock> {};
+struct GraphTraits<
+    arcana::noelle::DGGraphWrapper<arcana::noelle::SubCFGs, BasicBlock> *>
+  : public arcana::noelle::GraphTraitsBase<
+        arcana::noelle::DGGraphWrapper<arcana::noelle::SubCFGs, BasicBlock>,
+        arcana::noelle::DGNodeWrapper<BasicBlock>,
+        BasicBlock> {};
 
 } // namespace llvm
 

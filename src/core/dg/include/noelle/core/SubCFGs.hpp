@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,20 +22,8 @@
 #ifndef NOELLE_SRC_CORE_DG_SUBCFGS_H_
 #define NOELLE_SRC_CORE_DG_SUBCFGS_H_
 
-#include "llvm/IR/Module.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/CFG.h"
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/GraphWriter.h"
-#include "llvm/ADT/iterator_range.h"
-#include <set>
-
 #include "noelle/core/DGBase.hpp"
-
-using namespace std;
-using namespace llvm;
-using namespace arcana::noelle;
 
 namespace arcana::noelle {
 

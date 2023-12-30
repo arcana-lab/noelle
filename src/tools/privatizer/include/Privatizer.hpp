@@ -28,8 +28,8 @@ namespace arcana::noelle {
 
 class LiveMemorySummary {
 public:
-  unordered_set<CallBase *> allocable;
-  unordered_set<CallBase *> removable;
+  std::unordered_set<CallBase *> allocable;
+  std::unordered_set<CallBase *> removable;
 };
 
 class FunctionSummary {
@@ -38,17 +38,17 @@ public:
 
   Function *currentF;
 
-  unordered_set<StoreInst *> storeInsts;
-  unordered_set<AllocaInst *> allocaInsts;
-  unordered_set<CallBase *> mallocInsts;
-  unordered_set<CallBase *> callocInsts;
-  unordered_set<CallBase *> freeInsts;
+  std::unordered_set<StoreInst *> storeInsts;
+  std::unordered_set<AllocaInst *> allocaInsts;
+  std::unordered_set<CallBase *> mallocInsts;
+  std::unordered_set<CallBase *> callocInsts;
+  std::unordered_set<CallBase *> freeInsts;
 
   bool stackCanHoldNewAlloca(uint64_t allocationSize);
   bool isDestOfMemcpy(Value *ptr);
 
 private:
-  unordered_set<Value *> destsOfMemcpy;
+  std::unordered_set<Value *> destsOfMemcpy;
   const uint64_t STACK_SIZE_THRESHOLD = 8 * 1024 * 1024;
   uint64_t stackMemoryUsage = 0;
 };
@@ -73,13 +73,13 @@ private:
 
   bool enablePrivatizer;
 
-  const string prefix = "Privatizer: ";
+  const std::string prefix = "Privatizer: ";
 
-  const string emptyPrefix = "            ";
+  const std::string emptyPrefix = "            ";
 
   MayPointsToAnalysis mpa;
 
-  unordered_map<Function *, FunctionSummary *> functionSummaries;
+  std::unordered_map<Function *, FunctionSummary *> functionSummaries;
 
   FunctionSummary *getFunctionSummary(Function *f);
 
@@ -90,7 +90,7 @@ private:
    */
   bool applyH2S(Noelle &noelle);
 
-  unordered_map<Function *, LiveMemorySummary> collectH2S(Noelle &noelle);
+  std::unordered_map<Function *, LiveMemorySummary> collectH2S(Noelle &noelle);
 
   bool transformH2S(Noelle &noelle, LiveMemorySummary liveMemSum);
 
@@ -101,21 +101,23 @@ private:
    */
   bool applyG2S(Noelle &noelle);
 
-  unordered_map<GlobalVariable *, unordered_set<Function *>> collectG2S(
-      Noelle &noelle);
+  std::unordered_map<GlobalVariable *, std::unordered_set<Function *>>
+  collectG2S(Noelle &noelle);
 
   bool transformG2S(Noelle &noelle,
                     GlobalVariable *globalVar,
-                    unordered_set<Function *> privatizable);
+                    std::unordered_set<Function *> privatizable);
 
-  unordered_set<Function *> getPrivatizableFunctions(Noelle &noelle,
-                                                     GlobalVariable *globalVar);
+  std::unordered_set<Function *> getPrivatizableFunctions(
+      Noelle &noelle,
+      GlobalVariable *globalVar);
 
-  Instruction *getInitProgramPoint(Noelle &noelle,
-                                   DominatorSummary *DS,
-                                   GlobalVariable *globalVar,
-                                   StoreInst *storeInst,
-                                   unordered_set<Instruction *> &initializers);
+  Instruction *getInitProgramPoint(
+      Noelle &noelle,
+      DominatorSummary *DS,
+      GlobalVariable *globalVar,
+      StoreInst *storeInst,
+      std::unordered_set<Instruction *> &initializers);
 
   bool initializedBeforeAllUse(Noelle &noelle,
                                GlobalVariable *globalVar,

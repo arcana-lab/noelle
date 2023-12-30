@@ -239,7 +239,7 @@ void Inliner::getLoopsToInline(Noelle &noelle, Hot *profiles) {
 
 void Inliner::getFunctionsToInline(std::string filename) {
   fnsToCheck.clear();
-  ifstream infile(filename);
+  std::ifstream infile(filename);
   if (infile.good()) {
     std::string line;
     while (getline(infile, line)) {
@@ -261,7 +261,7 @@ bool Inliner::registerRemainingFunctions(std::string filename) {
     return false;
   }
 
-  ofstream outfile(filename);
+  std::ofstream outfile(filename);
   std::vector<int> fnInds;
   for (auto F : fnsToCheck) {
     auto fID = fnOrders[F];

@@ -26,9 +26,9 @@ namespace arcana::noelle {
 
 UserSummary::UserSummary(GlobalVariable *globalVar, Noelle &noelle) {
   auto hotFuncs = hotFunctions(noelle);
-  queue<User *> worklist;
-  queue<bool> isDirectUser;
-  unordered_map<Instruction *, unordered_set<User *>> inst2op;
+  std::queue<User *> worklist;
+  std::queue<bool> isDirectUser;
+  std::unordered_map<Instruction *, std::unordered_set<User *>> inst2op;
   for (auto user : globalVar->users()) {
     worklist.push(user);
     isDirectUser.push(true);
@@ -117,15 +117,15 @@ uint64_t getAllocationSize(Value *allocationSource) {
   assert(false && "Unsupported allocation source.");
 };
 
-unordered_set<Function *> functionsInvokedFrom(Noelle &noelle,
-                                               Function *caller) {
+std::unordered_set<Function *> functionsInvokedFrom(Noelle &noelle,
+                                                    Function *caller) {
 
   auto fm = noelle.getFunctionsManager();
   auto mainF = fm->getEntryFunction();
   auto pcf = fm->getProgramCallGraph();
 
   auto insertMyCallees = [&](Function *caller,
-                             queue<Function *> &funcsToTraverse) {
+                             std::queue<Function *> &funcsToTraverse) {
     auto funcNode = pcf->getFunctionNode(caller);
     for (auto callEdge : pcf->getOutgoingEdges(funcNode)) {
       for (auto subEdge : callEdge->getSubEdges()) {
@@ -138,8 +138,8 @@ unordered_set<Function *> functionsInvokedFrom(Noelle &noelle,
     }
   };
 
-  unordered_set<Function *> funcSet;
-  queue<Function *> funcsToTraverse;
+  std::unordered_set<Function *> funcSet;
+  std::queue<Function *> funcsToTraverse;
   insertMyCallees(caller, funcsToTraverse);
 
   while (!funcsToTraverse.empty()) {
@@ -155,7 +155,7 @@ unordered_set<Function *> functionsInvokedFrom(Noelle &noelle,
   return funcSet;
 };
 
-unordered_set<Function *> hotFunctions(Noelle &noelle) {
+std::unordered_set<Function *> hotFunctions(Noelle &noelle) {
   auto mainF = noelle.getFunctionsManager()->getEntryFunction();
   auto hotFuncs = functionsInvokedFrom(noelle, mainF);
   hotFuncs.insert(mainF);

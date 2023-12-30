@@ -61,15 +61,22 @@ bool PDGAnalysis::compareEdges(
 
     auto match = false;
     for (auto &edge2 : edgeSet) {
-      if (edge1->isMemoryDependence() == edge2->isMemoryDependence()
-          && edge1->isMustDependence() == edge2->isMustDependence()
-          && edge1->isControlDependence() == edge2->isControlDependence()
-          && edge1->isLoopCarriedDependence()
-                 == edge2->isLoopCarriedDependence()
-          && edge1->isRemovableDependence() == edge2->isRemovableDependence()
-          && edge1->dataDependenceType() == edge2->dataDependenceType()) {
-        match = true;
-        break;
+      if ((edge1->getKind() == edge2->getKind())
+          && (edge1->isLoopCarriedDependence()
+              == edge2->isLoopCarriedDependence())) {
+        auto areEquals = true;
+        if (isa<DataDependence<Value, Value>>(edge1)) {
+          auto data1 = cast<DataDependence<Value, Value>>(edge1);
+          auto data2 = cast<DataDependence<Value, Value>>(edge2);
+          if (data1->getDataDependenceType()
+              != data2->getDataDependenceType()) {
+            areEquals = false;
+          }
+        }
+        if (areEquals) {
+          match = true;
+          break;
+        }
       }
     }
     if (!match) {

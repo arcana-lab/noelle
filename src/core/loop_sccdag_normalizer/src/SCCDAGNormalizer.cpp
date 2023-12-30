@@ -93,7 +93,7 @@ void SCCDAGNormalizer::mergeSCCsWithExternalInterIterationDependencies(void) {
                                                                    this->loop,
                                                                    sccdag);
     for (auto edge : loopCarriedEdges) {
-      if (!edge->isDataDependence())
+      if (!isa<DataDependence<Value, Value>>(edge))
         continue;
 
       auto producer = edge->getSrc();
