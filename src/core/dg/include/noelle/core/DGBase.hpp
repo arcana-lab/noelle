@@ -113,12 +113,9 @@ public:
   /*
    * Node and Edge Properties
    */
-  DGNode<T> *getEntryNode() const {
-    return entryNode;
-  }
-  void setEntryNode(DGNode<T> *node) {
-    entryNode = node;
-  }
+  DGNode<T> *getEntryNode() const;
+
+  void setEntryNode(DGNode<T> *node);
 
   bool isInternal(T *theT) const;
   bool isExternal(T *theT) const;
@@ -227,6 +224,17 @@ DGNode<T> *DG<T>::addNode(T *theT, bool inclusion) {
   auto &map = inclusion ? internalNodeMap : externalNodeMap;
   map[theT] = node;
   return node;
+}
+
+template <class T>
+DGNode<T> *DG<T>::getEntryNode() const {
+  return entryNode;
+}
+
+template <class T>
+void DG<T>::setEntryNode(DGNode<T> *node) {
+  entryNode = node;
+  return;
 }
 
 template <class T>

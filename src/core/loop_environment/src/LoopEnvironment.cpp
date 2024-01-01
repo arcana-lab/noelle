@@ -274,7 +274,7 @@ uint64_t LoopEnvironment::getNumberOfLiveIns(void) const {
 }
 
 uint64_t LoopEnvironment::getNumberOfLiveOuts(void) const {
-  auto liveOuts = this->getEnvIDsOfLiveInVars();
+  auto liveOuts = this->getEnvIDsOfLiveOutVars();
   auto numberOfLiveOuts = std::distance(liveOuts.begin(), liveOuts.end());
   return numberOfLiveOuts;
 }
