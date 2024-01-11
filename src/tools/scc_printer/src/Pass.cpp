@@ -43,12 +43,23 @@ static cl::opt<bool> PrintSCCInstructions(
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Print all instructions that compose the selected SCCs"));
+static cl::opt<bool> PrintLoopIDs(
+    "noelle-scc-loop-ids",
+    cl::ZeroOrMore,
+    cl::Hidden,
+    cl::desc("Assign and print an incremental ID to loops"));
+static cl::opt<int> TargetLoopID("noelle-scc-target-loop",
+                                 cl::ZeroOrMore,
+                                 cl::Hidden,
+                                 cl::desc("Restrict pass to a single loop"));
 
 bool SCCPrinter::doInitialization(Module &M) {
   this->sccTypeWhiteList = SCCTypeWhiteList;
   this->sccTypeBlackList = SCCTypeBlackList;
   this->printSCCInstructions = PrintSCCInstructions;
   this->help = PrintHelp;
+  this->targetLoopID = TargetLoopID;
+  this->loopIDs = PrintLoopIDs;
   return false;
 }
 

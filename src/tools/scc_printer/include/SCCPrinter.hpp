@@ -30,6 +30,8 @@
 
 namespace arcana::noelle {
 
+std::string getSCCTypeName(GenericSCC::SCCKind type);
+
 class SCCPrinter : public ModulePass {
 public:
   static char ID;
@@ -46,12 +48,16 @@ public:
 
   void printHelp();
 
+  void printLoopIDs(std::vector<LoopStructure *> *LSs);
+
 private:
   std::vector<int> sccTypeWhiteList;
   std::vector<int> sccTypeBlackList;
   std::string prefix;
   bool printSCCInstructions;
   bool help;
+  int targetLoopID;
+  bool loopIDs;
 };
 
 } // namespace arcana::noelle
