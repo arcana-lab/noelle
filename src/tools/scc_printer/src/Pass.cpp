@@ -44,7 +44,7 @@ static cl::opt<bool> PrintSCCInstructions(
     cl::Hidden,
     cl::desc("Print all instructions that compose the selected SCCs"));
 static cl::opt<bool> PrintLoopIDs(
-    "noelle-scc-loop-ids",
+    "noelle-scc-show-loops",
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Assign and print an incremental ID to loops"));
