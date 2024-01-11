@@ -57,6 +57,7 @@ private:
   bool printSCCInstructions;
   bool help;
   int targetLoopID;
+  std::string targetFunctionName;
   bool loopIDs;
 };
 
