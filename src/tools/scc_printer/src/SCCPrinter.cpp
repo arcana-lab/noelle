@@ -27,15 +27,8 @@
 #include "SCCPrinter.hpp"
 
 namespace arcana::noelle {
-// using namespace arcana::noelle;
 
-SCCPrinter::SCCPrinter()
-  : ModulePass{ ID },
-    prefix{ "Noelle: SCCPrinter: " },
-    printSCCInstructions{ false },
-    help{ false },
-    targetLoopID{ -1 },
-    loopIDs{ false } {
+SCCPrinter::SCCPrinter() : ModulePass{ ID }, prefix{ "Noelle: SCCPrinter: " } {
   return;
 }
 
@@ -47,8 +40,18 @@ bool SCCPrinter::runOnModule(Module &M) {
     return false;
   }
 
+  /*
+   * Finding the pointer of the given function name
+   */
+  auto *F = M.getFunction(this->targetFunctionName);
+
+  if (F == nullptr) {
+    errs() << this->prefix << "can't find the target function\n";
+    return false;
+  }
+
   if (this->loopIDs) {
-    printLoopIDs(noelle.getLoopStructures());
+    printLoopIDs(noelle.getLoopStructures(F));
     return false;
   }
 
@@ -128,8 +131,8 @@ void SCCPrinter::printLoopIDs(std::vector<LoopStructure *> *LSs) {
   int id = 0;
   for (auto LS : *LSs) {
     errs() << this->prefix << "Loop ID = " << id << ":\n";
-    for (auto I : *LS->getHeader()) {
-      errs() << this->prefix << *I << "\n";
+    for (auto &I : *LS->getHeader()) {
+      errs() << this->prefix << I << "\n";
     }
     id++;
   }
