@@ -29,17 +29,17 @@ static cl::opt<bool> PrintHelp("noelle-scc-help",
                                cl::Hidden,
                                cl::desc("Print a help message"));
 static cl::list<int> SCCTypeWhiteList(
-    "noelle-scc-type-white-list",
+    "noelle-scc-white-list",
     cl::ZeroOrMore,
     cl::CommaSeparated,
     cl::desc("Print only a subset of the SCC hierarchy"));
 static cl::list<int> SCCTypeBlackList(
-    "noelle-scc-type-black-list",
+    "noelle-scc-black-list",
     cl::ZeroOrMore,
     cl::CommaSeparated,
     cl::desc("Print all but a subset of the SCC hierarchy"));
 static cl::opt<bool> PrintSCCInstructions(
-    "noelle-scc-print-instructions",
+    "noelle-scc-print-inst",
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Print all instructions that compose the selected SCCs"));
