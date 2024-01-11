@@ -26,69 +26,29 @@
 
 #include "SCCPrinter.hpp"
 
-// namespace arcana::noelle {
-using namespace arcana::noelle;
-
-std::string getSCCTypeName(GenericSCC::SCCKind type) {
-  switch (type) {
-    case GenericSCC::LOOP_CARRIED:
-      return "LOOP_CARRIED";
-    case GenericSCC::REDUCTION:
-      return "REDUCTION";
-    case GenericSCC::BINARY_REDUCTION:
-      return "BINARY_REDUCTION";
-    case GenericSCC::LAST_REDUCTION:
-      return "LAST_REDUCTION";
-    case GenericSCC::RECOMPUTABLE:
-      return "RECOMPUTABLE";
-    case GenericSCC::SINGLE_ACCUMULATOR_RECOMPUTABLE:
-      return "SINGLE_ACCUMULATOR_RECOMPUTABLE";
-    case GenericSCC::INDUCTION_VARIABLE:
-      return "INDUCTION_VARIABLE";
-    case GenericSCC::LINEAR_INDUCTION_VARIABLE:
-      return "LINEAR_INDUCTION_VARIABLE";
-    case GenericSCC::LAST_INDUCTION_VARIABLE:
-      return "LAST_INDUCTION_VARIABLE";
-    case GenericSCC::PERIODIC_VARIABLE:
-      return "PERIODIC_VARIABLE";
-    case GenericSCC::LAST_SINGLE_ACCUMULATOR_RECOMPUTABLE:
-      return "LAST_SINGLE_ACCUMULATOR_RECOMPUTABLE";
-    case GenericSCC::UNKNOWN_CLOSED_FORM:
-      return "UNKNOWN_CLOSED_FORM";
-    case GenericSCC::LAST_RECOMPUTABLE:
-      return "LAST_RECOMPUTABLE";
-    case GenericSCC::MEMORY_CLONABLE:
-      return "MEMORY_CLONABLE";
-    case GenericSCC::STACK_OBJECT_CLONABLE:
-      return "STACK_OBJECT_CLONABLE";
-    case GenericSCC::LAST_MEMORY_CLONABLE:
-      return "LAST_MEMORY_CLONABLE";
-    case GenericSCC::LOOP_CARRIED_UNKNOWN:
-      return "LOOP_CARRIED_UNKNOWN";
-    case GenericSCC::LAST_LOOP_CARRIED:
-      return "LAST_LOOP_CARRIED";
-    case GenericSCC::LOOP_ITERATION:
-      return "LOOP_ITERATION";
-    case GenericSCC::LAST_LOOP_ITERATION:
-      return "LAST_LOOP_ITERATION";
-    default:
-      assert(false);
-  }
-}
+namespace arcana::noelle {
+// using namespace arcana::noelle;
 
 SCCPrinter::SCCPrinter()
   : ModulePass{ ID },
     prefix{ "Noelle: SCCPrinter: " },
     printSCCInstructions{ false },
-    help{ false } {
+    help{ false },
+    targetLoopID{ -1 },
+    loopIDs{ false } {
   return;
 }
 
 bool SCCPrinter::runOnModule(Module &M) {
   auto &noelle = getAnalysis<Noelle>();
 
-  if (help) {
+  if (this->help) {
     printHelp();
+    return false;
+  }
+
+  if (this->loopIDs) {
+    printLoopIDs(noelle.getLoopStructures());
     return false;
   }
 
@@ -164,4 +124,62 @@ void SCCPrinter::printHelp() {
   print(GenericSCC::LAST_LOOP_ITERATION);
 }
 
-//} // namespace arcana::noelle
+void SCCPrinter::printLoopIDs(std::vector<LoopStructure *> *LSs) {
+  int id = 0;
+  for (auto LS : *LSs) {
+    errs() << this->prefix << "Loop ID = " << id << ":\n";
+    for (auto I : *LS->getHeader()) {
+      errs() << this->prefix << *I << "\n";
+    }
+    id++;
+  }
+}
+
+std::string getSCCTypeName(GenericSCC::SCCKind type) {
+  switch (type) {
+    case GenericSCC::LOOP_CARRIED:
+      return "LOOP_CARRIED";
+    case GenericSCC::REDUCTION:
+      return "REDUCTION";
+    case GenericSCC::BINARY_REDUCTION:
+      return "BINARY_REDUCTION";
+    case GenericSCC::LAST_REDUCTION:
+      return "LAST_REDUCTION";
+    case GenericSCC::RECOMPUTABLE:
+      return "RECOMPUTABLE";
+    case GenericSCC::SINGLE_ACCUMULATOR_RECOMPUTABLE:
+      return "SINGLE_ACCUMULATOR_RECOMPUTABLE";
+    case GenericSCC::INDUCTION_VARIABLE:
+      return "INDUCTION_VARIABLE";
+    case GenericSCC::LINEAR_INDUCTION_VARIABLE:
+      return "LINEAR_INDUCTION_VARIABLE";
+    case GenericSCC::LAST_INDUCTION_VARIABLE:
+      return "LAST_INDUCTION_VARIABLE";
+    case GenericSCC::PERIODIC_VARIABLE:
+      return "PERIODIC_VARIABLE";
+    case GenericSCC::LAST_SINGLE_ACCUMULATOR_RECOMPUTABLE:
+      return "LAST_SINGLE_ACCUMULATOR_RECOMPUTABLE";
+    case GenericSCC::UNKNOWN_CLOSED_FORM:
+      return "UNKNOWN_CLOSED_FORM";
+    case GenericSCC::LAST_RECOMPUTABLE:
+      return "LAST_RECOMPUTABLE";
+    case GenericSCC::MEMORY_CLONABLE:
+      return "MEMORY_CLONABLE";
+    case GenericSCC::STACK_OBJECT_CLONABLE:
+      return "STACK_OBJECT_CLONABLE";
+    case GenericSCC::LAST_MEMORY_CLONABLE:
+      return "LAST_MEMORY_CLONABLE";
+    case GenericSCC::LOOP_CARRIED_UNKNOWN:
+      return "LOOP_CARRIED_UNKNOWN";
+    case GenericSCC::LAST_LOOP_CARRIED:
+      return "LAST_LOOP_CARRIED";
+    case GenericSCC::LOOP_ITERATION:
+      return "LOOP_ITERATION";
+    case GenericSCC::LAST_LOOP_ITERATION:
+      return "LAST_LOOP_ITERATION";
+    default:
+      assert(false);
+  }
+}
+
+} // namespace arcana::noelle
