@@ -46,37 +46,37 @@ for arg in "$@"; do
   case ${arg} in
     --white-list=*)
       args="${arg#*=}"
-      passArgs="${passArgs} -noelle-scc-white-list=$args"
+      passArgs="${passArgs} -noelle-scc-printer-white-list=$args"
       shift
       ;;
     --black-list=*)
       args="${arg#*=}"
-      passArgs="${passArgs} -noelle-scc-black-list=$args"
+      passArgs="${passArgs} -noelle-scc-printer-black-list=$args"
       shift
       ;;
     --loop=*)
       args="${arg#*=}"
-      passArgs="${passArgs} -noelle-scc-target-loop=$args"
+      passArgs="${passArgs} -noelle-scc-printer-loop=$args"
       shift
       ;;
     --func=*)
       args="${arg#*=}"
-      passArgs="${passArgs} -noelle-scc-target-func=$args"
+      passArgs="${passArgs} -noelle-scc-printer-func=$args"
       shift
       ;;
     --insts)
       args="${arg#*=}"
-      passArgs="${passArgs} -noelle-scc-print-insts"
+      passArgs="${passArgs} -noelle-scc-printer-insts"
       shift
       ;;
     --loops)
       args="${arg#*=}"
-      passArgs="${passArgs} -noelle-scc-show-loops"
+      passArgs="${passArgs} -noelle-scc-printer-loops"
       shift
       ;;
     --sccs)
       args="${arg#*=}"
-      passArgs="${passArgs} -noelle-scc-help"
+      passArgs="${passArgs} -noelle-scc-printer-help"
       shift
       ;;
     --help)
