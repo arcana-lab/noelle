@@ -9,8 +9,90 @@ while [ -L "${SOURCE}" ]; do # resolve $SOURCE until the file is no longer a sym
 done
 installDir=$(realpath $( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd )/..)
 
-echo "NOELLE: SCCPrinter: Start" ;
-cmdToExecute="noelle-load -load ${installDir}/lib/SCCPrinter.so -scc-printer -disable-output $@"
+usage() {
+  echo "USAGE: `basename $0` INPUT_BC [OPTIONS]..."
+  echo
+  echo "Tool for printing info on SCCs of a given loop in a given function"
+  echo
+  echo "INPUT_BC              Input bitcode in .bc or .ll format"
+  echo
+  echo "Options:"
+  echo "--insts               Print the instructions of all SCC."
+  echo "--white-list=N,..     Comma-separated list of SCC IDs to print."
+  echo "                      Use '--sccs' to show their IDs."
+  echo "--black-list=N,..     Comma-separated list of SCC IDs to not print."
+  echo "                      Use '--sccs' to show their IDs."
+  echo "--sccs                Show all SCC type IDs."
+  echo "                      Use this number in '--(white|black)-list'."
+  echo "--func=F              Target function. Default is main."
+  echo "--loop=L              Target loop ID. Show them all with '--loops'."
+  echo "--loops               Show all loops with their ID."
+  echo "                      Use this number in '--loop'."
+  echo "--help                Display this message."
+}
+
+# --- Beginning ------------------------------------------------------
+
+if test $# -lt 1 ; then
+  usage
+  exit 1
+fi
+
+# Parsing arguments
+#
+inputBC="$1"
+passArgs=""
+for arg in "$@"; do
+  case ${arg} in
+    --white-list=*)
+      args="${arg#*=}"
+      passArgs="${passArgs} -noelle-scc-white-list=$args"
+      shift
+      ;;
+    --black-list=*)
+      args="${arg#*=}"
+      passArgs="${passArgs} -noelle-scc-black-list=$args"
+      shift
+      ;;
+    --loop=*)
+      args="${arg#*=}"
+      passArgs="${passArgs} -noelle-scc-target-loop=$args"
+      shift
+      ;;
+    --func=*)
+      args="${arg#*=}"
+      passArgs="${passArgs} -noelle-scc-target-func=$args"
+      shift
+      ;;
+    --insts)
+      args="${arg#*=}"
+      passArgs="${passArgs} -noelle-scc-print-insts"
+      shift
+      ;;
+    --loops)
+      args="${arg#*=}"
+      passArgs="${passArgs} -noelle-scc-show-loops"
+      shift
+      ;;
+    --sccs)
+      args="${arg#*=}"
+      passArgs="${passArgs} -noelle-scc-help"
+      shift
+      ;;
+    --help)
+      usage
+      exit 0
+      ;;
+    -*|--*)
+      echo "ERROR: Unknown option $arg"
+      usage
+      exit 1
+      ;;
+    *)
+      ;;
+  esac
+done
+
+cmdToExecute="noelle-load -load ${installDir}/lib/SCCPrinter.so -scc-printer -disable-output $passArgs $inputBC"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
-echo "NOELLE: SCCPrinter: Exit" ;
