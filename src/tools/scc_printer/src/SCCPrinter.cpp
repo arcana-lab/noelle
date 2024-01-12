@@ -55,6 +55,11 @@ bool SCCPrinter::runOnModule(Module &M) {
     return false;
   }
 
+  if (this->targetLoopID < 0) {
+    errs() << this->prefix << "please specify a loop ID\n";
+    return false;
+  }
+
   const auto isSelected = [&](GenericSCC::SCCKind t) {
     const auto &WL = this->sccTypeWhiteList;
     const auto &BL = this->sccTypeBlackList;
