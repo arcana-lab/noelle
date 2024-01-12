@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Yian Su, Simone Campanoni
+ * Copyright 2016 - 2024  Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@ using namespace llvm;
 
 namespace arcana::noelle {
 
-struct LoopStats : public ModulePass {
+class LoopStats : public ModulePass {
 public:
   static char ID;
 
@@ -91,7 +91,9 @@ private:
                            ScalarEvolution &SE,
                            PDG *loopDG,
                            Loop &llvmLoop);
-  void collectStatsForLoop(Hot *profiles, LoopContent &LDI, Loop &llvmLoop);
+  void collectStatsForLoop(Hot *profiles,
+                           LoopContent &loopContent,
+                           Loop &llvmLoop);
 
   void collectStatsOnLLVMSCCs(Hot *profiles, PDG *loopDG, Stats *statsForLoop);
   void collectStatsOnLLVMIVs(Hot *profiles,
@@ -102,13 +104,15 @@ private:
                                     Loop &llvmLoop,
                                     Stats *stats);
 
-  void collectStatsOnNoelleIVs(Hot *profiles, LoopContent &LDI, Stats *stats);
+  void collectStatsOnNoelleIVs(Hot *profiles,
+                               LoopContent &loopContent,
+                               Stats *stats);
   void collectStatsOnNoelleSCCs(Hot *profiles,
-                                LoopContent &LDI,
+                                LoopContent &loopContent,
                                 Stats *stats,
                                 Loop &llvmLoop);
   void collectStatsOnNoelleInvariants(Hot *profiles,
-                                      LoopContent &LDI,
+                                      LoopContent &loopContent,
                                       Stats *stats);
 
   void collectStatsOnSCCDAG(Hot *profiles,

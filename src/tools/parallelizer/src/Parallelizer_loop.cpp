@@ -23,7 +23,7 @@
 
 namespace arcana::noelle {
 
-bool Parallelizer::parallelizeLoop(LoopContent *LDI,
+bool Parallelizer::parallelizeLoop(LoopContent *loopContent,
                                    Noelle &par,
                                    Heuristics *h) {
   auto prefix = "Parallelizer: parallelizerLoop: ";
@@ -31,7 +31,7 @@ bool Parallelizer::parallelizeLoop(LoopContent *LDI,
   /*
    * Assertions.
    */
-  assert(LDI != nullptr);
+  assert(loopContent != nullptr);
   assert(h != nullptr);
 
   /*
@@ -62,7 +62,7 @@ bool Parallelizer::parallelizeLoop(LoopContent *LDI,
   /*
    * Fetch the loop headers.
    */
-  auto loopStructure = LDI->getLoopStructure();
+  auto loopStructure = loopContent->getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
   auto loopPreHeader = loopStructure->getPreHeader();
 
@@ -94,7 +94,8 @@ bool Parallelizer::parallelizeLoop(LoopContent *LDI,
     errs() << prefix << "  Nesting level = " << loopStructure->getNestingLevel()
            << "\n";
     errs() << prefix << "  Number of threads to extract = "
-           << LDI->getLoopTransformationsManager()->getMaximumNumberOfCores()
+           << loopContent->getLoopTransformationsManager()
+                  ->getMaximumNumberOfCores()
            << "\n";
     if (profiles->isAvailable()) {
       errs() << prefix << "  Coverage = "
@@ -107,7 +108,7 @@ bool Parallelizer::parallelizeLoop(LoopContent *LDI,
      * Print the loop environment.
      */
     errs() << prefix << "  Environment: live-in and live-out values\n";
-    auto env = LDI->getEnvironment();
+    auto env = loopContent->getEnvironment();
     for (auto envID : env->getEnvIDsOfLiveInVars()) {
       auto producerOfLiveIn = env->getProducer(envID);
       errs() << prefix << "  Environment:   Live-in " << envID << " = "
@@ -124,7 +125,7 @@ bool Parallelizer::parallelizeLoop(LoopContent *LDI,
    * Parallelize the loop.
    */
   auto codeModified = false;
-  auto ltm = LDI->getLoopTransformationsManager();
+  auto ltm = loopContent->getLoopTransformationsManager();
   ParallelizationTechnique *usedTechnique = nullptr;
   for (auto parallelizationTechnique : parallelizationTechniques) {
 
@@ -139,13 +140,13 @@ bool Parallelizer::parallelizeLoop(LoopContent *LDI,
      */
     if (par.isTransformationEnabled(parID)
         && ltm->isTransformationEnabled(parID)
-        && parallelizationTechnique->canBeAppliedToLoop(LDI, h)) {
+        && parallelizationTechnique->canBeAppliedToLoop(loopContent, h)) {
 
       /*
        * Parallelize the current loop with the current parallelization
        * technique.
        */
-      codeModified = parallelizationTechnique->apply(LDI, h);
+      codeModified = parallelizationTechnique->apply(loopContent, h);
       usedTechnique = parallelizationTechnique;
       break;
     }
@@ -183,7 +184,7 @@ bool Parallelizer::parallelizeLoop(LoopContent *LDI,
   if (verbose != Verbosity::Disabled) {
     errs() << prefix << "  Link the parallelize loop\n";
   }
-  auto exitBlockID = LDI->getEnvironment()->getExitBlockID();
+  auto exitBlockID = loopContent->getEnvironment()->getExitBlockID();
   auto constantValue =
       exitBlockID >= 0
           ? usedTechnique->getIndexOfEnvironmentVariable(exitBlockID)
@@ -212,4 +213,5 @@ bool Parallelizer::parallelizeLoop(LoopContent *LDI,
 
   return true;
 }
+
 } // namespace arcana::noelle

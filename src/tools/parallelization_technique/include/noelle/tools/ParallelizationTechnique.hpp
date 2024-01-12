@@ -51,15 +51,16 @@ public:
   virtual BasicBlock *getParLoopExitPoint(void) const;
 
   /*
-   * Apply the parallelization technique to the loop LDI.
+   * Apply the parallelization technique to the loop @loopContent.
    */
-  virtual bool apply(LoopContent *LDI, Heuristics *h) = 0;
+  virtual bool apply(LoopContent *loopContent, Heuristics *h) = 0;
 
   /*
    * Can the current parallelization technique be applied to parallelize loop
-   * LDI?
+   * @loopContent?
    */
-  virtual bool canBeAppliedToLoop(LoopContent *LDI, Heuristics *h) const = 0;
+  virtual bool canBeAppliedToLoop(LoopContent *loopContent,
+                                  Heuristics *h) const = 0;
 
   virtual uint32_t getMinimumNumberOfIdleCores(void) const = 0;
 
@@ -77,32 +78,33 @@ protected:
    * Generate empty tasks.
    *
    * Each task will be composed by the following empty basic blocks:
-   * - an entry basic block, which is mapped to the pre-header of the loop LDI
+   * - an entry basic block, which is mapped to the pre-header of the loop
+   * @loopContent
    * - an exit block, which is the only basic block that will exit the task
    * - one basic block per loop exit, which will jump to the exit block
    */
   virtual void addPredecessorAndSuccessorsBasicBlocksToTasks(
-      LoopContent *LDI,
+      LoopContent *loopContent,
       std::vector<Task *> taskStructs);
 
   /*
    * Loop's environment
    */
   virtual void initializeEnvironmentBuilder(
-      LoopContent *LDI,
+      LoopContent *loopContent,
       std::set<uint32_t> nonReducableVars);
 
-  virtual void initializeEnvironmentBuilder(LoopContent *LDI,
+  virtual void initializeEnvironmentBuilder(LoopContent *loopContent,
                                             std::set<uint32_t> simpleVars,
                                             std::set<uint32_t> reducableVars);
 
   virtual void initializeEnvironmentBuilder(
-      LoopContent *LDI,
+      LoopContent *loopContent,
       std::function<bool(uint32_t variableID, bool isLiveOut)>
           shouldThisVariableBeReduced);
 
   virtual void initializeEnvironmentBuilder(
-      LoopContent *LDI,
+      LoopContent *loopContent,
       std::function<bool(uint32_t variableID, bool isLiveOut)>
           shouldThisVariableBeReduced,
       std::function<bool(uint32_t variableID, bool isLiveOut)>
@@ -110,27 +112,28 @@ protected:
 
   virtual void initializeLoopEnvironmentUsers(void);
 
-  virtual void allocateEnvironmentArray(LoopContent *LDI);
+  virtual void allocateEnvironmentArray(LoopContent *loopContent);
 
-  virtual void populateLiveInEnvironment(LoopContent *LDI);
+  virtual void populateLiveInEnvironment(LoopContent *loopContent);
 
   virtual BasicBlock *performReductionToAllReducableLiveOutVariables(
-      LoopContent *LDI,
+      LoopContent *loopContent,
       Value *numberOfThreadsExecuted);
 
   /*
    * Task helpers for manipulating loop body clones
    */
-  virtual void cloneSequentialLoop(LoopContent *LDI, int taskIndex);
-  virtual void cloneSequentialLoopSubset(LoopContent *LDI,
+  virtual void cloneSequentialLoop(LoopContent *loopContent, int taskIndex);
+  virtual void cloneSequentialLoopSubset(LoopContent *loopContent,
                                          int taskIndex,
                                          std::set<Instruction *> subset);
 
-  virtual void cloneMemoryLocationsLocallyAndRewireLoop(LoopContent *LDI,
-                                                        int taskIndex);
+  virtual void cloneMemoryLocationsLocallyAndRewireLoop(
+      LoopContent *loopContent,
+      int taskIndex);
 
   virtual std::unordered_map<InductionVariable *, Value *>
-  cloneIVStepValueComputation(LoopContent *LDI,
+  cloneIVStepValueComputation(LoopContent *loopContent,
                               int taskIndex,
                               IRBuilder<> &insertBlock);
 
@@ -141,39 +144,40 @@ protected:
   /*
    * Task helpers for environment usage
    */
-  virtual void generateCodeToLoadLiveInVariables(LoopContent *LDI,
+  virtual void generateCodeToLoadLiveInVariables(LoopContent *loopContent,
                                                  int taskIndex);
 
-  virtual void generateCodeToStoreLiveOutVariables(LoopContent *LDI,
+  virtual void generateCodeToStoreLiveOutVariables(LoopContent *loopContent,
                                                    int taskIndex);
 
   virtual Instruction *
   fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable(
-      LoopContent *LDI,
+      LoopContent *loopContent,
       int taskIndex,
       int envID,
       BasicBlock *insertBasicBlock,
       DominatorSummary &taskDS);
 
-  virtual void generateCodeToStoreExitBlockIndex(LoopContent *LDI,
+  virtual void generateCodeToStoreExitBlockIndex(LoopContent *loopContent,
                                                  int taskIndex);
 
   virtual std::set<BasicBlock *> determineLatestPointsToInsertLiveOutStore(
-      LoopContent *LDI,
+      LoopContent *loopContent,
       int taskIndex,
       Instruction *liveOut,
       bool isReduced,
       DominatorSummary &taskDS);
 
-  virtual void setReducableVariablesToBeginAtIdentityValue(LoopContent *LDI,
-                                                           int taskIndex);
+  virtual void setReducableVariablesToBeginAtIdentityValue(
+      LoopContent *loopContent,
+      int taskIndex);
 
   virtual Value *castToCorrectReducibleType(IRBuilder<> &builder,
                                             Value *value,
                                             Type *targetType);
 
   virtual BasicBlock *getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
-      LoopContent *LDI,
+      LoopContent *loopContent,
       uint32_t taskIndex,
       BasicBlock &bb) = 0;
 
@@ -182,10 +186,11 @@ protected:
    */
   virtual void doNestedInlineOfCalls(Function *F, std::set<CallInst *> &calls);
 
-  virtual float computeSequentialFractionOfExecution(LoopContent *LDI) const;
+  virtual float computeSequentialFractionOfExecution(
+      LoopContent *loopContent) const;
 
   virtual float computeSequentialFractionOfExecution(
-      LoopContent *LDI,
+      LoopContent *loopContent,
       std::function<bool(GenericSCC *scc)> doesItRunSequentially) const;
 
   virtual void makePRVGsReentrant(void);

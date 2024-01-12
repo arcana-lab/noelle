@@ -37,7 +37,7 @@ bool PDGStats::runOnModule(Module &M) {
    */
   std::unordered_map<Function *, LoopForest *> programLoopForests;
   std::unordered_map<Function *, std::vector<LoopContent *> *> programLoops;
-  std::unordered_map<LoopStructure *, LoopContent *> lsToLDI;
+  std::unordered_map<LoopStructure *, LoopContent *> lsToLC;
   for (auto &F : M) {
 
     /*
@@ -49,14 +49,14 @@ bool PDGStats::runOnModule(Module &M) {
     }
 
     /*
-     * Create the map from loop structure to LDI.
+     * Create the map from loop structure to LoopContent.
      */
     std::unordered_map<Function *, std::vector<LoopStructure *>>
         programLoopStructures;
     auto &loopStructures = programLoopStructures[&F];
-    for (auto LDI : *programLoops[&F]) {
-      auto ls = LDI->getLoopStructure();
-      lsToLDI[ls] = LDI;
+    for (auto loopContent : *programLoops[&F]) {
+      auto ls = loopContent->getLoopStructure();
+      lsToLC[ls] = loopContent;
       loopStructures.push_back(ls);
     }
 
@@ -85,12 +85,12 @@ bool PDGStats::runOnModule(Module &M) {
   for (auto &F : M) {
     this->collectStatsForNodes(F);
     this->collectStatsForPotentialEdges(programLoopForests, F);
-    this->collectStatsForLoopEdges(noelle, programLoopForests, lsToLDI, F);
+    this->collectStatsForLoopEdges(noelle, programLoopForests, lsToLC, F);
 
     if (this->dumpLoopDG) {
       this->printRefinedLoopGraphsForFunction(noelle,
                                               programLoopForests,
-                                              lsToLDI,
+                                              lsToLC,
                                               F);
     }
   }
@@ -183,7 +183,7 @@ void PDGStats::collectStatsForPotentialEdges(
 void PDGStats::printRefinedLoopGraphsForFunction(
     Noelle &noelle,
     std::unordered_map<Function *, LoopForest *> &programLoops,
-    std::unordered_map<LoopStructure *, LoopContent *> &lsToLDI,
+    std::unordered_map<LoopStructure *, LoopContent *> &lsToLC,
     Function &F) {
   auto loopCount = 0;
   /*
@@ -192,19 +192,19 @@ void PDGStats::printRefinedLoopGraphsForFunction(
   if (programLoops.find(&F) != programLoops.end()) {
     auto loopForest = programLoops[&F];
     for (auto loopTree : loopForest->getTrees()) {
-      auto visitor = [this, &lsToLDI, &loopCount, &F](LoopTree *n,
-                                                      uint32_t level) -> bool {
+      auto visitor = [this, &lsToLC, &loopCount, &F](LoopTree *n,
+                                                     uint32_t level) -> bool {
         /*
          * Fetch the loop.
          */
         auto currentLoop = n->getLoop();
-        auto currentLDI = lsToLDI[currentLoop];
-        assert(currentLDI != nullptr);
+        auto currentLoopContent = lsToLC[currentLoop];
+        assert(currentLoopContent != nullptr);
 
         /*
          * Fetch the loop dependence graph.
          */
-        auto loopDG = currentLDI->getLoopDG();
+        auto loopDG = currentLoopContent->getLoopDG();
 
         std::string filename;
         raw_string_ostream ros(filename);
@@ -226,7 +226,7 @@ void PDGStats::printRefinedLoopGraphsForFunction(
 void PDGStats::collectStatsForLoopEdges(
     Noelle &noelle,
     std::unordered_map<Function *, LoopForest *> &programLoops,
-    std::unordered_map<LoopStructure *, LoopContent *> &lsToLDI,
+    std::unordered_map<LoopStructure *, LoopContent *> &lsToLC,
     Function &F) {
 
   /*
@@ -235,18 +235,18 @@ void PDGStats::collectStatsForLoopEdges(
   if (programLoops.find(&F) != programLoops.end()) {
     auto loopForest = programLoops[&F];
     for (auto loopTree : loopForest->getTrees()) {
-      auto visitor = [this, &lsToLDI](LoopTree *n, uint32_t level) -> bool {
+      auto visitor = [this, &lsToLC](LoopTree *n, uint32_t level) -> bool {
         /*
          * Fetch the loop.
          */
         auto currentLoop = n->getLoop();
-        auto currentLDI = lsToLDI[currentLoop];
-        assert(currentLDI != nullptr);
+        auto currentLoopContent = lsToLC[currentLoop];
+        assert(currentLoopContent != nullptr);
 
         /*
          * Fetch the loop dependence graph.
          */
-        auto loopDG = currentLDI->getLoopDG();
+        auto loopDG = currentLoopContent->getLoopDG();
 
         /*
          * Iterate over the dependences.

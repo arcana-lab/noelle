@@ -58,8 +58,8 @@ void LoopStats::collectStatsForLoops(Noelle &noelle,
   /*
    * TODO: Construct dependence graph using only LLVM APIs
    */
-  for (auto LDI : loops) {
-    auto loopStructure = LDI->getLoopStructure();
+  for (auto loopContent : loops) {
+    auto loopStructure = loopContent->getLoopStructure();
     auto loopHeader = loopStructure->getHeader();
     auto loopFunction = loopStructure->getFunction();
 
@@ -70,7 +70,7 @@ void LoopStats::collectStatsForLoops(Noelle &noelle,
     auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*loopFunction).getSE();
     auto &LI = getAnalysis<LoopInfoWrapperPass>(*loopFunction).getLoopInfo();
     auto llvmLoop = LI.getLoopFor(loopHeader);
-    auto loopDG = LDI->getLoopDG();
+    auto loopDG = loopContent->getLoopDG();
 
     collectStatsForLoop(profiles, loopID, SE, loopDG, *llvmLoop);
   }
