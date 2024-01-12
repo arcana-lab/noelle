@@ -50,6 +50,7 @@ static cl::opt<bool> PrintLoopIDs(
     cl::desc("Assign and print an incremental ID to loops"));
 static cl::opt<int> TargetLoopID("noelle-scc-target-loop",
                                  cl::ZeroOrMore,
+                                 cl::init(-1),
                                  cl::Hidden,
                                  cl::desc("Restrict pass to a single loop"));
 static cl::opt<std::string> TargetFunctionName(
