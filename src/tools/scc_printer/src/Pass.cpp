@@ -24,37 +24,37 @@
 using namespace llvm;
 using namespace arcana::noelle;
 
-static cl::opt<bool> PrintHelp("noelle-scc-help",
+static cl::opt<bool> PrintHelp("noelle-scc-printer-help",
                                cl::ZeroOrMore,
                                cl::Hidden,
                                cl::desc("Print a help message"));
 static cl::list<int> SCCTypeWhiteList(
-    "noelle-scc-white-list",
+    "noelle-scc-printer-white-list",
     cl::ZeroOrMore,
     cl::CommaSeparated,
     cl::desc("Print only a subset of the SCC hierarchy"));
 static cl::list<int> SCCTypeBlackList(
-    "noelle-scc-black-list",
+    "noelle-scc-printer-black-list",
     cl::ZeroOrMore,
     cl::CommaSeparated,
     cl::desc("Print all but a subset of the SCC hierarchy"));
 static cl::opt<bool> PrintSCCInstructions(
-    "noelle-scc-print-insts",
+    "noelle-scc-printer-insts",
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Print all instructions that compose the selected SCCs"));
 static cl::opt<bool> PrintLoopIDs(
-    "noelle-scc-show-loops",
+    "noelle-scc-printer-loops",
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Assign and print an incremental ID to loops"));
-static cl::opt<int> TargetLoopID("noelle-scc-target-loop",
+static cl::opt<int> TargetLoopID("noelle-scc-printer-loop",
                                  cl::ZeroOrMore,
                                  cl::init(-1),
                                  cl::Hidden,
                                  cl::desc("Restrict pass to a single loop"));
 static cl::opt<std::string> TargetFunctionName(
-    "noelle-scc-target-func",
+    "noelle-scc-printer-func",
     cl::init("main"),
     cl::ZeroOrMore,
     cl::Hidden,
