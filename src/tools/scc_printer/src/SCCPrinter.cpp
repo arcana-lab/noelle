@@ -71,7 +71,7 @@ bool SCCPrinter::runOnModule(Module &M) {
   };
 
   auto LSs = noelle.getLoopStructures();
-  auto LS = *LSs->begin();
+  auto LS = (*LSs)[this->targetLoopID];
 
   auto LC = noelle.getLoopContent(LS);
   auto sccManager = LC->getSCCManager();
