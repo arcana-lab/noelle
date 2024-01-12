@@ -82,22 +82,23 @@ bool SCCPrinter::runOnModule(Module &M) {
   auto sccManager = LC->getSCCManager();
   auto SCCDAG = sccManager->getSCCDAG();
 
+  int sccID = 0;
   for (auto sccNode : SCCDAG->getSCCs()) {
     auto genericSCC = sccManager->getSCCAttrs(sccNode);
     auto type = genericSCC->getKind();
     if (!isSelected(type)) {
       continue;
     }
-    errs() << this->prefix << getSCCTypeName(genericSCC->getKind()) << "\n";
+    errs() << this->prefix << getSCCTypeName(genericSCC->getKind()) << " (ID "
+           << sccID << ")\n";
     if (this->printSCCInstructions) {
       for (auto *I : sccNode->getInstructions()) {
         errs() << this->prefix << *I << "\n";
       }
       errs() << this->prefix << "\n";
     }
+    sccID++;
     // sccNode->print(errs(), this->prefix);
-    if (auto LCU = dyn_cast<LoopCarriedUnknownSCC>(genericSCC)) {
-    }
   }
 
   return false;
