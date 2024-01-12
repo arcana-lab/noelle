@@ -39,7 +39,7 @@ static cl::list<int> SCCTypeBlackList(
     cl::CommaSeparated,
     cl::desc("Print all but a subset of the SCC hierarchy"));
 static cl::opt<bool> PrintSCCInstructions(
-    "noelle-scc-print-inst",
+    "noelle-scc-print-insts",
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Print all instructions that compose the selected SCCs"));
