@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_TOOLS_PDG_STATS_PDGSTATS_H_
 #define NOELLE_SRC_TOOLS_PDG_STATS_PDGSTATS_H_
 
-#include <unordered_map>
+#include <map>
 
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/GenericSCC.hpp"
@@ -57,7 +57,7 @@ private:
   int64_t numberOfPotentialMemoryDependences = 0;
   int64_t numberOfControlDependence = 0;
   int64_t numberOfSCCs = 0;
-  std::unordered_map<GenericSCC::SCCKind, int64_t> sccHistogram;
+  std::map<GenericSCC::SCCKind, int64_t> sccHistogram;
 
   void collectStatsForNodes(Function &F);
 
