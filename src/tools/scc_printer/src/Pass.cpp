@@ -24,10 +24,10 @@
 using namespace llvm;
 using namespace arcana::noelle;
 
-static cl::opt<bool> PrintHelp("noelle-scc-printer-help",
-                               cl::ZeroOrMore,
-                               cl::Hidden,
-                               cl::desc("Print a help message"));
+static cl::opt<bool> PrintTypes("noelle-scc-printer-types",
+                                cl::ZeroOrMore,
+                                cl::Hidden,
+                                cl::desc("Print the SCC type IDs"));
 static cl::list<int> SCCTypeWhiteList(
     "noelle-scc-printer-white-list",
     cl::ZeroOrMore,
@@ -64,7 +64,7 @@ bool SCCPrinter::doInitialization(Module &M) {
   this->sccTypeWhiteList = SCCTypeWhiteList;
   this->sccTypeBlackList = SCCTypeBlackList;
   this->printSCCInstructions = PrintSCCInstructions;
-  this->help = PrintHelp;
+  this->types = PrintTypes;
   this->targetLoopID = TargetLoopID;
   this->targetFunctionName = TargetFunctionName;
   this->loopIDs = PrintLoopIDs;

@@ -22,7 +22,7 @@ usage() {
   echo "                      Use '--sccs' to show their IDs."
   echo "--black-list=N,..     Comma-separated list of SCC IDs to not print."
   echo "                      Use '--sccs' to show their IDs."
-  echo "--sccs                Show all SCC type IDs."
+  echo "--types               Show all SCC type IDs."
   echo "                      Use this number in '--(white|black)-list'."
   echo "--func=F              Target function. Default is main."
   echo "--loop=L              Target loop ID. Show them all with '--loops'."
@@ -74,9 +74,9 @@ for arg in "$@"; do
       passArgs="${passArgs} -noelle-scc-printer-loops"
       shift
       ;;
-    --sccs)
+    --types)
       args="${arg#*=}"
-      passArgs="${passArgs} -noelle-scc-printer-help"
+      passArgs="${passArgs} -noelle-scc-printer-types"
       shift
       ;;
     --help)

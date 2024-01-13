@@ -35,8 +35,8 @@ SCCPrinter::SCCPrinter() : ModulePass{ ID }, prefix{ "Noelle: SCCPrinter: " } {
 bool SCCPrinter::runOnModule(Module &M) {
   auto &noelle = getAnalysis<Noelle>();
 
-  if (this->help) {
-    printHelp();
+  if (this->types) {
+    printTypes();
     return false;
   }
 
@@ -104,7 +104,7 @@ bool SCCPrinter::runOnModule(Module &M) {
   return false;
 }
 
-void SCCPrinter::printHelp() {
+void SCCPrinter::printTypes() {
   errs() << this->prefix << "List of SCC types and their ID\n";
 
   auto print = [prefix = this->prefix](auto type) {
