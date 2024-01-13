@@ -19,8 +19,11 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <string>
+
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/SCCDAGAttrs.hpp"
 #include "PDGStats.hpp"
 
 namespace arcana::noelle {
@@ -94,6 +97,8 @@ bool PDGStats::runOnModule(Module &M) {
                                               F);
     }
   }
+
+  this->collectSCCStats(noelle);
 
   /*
    * Print the statistics.
@@ -264,6 +269,21 @@ void PDGStats::collectStatsForLoopEdges(
   return;
 }
 
+void PDGStats::collectSCCStats(Noelle &noelle) {
+  auto LSs = noelle.getLoopStructures();
+
+  for (auto LS : *LSs) {
+    auto LC = noelle.getLoopContent(LS);
+    auto manager = LC->getSCCManager();
+    auto SCCNodes = manager->getSCCDAG()->getSCCs();
+    for (auto sccNode : SCCNodes) {
+      auto scc = manager->getSCCAttrs(sccNode);
+      this->sccHistogram[scc->getKind()]++;
+      this->numberOfSCCs++;
+    }
+  }
+}
+
 bool PDGStats::edgeIsDependenceOf(MDNode *edgeM,
                                   const EDGE_ATTRIBUTE edgeAttribute) {
   if (MDNode *m = dyn_cast<MDNode>(edgeM->getOperand(edgeAttribute))) {
@@ -280,24 +300,84 @@ void PDGStats::printStats() {
   errs() << "Number of Edges (a.k.a. dependences): " << this->numberOfEdges
          << "\n";
   errs()
-      << " Number of control dependences: " << this->numberOfControlDependence
+      << "  Number of control dependences: " << this->numberOfControlDependence
       << "\n";
-  errs() << " Number of data dependences: "
+  errs() << "  Number of data dependences: "
          << this->numberOfEdges - this->numberOfControlDependence << "\n";
-  errs() << "   Number of variable dependences: "
+  errs() << "    Number of variable dependences: "
          << this->numberOfVariableDependence << "\n";
   errs()
-      << "   Number of memory dependences: " << this->numberOfMemoryDependence
+      << "    Number of memory dependences: " << this->numberOfMemoryDependence
       << "\n";
-  errs() << "     Number of memory must dependences: "
+  errs() << "      Number of memory must dependences: "
          << this->numberOfMemoryMustDependence << "\n";
-  errs() << "     Number of memory may dependences: "
+  errs() << "      Number of memory may dependences: "
          << this->numberOfMemoryDependence - this->numberOfMemoryMustDependence
          << "\n";
-  errs() << "     Number of potential memory dependences: "
+  errs() << "      Number of potential memory dependences: "
          << this->numberOfPotentialMemoryDependences << "\n";
 
+  printSCCStats();
+
   return;
+}
+
+void PDGStats::printSCCStats() {
+  errs() << "Number of SCCs: " << this->numberOfSCCs << "\n";
+  for (const auto &[kind, counts] : this->sccHistogram) {
+    if (counts != 0) {
+      errs() << "  Number of SCC of type " << toString(kind) << ": " << counts
+             << "\n";
+    }
+  }
+  errs() << "  Number of SCC of any other type: 0\n";
+}
+
+std::string PDGStats::toString(GenericSCC::SCCKind sccKind) {
+  switch (sccKind) {
+    case GenericSCC::LOOP_CARRIED:
+      return "LOOP_CARRIED";
+    case GenericSCC::REDUCTION:
+      return "REDUCTION";
+    case GenericSCC::BINARY_REDUCTION:
+      return "BINARY_REDUCTION";
+    case GenericSCC::LAST_REDUCTION:
+      return "LAST_REDUCTION";
+    case GenericSCC::RECOMPUTABLE:
+      return "RECOMPUTABLE";
+    case GenericSCC::SINGLE_ACCUMULATOR_RECOMPUTABLE:
+      return "SINGLE_ACCUMULATOR_RECOMPUTABLE";
+    case GenericSCC::INDUCTION_VARIABLE:
+      return "INDUCTION_VARIABLE";
+    case GenericSCC::LINEAR_INDUCTION_VARIABLE:
+      return "LINEAR_INDUCTION_VARIABLE";
+    case GenericSCC::LAST_INDUCTION_VARIABLE:
+      return "LAST_INDUCTION_VARIABLE";
+    case GenericSCC::PERIODIC_VARIABLE:
+      return "PERIODIC_VARIABLE";
+    case GenericSCC::LAST_SINGLE_ACCUMULATOR_RECOMPUTABLE:
+      return "LAST_SINGLE_ACCUMULATOR_RECOMPUTABLE";
+    case GenericSCC::UNKNOWN_CLOSED_FORM:
+      return "UNKNOWN_CLOSED_FORM";
+    case GenericSCC::LAST_RECOMPUTABLE:
+      return "LAST_RECOMPUTABLE";
+    case GenericSCC::MEMORY_CLONABLE:
+      return "MEMORY_CLONABLE";
+    case GenericSCC::STACK_OBJECT_CLONABLE:
+      return "STACK_OBJECT_CLONABLE";
+    case GenericSCC::LAST_MEMORY_CLONABLE:
+      return "LAST_MEMORY_CLONABLE";
+    case GenericSCC::LOOP_CARRIED_UNKNOWN:
+      return "LOOP_CARRIED_UNKNOWN";
+    case GenericSCC::LAST_LOOP_CARRIED:
+      return "LAST_LOOP_CARRIED";
+    case GenericSCC::LOOP_ITERATION:
+      return "LOOP_ITERATION";
+    case GenericSCC::LAST_LOOP_ITERATION:
+      return "LAST_LOOP_ITERATION";
+    default:
+      assert(false);
+  }
 }
 
 PDGStats::PDGStats() : ModulePass{ ID } {

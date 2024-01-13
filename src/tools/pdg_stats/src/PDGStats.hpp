@@ -22,7 +22,10 @@
 #ifndef NOELLE_SRC_TOOLS_PDG_STATS_PDGSTATS_H_
 #define NOELLE_SRC_TOOLS_PDG_STATS_PDGSTATS_H_
 
+#include <unordered_map>
+
 #include "noelle/core/Noelle.hpp"
+#include "noelle/core/GenericSCC.hpp"
 
 namespace arcana::noelle {
 
@@ -53,8 +56,11 @@ private:
   int64_t numberOfMemoryMustDependence = 0;
   int64_t numberOfPotentialMemoryDependences = 0;
   int64_t numberOfControlDependence = 0;
+  int64_t numberOfSCCs = 0;
+  std::unordered_map<GenericSCC::SCCKind, int64_t> sccHistogram;
 
   void collectStatsForNodes(Function &F);
+
   void collectStatsForPotentialEdges(
       std::unordered_map<Function *, LoopForest *> &programLoops,
       Function &F);
@@ -71,10 +77,18 @@ private:
       std::unordered_map<LoopStructure *, LoopContent *> &lsToLC,
       Function &F);
 
+  void collectSCCStats(Noelle &noelle);
+
   void analyzeDependence(DGEdge<Value, Value> *edge);
 
   bool edgeIsDependenceOf(MDNode *edgeM, EDGE_ATTRIBUTE edgeAttribute);
+
   void printStats();
+
+  void printSCCStats();
+
+  std::string toString(GenericSCC::SCCKind sccKind);
+
   uint64_t computePotentialEdges(uint64_t totLoads,
                                  uint64_t totStores,
                                  uint64_t totCalls);
