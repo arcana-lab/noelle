@@ -80,35 +80,58 @@ bool SCCPrinter::runOnModule(Module &M) {
 
   auto LC = noelle.getLoopContent(LS);
   auto sccManager = LC->getSCCManager();
-  auto SCCDAG = sccManager->getSCCDAG();
+  auto SCCNodes = sccManager->getSCCDAG()->getSCCs();
 
-  int sccID = 0;
-  for (auto sccNode : SCCDAG->getSCCs()) {
-    auto genericSCC = sccManager->getSCCAttrs(sccNode);
-    auto type = genericSCC->getKind();
-    if (!isSelected(type)) {
-      continue;
+  if (this->targetSCCID >= 0) {
+    if (this->targetSCCID >= SCCNodes.size()) {
+      errs() << this->prefix << "invalid SCC ID\n";
+      return false;
     }
-    errs() << this->prefix << getSCCTypeName(genericSCC->getKind()) << " (ID "
-           << sccID << ")\n";
-    if (this->printSCCInstructions) {
-      for (auto *I : sccNode->getInstructions()) {
-        errs() << this->prefix << *I << "\n";
-      }
-      errs() << this->prefix << "\n";
-    }
-    sccID++;
-    // sccNode->print(errs(), this->prefix);
+    int idx = 0;
+    auto target = SCCNodes.begin();
+    std::advance(target, this->targetSCCID);
+    auto scc = sccManager->getSCCAttrs(*target);
+    printSCC(this->targetSCCID, scc, /*inDetail=*/true);
+    return false;
   }
 
+  int id = 0;
+  for (auto sccNode : SCCNodes) {
+    auto scc = sccManager->getSCCAttrs(sccNode);
+    auto type = scc->getKind();
+    if (isSelected(type)) {
+      printSCC(id, scc, /*inDetail=*/false);
+    }
+    id++;
+  }
   return false;
+}
+
+void SCCPrinter::printSCC(int id, GenericSCC *scc, bool inDetail) {
+  auto sccNode = scc->getSCC();
+
+  errs() << this->prefix << "SCCID." << id << " "
+         << "TypeID." << scc->getKind() << " = "
+         << getSCCTypeName(scc->getKind()) << "\n";
+
+  if (this->printSCCInstructions) {
+    for (auto *I : sccNode->getInstructions()) {
+      errs() << this->prefix << *I << "\n";
+    }
+    errs() << this->prefix << "\n";
+  }
+
+  if (inDetail) {
+    sccNode->print(errs(), this->prefix);
+  }
 }
 
 void SCCPrinter::printTypes() {
   errs() << this->prefix << "List of SCC types and their ID\n";
 
   auto print = [prefix = this->prefix](auto type) {
-    errs() << prefix << type << " = " << getSCCTypeName(type) << "\n";
+    errs()
+        << prefix << "TypeID." << type << " = " << getSCCTypeName(type) << "\n";
   };
 
   print(GenericSCC::LOOP_CARRIED);
