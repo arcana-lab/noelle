@@ -50,6 +50,8 @@ public:
 
   void printLoopIDs(std::vector<LoopStructure *> *LSs);
 
+  void printSCC(int id, GenericSCC *scc, bool inDetail);
+
 private:
   std::vector<int> sccTypeWhiteList;
   std::vector<int> sccTypeBlackList;
@@ -57,6 +59,7 @@ private:
   std::string targetFunctionName;
   bool printSCCInstructions;
   bool types;
+  int targetSCCID;
   int targetLoopID;
   bool loopIDs;
 };

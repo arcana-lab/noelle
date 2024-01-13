@@ -59,6 +59,12 @@ static cl::opt<std::string> TargetFunctionName(
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Restrict pass to a single function"));
+static cl::opt<int> TargetSCCID(
+    "noelle-scc-printer-scc",
+    cl::ZeroOrMore,
+    cl::init(-1),
+    cl::Hidden,
+    cl::desc("Print extendend information of a specific SCC"));
 
 bool SCCPrinter::doInitialization(Module &M) {
   this->sccTypeWhiteList = SCCTypeWhiteList;
@@ -68,6 +74,7 @@ bool SCCPrinter::doInitialization(Module &M) {
   this->targetLoopID = TargetLoopID;
   this->targetFunctionName = TargetFunctionName;
   this->loopIDs = PrintLoopIDs;
+  this->targetSCCID = TargetSCCID;
   return false;
 }
 
