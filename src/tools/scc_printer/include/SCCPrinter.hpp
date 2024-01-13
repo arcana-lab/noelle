@@ -46,7 +46,7 @@ public:
 
   void getAnalysisUsage(AnalysisUsage &AU) const override;
 
-  void printHelp();
+  void printTypes();
 
   void printLoopIDs(std::vector<LoopStructure *> *LSs);
 
@@ -54,10 +54,10 @@ private:
   std::vector<int> sccTypeWhiteList;
   std::vector<int> sccTypeBlackList;
   std::string prefix;
-  bool printSCCInstructions;
-  bool help;
-  int targetLoopID;
   std::string targetFunctionName;
+  bool printSCCInstructions;
+  bool types;
+  int targetLoopID;
   bool loopIDs;
 };
 
