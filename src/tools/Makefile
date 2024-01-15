@@ -80,6 +80,4 @@ clean:
 	rm -rf */build */*.json ; 
 	rm -rf */build */*/*.json ; 
 
-.PHONY: $(ALL)
-
-.PHONY: clean uninstall
+.PHONY: $(ALL) clean uninstall
