@@ -100,10 +100,10 @@ protected:
   DGEdge(const DGEdge<T, SubT> &edgeToCopy);
 
 private:
-  DependenceKind kind;
   DGNode<T> *from;
   DGNode<T> *to;
   std::unordered_set<DGEdge<SubT, SubT> *> *subEdges;
+  DependenceKind kind;
   bool isLoopCarried;
 };
 
