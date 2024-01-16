@@ -4,6 +4,7 @@ set(Srcs
   PDGAnalysis.cpp
   PDGAnalysis_metadata.cpp
   PDGAnalysis_metadata_embedder.cpp
+  PDGAnalysis_metadata_scc_embedder.cpp
   PDGAnalysis_controlDependences.cpp
   PDGAnalysis_compare.cpp
   PDGAnalysis_memory.cpp

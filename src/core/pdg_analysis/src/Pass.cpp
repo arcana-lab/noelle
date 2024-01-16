@@ -38,6 +38,10 @@ static cl::opt<bool> PDGEmbed("noelle-pdg-embed",
                               cl::ZeroOrMore,
                               cl::Hidden,
                               cl::desc("Embed the PDG"));
+static cl::opt<bool> SCCEmbed("noelle-pdg-scc-embed",
+                              cl::ZeroOrMore,
+                              cl::Hidden,
+                              cl::desc("Embed the SCCs"));
 static cl::opt<bool> PDGDump("noelle-pdg-dump",
                              cl::ZeroOrMore,
                              cl::Hidden,
@@ -64,6 +68,7 @@ static cl::opt<bool> PDGRADisable(
 bool PDGAnalysis::doInitialization(Module &M) {
   this->verbose = static_cast<PDGVerbosity>(PDGVerbose.getValue());
   this->embedPDG = (PDGEmbed.getNumOccurrences() > 0) ? true : false;
+  this->embedSCC = (SCCEmbed.getNumOccurrences() > 0) ? true : false;
   this->dumpPDG = (PDGDump.getNumOccurrences() > 0) ? true : false;
   this->performThePDGComparison =
       (PDGCheck.getNumOccurrences() > 0) ? true : false;
@@ -115,7 +120,7 @@ bool PDGAnalysis::runOnModule(Module &M) {
   /*
    * Check if we should compute the PDG.
    */
-  if ((this->dumpPDG) || (this->embedPDG)) {
+  if ((this->dumpPDG) || (this->embedPDG) || (this->embedSCC)) {
 
     /*
      * Construct PDG because this will trigger code that is needed by the
