@@ -63,7 +63,7 @@ private:
   /*
    * Methods
    */
-  bool parallelizeLoop(LoopContent *LDI, Noelle &par, Heuristics *h);
+  bool parallelizeLoop(LoopContent *loopContent, Noelle &par, Heuristics *h);
 
   bool parallelizeLoops(Noelle &noelle, Heuristics *heuristics);
 

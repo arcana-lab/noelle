@@ -35,12 +35,12 @@ ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
 }
 
 bool ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
-    canBeAppliedToLoop(LoopContent *LDI, Heuristics *h) const {
+    canBeAppliedToLoop(LoopContent *loopContent, Heuristics *h) const {
 
   /*
    * We do not handle loops with no successors.
    */
-  auto ls = LDI->getLoopStructure();
+  auto ls = loopContent->getLoopStructure();
   auto exits = ls->getLoopExitBasicBlocks();
   if (exits.size() == 0) {
     return false;
@@ -67,19 +67,19 @@ ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
 }
 
 void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
-    partitionSCCDAG(LoopContent *LDI) {
+    partitionSCCDAG(LoopContent *loopContent) {
   auto f = [](GenericSCC *scc) -> bool { return false; };
-  this->partitionSCCDAG(LDI, f);
+  this->partitionSCCDAG(loopContent, f);
 }
 
 void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
-    partitionSCCDAG(LoopContent *LDI,
+    partitionSCCDAG(LoopContent *loopContent,
                     std::function<bool(GenericSCC *scc)> skipSCC) {
 
   /*
    * Fetch the SCC manager.
    */
-  auto sccManager = LDI->getSCCManager();
+  auto sccManager = loopContent->getSCCManager();
 
   /*
    * Print
@@ -147,16 +147,17 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
 
   auto newSCCDAGWithoutIgnoredSCCs =
       sccManager->computeSCCDAGWhenSCCsAreIgnored(skipSCC);
-  this->partitioner = new SCCDAGPartitioner(sccdag,
-                                            initialSets,
-                                            newSCCDAGWithoutIgnoredSCCs.first,
-                                            LDI->getLoopHierarchyStructures());
+  this->partitioner =
+      new SCCDAGPartitioner(sccdag,
+                            initialSets,
+                            newSCCDAGWithoutIgnoredSCCs.first,
+                            loopContent->getLoopHierarchyStructures());
 
   /*
    * HACK: For correctness, we enforce that SCCs with LCDs between them belong
    * to the same set
    */
-  // auto loopHierarchy = &LDI->getLoopHierarchyStructures();
+  // auto loopHierarchy = &loopContent->getLoopHierarchyStructures();
   // auto function = loopHierarchy->getLoopNestingTreeRoot()->getFunction();
   // DominatorTree DT(*function);
   // PostDominatorTree PDT(*function);
@@ -185,7 +186,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
 void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
     printSequentialCode(raw_ostream &stream,
                         const std::string &prefixString,
-                        LoopContent *LDI,
+                        LoopContent *loopContent,
                         const std::set<SCC *> &sequentialSCCs) {
 
   /*
@@ -200,7 +201,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
   /*
    * Print the sequential SCCs.
    */
-  auto sccManager = LDI->getSCCManager();
+  auto sccManager = loopContent->getSCCManager();
   for (auto scc : sequentialSCCs) {
     stream << prefixString << "  SCC:\n";
 
@@ -266,7 +267,7 @@ void ParallelizationTechniqueForLoopsWithLoopCarriedDataDependences::
    */
   stream << prefixString
          << "Next are all loop-carried dependences of the loop\n";
-  auto loopDG = LDI->getLoopDG();
+  auto loopDG = loopContent->getLoopDG();
   auto loopDependences = loopDG->getSortedDependences();
   for (auto dep : loopDependences) {
     if (!dep->isLoopCarriedDependence()) {

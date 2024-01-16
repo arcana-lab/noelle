@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020  Angelo Matni, Simone Campanoni
+ * Copyright 2019 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,14 +21,13 @@
  */
 #include "LoopStats.hpp"
 
-using namespace llvm;
-using namespace arcana::noelle;
+namespace arcana::noelle {
 
 void LoopStats::collectStatsOnNoelleIVs(Hot *profiles,
-                                        LoopContent &LDI,
+                                        LoopContent &loopContent,
                                         Stats *statsForLoop) {
-  auto loopStructure = LDI.getLoopStructure();
-  auto ivManager = LDI.getInductionVariableManager();
+  auto loopStructure = loopContent.getLoopStructure();
+  auto ivManager = loopContent.getInductionVariableManager();
   auto ivs = ivManager->getInductionVariables(*loopStructure);
 
   statsForLoop->numberOfIVs = ivs.size();
@@ -81,3 +80,5 @@ void LoopStats::collectStatsOnLLVMIVs(Hot *profiles,
 
   return;
 }
+
+} // namespace arcana::noelle

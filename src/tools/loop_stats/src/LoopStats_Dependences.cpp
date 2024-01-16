@@ -47,19 +47,19 @@ void LoopStats::collectStatsOnLLVMSCCs(Hot *profiles,
 }
 
 void LoopStats::collectStatsOnNoelleSCCs(Hot *profiles,
-                                         LoopContent &LDI,
+                                         LoopContent &loopContent,
                                          Stats *statsForLoop,
                                          Loop &llvmLoop) {
 
   /*
    * HACK: we need to re-compute SCCDAGAttrs instead of using the one provided
-   * by LDI because we do NOT want to merge SCC as a convenience to
+   * by loopContent because we do NOT want to merge SCC as a convenience to
    * parallelization schemes
    *
    * Once this hack is removed, this can go away
    */
-  auto loopStructure = LDI.getLoopStructure();
-  auto loopDG = LDI.getLoopDG();
+  auto loopStructure = loopContent.getLoopStructure();
+  auto loopDG = loopContent.getLoopDG();
   std::vector<Value *> loopInternals;
   for (auto internalNode : loopDG->internalNodePairs()) {
     loopInternals.push_back(internalNode.first);
@@ -67,7 +67,7 @@ void LoopStats::collectStatsOnNoelleSCCs(Hot *profiles,
   auto loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
   auto loopInternalSCCDAG = SCCDAG(loopInternalDG);
 
-  auto loopHierarchy = LDI.getLoopHierarchyStructures();
+  auto loopHierarchy = loopContent.getLoopHierarchyStructures();
   auto loopFunction = loopStructure->getFunction();
   DominatorTree DT(*loopFunction);
   PostDominatorTree PDT(*loopFunction);
@@ -75,7 +75,7 @@ void LoopStats::collectStatsOnNoelleSCCs(Hot *profiles,
 
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
   auto environment = LoopEnvironment(loopDG, loopExitBlocks, {});
-  auto invariantManager = LDI.getInvariantManager();
+  auto invariantManager = loopContent.getInvariantManager();
   auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*loopFunction).getSE();
   auto inductionVariables = InductionVariableManager(loopHierarchy,
                                                      *invariantManager,
@@ -90,12 +90,13 @@ void LoopStats::collectStatsOnNoelleSCCs(Hot *profiles,
                                  inductionVariables,
                                  DS);
 
-  // DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-" + std::to_string(LDI.getID())
+  // DGPrinter::writeGraph<SCCDAG, SCC>("sccdag-" +
+  // std::to_string(loopContent.getID())
   // + ".dot", &loopInternalSCCDAG);
   collectStatsOnSCCDAG(profiles,
                        &loopInternalSCCDAG,
                        &sccdagAttrs,
-                       &LDI,
+                       &loopContent,
                        statsForLoop);
 
   return;

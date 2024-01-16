@@ -73,7 +73,7 @@ bool LoopStats::runOnModule(Module &M) {
 char LoopStats::ID = 0;
 static RegisterPass<LoopStats> X(
     "LoopStats",
-    "Generate statistics output for loops using LDI");
+    "Generate statistics output for loops using LoopContent");
 
 // Next there is code to register your pass to "clang"
 static LoopStats *_PassMaker = NULL;

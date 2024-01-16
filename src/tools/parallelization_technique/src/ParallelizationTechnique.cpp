@@ -51,15 +51,15 @@ uint32_t ParallelizationTechnique::getIndexOfEnvironmentVariable(
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder(
-    LoopContent *LDI,
+    LoopContent *loopContent,
     std::set<uint32_t> nonReducableVars) {
   std::set<uint32_t> emptySet{};
 
-  this->initializeEnvironmentBuilder(LDI, nonReducableVars, emptySet);
+  this->initializeEnvironmentBuilder(loopContent, nonReducableVars, emptySet);
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder(
-    LoopContent *LDI,
+    LoopContent *loopContent,
     std::set<uint32_t> simpleVars,
     std::set<uint32_t> reducableVars) {
   auto isReducable = [&reducableVars](uint32_t variableID,
@@ -69,32 +69,32 @@ void ParallelizationTechnique::initializeEnvironmentBuilder(
     }
     return false;
   };
-  this->initializeEnvironmentBuilder(LDI, isReducable);
+  this->initializeEnvironmentBuilder(loopContent, isReducable);
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder(
-    LoopContent *LDI,
+    LoopContent *loopContent,
     std::function<bool(uint32_t variableID, bool isLiveOut)>
         shouldThisVariableBeReduced) {
   auto shouldThisVariableBeSkipped =
       [](uint32_t variableID, bool isLiveOut) -> bool { return false; };
-  this->initializeEnvironmentBuilder(LDI,
+  this->initializeEnvironmentBuilder(loopContent,
                                      shouldThisVariableBeReduced,
                                      shouldThisVariableBeSkipped);
 }
 
 void ParallelizationTechnique::initializeEnvironmentBuilder(
-    LoopContent *LDI,
+    LoopContent *loopContent,
     std::function<bool(uint32_t variableID, bool isLiveOut)>
         shouldThisVariableBeReduced,
     std::function<bool(uint32_t variableID, bool isLiveOut)>
         shouldThisVariableBeSkipped) {
-  assert(LDI != nullptr);
+  assert(loopContent != nullptr);
 
   /*
    * Fetch the environment of the loop
    */
-  auto environment = LDI->getEnvironment();
+  auto environment = loopContent->getEnvironment();
   assert(environment != nullptr);
 
   /*
@@ -153,12 +153,13 @@ void ParallelizationTechnique::initializeLoopEnvironmentUsers(void) {
   }
 }
 
-void ParallelizationTechnique::allocateEnvironmentArray(LoopContent *LDI) {
+void ParallelizationTechnique::allocateEnvironmentArray(
+    LoopContent *loopContent) {
 
   /*
    * Fetch the loop function.
    */
-  auto loopStructure = LDI->getLoopStructure();
+  auto loopStructure = loopContent->getLoopStructure();
   auto loopFunction = loopStructure->getFunction();
 
   /*
@@ -176,7 +177,8 @@ void ParallelizationTechnique::allocateEnvironmentArray(LoopContent *LDI) {
   envBuilder->generateEnvVariables(builder);
 }
 
-void ParallelizationTechnique::populateLiveInEnvironment(LoopContent *LDI) {
+void ParallelizationTechnique::populateLiveInEnvironment(
+    LoopContent *loopContent) {
 
   /*
    * Fetch the metadata manager
@@ -186,7 +188,7 @@ void ParallelizationTechnique::populateLiveInEnvironment(LoopContent *LDI) {
   /*
    * Fetch the loop environment.
    */
-  auto env = LDI->getEnvironment();
+  auto env = loopContent->getEnvironment();
 
   /*
    * Store live-in values into the environment just before jumping to the
@@ -229,24 +231,24 @@ void ParallelizationTechnique::populateLiveInEnvironment(LoopContent *LDI) {
 
 BasicBlock *ParallelizationTechnique::
     performReductionToAllReducableLiveOutVariables(
-        LoopContent *LDI,
+        LoopContent *loopContent,
         Value *numberOfThreadsExecuted) {
 
   /*
    * Fetch the loop structure.
    */
-  auto loopSummary = LDI->getLoopStructure();
+  auto loopSummary = loopContent->getLoopStructure();
 
   /*
    * Fetch the SCCDAG.
    */
-  auto sccManager = LDI->getSCCManager();
+  auto sccManager = loopContent->getSCCManager();
   auto loopSCCDAG = sccManager->getSCCDAG();
 
   /*
    * Fetch the environment of the loop
    */
-  auto environment = LDI->getEnvironment();
+  auto environment = loopContent->getEnvironment();
   assert(environment != nullptr);
 
   /*
@@ -352,14 +354,14 @@ BasicBlock *ParallelizationTechnique::
 }
 
 void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks(
-    LoopContent *LDI,
+    LoopContent *loopContent,
     std::vector<Task *> taskStructs) {
   assert(this->tasks.size() == 0);
 
   /*
    * Fetch the loop structure.
    */
-  auto loopStructure = LDI->getLoopStructure();
+  auto loopStructure = loopContent->getLoopStructure();
 
   /*
    * Fetch the loop headers.
@@ -409,9 +411,9 @@ void ParallelizationTechnique::addPredecessorAndSuccessorsBasicBlocksToTasks(
   }
 }
 
-void ParallelizationTechnique::cloneSequentialLoop(LoopContent *LDI,
+void ParallelizationTechnique::cloneSequentialLoop(LoopContent *loopContent,
                                                    int taskIndex) {
-  assert(LDI != nullptr);
+  assert(loopContent != nullptr);
   assert(taskIndex < this->tasks.size());
 
   /*
@@ -435,12 +437,12 @@ void ParallelizationTechnique::cloneSequentialLoop(LoopContent *LDI,
   /*
    * Clone all basic blocks of the original loop
    */
-  auto topLoop = LDI->getLoopStructure();
+  auto topLoop = loopContent->getLoopStructure();
   task->cloneAndAddBasicBlocks(topLoop->getBasicBlocks(), filter);
 }
 
 void ParallelizationTechnique::cloneSequentialLoopSubset(
-    LoopContent *LDI,
+    LoopContent *loopContent,
     int taskIndex,
     std::set<Instruction *> subset) {
 
@@ -476,7 +478,7 @@ void ParallelizationTechnique::cloneSequentialLoopSubset(
 }
 
 void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
-    LoopContent *LDI,
+    LoopContent *loopContent,
     int taskIndex) {
 
   /*
@@ -494,13 +496,13 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
   /*
    * Fetch loop-specific abstractions.
    */
-  auto rootLoop = LDI->getLoopStructure();
-  auto memoryCloningAnalysis = LDI->getMemoryCloningAnalysis();
+  auto rootLoop = loopContent->getLoopStructure();
+  auto memoryCloningAnalysis = loopContent->getMemoryCloningAnalysis();
 
   /*
    * Fetch the environment of the loop
    */
-  auto environment = LDI->getEnvironment();
+  auto environment = loopContent->getEnvironment();
   assert(environment != nullptr);
 
   /*
@@ -824,7 +826,7 @@ void ParallelizationTechnique::cloneMemoryLocationsLocallyAndRewireLoop(
 }
 
 void ParallelizationTechnique::generateCodeToLoadLiveInVariables(
-    LoopContent *LDI,
+    LoopContent *loopContent,
     int taskIndex) {
 
   /*
@@ -841,7 +843,7 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables(
   /*
    * Fetch the environment of the loop.
    */
-  auto env = LDI->getEnvironment();
+  auto env = loopContent->getEnvironment();
 
   /*
    * Generate the loads to load values from the live-in environment variables.
@@ -887,7 +889,7 @@ void ParallelizationTechnique::generateCodeToLoadLiveInVariables(
 }
 
 void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
-    LoopContent *LDI,
+    LoopContent *loopContent,
     int taskIndex) {
 
   /*
@@ -898,7 +900,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
   /*
    * Fetch the environment of the loop
    */
-  auto env = LDI->getEnvironment();
+  auto env = loopContent->getEnvironment();
 
   /*
    * Fetch the requested task.
@@ -929,7 +931,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
   /*
    * Fetch the loop SCCDAG
    */
-  auto sccManager = LDI->getSCCManager();
+  auto sccManager = loopContent->getSCCManager();
   auto loopSCCDAG = sccManager->getSCCDAG();
 
   /*
@@ -1035,7 +1037,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
        * instruction.
        */
       auto insertBBs =
-          this->determineLatestPointsToInsertLiveOutStore(LDI,
+          this->determineLatestPointsToInsertLiveOutStore(loopContent,
                                                           taskIndex,
                                                           producerClone,
                                                           isReduced,
@@ -1048,7 +1050,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
         auto producerValueToStore =
             isReduced
                 ? this->fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable(
-                    LDI,
+                    loopContent,
                     taskIndex,
                     envID,
                     BB,
@@ -1116,7 +1118,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
              */
             auto lastIterationBB =
                 this->getBasicBlockExecutedOnlyByLastIterationBeforeExitingTask(
-                    LDI,
+                    loopContent,
                     taskIndex,
                     *BB);
             assert(lastIterationBB != nullptr);
@@ -1143,7 +1145,7 @@ void ParallelizationTechnique::generateCodeToStoreLiveOutVariables(
 }
 
 std::set<BasicBlock *> ParallelizationTechnique::
-    determineLatestPointsToInsertLiveOutStore(LoopContent *LDI,
+    determineLatestPointsToInsertLiveOutStore(LoopContent *loopContent,
                                               int taskIndex,
                                               Instruction *liveOut,
                                               bool isReduced,
@@ -1153,7 +1155,7 @@ std::set<BasicBlock *> ParallelizationTechnique::
   /*
    * Fetch the header.
    */
-  auto loopSummary = LDI->getLoopStructure();
+  auto loopSummary = loopContent->getLoopStructure();
   auto liveOutBlock = liveOut->getParent();
 
   /*
@@ -1199,7 +1201,7 @@ std::set<BasicBlock *> ParallelizationTechnique::
 
 Instruction *ParallelizationTechnique::
     fetchOrCreatePHIForIntermediateProducerValueOfReducibleLiveOutVariable(
-        LoopContent *LDI,
+        LoopContent *loopContent,
         int taskIndex,
         int envID,
         BasicBlock *insertBasicBlock,
@@ -1208,7 +1210,7 @@ Instruction *ParallelizationTechnique::
   /*
    * Fetch the SCC manager.
    */
-  auto sccManager = LDI->getSCCManager();
+  auto sccManager = loopContent->getSCCManager();
 
   /*
    * Fetch the task.
@@ -1218,7 +1220,8 @@ Instruction *ParallelizationTechnique::
   /*
    * Fetch all clones of intermediate values of the producer
    */
-  auto producer = (Instruction *)LDI->getEnvironment()->getProducer(envID);
+  auto producer =
+      (Instruction *)loopContent->getEnvironment()->getProducer(envID);
   auto producerSCC = sccManager->getSCCDAG()->sccOfValue(producer);
 
   std::set<Instruction *> intermediateValues{};
@@ -1324,7 +1327,7 @@ Value *ParallelizationTechnique::castToCorrectReducibleType(
 }
 
 void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
-    LoopContent *LDI,
+    LoopContent *loopContent,
     int taskIndex) {
 
   /*
@@ -1337,7 +1340,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
   /*
    * Fetch task information.
    */
-  auto loopStructure = LDI->getLoopStructure();
+  auto loopStructure = loopContent->getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
   auto headerClone = task->getCloneOfOriginalBasicBlock(loopHeader);
   assert(headerClone != nullptr);
@@ -1348,13 +1351,13 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
   /*
    * Fetch the environment of the loop
    */
-  auto environment = LDI->getEnvironment();
+  auto environment = loopContent->getEnvironment();
   assert(environment != nullptr);
 
   /*
    * Fetch the SCCDAG.
    */
-  auto sccManager = LDI->getSCCManager();
+  auto sccManager = loopContent->getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
 
   /*
@@ -1414,7 +1417,7 @@ void ParallelizationTechnique::setReducableVariablesToBeginAtIdentityValue(
 }
 
 void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
-    LoopContent *LDI,
+    LoopContent *loopContent,
     int taskIndex) {
 
   /*
@@ -1441,7 +1444,7 @@ void ParallelizationTechnique::generateCodeToStoreExitBlockIndex(
   /*
    * Fetch the environment of the loop
    */
-  auto environment = LDI->getEnvironment();
+  auto environment = loopContent->getEnvironment();
   assert(environment != nullptr);
 
   /*
@@ -1540,7 +1543,7 @@ void ParallelizationTechnique::doNestedInlineOfCalls(
 }
 
 std::unordered_map<InductionVariable *, Value *> ParallelizationTechnique::
-    cloneIVStepValueComputation(LoopContent *LDI,
+    cloneIVStepValueComputation(LoopContent *loopContent,
                                 int taskIndex,
                                 IRBuilder<> &insertBlock) {
 
@@ -1554,8 +1557,8 @@ std::unordered_map<InductionVariable *, Value *> ParallelizationTechnique::
   /*
    * Fetch the information about the loop
    */
-  auto loopSummary = LDI->getLoopStructure();
-  auto allIVInfo = LDI->getInductionVariableManager();
+  auto loopSummary = loopContent->getLoopStructure();
+  auto allIVInfo = loopContent->getInductionVariableManager();
 
   /*
    * Clone each IV's step value described by the InductionVariable class
@@ -1660,25 +1663,25 @@ void ParallelizationTechnique::
 }
 
 float ParallelizationTechnique::computeSequentialFractionOfExecution(
-    LoopContent *LDI) const {
+    LoopContent *loopContent) const {
   auto f = [](GenericSCC *sccInfo) -> bool {
     auto mustBeSynchronized = isa<LoopCarriedUnknownSCC>(sccInfo);
     return mustBeSynchronized;
   };
 
-  auto fraction = this->computeSequentialFractionOfExecution(LDI, f);
+  auto fraction = this->computeSequentialFractionOfExecution(loopContent, f);
 
   return fraction;
 }
 
 float ParallelizationTechnique::computeSequentialFractionOfExecution(
-    LoopContent *LDI,
+    LoopContent *loopContent,
     std::function<bool(GenericSCC *scc)> doesItRunSequentially) const {
 
   /*
    * Fetch the SCCDAG.
    */
-  auto sccManager = LDI->getSCCManager();
+  auto sccManager = loopContent->getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
 
   /*

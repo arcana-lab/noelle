@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020  Angelo Matni, Simone Campanoni
+ * Copyright 2019 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,7 @@
  */
 #include "LoopStats.hpp"
 
-using namespace llvm;
-using namespace arcana::noelle;
+namespace arcana::noelle {
 
 void LoopStats::collectStatsForLoop(Hot *profiles,
                                     int id,
@@ -48,9 +47,9 @@ void LoopStats::collectStatsForLoop(Hot *profiles,
 }
 
 void LoopStats::collectStatsForLoop(Hot *profiles,
-                                    LoopContent &LDI,
+                                    LoopContent &loopContent,
                                     Loop &llvmLoop) {
-  auto loopStructure = LDI.getLoopStructure();
+  auto loopStructure = loopContent.getLoopStructure();
   auto loopIDOpt = loopStructure->getID();
   assert(loopIDOpt); // ED: we are collecting loop statistics, loops should have
                      // IDs so we can distinguish them.
@@ -60,9 +59,9 @@ void LoopStats::collectStatsForLoop(Hot *profiles,
   statsByLoopAccordingToNoelle.insert(std::make_pair(loopID, statsForLoop));
   statsForLoop->loopID = loopID;
 
-  collectStatsOnNoelleIVs(profiles, LDI, statsForLoop);
-  collectStatsOnNoelleSCCs(profiles, LDI, statsForLoop, llvmLoop);
-  collectStatsOnNoelleInvariants(profiles, LDI, statsForLoop);
+  collectStatsOnNoelleIVs(profiles, loopContent, statsForLoop);
+  collectStatsOnNoelleSCCs(profiles, loopContent, statsForLoop, llvmLoop);
+  collectStatsOnNoelleInvariants(profiles, loopContent, statsForLoop);
 
   /*
    * Compute the coverage for the loop.
@@ -72,3 +71,5 @@ void LoopStats::collectStatsForLoop(Hot *profiles,
 
   return;
 }
+
+} // namespace arcana::noelle

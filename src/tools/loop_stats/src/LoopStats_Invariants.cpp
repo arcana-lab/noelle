@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020  Angelo Matni, Simone Campanoni
+ * Copyright 2019 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,13 +21,12 @@
  */
 #include "LoopStats.hpp"
 
-using namespace llvm;
-using namespace arcana::noelle;
+namespace arcana::noelle {
 
 void LoopStats::collectStatsOnNoelleInvariants(Hot *profiles,
-                                               LoopContent &LDI,
+                                               LoopContent &loopContent,
                                                Stats *stats) {
-  auto invariantManager = LDI.getInvariantManager();
+  auto invariantManager = loopContent.getInvariantManager();
   auto loopInvariants =
       invariantManager->getLoopInstructionsThatAreLoopInvariants();
   stats->numberOfInvariants = loopInvariants.size();
@@ -55,3 +54,5 @@ void LoopStats::collectStatsOnLLVMInvariants(Hot *profiles,
 
   return;
 }
+
+} // namespace arcana::noelle

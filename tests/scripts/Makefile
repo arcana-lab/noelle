@@ -59,13 +59,13 @@ baseline: baseline.bc
 	$(CPP) $(OPT_LEVEL) $^ -o $@
 
 Parallelizer_utils.bc: Parallelizer_utils.cpp
-	$(CPP) $(RUNTIME_CFLAGS) $(INCLUDES) -std=c++14 -emit-llvm $(OPT_LEVEL) -c $^ -o $@
+	$(CPP) $(RUNTIME_CFLAGS) $(INCLUDES) -std=c++17 -emit-llvm $(OPT_LEVEL) -c $^ -o $@
 
 $(OPTIMIZED): test_parallelized.bc
-	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $< $(LIBS) -o $@
+	$(CPP) -std=c++17 -pthreads $(OPT_LEVEL) $< $(LIBS) -o $@
 
 $(OPTIMIZED_AUTOTUNED): test_parallelized_autotuned.bc
-	$(CPP) -std=c++14 -pthreads $(OPT_LEVEL) $< $(LIBS) -o $@
+	$(CPP) -std=c++17 -pthreads $(OPT_LEVEL) $< $(LIBS) -o $@
 
 test_parallelized.bc: baseline_with_metadata.bc Parallelizer_utils.bc
 	noelle-parallelizer $< -o $@ $(NOELLE_OPTIONS) $(PARALLELIZATION_OPTIONS)
