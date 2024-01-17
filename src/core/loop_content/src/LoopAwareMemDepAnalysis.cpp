@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni, Brian Homerding
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@
 /*
  * SCAF headers
  */
-//#define ENABLE_SCAF
+#define ENABLE_SCAF
 #ifdef ENABLE_SCAF
 #  include "scaf/MemoryAnalysisModules/LoopAA.h"
 #  include "scaf/Utilities/PDGQueries.h"
@@ -130,15 +130,16 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l) {
     if (!isa<MemoryDependence<Value, Value>>(edge)) {
       continue;
     }
+    auto memDep = cast<MemoryDependence<Value, Value>>(edge);
 
     /*
      * Fetch the instructions involved in the dependence.
      */
-    auto pdgValueI = edge->getSrc();
+    auto pdgValueI = memDep->getSrc();
     auto i = dyn_cast<Instruction>(pdgValueI);
     assert(i && "Expecting an instruction as the value of a PDG node");
 
-    auto pdgValueJ = edge->getDst();
+    auto pdgValueJ = memDep->getDst();
     auto j = dyn_cast<Instruction>(pdgValueJ);
     assert(j && "Expecting an instruction as the value of a PDG node");
 
@@ -146,12 +147,12 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l) {
       memDeps[{ i, j }] = { nullptr, nullptr, nullptr };
     }
 
-    if (edge->isRAWDependence()) {
-      memDeps[{ i, j }][0] = edge;
-    } else if (edge->isWAWDependence()) {
-      memDeps[{ i, j }][1] = edge;
-    } else if (edge->isWARDependence()) {
-      memDeps[{ i, j }][2] = edge;
+    if (memDep->isRAWDependence()) {
+      memDeps[{ i, j }][0] = memDep;
+    } else if (memDep->isWAWDependence()) {
+      memDeps[{ i, j }][1] = memDep;
+    } else if (memDep->isWARDependence()) {
+      memDeps[{ i, j }][2] = memDep;
     }
   }
 
