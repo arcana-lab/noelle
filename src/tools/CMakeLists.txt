@@ -6,7 +6,7 @@ project(NOELLE-Tools)
 enable_language(C CXX)
 
 # Find and link with LLVM
-find_package(LLVM 9 REQUIRED CONFIG)
+find_package(LLVM 14 REQUIRED CONFIG)
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
