@@ -26,7 +26,7 @@ function loadAndRunNoellePasses {
     -load ${LIB_DIR}/Parallelizer.so \
   "
 
-  local CMD_TO_EXECUTE="noelle-parallel-load $EXTRA_UNIT_TEST_PASSES $PASSES $INPUT -o $OUTPUT -noelle-verbose=3"
+  local CMD_TO_EXECUTE="noelle-load $EXTRA_UNIT_TEST_PASSES $PASSES $INPUT -o $OUTPUT -noelle-verbose=3"
   eval $CMD_TO_EXECUTE
 }
 
