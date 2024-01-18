@@ -32,6 +32,7 @@ patchInstallDir "noelle-meta-loop-embed" ;
 patchInstallDir "noelle-meta-pdg-clean " ;
 patchInstallDir "noelle-meta-pdg-embed" ;
 patchInstallDir "noelle-meta-scc-embed" ;
+patchInstallDir "noelle-meta-scc-clean" ;
 patchInstallDir "noelle-meta-prof-clean" ;
 patchInstallDir "noelle-meta-prof-embed" ;
 patchInstallDir "noelle-prof-coverage" ;
