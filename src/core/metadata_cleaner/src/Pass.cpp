@@ -31,6 +31,10 @@ static cl::opt<bool> CleanPDGMetadata(
     "clean-pdg-metadata",
     cl::init(false),
     cl::desc("noelle/core/Clean metadata of pdg"));
+static cl::opt<bool> CleanSCCMetadata(
+    "clean-pdg-scc-metadata",
+    cl::init(false),
+    cl::desc("noelle/core/Clean metadata of pdg scc"));
 static cl::opt<bool> CleanProfileMetadata(
     "clean-prof-metadata",
     cl::init(false),
@@ -39,6 +43,7 @@ static cl::opt<bool> CleanProfileMetadata(
 bool CleanMetadata::doInitialization(Module &M) {
   this->cleanLoop = CleanLoopMetadata.getNumOccurrences() > 0 ? true : false;
   this->cleanPDG = CleanPDGMetadata.getNumOccurrences() > 0 ? true : false;
+  this->cleanSCC = CleanSCCMetadata.getNumOccurrences() > 0 ? true : false;
   this->cleanProf = CleanProfileMetadata.getNumOccurrences() > 0 ? true : false;
 
   return false;
@@ -55,6 +60,10 @@ bool CleanMetadata::runOnModule(Module &M) {
 
   if (this->cleanPDG) {
     this->cleanPDGMetadata(M);
+  }
+
+  if (this->cleanSCC) {
+    this->cleanSCCMetadata(M);
   }
 
   if (this->cleanProf) {

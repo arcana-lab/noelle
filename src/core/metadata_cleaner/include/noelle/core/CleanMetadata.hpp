@@ -45,11 +45,15 @@ private:
 
   bool cleanPDG;
 
+  bool cleanSCC;
+
   bool cleanProf;
 
   void cleanLoopMetadata(Module &M);
 
   void cleanPDGMetadata(Module &M);
+
+  void cleanSCCMetadata(Module &M);
 
   void cleanProfMetadata(Module &M);
 };

@@ -142,6 +142,13 @@ PDG *PDGAnalysis::getPDG(void) {
   }
 
   /*
+   * Check if we should embed the PDG.
+   */
+  if (this->embedSCC) {
+    embedSCCAsMetadata(this->programDependenceGraph);
+  }
+
+  /*
    * Print the PDG
    */
 
