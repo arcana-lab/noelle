@@ -2,6 +2,7 @@ all: unit
 
 unit:
 	cd unit ; make ;
+	source ../enable ; cd unit ; make run ;
 
 clean:
 	./scripts/clean.sh ; 
