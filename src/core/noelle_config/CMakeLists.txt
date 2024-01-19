@@ -1,7 +1,7 @@
 # Project
 cmake_minimum_required(VERSION 3.13)
 project(NoelleConfig)
-set(NOELLE_VERSION 9.12.0)
+set(NOELLE_VERSION 9.13.0)
 set(NOELLE_DESTINATION ${CMAKE_INSTALL_PREFIX})
 
 # Dependences
