@@ -79,6 +79,7 @@ private:
   DataFlowAnalysis dfa;
   PDGVerbosity verbose;
   bool embedPDG;
+  bool embedSCC;
   bool dumpPDG;
   bool performThePDGComparison;
   bool disableSVF;
@@ -131,6 +132,7 @@ private:
   void embedEdgesAsMetadata(PDG *,
                             LLVMContext &,
                             std::unordered_map<Value *, MDNode *> &);
+  void embedSCCAsMetadata(PDG *);
   MDNode *getEdgeMetadata(DGEdge<Value, Value> *,
                           LLVMContext &,
                           std::unordered_map<Value *, MDNode *> &);

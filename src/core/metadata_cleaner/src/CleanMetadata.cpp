@@ -70,6 +70,22 @@ void CleanMetadata::cleanPDGMetadata(Module &M) {
   return;
 }
 
+void CleanMetadata::cleanSCCMetadata(Module &M) {
+  errs() << "noelle/core/Clean PDG-SCC Metadata\n";
+
+  for (auto &F : M) {
+    for (auto &B : F) {
+      for (auto &I : B) {
+        if (I.getMetadata("noelle.pdg.scc.id")) {
+          I.setMetadata("noelle.pdg.scc.id", nullptr);
+        }
+      }
+    }
+  }
+
+  return;
+}
+
 void CleanMetadata::cleanProfMetadata(Module &M) {
   errs() << "noelle/core/Clean profiler metadata\n";
 
