@@ -6,7 +6,7 @@ project(Parallelization)
 enable_language(C CXX)
 
 # Find and link with LLVM
-find_package(LLVM 9 REQUIRED CONFIG)
+find_package(LLVM 14 REQUIRED CONFIG)
 
 add_definitions(${LLVM_DEFINITIONS})
 add_definitions(
