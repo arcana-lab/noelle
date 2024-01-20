@@ -14,7 +14,8 @@
 
 
 ## Description
-NOELLE provides abstractions to help build advanced code analyses and transformations.
+NOELLE provides abstractions to help build advanced code analyses and transformations for LLVM IR code.
+GINO is built upon [SVF](https://svf-tools.github.io/SVF/), [SCAF](https://github.com/PrincetonUniversity/SCAF.git), and [LLVM](http://llvm.org).
 
 NOELLE is in active development so more tools, tests, and abstractions will be added.
 
