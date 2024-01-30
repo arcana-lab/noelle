@@ -21,8 +21,7 @@
  */
 #include "noelle/core/SCCPartitionScheduler.hpp"
 
-using namespace llvm;
-using namespace arcana::noelle;
+namespace arcana::noelle {
 
 SCCPartitionScheduler::SCCPartitionScheduler(
     SCCDAG *loopSCCDAG,
@@ -278,3 +277,5 @@ std::unordered_set<Instruction *> SCCPartitionScheduler::
 
   return consumedInstructions;
 }
+
+} // namespace arcana::noelle

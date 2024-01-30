@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020 Angelo Matni, Simone Campanoni
+ * Copyright 2019 - 2024 Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,7 @@
  */
 #include "noelle/core/CallGraphTraits.hpp"
 
-using namespace llvm;
-using namespace arcana::noelle;
+namespace arcana::noelle {
 
 CallGraphWrapper::CallGraphWrapper(CallGraph *graph)
   : wrappedGraph{ graph },
@@ -55,3 +54,5 @@ CallGraphWrapper::~CallGraphWrapper() {
     delete node;
   this->nodes.clear();
 }
+
+} // namespace arcana::noelle

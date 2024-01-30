@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,7 @@
  */
 #include "noelle/core/ControlFlowEquivalence.hpp"
 
-using namespace llvm;
-using namespace arcana::noelle;
+namespace arcana::noelle {
 
 ControlFlowEquivalence::ControlFlowEquivalence(const DominatorSummary *ds,
                                                LoopTree *loops,
@@ -182,3 +181,5 @@ void ControlFlowEquivalence::mergeEquivalenceSets(BasicBlock *x,
     bbToEquivalence[v] = bbToEquivalence[y];
   }
 }
+
+} // namespace arcana::noelle

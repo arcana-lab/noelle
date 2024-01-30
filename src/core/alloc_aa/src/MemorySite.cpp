@@ -22,9 +22,7 @@
 
 #include "noelle/core/MemorySite.hpp"
 
-using namespace llvm;
-using namespace arcana::noelle;
-using namespace std;
+namespace arcana::noelle {
 
 AllocAAResult MemorySiteInfo::doesAlias(Value *V1, Value *V2) {
 
@@ -55,3 +53,5 @@ AllocAAResult MemorySiteInfo::doesAlias(Value *V1, Value *V2) {
    */
   return AllocAAResult::No;
 }
+
+} // namespace arcana::noelle

@@ -24,8 +24,7 @@
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/PDGAnalysis.hpp"
 
-using namespace llvm;
-using namespace arcana::noelle;
+namespace arcana::noelle {
 
 bool PDGAnalysis::comparePDGs(PDG *pdg1, PDG *pdg2) {
   return compareNodes(pdg1, pdg2) && compareEdges(pdg1, pdg2);
@@ -142,3 +141,5 @@ bool PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
 
   return match;
 }
+
+} // namespace arcana::noelle
