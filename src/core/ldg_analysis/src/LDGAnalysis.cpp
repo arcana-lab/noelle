@@ -33,7 +33,15 @@ void LDGAnalysis::addAnalysis(DependenceAnalysis *a) {
 
 void LDGAnalysis::improveDependenceGraph(PDG *loopDG, LoopStructure *loop) {
 
+  /*
+   * Remove dependences.
+   */
   this->removeDependences(loopDG, loop);
+
+  /*
+   * Remove loop-carried flags.
+   */
+  this->removeLoopCarriedDependences(loopDG, loop);
 }
 
 void LDGAnalysis::removeDependences(PDG *loopDG, LoopStructure *loop) {
