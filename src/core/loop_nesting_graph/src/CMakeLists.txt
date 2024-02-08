@@ -39,7 +39,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_induction_variables/include
   ../../loop_content/include
   ../../functions_manager/include
-  ../../pdg_analysis/include
+  ../../pdg_generator/include
   ../../pdg_printer/include
   ../../alias_analysis_engine/include
   ../../dependence_analysis/include

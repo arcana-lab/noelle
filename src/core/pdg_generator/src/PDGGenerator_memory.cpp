@@ -22,13 +22,13 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"
 #include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 #include "IntegrationWithSVF.hpp"
 #include "noelle/core/Utils.hpp"
 
 namespace arcana::noelle {
 
-bool PDGAnalysis::canThereBeAMemoryDataDependence(Instruction *fromInst,
+bool PDGGenerator::canThereBeAMemoryDataDependence(Instruction *fromInst,
                                                   Instruction *toInst,
                                                   Function &F) {
 
@@ -53,7 +53,7 @@ bool PDGAnalysis::canThereBeAMemoryDataDependence(Instruction *fromInst,
   return true;
 }
 
-std::pair<bool, bool> PDGAnalysis::isThereThisMemoryDataDependenceType(
+std::pair<bool, bool> PDGGenerator::isThereThisMemoryDataDependenceType(
     DataDependenceType t,
     Instruction *fromInst,
     Instruction *toInst,
@@ -77,7 +77,7 @@ std::pair<bool, bool> PDGAnalysis::isThereThisMemoryDataDependenceType(
   return std::make_pair(noDep, mustExist);
 }
 
-void PDGAnalysis::iterateInstForStore(PDG *pdg,
+void PDGGenerator::iterateInstForStore(PDG *pdg,
                                       Function &F,
                                       AAResults &AA,
                                       DataFlowResult *dfr,
@@ -92,7 +92,7 @@ void PDGAnalysis::iterateInstForStore(PDG *pdg,
     if (inst == nullptr) {
       continue;
     }
-    if (!PDGAnalysis::canAccessMemory(inst)) {
+    if (!PDGGenerator::canAccessMemory(inst)) {
       continue;
     }
 
@@ -137,7 +137,7 @@ void PDGAnalysis::iterateInstForStore(PDG *pdg,
   return;
 }
 
-void PDGAnalysis::iterateInstForLoad(PDG *pdg,
+void PDGGenerator::iterateInstForLoad(PDG *pdg,
                                      Function &F,
                                      AAResults &AA,
                                      DataFlowResult *dfr,
@@ -152,7 +152,7 @@ void PDGAnalysis::iterateInstForLoad(PDG *pdg,
     if (inst == nullptr) {
       continue;
     }
-    if (!PDGAnalysis::canAccessMemory(inst)) {
+    if (!PDGGenerator::canAccessMemory(inst)) {
       continue;
     }
 
@@ -186,7 +186,7 @@ void PDGAnalysis::iterateInstForLoad(PDG *pdg,
   return;
 }
 
-void PDGAnalysis::iterateInstForCall(PDG *pdg,
+void PDGGenerator::iterateInstForCall(PDG *pdg,
                                      Function &F,
                                      AAResults &AA,
                                      DataFlowResult *dfr,
@@ -209,7 +209,7 @@ void PDGAnalysis::iterateInstForCall(PDG *pdg,
   /*
    * Check if the instruction can access memory.
    */
-  if (!PDGAnalysis::canAccessMemory(call)) {
+  if (!PDGGenerator::canAccessMemory(call)) {
     return;
   }
 
@@ -225,7 +225,7 @@ void PDGAnalysis::iterateInstForCall(PDG *pdg,
     if (inst == nullptr) {
       continue;
     }
-    if (!PDGAnalysis::canAccessMemory(inst)) {
+    if (!PDGGenerator::canAccessMemory(inst)) {
       continue;
     }
 
@@ -283,7 +283,7 @@ void PDGAnalysis::iterateInstForCall(PDG *pdg,
   return;
 }
 
-bool PDGAnalysis::hasNoMemoryOperations(CallBase *call) {
+bool PDGGenerator::hasNoMemoryOperations(CallBase *call) {
   assert(call != nullptr);
 
   /*
@@ -318,7 +318,7 @@ bool PDGAnalysis::hasNoMemoryOperations(CallBase *call) {
   return false;
 }
 
-void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
+void PDGGenerator::addEdgeFromFunctionModRef(PDG *pdg,
                                             Function &F,
                                             AAResults &AA,
                                             CallBase *call,
@@ -511,7 +511,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
   return;
 }
 
-void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
+void PDGGenerator::addEdgeFromFunctionModRef(PDG *pdg,
                                             Function &F,
                                             AAResults &AA,
                                             CallBase *call,
@@ -628,7 +628,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
   return;
 }
 
-void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
+void PDGGenerator::addEdgeFromFunctionModRef(PDG *pdg,
                                             Function &F,
                                             AAResults &AA,
                                             CallBase *call,
@@ -1215,7 +1215,7 @@ void PDGAnalysis::addEdgeFromFunctionModRef(PDG *pdg,
   return;
 }
 
-bool PDGAnalysis::isSafeToQueryModRefOfSVF(CallBase *call, BitVector &bv) {
+bool PDGGenerator::isSafeToQueryModRefOfSVF(CallBase *call, BitVector &bv) {
 
   /*
    * Check if SVF is enabled.
@@ -1253,7 +1253,7 @@ bool PDGAnalysis::isSafeToQueryModRefOfSVF(CallBase *call, BitVector &bv) {
   return true;
 }
 
-void PDGAnalysis::addEdgeFromMemoryAlias(
+void PDGGenerator::addEdgeFromMemoryAlias(
     PDG *pdg,
     Function &F,
     AAResults &AA,
@@ -1289,7 +1289,7 @@ void PDGAnalysis::addEdgeFromMemoryAlias(
   return;
 }
 
-AliasResult PDGAnalysis::doTheyAlias(PDG *pdg,
+AliasResult PDGGenerator::doTheyAlias(PDG *pdg,
                                      Function &F,
                                      AAResults &AA,
                                      Value *instI,
@@ -1366,7 +1366,7 @@ AliasResult PDGAnalysis::doTheyAlias(PDG *pdg,
   return MayAlias;
 }
 
-bool PDGAnalysis::canAccessMemory(Instruction *i) {
+bool PDGGenerator::canAccessMemory(Instruction *i) {
 
   /*
    * Check if @i just metadata.
@@ -1387,7 +1387,7 @@ bool PDGAnalysis::canAccessMemory(Instruction *i) {
   if (auto call = dyn_cast<CallBase>(i)) {
     auto callee = call->getCalledFunction();
     if (callee != nullptr) {
-      if (PDGAnalysis::isTheLibraryFunctionPure(callee)) {
+      if (PDGGenerator::isTheLibraryFunctionPure(callee)) {
         return false;
       }
     }

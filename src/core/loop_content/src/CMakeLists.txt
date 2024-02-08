@@ -31,7 +31,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../alloc_aa/include 
   ../../dg/include 
   ../../pdg/include 
-  ../../pdg_analysis/include 
+  ../../pdg_generator/include 
   ../../ldg_analysis/include 
   ../../dependence_analysis/include
   ../../call_graph_analysis/include

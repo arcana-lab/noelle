@@ -63,7 +63,7 @@ bool LICMTestSuite::doInitialization(Module &M) {
 
 void LICMTestSuite::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<Noelle>();
-  AU.addRequired<PDGAnalysis>();
+  AU.addRequired<PDGGenerator>();
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();

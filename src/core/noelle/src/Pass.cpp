@@ -21,7 +21,7 @@
  */
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/HotProfiler.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/Architecture.hpp"
 
 namespace arcana::noelle {
@@ -173,14 +173,14 @@ void Noelle::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<LoopTransformer>();
-  AU.addRequired<PDGAnalysis>();
+  AU.addRequired<PDGGenerator>();
   AU.addRequired<HotProfiler>();
 
   return;
 }
 
 bool Noelle::runOnModule(Module &M) {
-  this->pdgAnalysis = &getAnalysis<PDGAnalysis>();
+  this->pdgAnalysis = &getAnalysis<PDGGenerator>();
 
   return false;
 }

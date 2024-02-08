@@ -22,15 +22,15 @@
 #include "noelle/core/SystemHeaders.hpp"
 
 #include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 
 namespace arcana::noelle {
 
-bool PDGAnalysis::comparePDGs(PDG *pdg1, PDG *pdg2) {
+bool PDGGenerator::comparePDGs(PDG *pdg1, PDG *pdg2) {
   return compareNodes(pdg1, pdg2) && compareEdges(pdg1, pdg2);
 }
 
-bool PDGAnalysis::compareNodes(PDG *pdg1, PDG *pdg2) {
+bool PDGGenerator::compareNodes(PDG *pdg1, PDG *pdg2) {
   errs() << "Compare PDG Nodes\n";
 
   if (pdg1->numNodes() != pdg2->numNodes()) {
@@ -47,7 +47,7 @@ bool PDGAnalysis::compareNodes(PDG *pdg1, PDG *pdg2) {
   return true;
 }
 
-bool PDGAnalysis::compareEdges(
+bool PDGGenerator::compareEdges(
     PDG *pdg1,
     PDG *pdg2,
     std::function<void(DGEdge<Value, Value> *dependenceMissingInPdg2)> func) {
@@ -87,7 +87,7 @@ bool PDGAnalysis::compareEdges(
   return true;
 }
 
-bool PDGAnalysis::compareEdges(PDG *pdg1, PDG *pdg2) {
+bool PDGGenerator::compareEdges(PDG *pdg1, PDG *pdg2) {
   assert(pdg1 != nullptr);
   assert(pdg2 != nullptr);
 

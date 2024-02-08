@@ -219,7 +219,7 @@ std::set<AliasAnalysisEngine *> Noelle::getAliasAnalysisEngines(void) {
      * Let's collect them now.
      */
     this->aaEngines = LoopContent::getLoopAliasAnalysisEngines();
-    auto programAAEngines = PDGAnalysis::getProgramAliasAnalysisEngines();
+    auto programAAEngines = PDGGenerator::getProgramAliasAnalysisEngines();
     this->aaEngines.insert(programAAEngines.begin(), programAAEngines.end());
   }
 

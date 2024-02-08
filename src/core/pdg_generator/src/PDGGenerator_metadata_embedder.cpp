@@ -22,11 +22,11 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"
 #include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 
 namespace arcana::noelle {
 
-void PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
+void PDGGenerator::embedPDGAsMetadata(PDG *pdg) {
   errs() << "Embed PDG as metadata\n";
 
   auto &C = this->M->getContext();
@@ -41,7 +41,7 @@ void PDGAnalysis::embedPDGAsMetadata(PDG *pdg) {
   return;
 }
 
-void PDGAnalysis::embedNodesAsMetadata(
+void PDGGenerator::embedNodesAsMetadata(
     PDG *pdg,
     LLVMContext &C,
     std::unordered_map<Value *, MDNode *> &nodeIDMap) {
@@ -101,7 +101,7 @@ void PDGAnalysis::embedNodesAsMetadata(
   return;
 }
 
-void PDGAnalysis::embedEdgesAsMetadata(
+void PDGGenerator::embedEdgesAsMetadata(
     PDG *pdg,
     LLVMContext &C,
     std::unordered_map<Value *, MDNode *> &nodeIDMap) {

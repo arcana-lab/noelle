@@ -31,30 +31,30 @@
 #include "llvm/Analysis/PostDominators.h"
 #include "llvm/ADT/iterator_range.h"
 
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 
 using namespace llvm;
 using namespace arcana::noelle;
 
 // Next there is code to register your pass to "opt"
-char PDGAnalysis::ID = 0;
-static RegisterPass<PDGAnalysis> X("PDGAnalysis",
+char PDGGenerator::ID = 0;
+static RegisterPass<PDGGenerator> X("PDGGenerator",
                                    "Computing the Program Dependence Graph");
 
 // Next there is code to register your pass to "clang"
-static PDGAnalysis *_PassMaker = NULL;
+static PDGGenerator *_PassMaker = NULL;
 static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
                                         [](const PassManagerBuilder &,
                                            legacy::PassManagerBase &PM) {
                                           if (!_PassMaker) {
                                             PM.add(_PassMaker =
-                                                       new PDGAnalysis());
+                                                       new PDGGenerator());
                                           }
                                         }); // ** for -Ox
 static RegisterStandardPasses _RegPass2(
     PassManagerBuilder::EP_EnabledOnOptLevel0,
     [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
       if (!_PassMaker) {
-        PM.add(_PassMaker = new PDGAnalysis());
+        PM.add(_PassMaker = new PDGGenerator());
       }
     }); // ** for -O0

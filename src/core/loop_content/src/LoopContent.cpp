@@ -21,7 +21,7 @@
  */
 #include "noelle/core/Architecture.hpp"
 #include "noelle/core/PDG.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/LoopContent.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
@@ -546,7 +546,7 @@ void LoopContent::removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions(
     if (auto producerCall = dyn_cast<CallInst>(producer)) {
       auto callee = producerCall->getCalledFunction();
       if (callee != nullptr) {
-        if (PDGAnalysis::isTheLibraryFunctionThreadSafe(callee)) {
+        if (PDGGenerator::isTheLibraryFunctionThreadSafe(callee)) {
           edgesToRemove.insert(edge);
           continue;
         }

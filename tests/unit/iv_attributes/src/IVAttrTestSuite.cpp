@@ -66,7 +66,7 @@ bool IVAttrTestSuite::doInitialization(Module &M) {
 }
 
 void IVAttrTestSuite::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<PDGAnalysis>();
+  AU.addRequired<PDGGenerator>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
@@ -84,7 +84,7 @@ bool IVAttrTestSuite::runOnModule(Module &M) {
   this->LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
   this->SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
 
-  auto pdg = getAnalysis<PDGAnalysis>().getPDG();
+  auto pdg = getAnalysis<PDGGenerator>().getPDG();
   this->fdg = pdg->createFunctionSubgraph(*mainFunction);
   auto topLoop = LI->getLoopsInPreorder()[0];
   auto loopDG = fdg->createLoopsSubgraph(topLoop);

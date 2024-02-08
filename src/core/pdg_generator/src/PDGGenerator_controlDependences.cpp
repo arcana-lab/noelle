@@ -22,11 +22,11 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"
 #include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 
 namespace arcana::noelle {
 
-void PDGAnalysis::constructEdgesFromControl(PDG *pdg, Module &M) {
+void PDGGenerator::constructEdgesFromControl(PDG *pdg, Module &M) {
   assert(pdg != nullptr);
 
   for (auto &F : M) {
@@ -48,7 +48,7 @@ void PDGAnalysis::constructEdgesFromControl(PDG *pdg, Module &M) {
   return;
 }
 
-void PDGAnalysis::constructEdgesFromControlForFunction(PDG *pdg, Function &F) {
+void PDGGenerator::constructEdgesFromControlForFunction(PDG *pdg, Function &F) {
   assert(pdg != nullptr);
 
   /*

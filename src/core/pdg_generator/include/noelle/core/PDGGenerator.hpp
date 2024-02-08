@@ -38,11 +38,11 @@ namespace arcana::noelle {
 
 enum class PDGVerbosity { Disabled, Minimal, Maximal, MaximalAndPDG };
 
-class PDGAnalysis : public ModulePass {
+class PDGGenerator : public ModulePass {
 public:
   static char ID;
 
-  PDGAnalysis();
+  PDGGenerator();
 
   bool doInitialization(Module &M) override;
 
@@ -60,7 +60,7 @@ public:
 
   noelle::CallGraph *getProgramCallGraph(void);
 
-  virtual ~PDGAnalysis();
+  virtual ~PDGGenerator();
 
   static bool isTheLibraryFunctionPure(Function *libraryFunction);
 

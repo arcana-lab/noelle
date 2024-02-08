@@ -22,12 +22,12 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"
 #include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/Utils.hpp"
 
 namespace arcana::noelle {
 
-PDGAnalysis::PDGAnalysis()
+PDGGenerator::PDGGenerator()
   : ModulePass{ ID },
     M{ nullptr },
     programDependenceGraph{ nullptr },
@@ -45,7 +45,7 @@ PDGAnalysis::PDGAnalysis()
   return;
 }
 
-void PDGAnalysis::releaseMemory() {
+void PDGGenerator::releaseMemory() {
   if (this->programDependenceGraph)
     delete this->programDependenceGraph;
   this->programDependenceGraph = nullptr;
@@ -53,7 +53,7 @@ void PDGAnalysis::releaseMemory() {
   return;
 }
 
-void PDGAnalysis::printFunctionReachabilityResult() {
+void PDGGenerator::printFunctionReachabilityResult() {
 
   /*
    * Print internal and unhandled external functions.
@@ -81,7 +81,7 @@ void PDGAnalysis::printFunctionReachabilityResult() {
   return;
 }
 
-PDG *PDGAnalysis::getPDG(void) {
+PDG *PDGGenerator::getPDG(void) {
 
   /*
    * Check if we have already built the PDG.
@@ -108,7 +108,7 @@ PDG *PDGAnalysis::getPDG(void) {
       auto arePDGsEquivalent =
           this->comparePDGs(PDGFromAnalysis, this->programDependenceGraph);
       if (!arePDGsEquivalent) {
-        errs() << "PDGAnalysis: Error = PDGs constructed are not the same\n";
+        errs() << "PDGGenerator: Error = PDGs constructed are not the same\n";
         abort();
       }
       delete PDGFromAnalysis;
@@ -133,7 +133,7 @@ PDG *PDGAnalysis::getPDG(void) {
         auto arePDGsEquivalen =
             this->comparePDGs(this->programDependenceGraph, PDGFromMetadata);
         if (!arePDGsEquivalen) {
-          errs() << "PDGAnalysis: Error = PDGs constructed are not the same";
+          errs() << "PDGGenerator: Error = PDGs constructed are not the same";
           abort();
         }
         delete PDGFromMetadata;
@@ -166,9 +166,9 @@ PDG *PDGAnalysis::getPDG(void) {
   return this->programDependenceGraph;
 }
 
-PDG *PDGAnalysis::constructPDGFromAnalysis(Module &M) {
+PDG *PDGGenerator::constructPDGFromAnalysis(Module &M) {
   if (verbose >= PDGVerbosity::Maximal) {
-    errs() << "PDGAnalysis: Construct PDG from Analysis\n";
+    errs() << "PDGGenerator: Construct PDG from Analysis\n";
   }
 
   auto pdg = new PDG(M);
@@ -182,7 +182,7 @@ PDG *PDGAnalysis::constructPDGFromAnalysis(Module &M) {
   return pdg;
 }
 
-void PDGAnalysis::trimDGUsingCustomAliasAnalysis(PDG *pdg) {
+void PDGGenerator::trimDGUsingCustomAliasAnalysis(PDG *pdg) {
 
   /*
    * Fetch AllocAA
@@ -208,7 +208,7 @@ void PDGAnalysis::trimDGUsingCustomAliasAnalysis(PDG *pdg) {
   return;
 }
 
-void PDGAnalysis::constructEdgesFromUseDefs(PDG *pdg) {
+void PDGGenerator::constructEdgesFromUseDefs(PDG *pdg) {
 
   /*
    * Add the dependences due to variables.
@@ -240,7 +240,7 @@ void PDGAnalysis::constructEdgesFromUseDefs(PDG *pdg) {
   return;
 }
 
-void PDGAnalysis::constructEdgesFromAliases(PDG *pdg, Module &M) {
+void PDGGenerator::constructEdgesFromAliases(PDG *pdg, Module &M) {
 
   /*
    * Use alias analysis on stores, loads, and function calls to construct PDG
@@ -263,7 +263,7 @@ void PDGAnalysis::constructEdgesFromAliases(PDG *pdg, Module &M) {
   return;
 }
 
-void PDGAnalysis::constructEdgesFromAliasesForFunction(PDG *pdg, Function &F) {
+void PDGGenerator::constructEdgesFromAliasesForFunction(PDG *pdg, Function &F) {
 
   /*
    * Fetch the alias analysis.
@@ -296,7 +296,7 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction(PDG *pdg, Function &F) {
       /*
        * Check if the instruction can access memory.
        */
-      if (!PDGAnalysis::canAccessMemory(&I)) {
+      if (!PDGGenerator::canAccessMemory(&I)) {
         continue;
       }
 
@@ -319,7 +319,7 @@ void PDGAnalysis::constructEdgesFromAliasesForFunction(PDG *pdg, Function &F) {
   delete dfr;
 }
 
-void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
+void PDGGenerator::removeEdgesNotUsedByParSchemes(PDG *pdg) {
   std::set<DGEdge<Value, Value> *> removeEdges;
 
   /*
@@ -365,7 +365,7 @@ void PDGAnalysis::removeEdgesNotUsedByParSchemes(PDG *pdg) {
   return;
 }
 
-bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value, Value> *edge) {
+bool PDGGenerator::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value, Value> *edge) {
   assert(pdg != nullptr);
   assert(edge != nullptr);
 
@@ -513,7 +513,7 @@ bool PDGAnalysis::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value, Value> *edge) {
 
 // NOTE: Loads between random parts of separate GVs and both edges between GVs
 // should be removed
-bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency(
+bool PDGGenerator::edgeIsNotLoopCarriedMemoryDependency(
     DGEdge<Value, Value> *edge) {
 
   /*
@@ -557,19 +557,19 @@ bool PDGAnalysis::edgeIsNotLoopCarriedMemoryDependency(
     // backedges where by the next iteration, the access is at a different
     // memory location assert(!memDep->isMustDependence()
     //  && "LLVM AA states load store pair is a must dependence! Bad
-    //  PDGAnalysis.");
+    //  PDGGenerator.");
     if (verbose >= PDGVerbosity::Maximal) {
-      errs() << "PDGAnalysis:  Memory dependence removed! From - to:\n";
-      outgoingT->print(errs() << "PDGAnalysis:  Outgoing: ");
+      errs() << "PDGGenerator:  Memory dependence removed! From - to:\n";
+      outgoingT->print(errs() << "PDGGenerator:  Outgoing: ");
       errs() << "\n";
-      incomingT->print(errs() << "PDGAnalysis:  Incoming: ");
+      incomingT->print(errs() << "PDGGenerator:  Incoming: ");
       errs() << "\n";
     }
   }
   return !loopCarried;
 }
 
-bool PDGAnalysis::isBackedgeIntoSameGlobal(DGEdge<Value, Value> *edge) {
+bool PDGGenerator::isBackedgeIntoSameGlobal(DGEdge<Value, Value> *edge) {
   auto access1 = allocAA->getPrimitiveArrayAccess(edge->getSrc());
   auto access2 = allocAA->getPrimitiveArrayAccess(edge->getDst());
 
@@ -620,14 +620,14 @@ bool PDGAnalysis::isBackedgeIntoSameGlobal(DGEdge<Value, Value> *edge) {
   return true;
 }
 
-bool PDGAnalysis::isMemoryAccessIntoDifferentArrays(
+bool PDGGenerator::isMemoryAccessIntoDifferentArrays(
     DGEdge<Value, Value> *edge) {
   Value *array1 = allocAA->getPrimitiveArrayAccess(edge->getSrc()).first;
   Value *array2 = allocAA->getPrimitiveArrayAccess(edge->getDst()).first;
   return (array1 && array2 && array1 != array2);
 }
 
-bool PDGAnalysis::canPrecedeInCurrentIteration(Instruction *from,
+bool PDGGenerator::canPrecedeInCurrentIteration(Instruction *from,
                                                Instruction *to) {
   auto &LI =
       getAnalysis<LoopInfoWrapperPass>(*from->getFunction()).getLoopInfo();
@@ -673,7 +673,7 @@ bool PDGAnalysis::canPrecedeInCurrentIteration(Instruction *from,
   return false;
 }
 
-bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions(
+bool PDGGenerator::edgeIsAlongNonMemoryWritingFunctions(
     DGEdge<Value, Value> *edge) {
 
   /*
@@ -767,17 +767,17 @@ bool PDGAnalysis::edgeIsAlongNonMemoryWritingFunctions(
   return false;
 }
 
-void PDGAnalysis::addAnalysis(DependenceAnalysis *a) {
+void PDGGenerator::addAnalysis(DependenceAnalysis *a) {
   this->ddAnalyses.insert(a);
 
   return;
 }
 
-void PDGAnalysis::addAnalysis(CallGraphAnalysis *a) {
+void PDGGenerator::addAnalysis(CallGraphAnalysis *a) {
   this->cgAnalyses.insert(a);
 }
 
-PDGAnalysis::~PDGAnalysis() {
+PDGGenerator::~PDGGenerator() {
   if (this->programDependenceGraph) {
     delete this->programDependenceGraph;
   }

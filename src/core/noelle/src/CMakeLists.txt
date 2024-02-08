@@ -39,7 +39,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../call_graph/include
   ../../dg/include
   ../../pdg/include
-  ../../pdg_analysis/include
+  ../../pdg_generator/include
   ../../ldg_analysis/include
   ../../scheduler/include
   ../../cfg_analysis/include

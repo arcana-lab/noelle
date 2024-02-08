@@ -80,7 +80,7 @@ bool SCCDAGAttrTestSuite::doInitialization(Module &M) {
 }
 
 void SCCDAGAttrTestSuite::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<PDGAnalysis>();
+  AU.addRequired<PDGGenerator>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
@@ -115,7 +115,7 @@ bool SCCDAGAttrTestSuite::runOnModule(Module &M) {
   auto loopNode =
       forest->getInnermostLoopThatContains(&*topLoop->getHeader()->begin());
 
-  auto pdg = getAnalysis<PDGAnalysis>().getPDG();
+  auto pdg = getAnalysis<PDGGenerator>().getPDG();
   this->fdg = pdg->createFunctionSubgraph(*mainFunction);
   LDGAnalysis ldg{};
   this->ldi = new LoopContent(ldg,

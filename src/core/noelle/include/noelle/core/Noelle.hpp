@@ -27,7 +27,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/Queue.hpp"
 #include "noelle/core/LoopForest.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/LDGAnalysis.hpp"
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/LoopContent.hpp"
@@ -242,7 +242,7 @@ private:
   std::unordered_set<Transformation> enabledTransformations;
   bool hoistLoopsToMain;
   bool loopAwareDependenceAnalysis;
-  PDGAnalysis *pdgAnalysis;
+  PDGGenerator *pdgAnalysis;
   LDGAnalysis ldgAnalysis;
   char *filterFileName;
   bool hasReadFilterFile;

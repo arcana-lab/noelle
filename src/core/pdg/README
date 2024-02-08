@@ -1,4 +1,4 @@
-PDG (Program Dependence Graph) and PDGAnalysis
+PDG (Program Dependence Graph) and PDGGenerator
 
 Implementation
   DGBase, DGGraphTraits
@@ -22,11 +22,11 @@ Implementation
   SCCDAG
     This uses the DGBase to describe a directed acyclic graph of SCC
 
-  PDGAnalysis, AnalysisPass
+  PDGGenerator, AnalysisPass
     Constructs a PDG of the whole module using LLVM UseDef to determine data
     dependencies, LLVM AliasAnalysis to determine memory dependencies, and LLVM
     PostDominatorTree to determine control dependencies.
 
-    NOTE: PDGAnalysis has minor built-in heuristics to trim overly-conservative
+    NOTE: PDGGenerator has minor built-in heuristics to trim overly-conservative
     edges from the dependence graph. These heuristics will soon be moved to a
     separate pass altogether to allow for toggling their use

@@ -10,6 +10,6 @@ done
 installDir=$(realpath $( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd )/..)
 
 # Embed PDG Metadata
-cmdToExecute="noelle-load -PDGAnalysis -noelle-pdg-verbose=3 -noelle-pdg-embed $@"
+cmdToExecute="noelle-load -PDGGenerator -noelle-pdg-verbose=3 -noelle-pdg-embed $@"
 echo $cmdToExecute ;
 eval $cmdToExecute ;

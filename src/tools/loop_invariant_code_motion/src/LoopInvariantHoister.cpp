@@ -108,7 +108,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(LoopContent const &LDI) {
             /*
              * The callee is a library function
              */
-            if (!PDGAnalysis::isTheLibraryFunctionPure(calleeFunction)) {
+            if (!PDGGenerator::isTheLibraryFunctionPure(calleeFunction)) {
               mayWriteToMemory = true;
             }
           }

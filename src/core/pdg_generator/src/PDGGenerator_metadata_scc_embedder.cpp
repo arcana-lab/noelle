@@ -22,12 +22,12 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"
 #include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/SCCDAG.hpp"
 
 namespace arcana::noelle {
 
-void PDGAnalysis::embedSCCAsMetadata(PDG *pdg) {
+void PDGGenerator::embedSCCAsMetadata(PDG *pdg) {
   errs() << "Embed SCCs as metadata\n";
 
   auto &C = this->M->getContext();

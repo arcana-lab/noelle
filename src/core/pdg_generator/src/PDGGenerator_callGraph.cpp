@@ -22,12 +22,12 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"
 #include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 #include "IntegrationWithSVF.hpp"
 
 namespace arcana::noelle {
 
-noelle::CallGraph *PDGAnalysis::getProgramCallGraph(void) {
+noelle::CallGraph *PDGGenerator::getProgramCallGraph(void) {
 
   /*
    * Compute the call graph.
@@ -115,7 +115,7 @@ noelle::CallGraph *PDGAnalysis::getProgramCallGraph(void) {
   return this->noelleCG;
 }
 
-void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
+void PDGGenerator::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
 
   /*
    * Collect internal and unhandled external functions.
@@ -147,7 +147,7 @@ void PDGAnalysis::identifyFunctionsThatInvokeUnhandledLibrary(Module &M) {
   return;
 }
 
-bool PDGAnalysis::cannotReachUnhandledExternalFunction(CallBase *call) {
+bool PDGGenerator::cannotReachUnhandledExternalFunction(CallBase *call) {
   if (NoelleSVFIntegration::hasIndCSCallees(call)) {
     auto callees = NoelleSVFIntegration::getIndCSCallees(call);
     for (auto &callee : callees) {
@@ -166,13 +166,13 @@ bool PDGAnalysis::cannotReachUnhandledExternalFunction(CallBase *call) {
   return true;
 }
 
-bool PDGAnalysis::isUnhandledExternalFunction(const Function *F) {
+bool PDGGenerator::isUnhandledExternalFunction(const Function *F) {
   return F->empty()
          && !this->externalFuncsHaveNoSideEffectOrHandledBySVF.count(
              F->getName());
 }
 
-bool PDGAnalysis::isInternalFunctionThatReachUnhandledExternalFunction(
+bool PDGGenerator::isInternalFunctionThatReachUnhandledExternalFunction(
     const Function *F) {
   return !F->empty() && !this->reachableUnhandledExternalFuncs[F].empty();
 }

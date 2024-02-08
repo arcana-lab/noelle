@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/PDGPrinter.hpp"
 
 namespace arcana::noelle {
@@ -65,7 +65,7 @@ static cl::opt<bool> PDGRADisable(
     cl::Hidden,
     cl::desc("Disable the use of reaching analysis to compute the PDG"));
 
-bool PDGAnalysis::doInitialization(Module &M) {
+bool PDGGenerator::doInitialization(Module &M) {
   this->verbose = static_cast<PDGVerbosity>(PDGVerbose.getValue());
   this->embedPDG = (PDGEmbed.getNumOccurrences() > 0) ? true : false;
   this->embedSCC = (SCCEmbed.getNumOccurrences() > 0) ? true : false;
@@ -80,7 +80,7 @@ bool PDGAnalysis::doInitialization(Module &M) {
   return false;
 }
 
-void PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
+void PDGGenerator::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<AAResultsWrapperPass>();
   AU.addRequired<DominatorTreeWrapperPass>();
@@ -93,7 +93,7 @@ void PDGAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   return;
 }
 
-bool PDGAnalysis::runOnModule(Module &M) {
+bool PDGGenerator::runOnModule(Module &M) {
 
   /*
    * Check if the pass has already run.

@@ -22,21 +22,21 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"
 #include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/Utils.hpp"
 
 namespace arcana::noelle {
 
-bool PDGAnalysis::isTheLibraryFunctionPure(Function *libraryFunction) {
-  if (PDGAnalysis::externalFuncsHaveNoSideEffectOrHandledBySVF.count(
+bool PDGGenerator::isTheLibraryFunctionPure(Function *libraryFunction) {
+  if (PDGGenerator::externalFuncsHaveNoSideEffectOrHandledBySVF.count(
           libraryFunction->getName())) {
     return true;
   }
   return false;
 }
 
-bool PDGAnalysis::isTheLibraryFunctionThreadSafe(Function *libraryFunction) {
-  if (PDGAnalysis::externalThreadSafeFunctions.count(
+bool PDGGenerator::isTheLibraryFunctionThreadSafe(Function *libraryFunction) {
+  if (PDGGenerator::externalThreadSafeFunctions.count(
           libraryFunction->getName())) {
     return true;
   }
@@ -45,7 +45,7 @@ bool PDGAnalysis::isTheLibraryFunctionThreadSafe(Function *libraryFunction) {
 
 // http://www.cplusplus.com/reference/clibrary/ and
 // https://github.com/SVF-tools/SVF/blob/master/lib/Util/ExtAPI.cpp
-const StringSet<> PDGAnalysis::externalFuncsHaveNoSideEffectOrHandledBySVF{
+const StringSet<> PDGGenerator::externalFuncsHaveNoSideEffectOrHandledBySVF{
 
   // ctype.h
   "isalnum",
@@ -161,7 +161,7 @@ const StringSet<> PDGAnalysis::externalFuncsHaveNoSideEffectOrHandledBySVF{
   "strlen"
 };
 
-const StringSet<> PDGAnalysis::externalThreadSafeFunctions{
+const StringSet<> PDGGenerator::externalThreadSafeFunctions{
 
   "malloc",
   "calloc",

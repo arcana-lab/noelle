@@ -1,15 +1,15 @@
 # Sources
 set(Srcs 
   Pass.cpp
-  PDGAnalysis.cpp
-  PDGAnalysis_metadata.cpp
-  PDGAnalysis_metadata_embedder.cpp
-  PDGAnalysis_metadata_scc_embedder.cpp
-  PDGAnalysis_controlDependences.cpp
-  PDGAnalysis_compare.cpp
-  PDGAnalysis_memory.cpp
-  PDGAnalysis_callGraph.cpp
-  PDGAnalysis_library.cpp
+  PDGGenerator.cpp
+  PDGGenerator_metadata.cpp
+  PDGGenerator_metadata_embedder.cpp
+  PDGGenerator_metadata_scc_embedder.cpp
+  PDGGenerator_controlDependences.cpp
+  PDGGenerator_compare.cpp
+  PDGGenerator_memory.cpp
+  PDGGenerator_callGraph.cpp
+  PDGGenerator_library.cpp
   AnalysisPass.cpp
   IntegrationWithSVF.cpp
 )
@@ -18,7 +18,7 @@ set(Srcs
 set_source_files_properties(${Srcs} PROPERTIES COMPILE_FLAGS " -std=c++17 -fPIC")
 
 # Name of the LLVM pass
-set(PassName "PDGAnalysis")
+set(PassName "PDGGenerator")
 
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
 set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)

@@ -21,7 +21,7 @@
  */
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/ProgramAliasAnalysisEngine.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 #include "IntegrationWithSVF.hpp"
 
 /*
@@ -39,7 +39,7 @@
 
 namespace arcana::noelle {
 
-void PDGAnalysis::initializeSVF(Module &M) {
+void PDGGenerator::initializeSVF(Module &M) {
   return;
 }
 
@@ -254,7 +254,7 @@ AliasResult NoelleSVFIntegration::alias(const Value *v1, const Value *v2) {
 #endif
 }
 
-std::set<AliasAnalysisEngine *> PDGAnalysis::getProgramAliasAnalysisEngines(
+std::set<AliasAnalysisEngine *> PDGGenerator::getProgramAliasAnalysisEngines(
     void) {
   std::set<AliasAnalysisEngine *> s;
 

@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopStructure.hpp"
 #include "noelle/core/Noelle.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/Architecture.hpp"
 #include "noelle/core/LoopForest.hpp"
 #include "noelle/core/HotProfiler.hpp"

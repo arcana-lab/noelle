@@ -22,11 +22,11 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"
 #include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 
 namespace arcana::noelle {
 
-MDNode *PDGAnalysis::getEdgeMetadata(
+MDNode *PDGGenerator::getEdgeMetadata(
     DGEdge<Value, Value> *edge,
     LLVMContext &C,
     std::unordered_map<Value *, MDNode *> &nodeIDMap) {
@@ -71,7 +71,7 @@ MDNode *PDGAnalysis::getEdgeMetadata(
   return MDNode::get(C, edgeM);
 }
 
-MDNode *PDGAnalysis::getSubEdgesMetadata(
+MDNode *PDGGenerator::getSubEdgesMetadata(
     DGEdge<Value, Value> *edge,
     LLVMContext &C,
     std::unordered_map<Value *, MDNode *> &nodeIDMap) {
@@ -118,7 +118,7 @@ MDNode *PDGAnalysis::getSubEdgesMetadata(
   return MDTuple::get(C, subEdgesVec);
 }
 
-bool PDGAnalysis::hasPDGAsMetadata(Module &M) {
+bool PDGGenerator::hasPDGAsMetadata(Module &M) {
   if (auto n = M.getNamedMetadata("noelle.module.pdg")) {
     if (auto m = dyn_cast<MDNode>(n->getOperand(0))) {
       if (cast<MDString>(m->getOperand(0))->getString() == "true") {
@@ -130,9 +130,9 @@ bool PDGAnalysis::hasPDGAsMetadata(Module &M) {
   return false;
 }
 
-PDG *PDGAnalysis::constructPDGFromMetadata(Module &M) {
+PDG *PDGGenerator::constructPDGFromMetadata(Module &M) {
   if (verbose >= PDGVerbosity::Maximal) {
-    errs() << "PDGAnalysis: Construct PDG from Metadata\n";
+    errs() << "PDGGenerator: Construct PDG from Metadata\n";
   }
 
   /*
@@ -155,7 +155,7 @@ PDG *PDGAnalysis::constructPDGFromMetadata(Module &M) {
   return pdg;
 }
 
-void PDGAnalysis::constructNodesFromMetadata(
+void PDGGenerator::constructNodesFromMetadata(
     PDG *pdg,
     Function &F,
     std::unordered_map<MDNode *, Value *> &IDNodeMap) {
@@ -185,7 +185,7 @@ void PDGAnalysis::constructNodesFromMetadata(
   return;
 }
 
-void PDGAnalysis::constructEdgesFromMetadata(
+void PDGGenerator::constructEdgesFromMetadata(
     PDG *pdg,
     Function &F,
     std::unordered_map<MDNode *, Value *> &IDNodeMap) {
@@ -227,7 +227,7 @@ void PDGAnalysis::constructEdgesFromMetadata(
   return;
 }
 
-DGEdge<Value, Value> *PDGAnalysis::constructEdgeFromMetadata(
+DGEdge<Value, Value> *PDGGenerator::constructEdgeFromMetadata(
     PDG *pdg,
     MDNode *edgeM,
     std::unordered_map<MDNode *, Value *> &IDNodeMap) {
