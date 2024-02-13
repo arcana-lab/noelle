@@ -40,6 +40,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../alias_analysis_engine/include
   ../../ldg_generator/include
   ../../dependence_analysis/include
+  ../../loop_iteration_space_analysis/include
   ../include/ 
   ./ 
   ${CMAKE_INSTALL_PREFIX}/include
