@@ -39,7 +39,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_sccdag_attributes/include
   ../../loop_carried_dependences/include
   ../../alias_analysis_engine/include
-  ../../ldg_analysis/include
+  ../../ldg_generator/include
   ../../compilation_options_manager/include
   ../../may_points_to_analysis/include
   ../include

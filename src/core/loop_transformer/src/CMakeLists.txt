@@ -42,7 +42,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../memory_cloning_analysis/include
   ../../alias_analysis_engine/include
   ../../compilation_options_manager/include
-  ../../ldg_analysis/include
+  ../../ldg_generator/include
   ../../dependence_analysis/include
 	../include
 )

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 - 2023  Simone Campanoni
+ * Copyright 2022 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,8 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LDG_ANALYSIS_LDGANALYSIS_H_
-#define NOELLE_SRC_CORE_LDG_ANALYSIS_LDGANALYSIS_H_
+#ifndef NOELLE_SRC_CORE_LDG_GENERATOR_LDGANALYSIS_H_
+#define NOELLE_SRC_CORE_LDG_GENERATOR_LDGANALYSIS_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DependenceAnalysis.hpp"
@@ -29,9 +29,9 @@
 
 namespace arcana::noelle {
 
-class LDGAnalysis {
+class LDGGenerator {
 public:
-  LDGAnalysis();
+  LDGGenerator();
 
   void addAnalysis(DependenceAnalysis *a);
 
@@ -46,4 +46,4 @@ private:
 
 } // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_LDG_ANALYSIS_LDGANALYSIS_H_
+#endif // NOELLE_SRC_CORE_LDG_GENERATOR_LDGANALYSIS_H_

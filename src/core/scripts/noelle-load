@@ -47,7 +47,7 @@ PDGPASS="-load ${installDir}/lib/AllocAA.so -load ${installDir}/lib/AliasAnalysi
 
 
 ########### All analyses
-ANALYSES="${AA} ${LOOPAA} -scalar-evolution -loops -domtree -postdomtree ${EXTRA_AA} -load ${installDir}/lib/LDGAnalysis.so -load ${installDir}/lib/DependenceAnalysis.so -load ${installDir}/lib/CallGraphAnalysis.so"
+ANALYSES="${AA} ${LOOPAA} -scalar-evolution -loops -domtree -postdomtree ${EXTRA_AA} -load ${installDir}/lib/LDGGenerator.so -load ${installDir}/lib/DependenceAnalysis.so -load ${installDir}/lib/CallGraphAnalysis.so"
 
 
 ########### Transformations

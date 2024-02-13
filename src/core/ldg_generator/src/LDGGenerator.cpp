@@ -19,19 +19,19 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/LDGAnalysis.hpp"
+#include "noelle/core/LDGGenerator.hpp"
 
 namespace arcana::noelle {
 
-LDGAnalysis::LDGAnalysis() {
+LDGGenerator::LDGGenerator() {
   return;
 }
 
-void LDGAnalysis::addAnalysis(DependenceAnalysis *a) {
+void LDGGenerator::addAnalysis(DependenceAnalysis *a) {
   this->ddAnalyses.insert(a);
 }
 
-void LDGAnalysis::improveDependenceGraph(PDG *loopDG, LoopStructure *loop) {
+void LDGGenerator::improveDependenceGraph(PDG *loopDG, LoopStructure *loop) {
 
   /*
    * Remove dependences.
@@ -44,7 +44,7 @@ void LDGAnalysis::improveDependenceGraph(PDG *loopDG, LoopStructure *loop) {
   this->removeLoopCarriedDependences(loopDG, loop);
 }
 
-void LDGAnalysis::removeDependences(PDG *loopDG, LoopStructure *loop) {
+void LDGGenerator::removeDependences(PDG *loopDG, LoopStructure *loop) {
 
   /*
    * Fetch all dependences.
@@ -132,8 +132,8 @@ void LDGAnalysis::removeDependences(PDG *loopDG, LoopStructure *loop) {
   return;
 }
 
-void LDGAnalysis::removeLoopCarriedDependences(PDG *loopDG,
-                                               LoopStructure *loop) {
+void LDGGenerator::removeLoopCarriedDependences(PDG *loopDG,
+                                                LoopStructure *loop) {
 
   /*
    * Fetch all dependences.

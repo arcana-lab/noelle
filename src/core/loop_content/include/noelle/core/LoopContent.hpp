@@ -35,7 +35,7 @@
 #include "noelle/core/LoopIterationSpaceAnalysis.hpp"
 #include "noelle/core/LoopTransformationsOptions.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
-#include "noelle/core/LDGAnalysis.hpp"
+#include "noelle/core/LDGGenerator.hpp"
 
 namespace arcana::noelle {
 
@@ -44,7 +44,7 @@ public:
   /*
    * Constructors.
    */
-  LoopContent(LDGAnalysis &ldgAnalysis,
+  LoopContent(LDGGenerator &ldgAnalysis,
               CompilationOptionsManager *compilationOptionsManager,
               PDG *fG,
               LoopTree *loopNode,
@@ -52,7 +52,7 @@ public:
               DominatorSummary &DS,
               ScalarEvolution &SE);
 
-  LoopContent(LDGAnalysis &ldgAnalysis,
+  LoopContent(LDGGenerator &ldgAnalysis,
               CompilationOptionsManager *compilationOptionsManager,
               PDG *fG,
               LoopTree *loopNode,
@@ -61,7 +61,7 @@ public:
               ScalarEvolution &SE,
               uint32_t maxCores);
 
-  LoopContent(LDGAnalysis &ldgAnalysis,
+  LoopContent(LDGGenerator &ldgAnalysis,
               CompilationOptionsManager *compilationOptionsManager,
               PDG *fG,
               LoopTree *loopNode,
@@ -71,7 +71,7 @@ public:
               uint32_t maxCores,
               std::unordered_set<LoopContentOptimization> optimizations);
 
-  LoopContent(LDGAnalysis &ldgAnalysis,
+  LoopContent(LDGGenerator &ldgAnalysis,
               CompilationOptionsManager *compilationOptionsManager,
               PDG *fG,
               LoopTree *loopNode,
@@ -81,7 +81,7 @@ public:
               uint32_t maxCores,
               bool enableLoopAwareDependenceAnalyses);
 
-  LoopContent(LDGAnalysis &ldgAnalysis,
+  LoopContent(LDGGenerator &ldgAnalysis,
               CompilationOptionsManager *compilationOptionsManager,
               PDG *fG,
               LoopTree *loop,
@@ -92,7 +92,7 @@ public:
               std::unordered_set<LoopContentOptimization> optimizations,
               bool enableLoopAwareDependenceAnalyses);
 
-  LoopContent(LDGAnalysis &ldgAnalysis,
+  LoopContent(LDGGenerator &ldgAnalysis,
               CompilationOptionsManager *compilationOptionsManager,
               PDG *fG,
               LoopTree *loop,
@@ -201,7 +201,7 @@ private:
    */
   void fetchLoopAndBBInfo(Loop *l, ScalarEvolution &SE);
 
-  std::pair<PDG *, SCCDAG *> createDGsForLoop(LDGAnalysis &ldgAnalysis,
+  std::pair<PDG *, SCCDAG *> createDGsForLoop(LDGGenerator &ldgAnalysis,
                                               CompilationOptionsManager *com,
                                               Loop *l,
                                               LoopTree *loopNode,

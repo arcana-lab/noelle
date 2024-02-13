@@ -29,7 +29,7 @@
 
 namespace arcana::noelle {
 
-LoopContent::LoopContent(LDGAnalysis &ldgAnalysis,
+LoopContent::LoopContent(LDGGenerator &ldgAnalysis,
                          CompilationOptionsManager *compilationOptionsManager,
                          PDG *fG,
                          LoopTree *loopNode,
@@ -44,7 +44,7 @@ LoopContent::LoopContent(LDGAnalysis &ldgAnalysis,
   return;
 }
 
-LoopContent::LoopContent(LDGAnalysis &ldgAnalysis,
+LoopContent::LoopContent(LDGGenerator &ldgAnalysis,
                          CompilationOptionsManager *compilationOptionsManager,
                          PDG *fG,
                          LoopTree *loopNode,
@@ -62,7 +62,7 @@ LoopContent::LoopContent(LDGAnalysis &ldgAnalysis,
 }
 
 LoopContent::LoopContent(
-    LDGAnalysis &ldgAnalysis,
+    LDGGenerator &ldgAnalysis,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopTree *loopNode,
@@ -85,7 +85,7 @@ LoopContent::LoopContent(
   return;
 }
 
-LoopContent::LoopContent(LDGAnalysis &ldgAnalysis,
+LoopContent::LoopContent(LDGGenerator &ldgAnalysis,
                          CompilationOptionsManager *compilationOptionsManager,
                          PDG *fG,
                          LoopTree *loopNode,
@@ -104,7 +104,7 @@ LoopContent::LoopContent(LDGAnalysis &ldgAnalysis,
 }
 
 LoopContent::LoopContent(
-    LDGAnalysis &ldgAnalysis,
+    LDGGenerator &ldgAnalysis,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopTree *loopNode,
@@ -129,7 +129,7 @@ LoopContent::LoopContent(
 }
 
 LoopContent::LoopContent(
-    LDGAnalysis &ldgAnalysis,
+    LDGGenerator &ldgAnalysis,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopTree *loopNode,
@@ -309,7 +309,7 @@ uint64_t LoopContent::computeTripCounts(Loop *l, ScalarEvolution &SE) {
 }
 
 std::pair<PDG *, SCCDAG *> LoopContent::createDGsForLoop(
-    LDGAnalysis &ldgAnalysis,
+    LDGGenerator &ldgAnalysis,
     CompilationOptionsManager *com,
     Loop *l,
     LoopTree *loopNode,

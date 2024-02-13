@@ -77,7 +77,7 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-void refinePDGWithLoopAwareMemDepAnalysis(LDGAnalysis &ldgAnalysis,
+void refinePDGWithLoopAwareMemDepAnalysis(LDGGenerator &ldgAnalysis,
                                           PDG *loopDG,
                                           Loop *l,
                                           LoopStructure *loopStructure,

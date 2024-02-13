@@ -100,7 +100,7 @@ bool LICMTestSuite::runOnModule(Module &M) {
       << "LICMTestSuite: Instantiating LDI and LoopInvariantCodeMotion components\n";
   DominatorSummary DS{ DT, PDT };
   auto om = noelle.getCompilationOptionsManager();
-  LDGAnalysis ldg{};
+  LDGGenerator ldg{};
   this->ldi = new LoopContent(ldg, om, fdg, loopNode, l, DS, SE, true, false);
   this->licm = new LoopInvariantCodeMotion(noelle);
 

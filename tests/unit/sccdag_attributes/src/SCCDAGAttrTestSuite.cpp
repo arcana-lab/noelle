@@ -117,7 +117,7 @@ bool SCCDAGAttrTestSuite::runOnModule(Module &M) {
 
   auto pdg = getAnalysis<PDGGenerator>().getPDG();
   this->fdg = pdg->createFunctionSubgraph(*mainFunction);
-  LDGAnalysis ldg{};
+  LDGGenerator ldg{};
   this->ldi = new LoopContent(ldg,
                               this->noelle->getCompilationOptionsManager(),
                               fdg,

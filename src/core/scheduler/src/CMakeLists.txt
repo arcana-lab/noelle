@@ -38,7 +38,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../loop_invariants/include
   ../../loop_induction_variables/include
   ../../alias_analysis_engine/include
-  ../../ldg_analysis/include
+  ../../ldg_generator/include
   ../../dependence_analysis/include
   ../include/ 
   ./ 
