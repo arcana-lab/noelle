@@ -50,6 +50,7 @@ include_directories(${LLVM_INCLUDE_DIRS}
   ../../alias_analysis_engine/include
   ../../compilation_options_manager/include
   ../../may_points_to_analysis/include
+  ../../loop_iteration_space_analysis/include
   ../include
   ./
   ${CMAKE_INSTALL_PREFIX}/include
