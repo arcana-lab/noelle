@@ -3,30 +3,28 @@ BUILD_DIR=build
 JOBS=8
 GENERATOR="Unix Makefiles" # or Ninja
 
-all: hooks build
-	cmake --build $(BUILD_DIR) -- -j$(JOBS)
+all: install
 
-build:
-	cmake -S . -B $(BUILD_DIR) -G$(GENERATOR) -DCMAKE_INSTALL_PREFIX=$(INSTALL_DIR)
-
-install: build
-	cmake --build $(BUILD_DIR) -- -j$(JOBS)
+install: compile
 	cmake --install $(BUILD_DIR)
 
+compile: $(BUILD_DIR)
+	cmake --build $(BUILD_DIR) -- -j$(JOBS)
+
+$(BUILD_DIR):
+	cmake -S . -B $(BUILD_DIR) -G$(GENERATOR) -DCMAKE_INSTALL_PREFIX=$(INSTALL_DIR)
+	
 external:
 	cd external ; make DEBUG=$(DEBUG) JOBS=$(JOBS) $(EXTERNAL_OPTIONS);
 
-tests: build
+tests: setup
 	cd tests ; make
-
-hooks:
-	ln -sf .githooks/pre-commit .git/hooks/pre-commit
 
 format:
 	cd src ; ./scripts/format_source_code.sh
 
 clean:
-	rm -rf build
+	rm -rf $(BUILD_DIR)
 	# cd external ; make clean
 	# cd tests ; make clean
 	# cd examples ; make clean
@@ -39,4 +37,4 @@ uninstall: clean
 	cd external ; make $@
 
 
-.PHONY: all tests hooks format clean uninstall external
+.PHONY: all tests install setup hooks format clean uninstall external

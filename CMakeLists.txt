@@ -14,9 +14,15 @@ set(NOELLE_CXX_FLAGS
 )
 
 configure_file(enable.in ${CMAKE_SOURCE_DIR}/enable @ONLY)
+configure_file(.githooks/pre-commit ${CMAKE_SOURCE_DIR}/.git/hooks COPYONLY)
 
 enable_language(C CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# See `cmake --help-policy CMP0077`
+# `OLD` specifies that the effects of this policy are whatever LLVM 9
+# assumed at that time.
+cmake_policy(SET CMP0077 OLD)
 
 find_package(LLVM 9 REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
