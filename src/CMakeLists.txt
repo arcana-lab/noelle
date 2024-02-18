@@ -54,13 +54,13 @@ set(NOELLE_CORE_MODULES
 )
 
 set(NOELLE_TOOL_MODULES
-  deadfunctioneliminator
+  dead_function_eliminator
   loop_invariant_code_motion
   loop_size
   loop_stats
   pdg_stats
   privatizer
-  removefunction
+  remove_function
   scev_simplification
 )
 
