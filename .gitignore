@@ -6,5 +6,6 @@ compile_commands.json
 external/svf
 external/scaf
 external/patch.tar
+enable
 # dependencies
 threadpool

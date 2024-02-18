@@ -1,17 +1,5 @@
-# Project
-cmake_minimum_required(VERSION 3.13)
-project(LDGGenerator)
-
-# Dependences
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
-
-# Pass
-add_subdirectory(src)
-
-# Install
-install(
-  FILES
-  include/noelle/core/LDGGenerator.hpp
-  DESTINATION 
-  include/noelle/core
-  )
+add_llvm_library(
+  LdgGenerator # pass name
+  MODULE
+  src/LDGGenerator.cpp
+)

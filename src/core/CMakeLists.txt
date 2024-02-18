@@ -1,52 +1,74 @@
-# Project
-cmake_minimum_required(VERSION 3.4.3)
-project(NOELLE-Core)
+include_directories(transformations/include)
 
-# Programming languages to use
-enable_language(C CXX)
+set(noelle_modules
+  alias_analysis_engine
+  alloc_aa
+  architecture
+  basic_utilities
+  call_graph
+  call_graph_analysis
+  cfg_analysis
+  cfg_transformer
+  codesize
+  compilation_options_manager
+  constants_manager
+  dataflow
+  dependence_analysis
+  dg
+  dominators
+  functions_manager
+  globals_manager
+  hotprofiler
+  ldg_generator
+  linker
+  loop_carried_dependences
+  loop_content
+  loop_distribution
+  loop_environment
+  loop_forest
+  loop_induction_variables
+  loop_invariants
+  loop_iteration_space_analysis
+  loop_metadata
+  loop_nesting_graph
+  loop_scc_attributes
+  loop_sccdag_attributes
+  loop_sccdag_normalizer
+  loop_structure
+  loop_transformer
+  loop_unroll
+  loop_whilifier
+  may_points_to_analysis
+  memory_cloning_analysis
+  metadata_cleaner
+  metadata_manager
+  noelle
+  outliner
+  pdg
+  pdg_generator
+  pdg_printer
+  sccdag
+  scheduler
+  talkdown
+  task
+  types_manager
+  unique_ir_marker
+)
 
-# Find and link with LLVM
-find_package(LLVM 9 REQUIRED CONFIG)
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+foreach(module IN LISTS noelle_modules)
+  include_directories(${module}/include)
+endforeach()
 
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -Weverything")
-#set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -Weverything")
-set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
+foreach(module IN LISTS noelle_modules)
+  add_subdirectory(${module})
+endforeach()
 
-# Link with LLVM
-include_directories(${LLVM_INCLUDE_DIRS})
-add_definitions(${LLVM_DEFINITIONS})
-#link_directories(${LLVM_LIBRARY_DIRS})
+foreach(module IN LISTS noelle_modules)
+  install(
+    DIRECTORY ${module}/include
+    DESTINATION ${CMAKE_INSTALL_PREFIX}
+    FILES_MATCHING PATTERN "*.hpp"
+  )
+endforeach()
 
-# Prepare the pass to be included in the source tree
-list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
-include(AddLLVM)
-
-# All include files for CPF
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include
-                    ${CMAKE_CURRENT_BINARY_DIR}/include
-                    ${CMAKE_INSTALL_PREFIX}/include
-                    ${CMAKE_INSTALL_PREFIX}/include/svf)
-
-# Pass
-add_subdirectory(alloc_aa)
-add_subdirectory(architecture)
-add_subdirectory(basic_utilities)
-add_subdirectory(callgraph)
-add_subdirectory(clean_metadata)
-add_subdirectory(dataflow)
-add_subdirectory(hotprofiler)
-add_subdirectory(loop_distribution)
-add_subdirectory(loops)
-add_subdirectory(loop_structure)
-add_subdirectory(loop_unroll)
-add_subdirectory(loop_whilifier)
-add_subdirectory(noelle)
-add_subdirectory(outliner)
-add_subdirectory(pdg)
-add_subdirectory(scheduler)
-add_subdirectory(talkdown)
-add_subdirectory(task)
-add_subdirectory(transformations)
-add_subdirectory(unique_ir_marker)
+add_subdirectory(noelle_config)

@@ -1,7 +1,8 @@
 #include <iostream>
 #include <unistd.h>
 #include <getopt.h>
-#include "../build/src/config.hpp"
+
+#include "config.hpp"
 
 void print_usage(char *argv[]) {
   auto binName = argv[0];
@@ -70,11 +71,11 @@ int main(int argc, char *argv[]) {
         break;
 
       case 'p':
-        std::cout << NOELLE_DESTINATION << std::endl;
+        std::cout << NOELLE_INSTALL_PREFIX << std::endl;
         break;
 
       case 'c':
-        std::cout << NOELLE_COMPILATION_OPTIONS << std::endl;
+        std::cout << NOELLE_CXX_FLAGS << std::endl;
         break;
 
       case 'l':
@@ -82,11 +83,11 @@ int main(int argc, char *argv[]) {
         break;
 
       case 'd':
-        std::cout << LLVM_DIR << std::endl;
+        std::cout << LLVM_INSTALL_PREFIX << std::endl;
         break;
 
       case 'o':
-        std::cout << LLVM_COMPILATION_OPTIONS << std::endl;
+        std::cout << LLVM_BUILD_TYPE << std::endl;
         break;
 
       default:

@@ -1,18 +1,13 @@
-# Project
-cmake_minimum_required(VERSION 3.13)
-project(HotProfiler)
-
-# Dependences
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
-
-# Pass
-add_subdirectory(src)
-
-# Install
-install(
-  FILES
-  include/noelle/core/HotProfiler.hpp 
-  include/noelle/core/Hot.hpp 
-  DESTINATION 
-  include/noelle/core
-  )
+add_llvm_library(
+  Hotprofiler # pass name
+  MODULE
+  src/Hot_BasicBlock.cpp
+  src/Hot.cpp
+  src/Hot_Function.cpp
+  src/Hot_Instruction.cpp
+  src/Hot_Loop.cpp
+  src/Hot_Module.cpp
+  src/HotProfiler.cpp
+  src/Hot_SCC.cpp
+  src/Pass.cpp
+)

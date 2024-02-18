@@ -1,18 +1,10 @@
-# Project
-cmake_minimum_required(VERSION 3.13)
-project(MetadataManager)
-
-# Dependences
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
-
-# Pass
-add_subdirectory(src)
-
-# Install
-install(
-  FILES
-  include/noelle/core/MetadataEntry.hpp
-  include/noelle/core/MetadataManager.hpp
-  DESTINATION 
-  include/noelle/core
-  )
+add_llvm_library(
+  MetadataManager # pass name
+  MODULE
+  src/MetadataEntry.cpp
+  src/MetadataManager_annotations.cpp
+  src/MetadataManager.cpp
+  src/MetadataManager_Instruction.cpp
+  src/MetadataManager_Module.cpp
+  src/MetadataManager_PDG.cpp
+)

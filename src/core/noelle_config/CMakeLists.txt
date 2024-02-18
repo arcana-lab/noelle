@@ -1,14 +1,9 @@
-# Project
-cmake_minimum_required(VERSION 3.13)
-project(NoelleConfig)
-set(NOELLE_VERSION 9.13.1)
-set(NOELLE_DESTINATION ${CMAKE_INSTALL_PREFIX})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+add_executable(noelle-config src/Noelle_config.cpp)
 
-# Dependences
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
+configure_file(src/config.hpp.in config.hpp @ONLY)
 
-# Pass
-add_subdirectory(src)
-
-# Install
-install(PROGRAMS build/src/noelle-config DESTINATION bin)
+install(
+  TARGETS noelle-config
+  DESTINATION bin
+)

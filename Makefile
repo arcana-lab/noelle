@@ -1,40 +1,41 @@
-EXTERNAL_OPTIONS=
-DEBUG?=0
-JOBS?=8
+INSTALL_DIR=install
+BUILD_DIR=build
+JOBS=8
 
-all: hooks src
+all: hooks build
+	cmake --build $(BUILD_DIR) -- -j$(JOBS)
+
+build:
+	cmake -S . -B $(BUILD_DIR) -DCMAKE_INSTALL_PREFIX=$(INSTALL_DIR)
+
+install: build
+	cmake --build $(BUILD_DIR) -- -j$(JOBS)
+	cmake --install $(BUILD_DIR)
 
 external:
 	cd external ; make DEBUG=$(DEBUG) JOBS=$(JOBS) $(EXTERNAL_OPTIONS);
 
-src: external
-	cd src ; make ; 
-
-src-fast: external
-	cd src ; make core-fast DEBUG=$(DEBUG) JOBS=$(JOBS);
-	cd src ; make tools-fast DEBUG=$(DEBUG) JOBS=$(JOBS);
-
-tests: src
-	cd tests ; make ;
+tests: build
+	cd tests ; make
 
 hooks:
-	make -C .githooks
+	ln -sf .githooks/pre-commit .git/hooks/pre-commit
 
 format:
 	cd src ; ./scripts/format_source_code.sh
 
 clean:
-	cd external ; make clean ; 
-	cd src ; make clean ; 
-	cd tests ; make clean; 
-	cd examples ; make clean ; 
+	rm -rf build
+	# cd external ; make clean
+	# cd tests ; make clean
+	# cd examples ; make clean
 	find ./ -name .clangd -exec rm -rv {} +
 	find ./ -name .cache -exec rm -rv {} +
 
 uninstall: clean
-	rm -f enable ;
-	rm -rf install ;
+	rm -f enable
+	rm -rf install
 	cd external ; make $@
-	if test -d .githooks ; then cd .githooks ; make clean ; fi;
+	if test -d .githooks ; then cd .githooks ; make clean ; fi
 
-.PHONY: src src-fast tests hooks format clean uninstall external
+.PHONY: all tests hooks format clean uninstall external
