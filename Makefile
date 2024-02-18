@@ -1,12 +1,13 @@
 INSTALL_DIR=install
 BUILD_DIR=build
 JOBS=8
+GENERATOR="Unix Makefiles" # or Ninja
 
 all: hooks build
 	cmake --build $(BUILD_DIR) -- -j$(JOBS)
 
 build:
-	cmake -S . -B $(BUILD_DIR) -DCMAKE_INSTALL_PREFIX=$(INSTALL_DIR)
+	cmake -S . -B $(BUILD_DIR) -G$(GENERATOR) -DCMAKE_INSTALL_PREFIX=$(INSTALL_DIR)
 
 install: build
 	cmake --build $(BUILD_DIR) -- -j$(JOBS)
@@ -33,9 +34,9 @@ clean:
 	find ./ -name .cache -exec rm -rv {} +
 
 uninstall: clean
-	rm -f enable
+	rm -f enable .git/hooks/pre-commit
 	rm -rf install
 	cd external ; make $@
-	if test -d .githooks ; then cd .githooks ; make clean ; fi
+
 
 .PHONY: all tests hooks format clean uninstall external
