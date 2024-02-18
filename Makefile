@@ -31,10 +31,9 @@ clean:
 	find ./ -name .clangd -exec rm -rv {} +
 	find ./ -name .cache -exec rm -rv {} +
 
-uninstall: clean
-	rm -f enable .git/hooks/pre-commit
-	rm -rf install
-	cd external ; make $@
+uninstall:
+	cat $(BUILD_DIR)/install_manifest.txt | xargs rm -f
+	# cd external ; make $@
 
 
-.PHONY: all tests install setup hooks format clean uninstall external
+.PHONY: all install compile external tests format clean uninstall

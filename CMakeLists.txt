@@ -2,6 +2,13 @@ cmake_minimum_required(VERSION 3.4.3)
 
 project(noelle)
 
+get_filename_component(
+  CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX} REALPATH
+)
+get_filename_component(
+  CMAKE_SOURCE_DIR ${CMAKE_SOURCE_DIR} REALPATH
+)
+
 set(NOELLE_VERSION 9.14.0.wip)
 set(NOELLE_EXTERNAL_DIR ${CMAKE_SOURCE_DIR}/external)
 
@@ -13,8 +20,20 @@ set(NOELLE_CXX_FLAGS
   -Wall
 )
 
-configure_file(enable.in ${CMAKE_SOURCE_DIR}/enable @ONLY)
-configure_file(.githooks/pre-commit ${CMAKE_SOURCE_DIR}/.git/hooks COPYONLY)
+configure_file(enable.in enable @ONLY)
+install(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/enable
+  DESTINATION ${CMAKE_SOURCE_DIR}
+)
+
+install(
+  FILES ${CMAKE_SOURCE_DIR}/.githooks/pre-commit
+  DESTINATION ${CMAKE_SOURCE_DIR}/.git/hooks
+  PERMISSIONS
+    OWNER_EXECUTE OWNER_WRITE OWNER_READ
+    GROUP_EXECUTE GROUP_READ
+    WORLD_EXECUTE WORLD_READ
+)
 
 enable_language(C CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
