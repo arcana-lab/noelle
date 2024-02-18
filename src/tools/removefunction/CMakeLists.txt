@@ -1,9 +1,6 @@
-# Project
-cmake_minimum_required(VERSION 3.13)
-project(RemoveFunction)
-
-# Dependences
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
-
-# Pass
-add_subdirectory(src)
+add_llvm_library(
+  RemoveFunction # pass name
+  MODULE
+  src/Pass.cpp
+  src/RemoveFunction.cpp
+)

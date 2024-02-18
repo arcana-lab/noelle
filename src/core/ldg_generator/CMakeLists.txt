@@ -1,5 +1,5 @@
 add_llvm_library(
-  LdgGenerator # pass name
+  LDGGenerator # pass name
   MODULE
   src/LDGGenerator.cpp
 )

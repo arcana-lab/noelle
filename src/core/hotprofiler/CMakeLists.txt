@@ -1,5 +1,5 @@
 add_llvm_library(
-  Hotprofiler # pass name
+  HotProfiler # pass name
   MODULE
   src/Hot_BasicBlock.cpp
   src/Hot.cpp
