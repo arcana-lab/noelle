@@ -15,25 +15,30 @@ $(BUILD_DIR):
 	cmake -S . -B $(BUILD_DIR) -G$(GENERATOR) -DCMAKE_INSTALL_PREFIX=$(INSTALL_DIR)
 	
 external:
-	cd external ; make DEBUG=$(DEBUG) JOBS=$(JOBS) $(EXTERNAL_OPTIONS);
+	cd external ; make DEBUG=$(DEBUG) JOBS=$(JOBS) $(EXTERNAL_OPTIONS)
 
 tests: setup
 	cd tests ; make
 
 format:
-	cd src ; ./scripts/format_source_code.sh
+	find ./src -regex '.*\.[c|h]pp' | xargs clang-format -i
 
 clean:
 	rm -rf $(BUILD_DIR)
-	# cd external ; make clean
-	# cd tests ; make clean
-	# cd examples ; make clean
+	cd tests ; make clean
+	cd examples ; make clean
 	find ./ -name .clangd -exec rm -rv {} +
 	find ./ -name .cache -exec rm -rv {} +
 
 uninstall:
 	cat $(BUILD_DIR)/install_manifest.txt | xargs rm -f
-	# cd external ; make $@
-
+	cat external/svf/Release-build/install_manifest.txt | xargs rm -f
+	cat external/scaf/scaf-build-release/install_manifest.txt | xargs rm -f
+	cat external/scaf/scaf-build-debug/install_manifest.txt | xargs rm -f
+	rm -rf $(INSTALL_DIR)/autotuner
+	rm -rf $(INSTALL_DIR)/include/noelle
+	rm -rf $(INSTALL_DIR)/include/svf
+	rm -f enable
+	rm -f .git/hooks/pre-commit
 
 .PHONY: all install compile external tests format clean uninstall

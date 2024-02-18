@@ -38,7 +38,7 @@ clean:
 	cd autotuner ; make clean
 
 uninstall:
-	rm -rf svf ;
-	rm -rf scaf ;
+	# rm -rf svf ;
+	# rm -rf scaf ;
 
 .PHONY: compile compile_without_scaf clean uninstall autotuner
