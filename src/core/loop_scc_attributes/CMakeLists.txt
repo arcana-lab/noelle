@@ -1,5 +1,5 @@
 add_llvm_library(
-  LoopSccAttributes # pass name
+  LoopSCCAttributes # pass name
   MODULE
   src/AccumulatorOpInfo.cpp
   src/BinaryReductionSCC.cpp

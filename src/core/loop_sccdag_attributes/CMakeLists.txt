@@ -1,5 +1,5 @@
 add_llvm_library(
-  LoopSccdagAttributes # pass name
+  LoopSCCDAGAttributes # pass name
   MODULE
   src/SCCDAGAttrs.cpp
   src/SCCDAGPartition.cpp

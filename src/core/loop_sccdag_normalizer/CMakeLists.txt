@@ -1,5 +1,5 @@
 add_llvm_library(
-  LoopSccdagNormalizer # pass name
+  LoopSCCDAGNormalizer # pass name
   MODULE
   src/SCCDAGNormalizer.cpp
 )
