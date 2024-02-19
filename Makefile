@@ -1,7 +1,7 @@
-INSTALL_DIR=install
-BUILD_DIR=build
-JOBS=8
-GENERATOR="Unix Makefiles" # or Ninja
+INSTALL_DIR?=install
+BUILD_DIR?=build
+JOBS?=1
+GENERATOR?="Unix Makefiles" # or Ninja
 
 all: install
 
@@ -15,25 +15,25 @@ $(BUILD_DIR):
 	cmake -S . -B $(BUILD_DIR) -G$(GENERATOR) -DCMAKE_INSTALL_PREFIX=$(INSTALL_DIR)
 	
 external:
-	cd external ; make DEBUG=$(DEBUG) JOBS=$(JOBS) $(EXTERNAL_OPTIONS)
+	$(MAKE) -C external
 
 tests: setup
-	cd tests ; make
+	cd tests ; $(MAKE)
 
 format:
 	find ./src -regex '.*\.[c|h]pp' | xargs clang-format -i
 
 clean:
 	rm -rf $(BUILD_DIR)
-	cd tests ; make clean
-	cd examples ; make clean
-	@make -C external clean
+	cd tests ; $(MAKE) clean
+	cd examples ; $(MAKE) clean
+	$(MAKE) -C external clean
 	find ./ -name .clangd -exec rm -rv {} +
 	find ./ -name .cache -exec rm -rv {} +
 
 uninstall:
-	cat $(BUILD_DIR)/install_manifest.txt 2> /dev/null | xargs rm -f
-	@make -C external uninstall
+	-cat $(BUILD_DIR)/install_manifest.txt | xargs rm -f
+	$(MAKE) -C external uninstall
 	rm -rf $(INSTALL_DIR)/autotuner
 	rm -rf $(INSTALL_DIR)/include/svf
 	rm -rf $(INSTALL_DIR)/include/scaf

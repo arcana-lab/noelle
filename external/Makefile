@@ -30,7 +30,7 @@ scaf:
 	./scripts/scaf_install.sh $(DEBUG)
 
 autotuner:
-	cd autotuner ; make
+	cd autotuner ; $(MAKE)
 
 clean:
 	rm -rf scaf
@@ -38,9 +38,9 @@ clean:
 	rm -f patch.tar 
 
 uninstall:
-	cat svf/Debug-build/install_manifest.txt 2> /dev/null | xargs rm -f
-	cat svf/Release-build/install_manifest.txt 2> /dev/null | xargs rm -f
-	cat scaf/scaf-build-release/install_manifest.txt 2> /dev/null | xargs rm -f
-	cat scaf/scaf-build-debug/install_manifest.txt 2> /dev/null | xargs rm -f
+	-cat svf/Debug-build/install_manifest.txt | xargs rm -f
+	-cat svf/Release-build/install_manifest.txt | xargs rm -f
+	-cat scaf/scaf-build-release/install_manifest.txt | xargs rm -f
+	-cat scaf/scaf-build-debug/install_manifest.txt | xargs rm -f
 
 .PHONY: compile compile_without_scaf clean uninstall autotuner
