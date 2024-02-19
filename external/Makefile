@@ -45,4 +45,4 @@ uninstall:
 	-cat scaf/scaf-build-release/install_manifest.txt | xargs rm -f
 	-cat scaf/scaf-build-debug/install_manifest.txt | xargs rm -f
 
-.PHONY: compile compile_without_scaf clean uninstall autotuner
+.PHONY: compile install_scaf compile_without_scaf clean uninstall autotuner
