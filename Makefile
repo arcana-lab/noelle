@@ -1,6 +1,6 @@
 INSTALL_DIR?=install
 BUILD_DIR?=build
-JOBS?=1
+JOBS?=8
 GENERATOR?="Unix Makefiles" # or Ninja
 
 all: install

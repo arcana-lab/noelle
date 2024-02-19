@@ -68,5 +68,5 @@ if(NOELLE_ENABLE_REPL)
   list(APPEND NOELLE_TOOL_MODULES repl)
 endif()
 
-# add_subdirectory(core)
-# add_subdirectory(tools)
+add_subdirectory(core)
+add_subdirectory(tools)
