@@ -5,7 +5,7 @@ build
 compile_commands.json
 external/svf
 external/scaf
-external/patch.tar
+external/svf_patch.tar
 enable
 # dependencies
 threadpool
