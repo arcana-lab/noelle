@@ -42,7 +42,7 @@ void DeadFunctionEliminator::getAnalysisUsage(AnalysisUsage &AU) const {
 
 // Next there is code to register your pass to "opt"
 char DeadFunctionEliminator::ID = 0;
-static RegisterPass<DeadFunctionEliminator> X("noelle-dfe",
+static RegisterPass<DeadFunctionEliminator> X("DeadFunctionEliminator",
                                               "Dead function eliminator");
 
 // Next there is code to register your pass to "clang"
