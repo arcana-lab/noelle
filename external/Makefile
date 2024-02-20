@@ -5,7 +5,7 @@ SCAF_BRANCH?=v9.1.8
 
 all: compile autotuner install_scaf
 
-compile: svf svf_patch.tar scaf
+compile: svf_patch.tar svf scaf
 ifeq ($(DEBUG), 1)
 	cd svf ; ./build.sh debug
 else
@@ -17,7 +17,7 @@ install_scaf: scaf
 
 compile_without_scaf: svf svf_patch.tar
 	cd svf ; tar xf ../svf_patch.tar
-	./scripts/scaf_patch.sh
+	./scripts/patch_svf.sh
 	cd svf ; ./build.sh
 
 svf:
@@ -25,7 +25,7 @@ svf:
 	cd svf ; tar xf ../svf_patch.tar
 	./scripts/patch_svf.sh
 
-svf_patch.tar: svf_patch svf
+svf_patch.tar: svf_patch
 	cd $< ; tar cf $@ * ; mv $@ ../
 
 scaf:
