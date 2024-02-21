@@ -1,27 +1,24 @@
 if(EXISTS ${CMAKE_SOURCE_DIR}/.git/HEAD)
-  add_custom_command(
-    OUTPUT GitInfo.hpp
-    COMMAND eval "echo \"#define\" NOELLE_GIT_ORIGIN \"\\\"$(git remote get-url --all origin)\\\"\"" > GitInfo.hpp
-    COMMAND eval "echo \"#define\" NOELLE_GIT_COMMIT \"\\\"$(git rev-parse HEAD)\\\"\"" >> GitInfo.hpp
-    DEPENDS ${CMAKE_SOURCE_DIR}/.git/HEAD
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    VERBATIM
+  execute_process(
+    COMMAND git remote get-url --all origin
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE NOELLE_GIT_ORIGIN
+    OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET
+  )
+  execute_process(
+    COMMAND git log -1 --format=%H
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE NOELLE_GIT_COMMIT
+    OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET
   )
 else()
-  add_custom_command(
-    OUTPUT GitInfo.hpp
-    COMMAND echo "#define" NOELLE_GIT_ORIGIN "\"\"" > GitInfo.hpp
-    COMMAND echo "#define" NOELLE_GIT_COMMIT "\"\"" >> GitInfo.hpp
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    VERBATIM
-  )
+  set(NOELLE_GIT_ORIGIN "")
+  set(NOELLE_GIT_COMMIT "")
 endif()
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 configure_file(src/config.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/config.hpp @ONLY)
 add_executable(noelle-config src/Noelle_config.cpp)
-add_custom_target(GitInfo DEPENDS GitInfo.hpp)
-add_dependencies(noelle-config GitInfo)
 
 install(
   TARGETS noelle-config
