@@ -1,0 +1,7 @@
+*.bc
+*.ll
+*.prof
+*.profraw
+**/test_pre_prof
+**/compiler_output.txt
+**/test_output.txt
