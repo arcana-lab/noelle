@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#include "noelle/core/MemorySite.hpp"
+#include "MemorySite.hpp"
 
 namespace arcana::noelle {
 
