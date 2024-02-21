@@ -15,6 +15,6 @@ done
 installDir=$(realpath $( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd )/..)
 
 # Remove the PDG from the bitcode
-cmdToExecute="noelle-load -load ${installDir}/lib/CleanMetadata.so -CleanMetadata -clean-prof-metadata=true $@" 
+cmdToExecute="noelle-load -load ${installDir}/lib/MetadataCleaner.so -MetadataCleaner -clean-prof-metadata=true $@" 
 echo $cmdToExecute ;
 eval $cmdToExecute 

@@ -19,15 +19,15 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/CleanMetadata.hpp"
+#include "noelle/core/MetadataCleaner.hpp"
 
 namespace arcana::noelle {
 
-CleanMetadata::CleanMetadata() : ModulePass{ ID }, cleanPDG{ false } {
+MetadataCleaner::MetadataCleaner() : ModulePass{ ID }, cleanPDG{ false } {
   return;
 }
 
-void CleanMetadata::cleanLoopMetadata(Module &M) {
+void MetadataCleaner::cleanLoopMetadata(Module &M) {
   errs() << "noelle/core/Clean Loop Metadata\n";
 
   for (auto &F : M) {
@@ -43,7 +43,7 @@ void CleanMetadata::cleanLoopMetadata(Module &M) {
   return;
 }
 
-void CleanMetadata::cleanPDGMetadata(Module &M) {
+void MetadataCleaner::cleanPDGMetadata(Module &M) {
   errs() << "noelle/core/Clean PDG Metadata\n";
 
   for (auto &F : M) {
@@ -70,7 +70,7 @@ void CleanMetadata::cleanPDGMetadata(Module &M) {
   return;
 }
 
-void CleanMetadata::cleanSCCMetadata(Module &M) {
+void MetadataCleaner::cleanSCCMetadata(Module &M) {
   errs() << "noelle/core/Clean PDG-SCC Metadata\n";
 
   for (auto &F : M) {
@@ -86,7 +86,7 @@ void CleanMetadata::cleanSCCMetadata(Module &M) {
   return;
 }
 
-void CleanMetadata::cleanProfMetadata(Module &M) {
+void MetadataCleaner::cleanProfMetadata(Module &M) {
   errs() << "noelle/core/Clean profiler metadata\n";
 
   for (auto &F : M) {
@@ -109,7 +109,7 @@ void CleanMetadata::cleanProfMetadata(Module &M) {
   return;
 }
 
-CleanMetadata::~CleanMetadata() {
+MetadataCleaner::~MetadataCleaner() {
   return;
 }
 

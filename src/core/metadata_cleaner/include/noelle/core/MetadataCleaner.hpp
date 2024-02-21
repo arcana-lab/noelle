@@ -26,11 +26,11 @@
 
 namespace arcana::noelle {
 
-class CleanMetadata : public ModulePass {
+class MetadataCleaner : public ModulePass {
 public:
   static char ID;
 
-  CleanMetadata();
+  MetadataCleaner();
 
   bool doInitialization(Module &M) override;
 
@@ -38,7 +38,7 @@ public:
 
   bool runOnModule(Module &M) override;
 
-  virtual ~CleanMetadata();
+  virtual ~MetadataCleaner();
 
 private:
   bool cleanLoop;
