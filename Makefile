@@ -17,7 +17,8 @@ $(BUILD_DIR):
 external:
 	$(MAKE) -C external
 
-tests: setup
+tests: install
+	# $(MAKE) -C tests
 	cd tests ; $(MAKE)
 
 format:

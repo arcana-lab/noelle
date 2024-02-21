@@ -1,7 +1,6 @@
 foreach(module IN LISTS NOELLE_CORE_MODULES)
   include_directories(../core/${module}/include)
 endforeach()
-include_directories(../core/transformations/include)
 
 foreach(module IN LISTS NOELLE_TOOL_MODULES)
   include_directories(${module}/include)

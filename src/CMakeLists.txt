@@ -49,6 +49,7 @@ set(NOELLE_CORE_MODULES
   scheduler
   talkdown
   task
+  transformations
   types_manager
   unique_ir_marker
 )

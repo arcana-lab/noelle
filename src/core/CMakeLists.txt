@@ -1,5 +1,3 @@
-include_directories(transformations/include)
-
 foreach(module IN LISTS NOELLE_CORE_MODULES)
   include_directories(${module}/include)
   install(
