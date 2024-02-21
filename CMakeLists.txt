@@ -72,4 +72,11 @@ add_definitions(
   -D__STDC_CONSTANT_MACROS
 )
 
+add_custom_target(
+  CompileCommands ALL
+  COMMAND ${CMAKE_COMMAND} -E create_symlink
+    ${CMAKE_BINARY_DIR}/compile_commands.json
+    ${CMAKE_SOURCE_DIR}/compile_commands.json
+)
+
 add_subdirectory(src)
