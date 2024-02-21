@@ -18,16 +18,15 @@ external:
 	$(MAKE) -C external
 
 tests: install
-	# $(MAKE) -C tests
-	cd tests ; $(MAKE)
+	$(MAKE) -C tests
 
 format:
 	find ./src -regex '.*\.[c|h]pp' | xargs clang-format -i
 
 clean:
 	rm -rf $(BUILD_DIR)
-	cd tests ; $(MAKE) clean
-	cd examples ; $(MAKE) clean
+	$(MAKE) -C tests clean
+	$(MAKE) -C examples clean
 	$(MAKE) -C external clean
 	find ./ -name .clangd -exec rm -rv {} +
 	find ./ -name .cache -exec rm -rv {} +
@@ -38,6 +37,7 @@ uninstall:
 	rm -rf $(INSTALL_DIR)/autotuner
 	rm -rf $(INSTALL_DIR)/include/svf
 	rm -rf $(INSTALL_DIR)/include/scaf
+	rm -rf $(INSTALL_DIR)/test
 	rm -f enable
 	rm -f .git/hooks/pre-commit
 

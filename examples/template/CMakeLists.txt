@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.13)
 project(CAT)
 
 # Dependences
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../../src/scripts/DependencesCMake.txt)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../CMakeCommon.txt)
 
 # Pass
 add_subdirectory(src)
