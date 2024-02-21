@@ -24,6 +24,19 @@ void print_usage(char *argv[]) {
             << "Print the compilation options used to compile NOELLE."
             << std::endl;
 
+  std::cout << "  --git-commit  "
+            << "\t\t"
+            << "Print the git commit hash used during compilation."
+            << std::endl;
+
+  std::cout << "  --git-origin  "
+            << "\t\t"
+            << "Print the git origin used during compilation." << std::endl;
+
+  std::cout << "  --flags       "
+            << "\t\t"
+            << "Print the compilation options used to compile NOELLE."
+            << std::endl;
   std::cout
       << "  --llvm-prefix "
       << "\t\t"
@@ -58,11 +71,14 @@ int main(int argc, char *argv[]) {
   static struct option long_options[] = { { "version", 0, NULL, 'n' },
                                           { "prefix", 0, NULL, 'p' },
                                           { "flags", 0, NULL, 'c' },
+                                          { "git-commit", 0, NULL, 'm' },
+                                          { "git-origin", 0, NULL, 'r' },
                                           { "llvm-version", 0, NULL, 'l' },
                                           { "llvm-prefix", 0, NULL, 'd' },
                                           { "llvm-flags", 0, NULL, 'o' },
                                           { NULL, 0, NULL, 0 } };
-  while ((opt = getopt_long(argc, argv, "npcldo", long_options, NULL)) != -1) {
+  while ((opt = getopt_long(argc, argv, "npcmrldo", long_options, NULL))
+         != -1) {
 
     switch (opt) {
 
@@ -76,6 +92,14 @@ int main(int argc, char *argv[]) {
 
       case 'c':
         std::cout << NOELLE_CXX_FLAGS << std::endl;
+        break;
+
+      case 'm':
+        std::cout << NOELLE_GIT_COMMIT << std::endl;
+        break;
+
+      case 'r':
+        std::cout << NOELLE_GIT_ORIGIN << std::endl;
         break;
 
       case 'l':
