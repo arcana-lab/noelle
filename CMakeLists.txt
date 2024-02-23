@@ -6,12 +6,12 @@ get_filename_component(
   CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX} REALPATH
 )
 get_filename_component(
-  CMAKE_SOURCE_DIR ${CMAKE_SOURCE_DIR} REALPATH
+  CMAKE_CURRENT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} REALPATH
 )
 
-file(READ ${CMAKE_SOURCE_DIR}/VERSION NOELLE_VERSION)
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/VERSION NOELLE_VERSION)
 string(STRIP ${NOELLE_VERSION} NOELLE_VERSION)
-set(NOELLE_EXTERNAL_DIR ${CMAKE_SOURCE_DIR}/external)
+set(NOELLE_EXTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external)
 
 set(NOELLE_CXX_FLAGS 
   -O0
@@ -57,12 +57,12 @@ message(STATUS "SVF analysis is ${NOELLE_SVF}")
 configure_file(enable.in enable @ONLY)
 install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/enable
-  DESTINATION ${CMAKE_SOURCE_DIR}
+  DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 install(
-  FILES ${CMAKE_SOURCE_DIR}/.githooks/pre-commit
-  DESTINATION ${CMAKE_SOURCE_DIR}/.git/hooks
+  FILES ${CMAKE_CURRENT_SOURCE_DIR}/.githooks/pre-commit
+  DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/.git/hooks
   PERMISSIONS
     OWNER_EXECUTE OWNER_WRITE OWNER_READ
     GROUP_EXECUTE GROUP_READ
@@ -110,7 +110,7 @@ add_custom_target(
   CompileCommands ALL
   COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_BINARY_DIR}/compile_commands.json
-    ${CMAKE_SOURCE_DIR}/compile_commands.json
+    ${CMAKE_CURRENT_SOURCE_DIR}/compile_commands.json
 )
 
 add_subdirectory(src)
