@@ -273,7 +273,7 @@ PDG *LoopCarriedVariable::produceDataAndMemoryOnlyDGFromVariableDG(
     auto node = nodePair.second;
     auto producesControlDependency = false;
     for (auto edge : node->getOutgoingEdges()) {
-      if (isa<ControlDependence<Value, Value>>(edge)){
+      if (isa<ControlDependence<Value, Value>>(edge)) {
         producesControlDependency = true;
         break;
       }

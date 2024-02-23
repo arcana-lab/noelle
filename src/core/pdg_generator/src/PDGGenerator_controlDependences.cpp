@@ -128,7 +128,7 @@ void PDGGenerator::constructEdgesFromControlForFunction(PDG *pdg, Function &F) {
           auto dstNode = pdg->fetchNode(&I);
           assert(srcNode != nullptr);
           assert(dstNode != nullptr);
-          ControlDependence<Value, Value> edge{srcNode, dstNode};
+          ControlDependence<Value, Value> edge{ srcNode, dstNode };
           pdg->copyAddEdge(edge);
         }
       }
@@ -186,7 +186,7 @@ void PDGGenerator::constructEdgesFromControlForFunction(PDG *pdg, Function &F) {
           getControlProducers(&phi);
       for (auto producer : controlProducers) {
         if (currentControlProducersOnPHI.find(producer)
-            != currentControlProducersOnPHI.end()){
+            != currentControlProducersOnPHI.end()) {
           continue;
         }
 
@@ -194,7 +194,7 @@ void PDGGenerator::constructEdgesFromControlForFunction(PDG *pdg, Function &F) {
         auto dstNode = pdg->fetchNode(&phi);
         assert(srcNode != nullptr);
         assert(dstNode != nullptr);
-        ControlDependence<Value, Value> edge{srcNode, dstNode};
+        ControlDependence<Value, Value> edge{ srcNode, dstNode };
         pdg->copyAddEdge(edge);
       }
     }

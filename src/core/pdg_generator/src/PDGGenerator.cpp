@@ -365,7 +365,8 @@ void PDGGenerator::removeEdgesNotUsedByParSchemes(PDG *pdg) {
   return;
 }
 
-bool PDGGenerator::canMemoryEdgeBeRemoved(PDG *pdg, DGEdge<Value, Value> *edge) {
+bool PDGGenerator::canMemoryEdgeBeRemoved(PDG *pdg,
+                                          DGEdge<Value, Value> *edge) {
   assert(pdg != nullptr);
   assert(edge != nullptr);
 
@@ -628,7 +629,7 @@ bool PDGGenerator::isMemoryAccessIntoDifferentArrays(
 }
 
 bool PDGGenerator::canPrecedeInCurrentIteration(Instruction *from,
-                                               Instruction *to) {
+                                                Instruction *to) {
   auto &LI =
       getAnalysis<LoopInfoWrapperPass>(*from->getFunction()).getLoopInfo();
   BasicBlock *fromBB = from->getParent();

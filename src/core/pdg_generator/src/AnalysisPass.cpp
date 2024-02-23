@@ -39,7 +39,7 @@ using namespace arcana::noelle;
 // Next there is code to register your pass to "opt"
 char PDGGenerator::ID = 0;
 static RegisterPass<PDGGenerator> X("PDGGenerator",
-                                   "Computing the Program Dependence Graph");
+                                    "Computing the Program Dependence Graph");
 
 // Next there is code to register your pass to "clang"
 static PDGGenerator *_PassMaker = NULL;

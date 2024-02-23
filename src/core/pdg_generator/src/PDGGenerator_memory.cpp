@@ -29,8 +29,8 @@
 namespace arcana::noelle {
 
 bool PDGGenerator::canThereBeAMemoryDataDependence(Instruction *fromInst,
-                                                  Instruction *toInst,
-                                                  Function &F) {
+                                                   Instruction *toInst,
+                                                   Function &F) {
 
   /*
    * Check if any of the data dependence analyses can assert the lack of
@@ -78,10 +78,10 @@ std::pair<bool, bool> PDGGenerator::isThereThisMemoryDataDependenceType(
 }
 
 void PDGGenerator::iterateInstForStore(PDG *pdg,
-                                      Function &F,
-                                      AAResults &AA,
-                                      DataFlowResult *dfr,
-                                      StoreInst *store) {
+                                       Function &F,
+                                       AAResults &AA,
+                                       DataFlowResult *dfr,
+                                       StoreInst *store) {
 
   for (auto I : dfr->OUT(store)) {
 
@@ -138,10 +138,10 @@ void PDGGenerator::iterateInstForStore(PDG *pdg,
 }
 
 void PDGGenerator::iterateInstForLoad(PDG *pdg,
-                                     Function &F,
-                                     AAResults &AA,
-                                     DataFlowResult *dfr,
-                                     LoadInst *load) {
+                                      Function &F,
+                                      AAResults &AA,
+                                      DataFlowResult *dfr,
+                                      LoadInst *load) {
 
   for (auto I : dfr->OUT(load)) {
 
@@ -187,10 +187,10 @@ void PDGGenerator::iterateInstForLoad(PDG *pdg,
 }
 
 void PDGGenerator::iterateInstForCall(PDG *pdg,
-                                     Function &F,
-                                     AAResults &AA,
-                                     DataFlowResult *dfr,
-                                     CallBase *call) {
+                                      Function &F,
+                                      AAResults &AA,
+                                      DataFlowResult *dfr,
+                                      CallBase *call) {
 
   /*
    * Check if the call instruction is not actual code.
@@ -319,11 +319,11 @@ bool PDGGenerator::hasNoMemoryOperations(CallBase *call) {
 }
 
 void PDGGenerator::addEdgeFromFunctionModRef(PDG *pdg,
-                                            Function &F,
-                                            AAResults &AA,
-                                            CallBase *call,
-                                            StoreInst *store,
-                                            bool addEdgeFromCall) {
+                                             Function &F,
+                                             AAResults &AA,
+                                             CallBase *call,
+                                             StoreInst *store,
+                                             bool addEdgeFromCall) {
   BitVector bv{ 3, false };
   auto makeRefEdge = false, makeModEdge = false;
 
@@ -512,11 +512,11 @@ void PDGGenerator::addEdgeFromFunctionModRef(PDG *pdg,
 }
 
 void PDGGenerator::addEdgeFromFunctionModRef(PDG *pdg,
-                                            Function &F,
-                                            AAResults &AA,
-                                            CallBase *call,
-                                            LoadInst *load,
-                                            bool addEdgeFromCall) {
+                                             Function &F,
+                                             AAResults &AA,
+                                             CallBase *call,
+                                             LoadInst *load,
+                                             bool addEdgeFromCall) {
   BitVector bv{ 3, false };
 
   /*
@@ -628,12 +628,13 @@ void PDGGenerator::addEdgeFromFunctionModRef(PDG *pdg,
   return;
 }
 
-void PDGGenerator::addEdgeFromFunctionModRef(PDG *pdg,
-                                            Function &F,
-                                            AAResults &AA,
-                                            CallBase *call,
-                                            CallBase *otherCall,
-                                            bool isCallReachableFromOtherCall) {
+void PDGGenerator::addEdgeFromFunctionModRef(
+    PDG *pdg,
+    Function &F,
+    AAResults &AA,
+    CallBase *call,
+    CallBase *otherCall,
+    bool isCallReachableFromOtherCall) {
   BitVector bv{ 3, false };
   BitVector rbv{ 3, false };
 
@@ -1290,10 +1291,10 @@ void PDGGenerator::addEdgeFromMemoryAlias(
 }
 
 AliasResult PDGGenerator::doTheyAlias(PDG *pdg,
-                                     Function &F,
-                                     AAResults &AA,
-                                     Value *instI,
-                                     Value *instJ) {
+                                      Function &F,
+                                      AAResults &AA,
+                                      Value *instI,
+                                      Value *instJ) {
 
   /*
    * Check if the parameters have memory locations.
