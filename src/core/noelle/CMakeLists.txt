@@ -1,17 +1,10 @@
-# Project
-cmake_minimum_required(VERSION 3.13)
-project(Noelle)
-
-# Dependences
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
-
-# Pass
-add_subdirectory(src)
-
-# Install
-install(
-  FILES
-  include/noelle/core/Noelle.hpp
-  DESTINATION 
-  include/noelle/core
-  )
+add_llvm_library(
+  Noelle # pass name
+  MODULE
+  src/Noelle.cpp
+  src/Noelle_dependences.cpp
+  src/Noelle_function.cpp
+  src/Noelle_loops.cpp
+  src/Noelle_transformations.cpp
+  src/Pass.cpp
+)

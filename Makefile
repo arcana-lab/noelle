@@ -1,40 +1,45 @@
-EXTERNAL_OPTIONS=
-DEBUG?=0
+INSTALL_DIR?=install
+BUILD_DIR?=build
 JOBS?=8
+GENERATOR?="Unix Makefiles" # or Ninja
 
-all: hooks src
+all: install
 
+install: compile
+	cmake --install $(BUILD_DIR)
+
+compile: external $(BUILD_DIR)
+	cmake --build $(BUILD_DIR) -- -j$(JOBS)
+
+$(BUILD_DIR):
+	cmake -S . -B $(BUILD_DIR) -G$(GENERATOR) -DCMAKE_INSTALL_PREFIX=$(INSTALL_DIR)
+	
 external:
-	cd external ; make DEBUG=$(DEBUG) JOBS=$(JOBS) $(EXTERNAL_OPTIONS);
+	$(MAKE) -C external
 
-src: external
-	cd src ; make ; 
-
-src-fast: external
-	cd src ; make core-fast DEBUG=$(DEBUG) JOBS=$(JOBS);
-	cd src ; make tools-fast DEBUG=$(DEBUG) JOBS=$(JOBS);
-
-tests: src
-	cd tests ; make ;
-
-hooks:
-	make -C .githooks
+tests: install
+	$(MAKE) -C tests
 
 format:
-	cd src ; ./scripts/format_source_code.sh
+	find ./src -regex '.*\.[c|h]pp' | xargs clang-format -i
 
 clean:
-	cd external ; make clean ; 
-	cd src ; make clean ; 
-	cd tests ; make clean; 
-	cd examples ; make clean ; 
+	rm -rf $(BUILD_DIR)
+	$(MAKE) -C tests clean
+	$(MAKE) -C examples clean
+	$(MAKE) -C external clean
+	rm -f compile_commands.json
 	find ./ -name .clangd -exec rm -rv {} +
 	find ./ -name .cache -exec rm -rv {} +
 
-uninstall: clean
-	rm -f enable ;
-	rm -rf install ;
-	cd external ; make $@
-	if test -d .githooks ; then cd .githooks ; make clean ; fi;
+uninstall:
+	-cat $(BUILD_DIR)/install_manifest.txt | xargs rm -f
+	$(MAKE) -C external uninstall
+	rm -rf $(INSTALL_DIR)/autotuner
+	rm -rf $(INSTALL_DIR)/include/svf
+	rm -rf $(INSTALL_DIR)/include/scaf
+	rm -rf $(INSTALL_DIR)/test
+	rm -f enable
+	rm -f .git/hooks/pre-commit
 
-.PHONY: src src-fast tests hooks format clean uninstall external
+.PHONY: all install compile external tests format clean uninstall

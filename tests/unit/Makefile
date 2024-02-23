@@ -6,38 +6,29 @@ ALL_UNITS=$(UTIL_UNITS) $(ENABLER_UNITS) $(ANALYSIS_UNITS)
 all: setup $(ALL_UNITS)
 
 run:
-	for i in `ls`; do ../scripts/run_unit.sh $$i ; done
+	for i in `ls`; do ../scripts/unit_run.sh $$i ; done
 
 setup:
 	mkdir -p `realpath ../../install`/test
 
 control_flow_equivalence:
-	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
-
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../scripts/unit_build.sh
 dependence_graphs:
-	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
-
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../scripts/unit_build.sh
 dominator_summary:
-	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
-
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../scripts/unit_build.sh
 empty_template:
-	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
-
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../scripts/unit_build.sh
 helpers:
-	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
-
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../scripts/unit_build.sh
 iv_attributes:
-	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
-
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../scripts/unit_build.sh
 loop_domain_space:
-	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
-
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../scripts/unit_build.sh
 loop_invariant_code_motion:
-	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
-
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../scripts/unit_build.sh
 sccdag_attributes:
-	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../../src/scripts/run_me.sh
-
+	cd $@ ; NOELLE_INSTALL_DIR=`realpath ../../../install`/test ../../scripts/unit_build.sh
 clean:
 	rm -f *.txt ;
 	rm -rf */build ;

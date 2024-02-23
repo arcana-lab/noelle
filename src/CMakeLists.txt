@@ -1,0 +1,73 @@
+set(NOELLE_CORE_MODULES
+  alias_analysis_engine
+  alloc_aa
+  architecture
+  basic_utilities
+  call_graph
+  call_graph_analysis
+  cfg_analysis
+  cfg_transformer
+  codesize
+  compilation_options_manager
+  constants_manager
+  dataflow
+  dependence_analysis
+  dg
+  dominators
+  functions_manager
+  globals_manager
+  hotprofiler
+  ldg_generator
+  linker
+  loop_carried_dependences
+  loop_content
+  loop_distribution
+  loop_environment
+  loop_forest
+  loop_induction_variables
+  loop_invariants
+  loop_iteration_space_analysis
+  loop_metadata
+  loop_nesting_graph
+  loop_scc_attributes
+  loop_sccdag_attributes
+  loop_sccdag_normalizer
+  loop_structure
+  loop_transformer
+  loop_unroll
+  loop_whilifier
+  may_points_to_analysis
+  memory_cloning_analysis
+  metadata_cleaner
+  metadata_manager
+  noelle
+  outliner
+  pdg
+  pdg_generator
+  pdg_printer
+  sccdag
+  scheduler
+  talkdown
+  task
+  transformations
+  types_manager
+  unique_ir_marker
+)
+
+set(NOELLE_TOOL_MODULES
+  dead_function_eliminator
+  loop_invariant_code_motion
+  loop_size
+  loop_stats
+  pdg_stats
+  privatizer
+  remove_function
+  scev_simplification
+)
+
+if(NOELLE_ENABLE_REPL)
+  list(APPEND NOELLE_TOOL_MODULES repl)
+endif()
+
+add_subdirectory(core)
+add_subdirectory(tools)

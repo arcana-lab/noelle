@@ -1,17 +1,16 @@
-# Project
-cmake_minimum_required(VERSION 3.13)
-project(PDGGenerator)
-
-# Dependences
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
-
-# Pass
-add_subdirectory(src)
-
-# Install
-install(
-  FILES
-  include/noelle/core/PDGGenerator.hpp
-  DESTINATION 
-  include/noelle/core
-  )
+add_llvm_library(
+  PDGGenerator # pass name
+  MODULE
+  src/AnalysisPass.cpp
+  src/IntegrationWithSVF.cpp
+  src/Pass.cpp
+  src/PDGGenerator_callGraph.cpp
+  src/PDGGenerator_compare.cpp
+  src/PDGGenerator_controlDependences.cpp
+  src/PDGGenerator.cpp
+  src/PDGGenerator_library.cpp
+  src/PDGGenerator_memory.cpp
+  src/PDGGenerator_metadata.cpp
+  src/PDGGenerator_metadata_embedder.cpp
+  src/PDGGenerator_metadata_scc_embedder.cpp
+)
