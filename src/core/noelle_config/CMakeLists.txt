@@ -16,8 +16,9 @@ else()
   set(NOELLE_GIT_COMMIT "")
 endif()
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
 configure_file(src/config.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/config.hpp @ONLY)
+string(REPLACE ";" " " NOELLE_CXX_FLAGS "${NOELLE_CXX_FLAGS}")
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_executable(noelle-config src/Noelle_config.cpp)
 
 install(

@@ -48,12 +48,6 @@ void print_usage(char *argv[]) {
             << "Print the version of the specific LLVM used by NOELLE."
             << std::endl;
 
-  std::cout
-      << "  --llvm-flags  "
-      << "\t\t"
-      << "Print the compilation options used to compile the specific LLVM used by NOELLE."
-      << std::endl;
-
   return;
 }
 
