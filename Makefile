@@ -39,6 +39,7 @@ uninstall:
 	rm -rf $(INSTALL_DIR)/include/scaf
 	rm -rf $(INSTALL_DIR)/test
 	rm -f enable
+	rm -f compile_commands.json
 	rm -f .git/hooks/pre-commit
 
 .PHONY: all install compile external tests format clean uninstall
