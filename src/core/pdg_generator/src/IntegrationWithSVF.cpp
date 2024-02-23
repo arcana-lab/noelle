@@ -27,8 +27,7 @@
 /*
  * SVF headers
  */
-#define ENABLE_SVF
-#ifdef ENABLE_SVF
+#ifdef NOELLE_ENABLE_SVF
 #  include "WPA/WPAPass.h"
 #  include "Util/SVFModule.h"
 #  include "Util/PTACallGraph.h"
@@ -43,7 +42,7 @@ void PDGGenerator::initializeSVF(Module &M) {
   return;
 }
 
-#ifdef ENABLE_SVF
+#ifdef NOELLE_ENABLE_SVF
 static WPAPass *wpa = nullptr;
 static MemSSA *mssa = nullptr;
 static PointerAnalysis *pta = nullptr;
@@ -81,14 +80,14 @@ bool NoelleSVFIntegration::doInitialization(Module &M) {
 }
 
 void NoelleSVFIntegration::getAnalysisUsage(AnalysisUsage &AU) const {
-#ifdef ENABLE_SVF
+#ifdef NOELLE_ENABLE_SVF
   AU.addRequired<WPAPass>();
 #endif
   return;
 }
 
 bool NoelleSVFIntegration::runOnModule(Module &M) {
-#ifdef ENABLE_SVF
+#ifdef NOELLE_ENABLE_SVF
   // get SVF's WPAPass analysis for all applicable pointer analysis
   wpa = &getAnalysis<WPAPass>();
 
@@ -117,7 +116,7 @@ noelle::CallGraph *NoelleSVFIntegration::getProgramCallGraph(Module &M) {
 }
 
 bool NoelleSVFIntegration::hasIndCSCallees(CallBase *call) {
-#ifdef ENABLE_SVF
+#ifdef NOELLE_ENABLE_SVF
   if (auto callInst = dyn_cast<CallInst>(call)) {
     return svfCallGraph->hasIndCSCallees(callInst);
   }
@@ -146,7 +145,7 @@ const std::set<const Function *> NoelleSVFIntegration::getIndCSCallees(
    *
    * Check if we SVF has been enabled and can handle @call.
    */
-#ifdef ENABLE_SVF
+#ifdef NOELLE_ENABLE_SVF
   if (auto callInst = dyn_cast<CallInst>(call)) {
     return svfCallGraph->getIndCSCallees(callInst);
   }
@@ -194,7 +193,7 @@ const std::set<const Function *> NoelleSVFIntegration::getIndCSCallees(
 
 bool NoelleSVFIntegration::isReachableBetweenFunctions(const Function *from,
                                                        const Function *to) {
-#ifdef ENABLE_SVF
+#ifdef NOELLE_ENABLE_SVF
   return svfCallGraph->isReachableBetweenFunctions(from, to);
 #else
   return true;
@@ -202,7 +201,7 @@ bool NoelleSVFIntegration::isReachableBetweenFunctions(const Function *from,
 }
 
 ModRefInfo NoelleSVFIntegration::getModRefInfo(CallBase *i) {
-#ifdef ENABLE_SVF
+#ifdef NOELLE_ENABLE_SVF
   if (auto callInst = dyn_cast<CallInst>(i)) {
     return mssa->getMRGenerator()->getModRefInfo(callInst);
   }
@@ -214,7 +213,7 @@ ModRefInfo NoelleSVFIntegration::getModRefInfo(CallBase *i) {
 
 ModRefInfo NoelleSVFIntegration::getModRefInfo(CallBase *i,
                                                const MemoryLocation &loc) {
-#ifdef ENABLE_SVF
+#ifdef NOELLE_ENABLE_SVF
   if (auto callInst = dyn_cast<CallInst>(i)) {
     return mssa->getMRGenerator()->getModRefInfo(callInst, loc);
   }
@@ -225,7 +224,7 @@ ModRefInfo NoelleSVFIntegration::getModRefInfo(CallBase *i,
 }
 
 ModRefInfo NoelleSVFIntegration::getModRefInfo(CallBase *i, CallBase *j) {
-#ifdef ENABLE_SVF
+#ifdef NOELLE_ENABLE_SVF
   auto callInstI = dyn_cast<CallInst>(i);
   auto callInstJ = dyn_cast<CallInst>(j);
   if (true && (callInstI != nullptr) && (callInstJ != nullptr)) {
@@ -239,7 +238,7 @@ ModRefInfo NoelleSVFIntegration::getModRefInfo(CallBase *i, CallBase *j) {
 
 AliasResult NoelleSVFIntegration::alias(const MemoryLocation &loc1,
                                         const MemoryLocation &loc2) {
-#ifdef ENABLE_SVF
+#ifdef NOELLE_ENABLE_SVF
   return wpa->alias(loc1, loc2);
 #else
   return AliasResult::MayAlias;
@@ -247,7 +246,7 @@ AliasResult NoelleSVFIntegration::alias(const MemoryLocation &loc1,
 }
 
 AliasResult NoelleSVFIntegration::alias(const Value *v1, const Value *v2) {
-#ifdef ENABLE_SVF
+#ifdef NOELLE_ENABLE_SVF
   return wpa->alias(v1, v2);
 #else
   return AliasResult::MayAlias;
@@ -258,7 +257,7 @@ std::set<AliasAnalysisEngine *> PDGGenerator::getProgramAliasAnalysisEngines(
     void) {
   std::set<AliasAnalysisEngine *> s;
 
-#ifdef ENABLE_SVF
+#ifdef NOELLE_ENABLE_SVF
   auto svf = new ProgramAliasAnalysisEngine("SVF", wpa);
   s.insert(svf);
 #endif

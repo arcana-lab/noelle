@@ -48,18 +48,16 @@ export LLVM_DIR=$LLVMRELEASE
 export PATH=$LLVM_DIR/bin:$PATH
 Build=$BuildTY'-build'
 
-
 # Don't remove SVF
 #rm -rf $Build
 mkdir -p $Build
 cd $Build
 
-if [[ $1 == 'debug' ]]
-then
-${CMAKE} -D CMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_CXX_FLAGS="-std=c++17" ../
+if [[ $1 == 'debug' ]]; then
+  ${CMAKE} -D CMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_CXX_FLAGS="-std=c++17" ../
 else
-${CMAKE} -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_CXX_FLAGS="-std=c++17" ../
+  ${CMAKE} -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_CXX_FLAGS="-std=c++17" ../
 fi
-make -j${JOBS}
 
-make install 
+${CMAKE} --build . -- -j${JOBS}
+${CMAKE} --install .
