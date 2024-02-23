@@ -1,43 +1,59 @@
-DEBUG?=0
+NOELLE_SCAF?=ON
+NOELLE_SVF?=ON
+NOELLE_AUTOTUNER?=OFF
+SCAF_DEBUG?=0
+SVF_DEBUG?=0
 JOBS?=8
 SVF_BRANCH?=SVF-1.8
 SCAF_BRANCH?=v9.1.8
+export SCAF_INSTALL_DEBUG?=$(NOELLE_INSTALL_DIR)
+export SCAF_INSTALL_RELEASE?=$(NOELLE_INSTALL_DIR)
+export SPECULATION_MODULES=0
 
-all: compile autotuner install_scaf
+all: install
 
-compile: svf_patch.tar svf scaf
-ifeq ($(DEBUG), 1)
+install:
+	# conditionally installing SVF
+	@if [[ $(shell tr '[:lower:]' '[:upper:]' <<< $(NOELLE_SVF)) == "ON" || "$(NOELLE_SVF)" == "1" ]]; then \
+		$(MAKE) install_svf ; \
+	fi
+	# conditionally installing SCAF
+	@if [[ $(shell tr '[:lower:]' '[:upper:]' <<< $(NOELLE_SCAF)) == "ON" || "$(NOELLE_SCAF)" == "1" ]]; then \
+		$(MAKE) install_scaf ; \
+	fi
+	# conditionally installing AUTOTUNER
+	@if [[ $(shell tr '[:lower:]' '[:upper:]' <<< $(NOELLE_AUTOTUNER)) == "ON" || "$(NOELLE_AUTOTUNER)" == "1" ]]; then \
+		$(MAKE) install_autotuner	; \
+	fi
+
+install_svf: svf
+ifeq ($(SVF_DEBUG), 1)
 	cd svf ; ./build.sh debug
 else
 	cd svf ; ./build.sh
 endif
 
 install_scaf: scaf
-	./scripts/install_scaf.sh $(DEBUG)
+ifeq ($(SCAF_DEBUG), 1)
+	$(MAKE) -C scaf scaf-debug
+else
+	$(MAKE) -C scaf scaf-release
+endif
 
-compile_without_scaf: svf svf_patch.tar
-	cd svf ; tar xf ../svf_patch.tar
-	./scripts/patch_svf.sh
-	cd svf ; ./build.sh
-
+install_autotuner: autotuner
+	mkdir -p $(shell realpath $(NOELLE_INSTALL_DIR))
+	cp -r $< $(shell realpath $(NOELLE_INSTALL_DIR))
+	
 svf:
 	git clone -b $(SVF_BRANCH) https://github.com/SVF-tools/SVF.git svf
-	cd svf ; tar xf ../svf_patch.tar
-	./scripts/patch_svf.sh
-
-svf_patch.tar: svf_patch
-	cd $< ; tar cf $@ * ; mv $@ ../
+	rsync -av svf_patch/ svf
 
 scaf:
 	git clone -b $(SCAF_BRANCH) https://github.com/PrincetonUniversity/SCAF scaf
 
-autotuner:
-	cd autotuner ; $(MAKE)
-
 clean:
 	rm -rf scaf
 	rm -rf svf
-	rm -f svf_patch.tar 
 
 uninstall:
 	-cat svf/Debug-build/install_manifest.txt | xargs rm -f
@@ -45,4 +61,4 @@ uninstall:
 	-cat scaf/scaf-build-release/install_manifest.txt | xargs rm -f
 	-cat scaf/scaf-build-debug/install_manifest.txt | xargs rm -f
 
-.PHONY: compile install_scaf compile_without_scaf clean uninstall autotuner
+.PHONY: all clean install install_scaf install_autotuner uninstall

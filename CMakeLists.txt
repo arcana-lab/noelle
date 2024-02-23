@@ -21,6 +21,39 @@ set(NOELLE_CXX_FLAGS
   -Wall
 )
 
+if(DEFINED NOELLE_SCAF)
+  string(TOUPPER ${NOELLE_SCAF} NOELLE_SCAF)
+  if((NOELLE_SCAF STREQUAL "ON") OR (NOELLE_SCAF STREQUAL "1"))
+    list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SCAF")
+    set(NOELLE_SCAF ON)
+  elseif((NOELLE_SCAF STREQUAL "OFF") OR (NOELLE_SCAF STREQUAL "0"))
+    set(NOELLE_SCAF OFF)
+  else()
+    message(FATAL_ERROR "'NOELLE_SCAF' must be ON, OFF, 0 or 1")
+  endif()
+else()
+  # default behavior
+  set(NOELLE_SCAF ON)
+endif()
+
+if(DEFINED NOELLE_SVF)
+  string(TOUPPER ${NOELLE_SVF} NOELLE_SVF)
+  if((NOELLE_SVF STREQUAL "ON") OR (NOELLE_SVF STREQUAL "1"))
+    list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SVF")
+    set(NOELLE_SVF ON)
+  elseif((NOELLE_SVF STREQUAL "OFF") OR (NOELLE_SVF STREQUAL "0"))
+    set(NOELLE_SVF OFF)
+  else()
+    message(FATAL_ERROR "'NOELLE_SVF' must be ON, OFF, 0 or 1")
+  endif()
+else()
+  # default behavior
+  set(NOELLE_SVF ON)
+endif()
+
+message(STATUS "SCAF analysis is ${NOELLE_SCAF}")
+message(STATUS "SVF analysis is ${NOELLE_SVF}")
+
 configure_file(enable.in enable @ONLY)
 install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/enable
