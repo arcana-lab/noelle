@@ -1,6 +1,6 @@
-add_llvm_library(
-  Privatizer # pass name
-  MODULE
+add_noelle_component_sources(
+  tools # component
+  FILES
   src/GlobalToStack.cpp
   src/HeapToStack.cpp
   src/Pass.cpp

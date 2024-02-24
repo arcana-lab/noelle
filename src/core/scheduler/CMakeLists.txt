@@ -1,6 +1,6 @@
-add_llvm_library(
-  Scheduler # pass name
-  MODULE
+add_noelle_component_sources(
+  core # component name
+  FILES
   src/SCCPartitionScheduler.cpp
   src/Scheduler.cpp
 )

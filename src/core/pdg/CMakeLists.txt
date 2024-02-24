@@ -1,5 +1,5 @@
-add_llvm_library(
-  PDG # pass name
-  MODULE
+add_noelle_component_sources(
+  core # component name
+  FILES
   src/PDG.cpp
 )

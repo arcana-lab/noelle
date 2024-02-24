@@ -1,6 +1,6 @@
-add_llvm_library(
-  LoopContent # pass name
-  MODULE
+add_noelle_component_sources(
+  core # component name
+  FILES
   src/ControlFlowEquivalence.cpp
   src/LoopAwareMemDepAnalysis.cpp
   src/LoopContent.cpp

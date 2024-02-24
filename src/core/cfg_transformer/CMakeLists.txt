@@ -1,6 +1,6 @@
-add_llvm_library(
-  CFGTransformer # pass name
-  MODULE
+add_noelle_component_sources(
+  core # component name
+  FILES
   src/CFGTransformer.cpp
   src/Pass.cpp
 )

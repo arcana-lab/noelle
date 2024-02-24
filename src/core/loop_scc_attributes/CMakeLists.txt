@@ -1,6 +1,6 @@
-add_llvm_library(
-  LoopSCCAttributes # pass name
-  MODULE
+add_noelle_component_sources(
+  core # component name
+  FILES
   src/AccumulatorOpInfo.cpp
   src/BinaryReductionSCC.cpp
   src/GenericSCC.cpp

@@ -1,5 +1,5 @@
-add_llvm_library(
-  CompilationOptionsManager # pass name
-  MODULE
+add_noelle_component_sources(
+  core # component name
+  FILES
   src/CompilationOptionsManager.cpp
 )

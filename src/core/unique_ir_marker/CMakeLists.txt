@@ -1,6 +1,6 @@
-add_llvm_library(
-  UniqueIRMarker # pass name
-  MODULE
+add_noelle_component_sources(
+  core # component name
+  FILES
   src/IDToValueMapper.cpp
   src/UniqueIRConstants.cpp
   src/UniqueIRMarker.cpp

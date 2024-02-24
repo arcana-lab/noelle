@@ -1,6 +1,6 @@
-add_llvm_library(
-  PDGGenerator # pass name
-  MODULE
+add_noelle_component_sources(
+  core # component name
+  FILES
   src/AnalysisPass.cpp
   src/IntegrationWithSVF.cpp
   src/Pass.cpp

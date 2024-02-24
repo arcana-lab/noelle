@@ -172,4 +172,21 @@ add_custom_target(
     ${NOELLE_CMAKE_ROOT}/compile_commands.json
 )
 
+macro(add_noelle_component name)
+  add_custom_target(${name})
+  set_target_properties(${name} PROPERTIES SOURCES "")
+endmacro()
+
+macro(add_noelle_component_sources component)
+  cmake_parse_arguments(ARG "" "" "FILES" ${ARGV})
+  set(files "")
+  foreach(file IN LISTS ARG_FILES)
+    set(file "${CMAKE_CURRENT_LIST_DIR}/${file}")
+    list(APPEND files ${file})
+  endforeach()
+  get_target_property(sources ${component} SOURCES)
+  list(APPEND sources "${files}")
+  set_target_properties(${component} PROPERTIES SOURCES "${sources}")
+endmacro()
+
 add_subdirectory(src)

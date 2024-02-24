@@ -1,6 +1,6 @@
-add_llvm_library(
-  LoopSize # pass name
-  MODULE
+add_noelle_component_sources(
+  tools # component
+  FILES
   src/LoopSize.cpp
   src/Pass.cpp
 )

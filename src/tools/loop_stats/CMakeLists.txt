@@ -1,6 +1,6 @@
-add_llvm_library(
-  LoopStats # pass name
-  MODULE
+add_noelle_component_sources(
+  tools # component
+  FILES
   src/LoopStats.cpp
   src/LoopStats_Dependences.cpp
   src/LoopStats_InductionVariables.cpp

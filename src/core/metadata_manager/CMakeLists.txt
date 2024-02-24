@@ -1,6 +1,6 @@
-add_llvm_library(
-  MetadataManager # pass name
-  MODULE
+add_noelle_component_sources(
+  core # component name
+  FILES
   src/MetadataEntry.cpp
   src/MetadataManager_annotations.cpp
   src/MetadataManager.cpp

@@ -1,6 +1,6 @@
-add_llvm_library(
-  PDGStats # pass name
-  MODULE
+add_noelle_component_sources(
+  tools # component
+  FILES
   src/Pass.cpp
   src/PDGStats.cpp
 )

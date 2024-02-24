@@ -1,6 +1,6 @@
-add_llvm_library(
-  LoopInvariantCodeMotion # pass name
-  MODULE
+add_noelle_component_sources(
+  tools # component
+  FILES
   src/LastLiveOutPeeler.cpp
   src/LastLiveOutStoreHoister.cpp
   src/LoopInvariantCodeMotion.cpp

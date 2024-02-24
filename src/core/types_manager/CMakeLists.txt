@@ -1,5 +1,5 @@
-add_llvm_library(
-  TypesManager # pass name
-  MODULE
+add_noelle_component_sources(
+  core # component name
+  FILES
   src/TypesManager.cpp
 )

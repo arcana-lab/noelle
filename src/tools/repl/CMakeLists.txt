@@ -1,5 +1,5 @@
-add_llvm_library(
-  Repl # pass name
-  MODULE
+add_noelle_component_sources(
+  tools # component
+  FILES
   src/Repl.cpp
 )
