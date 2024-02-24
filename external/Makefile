@@ -1,6 +1,6 @@
 NOELLE_SCAF?=ON
 NOELLE_SVF?=ON
-NOELLE_AUTOTUNER?=OFF
+NOELLE_AUTOTUNER?=ON
 SCAF_DEBUG?=0
 SVF_DEBUG?=0
 JOBS?=8
@@ -50,6 +50,7 @@ svf:
 
 scaf:
 	git clone -b $(SCAF_BRANCH) https://github.com/PrincetonUniversity/SCAF scaf
+	rsync -av scaf_patch/ scaf
 
 clean:
 	rm -rf scaf

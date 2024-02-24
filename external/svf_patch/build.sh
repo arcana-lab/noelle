@@ -54,9 +54,9 @@ mkdir -p $Build
 cd $Build
 
 if [[ $1 == 'debug' ]]; then
-  ${CMAKE} -D CMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_CXX_FLAGS="-std=c++17" ../
+  ${CMAKE} -G${GENERATOR} -D CMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_CXX_FLAGS="-std=c++17" ../
 else
-  ${CMAKE} -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_CXX_FLAGS="-std=c++17" ../
+  ${CMAKE} -G${GENERATOR} -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_CXX_FLAGS="-std=c++17" ../
 fi
 
 ${CMAKE} --build . -- -j${JOBS}
