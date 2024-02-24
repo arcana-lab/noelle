@@ -13,7 +13,7 @@ install: external compile
 	$(MAKE) -C external install
 
 compile: $(BUILD_DIR)
-	cmake --build $(BUILD_DIR) -- -j$(JOBS) 
+	cmake --build $(BUILD_DIR) -j$(JOBS) 
 
 $(BUILD_DIR):
 	cmake -S . -B $(BUILD_DIR) -G$(GENERATOR) \

@@ -14,15 +14,15 @@ all: install
 
 install:
 	# conditionally installing SVF
-	@if [[ $(shell tr '[:lower:]' '[:upper:]' <<< $(NOELLE_SVF)) == "ON" || "$(NOELLE_SVF)" == "1" ]]; then \
+	@if [[ $(NOELLE_SVF) =~ ^ON|On|on$$ ]]; then \
 		$(MAKE) install_svf ; \
 	fi
 	# conditionally installing SCAF
-	@if [[ $(shell tr '[:lower:]' '[:upper:]' <<< $(NOELLE_SCAF)) == "ON" || "$(NOELLE_SCAF)" == "1" ]]; then \
+	@if [[ $(NOELLE_SCAF) =~ ^ON|On|on$$ ]]; then \
 		$(MAKE) install_scaf ; \
 	fi
 	# conditionally installing AUTOTUNER
-	@if [[ $(shell tr '[:lower:]' '[:upper:]' <<< $(NOELLE_AUTOTUNER)) == "ON" || "$(NOELLE_AUTOTUNER)" == "1" ]]; then \
+	@if [[ $(NOELLE_AUTOTUNER) =~ ^ON|On|on$$ ]]; then \
 		$(MAKE) install_autotuner	; \
 	fi
 
