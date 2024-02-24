@@ -37,8 +37,6 @@ clean:
 	$(MAKE) -C examples clean
 	$(MAKE) -C external clean
 	rm -f compile_commands.json
-	find ./ -name .clangd -exec rm -rv {} +
-	find ./ -name .cache -exec rm -rv {} +
 
 uninstall:
 	-cat $(BUILD_DIR)/install_manifest.txt | xargs rm -f
