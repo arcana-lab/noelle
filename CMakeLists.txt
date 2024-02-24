@@ -13,8 +13,7 @@ execute_process(
 
 FetchContent_Declare(
   svf
-  # GIT_REPOSITORY  "https://github.com/arcana-lab/SVF.git"
-  GIT_REPOSITORY  /nfs-scratch/fsv1684/repo/SVF
+  GIT_REPOSITORY  "https://github.com/arcana-lab/SVF.git"
   GIT_TAG         noelle-9
 )
 
@@ -67,8 +66,11 @@ if(DEFINED NOELLE_SVF)
   endif()
 else()
   # default behavior
+  FetchContent_MakeAvailable(svf)
   set(NOELLE_SVF ON)
 endif()
+
+FetchContent_GetProperties(svf)
 
 message(STATUS "SCAF analysis is ${NOELLE_SCAF}")
 message(STATUS "SVF analysis is ${NOELLE_SVF}")
@@ -111,7 +113,7 @@ include(HandleLLVMOptions)
 
 include_directories(
   ${LLVM_INCLUDE_DIRS}
-  ${NOELLE_EXTERNAL_DIR}/svf/include
+  ${svf_SOURCE_DIR}/include
   ${NOELLE_EXTERNAL_DIR}/scaf/include
 )
 
