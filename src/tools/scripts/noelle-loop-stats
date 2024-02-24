@@ -16,7 +16,7 @@ if test $# -lt 1 ; then
 fi
 
 # Set the command to execute
-cmdToExecute="noelle-load -load ${installDir}/lib/LoopStats.so -LoopStats $@ -disable-output" 
+cmdToExecute="noelle-load -LoopStats $@ -disable-output" 
 echo $cmdToExecute ;
 
 # Execute the command

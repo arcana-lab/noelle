@@ -11,7 +11,7 @@ installDir=$(realpath $( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd
 
 # Delete dead functions until a fixed point is reached
 echo "NOELLE: DeadFunctions: Start" ;
-cmdToExecute="noelle-load -load ${installDir}/lib/RemoveFunction.so -noelle-rm-function $@"
+cmdToExecute="noelle-load -noelle-rm-function $@"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 echo "NOELLE: DeadFunctions: Exit" ;

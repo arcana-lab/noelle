@@ -11,7 +11,7 @@ installDir=$(realpath $( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd
 
 # Run the privatizer until a fixed point is reached
 echo "NOELLE: Privatizer: Start" ;
-cmdToExecute="noelle-fixedpoint $1 $1 \"noelle-load\" -load ${installDir}/lib/Privatizer.so -privatizer ${@:2}"
+cmdToExecute="noelle-fixedpoint $1 $1 \"noelle-load\" -privatizer ${@:2}"
 echo $cmdToExecute ;
 eval $cmdToExecute ;
 echo "NOELLE: Privatizer: Exit" ;

@@ -10,7 +10,7 @@ done
 installDir=$(realpath $( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd )/..)
 
 # Set the command to execute
-cmdToExecute="noelle-load -load ${installDir}/lib/Repl.so -repl $@ -disable-output"
+cmdToExecute="noelle-load -repl $@ -disable-output"
 echo $cmdToExecute ;
 
 # Execute the command

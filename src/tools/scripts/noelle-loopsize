@@ -21,7 +21,7 @@ echo $cmdToExecute ;
 eval $cmdToExecute ;
 
 # Set the command to execute
-cmdToExecute="noelle-load -load ${installDir}/lib/LoopSize.so -loopsize ${bcFile} -disable-output -noelle-min-hot=0"
+cmdToExecute="noelle-load -loopsize ${bcFile} -disable-output -noelle-min-hot=0"
 echo $cmdToExecute ;
 
 # Execute the command

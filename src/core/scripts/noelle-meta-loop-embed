@@ -10,7 +10,7 @@ done
 installDir=$(realpath $( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd )/..)
 
 # Set the command to execute
-cmdToExecute="noelle-load -load ${installDir}/lib/LoopMetadata.so -LoopMetadata ${@}"
+cmdToExecute="noelle-load -LoopMetadata ${@}"
 echo $cmdToExecute ;
 
 # Execute the command
