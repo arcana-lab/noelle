@@ -35,7 +35,6 @@ fi
 #########
 # Please change the following home directories of your LLVM builds
 ########
-LLVMRELEASE
 
 if [[ $1 == 'debug' ]]
 then
@@ -54,9 +53,9 @@ mkdir -p $Build
 cd $Build
 
 if [[ $1 == 'debug' ]]; then
-  ${CMAKE} -G${GENERATOR} -D CMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_CXX_FLAGS="-std=c++17" ../
+  ${CMAKE} -G "${GENERATOR}" -D CMAKE_BUILD_TYPE:STRING=Debug -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_CXX_FLAGS="-std=c++17" ../
 else
-  ${CMAKE} -G${GENERATOR} -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_CXX_FLAGS="-std=c++17" ../
+  ${CMAKE} -G "${GENERATOR}" -DCMAKE_INSTALL_PREFIX="${installDir}" -DCMAKE_CXX_FLAGS="-std=c++17" ../
 fi
 
 ${CMAKE} --build . -- -j${JOBS}

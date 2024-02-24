@@ -1,22 +1,23 @@
-BUILD_DIR?=build
-export GENERATOR?="Unix Makefiles" # or Ninja
-export JOBS?=8
-export NOELLE_INSTALL_DIR?=$(shell realpath ./install)
+BUILD_DIR ?= build
+export GENERATOR ?= Unix Makefiles
+export JOBS ?= 8
+export NOELLE_INSTALL_DIR ?= $(shell realpath ./install)
 export NOELLE_SCAF ?= ON
 export NOELLE_SVF ?= ON
 export NOELLE_AUTOTUNER ?= ON
+export MAKEFLAGS += --no-print-directory
 
 all: install
 
 install: external compile
-	cmake --install $(BUILD_DIR)
-	$(MAKE) -C external install
+	cmake --install $(BUILD_DIR) 
 
 compile: $(BUILD_DIR)
 	cmake --build $(BUILD_DIR) -j$(JOBS) 
 
 $(BUILD_DIR):
-	cmake -S . -B $(BUILD_DIR) -G$(GENERATOR) \
+	cmake -S . -B $(BUILD_DIR) -G "$(GENERATOR)" \
+		-DCMAKE_INSTALL_MESSAGE=LAZY \
 		-DCMAKE_INSTALL_PREFIX=$(NOELLE_INSTALL_DIR) \
 		-DNOELLE_SCAF=$(NOELLE_SCAF) \
 		-DNOELLE_SVF=$(NOELLE_SVF)

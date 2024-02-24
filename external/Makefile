@@ -1,27 +1,24 @@
-NOELLE_SCAF?=ON
-NOELLE_SVF?=ON
-NOELLE_AUTOTUNER?=ON
-SCAF_DEBUG?=0
-SVF_DEBUG?=0
-JOBS?=8
-SVF_BRANCH?=SVF-1.8
-SCAF_BRANCH?=v9.1.8
-export SCAF_INSTALL_DEBUG?=$(NOELLE_INSTALL_DIR)
-export SCAF_INSTALL_RELEASE?=$(NOELLE_INSTALL_DIR)
+NOELLE_SCAF ?= ON
+NOELLE_SVF ?= ON
+NOELLE_AUTOTUNER ?= ON
+SCAF_DEBUG ?= 0
+SVF_DEBUG ?= 0
+JOBS ?= 8
+SVF_BRANCH ?= SVF-1.8
+SCAF_BRANCH ?= v9.1.8
+export SCAF_INSTALL_DEBUG ?= $(NOELLE_INSTALL_DIR)
+export SCAF_INSTALL_RELEASE ?= $(NOELLE_INSTALL_DIR)
 export SPECULATION_MODULES=0
 
 all: install
 
 install:
-	# conditionally installing SVF
 	@if [[ $(NOELLE_SVF) =~ ^ON|On|on$$ ]]; then \
 		$(MAKE) install_svf ; \
 	fi
-	# conditionally installing SCAF
 	@if [[ $(NOELLE_SCAF) =~ ^ON|On|on$$ ]]; then \
 		$(MAKE) install_scaf ; \
 	fi
-	# conditionally installing AUTOTUNER
 	@if [[ $(NOELLE_AUTOTUNER) =~ ^ON|On|on$$ ]]; then \
 		$(MAKE) install_autotuner	; \
 	fi
@@ -46,11 +43,11 @@ install_autotuner: autotuner
 	
 svf:
 	git clone -b $(SVF_BRANCH) https://github.com/SVF-tools/SVF.git svf
-	rsync -av svf_patch/ svf
+	rsync -a svf_patch/ svf
 
 scaf:
 	git clone -b $(SCAF_BRANCH) https://github.com/PrincetonUniversity/SCAF scaf
-	rsync -av scaf_patch/ scaf
+	rsync -a scaf_patch/ scaf
 
 clean:
 	rm -rf scaf
