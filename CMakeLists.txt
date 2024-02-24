@@ -4,6 +4,11 @@ project(noelle)
 
 include(FetchContent)
 
+# See `cmake --help-policy CMP0077`
+# `OLD` specifies that the effects of this policy are whatever LLVM 9
+# assumed at that time.
+cmake_policy(SET CMP0077 OLD)
+
 execute_process(
   COMMAND llvm-config --obj-root
   OUTPUT_VARIABLE LLVM_DIR
@@ -16,6 +21,11 @@ FetchContent_Declare(
   GIT_REPOSITORY  "https://github.com/arcana-lab/SVF.git"
   GIT_TAG         noelle-9
 )
+FetchContent_Declare(
+  scaf
+  GIT_REPOSITORY  "https://github.com/PrincetonUniversity/SCAF.git"
+  GIT_TAG         v9.1.8
+)
 
 set(NOELLE_CMAKE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -26,23 +36,15 @@ get_filename_component(
   NOELLE_CMAKE_ROOT ${NOELLE_CMAKE_ROOT} REALPATH
 )
 
-file(READ ${NOELLE_CMAKE_ROOT}/VERSION NOELLE_VERSION)
-string(STRIP ${NOELLE_VERSION} NOELLE_VERSION)
-set(NOELLE_EXTERNAL_DIR ${NOELLE_CMAKE_ROOT}/external)
-
-set(NOELLE_CXX_FLAGS 
-  -O0
-  -g
-  -fPIC
-  -std=c++17
-  -Wall
-)
+option(ENABLE_SPECULATION "SCAF speculation" OFF)
+set(LLVM_ENABLE_UNWIND_TABLES ON)
 
 if(DEFINED NOELLE_SCAF)
   string(TOUPPER ${NOELLE_SCAF} NOELLE_SCAF)
   if((NOELLE_SCAF STREQUAL "ON") OR (NOELLE_SCAF STREQUAL "1"))
     list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SCAF")
     set(NOELLE_SCAF ON)
+    FetchContent_MakeAvailable(scaf)
   elseif((NOELLE_SCAF STREQUAL "OFF") OR (NOELLE_SCAF STREQUAL "0"))
     set(NOELLE_SCAF OFF)
   else()
@@ -50,6 +52,7 @@ if(DEFINED NOELLE_SCAF)
   endif()
 else()
   # default behavior
+  FetchContent_MakeAvailable(scaf)
   set(NOELLE_SCAF ON)
 endif()
 
@@ -70,10 +73,20 @@ else()
   set(NOELLE_SVF ON)
 endif()
 
-FetchContent_GetProperties(svf)
-
 message(STATUS "SCAF analysis is ${NOELLE_SCAF}")
 message(STATUS "SVF analysis is ${NOELLE_SVF}")
+
+file(READ ${NOELLE_CMAKE_ROOT}/VERSION NOELLE_VERSION)
+string(STRIP ${NOELLE_VERSION} NOELLE_VERSION)
+set(NOELLE_EXTERNAL_DIR ${NOELLE_CMAKE_ROOT}/external)
+
+set(NOELLE_CXX_FLAGS 
+  -O0
+  -g
+  -fPIC
+  -std=c++17
+  -Wall
+)
 
 configure_file(enable.in enable @ONLY)
 install(
@@ -93,11 +106,6 @@ install(
 enable_language(C CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# See `cmake --help-policy CMP0077`
-# `OLD` specifies that the effects of this policy are whatever LLVM 9
-# assumed at that time.
-cmake_policy(SET CMP0077 OLD)
-
 find_package(LLVM 9 REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
@@ -114,7 +122,7 @@ include(HandleLLVMOptions)
 include_directories(
   ${LLVM_INCLUDE_DIRS}
   ${svf_SOURCE_DIR}/include
-  ${NOELLE_EXTERNAL_DIR}/scaf/include
+  ${scaf_SOURCE_DIR}/include
 )
 
 set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
