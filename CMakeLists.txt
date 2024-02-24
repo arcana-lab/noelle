@@ -9,6 +9,14 @@ include(FetchContent)
 # assumed at that time.
 cmake_policy(SET CMP0077 OLD)
 
+set(NOELLE_CXX_FLAGS 
+  -O0
+  -g
+  -fPIC
+  -std=c++17
+  -Wall
+)
+
 execute_process(
   COMMAND llvm-config --obj-root
   OUTPUT_VARIABLE LLVM_DIR
@@ -39,29 +47,27 @@ get_filename_component(
 option(ENABLE_SPECULATION "SCAF speculation" OFF)
 set(LLVM_ENABLE_UNWIND_TABLES ON)
 
-if(DEFINED NOELLE_SCAF)
-  string(TOUPPER ${NOELLE_SCAF} NOELLE_SCAF)
-  if((NOELLE_SCAF STREQUAL "ON") OR (NOELLE_SCAF STREQUAL "1"))
+function(noelle_add_svf)
+    list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SVF")
+    set(NOELLE_SVF ON)
+    FetchContent_MakeAvailable(svf)
+endfunction()
+
+function(noelle_add_scaf)
     list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SCAF")
     set(NOELLE_SCAF ON)
     FetchContent_MakeAvailable(scaf)
-  elseif((NOELLE_SCAF STREQUAL "OFF") OR (NOELLE_SCAF STREQUAL "0"))
-    set(NOELLE_SCAF OFF)
-  else()
-    message(FATAL_ERROR "'NOELLE_SCAF' must be ON, OFF, 0 or 1")
-  endif()
-else()
-  # default behavior
-  FetchContent_MakeAvailable(scaf)
-  set(NOELLE_SCAF ON)
-endif()
+endfunction()
+
+function(noelle_add_autotuner)
+    set(NOELLE_AUTOTUNER ON)
+    add_subdirectory(autotuner)
+endfunction()
 
 if(DEFINED NOELLE_SVF)
   string(TOUPPER ${NOELLE_SVF} NOELLE_SVF)
   if((NOELLE_SVF STREQUAL "ON") OR (NOELLE_SVF STREQUAL "1"))
-    list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SVF")
-    set(NOELLE_SVF ON)
-    FetchContent_MakeAvailable(svf)
+    noelle_add_svf()
   elseif((NOELLE_SVF STREQUAL "OFF") OR (NOELLE_SVF STREQUAL "0"))
     set(NOELLE_SVF OFF)
   else()
@@ -69,24 +75,43 @@ if(DEFINED NOELLE_SVF)
   endif()
 else()
   # default behavior
-  FetchContent_MakeAvailable(svf)
-  set(NOELLE_SVF ON)
+  noelle_add_svf()
 endif()
 
-message(STATUS "SCAF analysis is ${NOELLE_SCAF}")
-message(STATUS "SVF analysis is ${NOELLE_SVF}")
+if(DEFINED NOELLE_SCAF)
+  string(TOUPPER ${NOELLE_SCAF} NOELLE_SCAF)
+  if((NOELLE_SCAF STREQUAL "ON") OR (NOELLE_SCAF STREQUAL "1"))
+    noelle_add_scaf()
+  elseif((NOELLE_SCAF STREQUAL "OFF") OR (NOELLE_SCAF STREQUAL "0"))
+    set(NOELLE_SCAF OFF)
+  else()
+    message(FATAL_ERROR "'NOELLE_SCAF' must be ON, OFF, 0 or 1")
+  endif()
+else()
+  # default behavior
+  noelle_add_scaf()
+endif()
+
+if(DEFINED NOELLE_AUTOTUNER)
+  string(TOUPPER ${NOELLE_AUTOTUNER} NOELLE_SVF)
+  if((NOELLE_AUTOTUNER STREQUAL "ON") OR (NOELLE_AUTOTUNER STREQUAL "1"))
+  elseif((NOELLE_AUTOTUNER STREQUAL "OFF") OR (NOELLE_AUTOTUNER STREQUAL "0"))
+    noelle_add_autotuner()
+  else()
+    message(FATAL_ERROR "'NOELLE_AUTOTUNER' must be ON, OFF, 0 or 1")
+  endif()
+else()
+  # default behavior
+  noelle_add_autotuner()
+endif()
+
+message(STATUS "NOELLE: SCAF analysis is ${NOELLE_SCAF}")
+message(STATUS "NOELLE: SVF analysis is ${NOELLE_SVF}")
+message(STATUS "NOELLE: AUTOTUNER is ${NOELLE_AUTOTUNER}")
 
 file(READ ${NOELLE_CMAKE_ROOT}/VERSION NOELLE_VERSION)
 string(STRIP ${NOELLE_VERSION} NOELLE_VERSION)
 set(NOELLE_EXTERNAL_DIR ${NOELLE_CMAKE_ROOT}/external)
-
-set(NOELLE_CXX_FLAGS 
-  -O0
-  -g
-  -fPIC
-  -std=c++17
-  -Wall
-)
 
 configure_file(enable.in enable @ONLY)
 install(
