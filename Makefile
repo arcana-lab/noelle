@@ -22,9 +22,6 @@ $(BUILD_DIR):
 		-DNOELLE_SCAF=$(NOELLE_SCAF) \
 		-DNOELLE_SVF=$(NOELLE_SVF)
 
-external:
-	$(MAKE) -C external
-
 tests: install
 	$(MAKE) -C tests
 
@@ -35,16 +32,10 @@ clean:
 	rm -rf $(BUILD_DIR)
 	$(MAKE) -C tests clean
 	$(MAKE) -C examples clean
-	$(MAKE) -C external clean
 	rm -f compile_commands.json
 
 uninstall:
 	-cat $(BUILD_DIR)/install_manifest.txt | xargs rm -f
-	$(MAKE) -C external uninstall
-	rm -rf $(NOELLE_INSTALL_DIR)/autotuner
-	rm -rf $(NOELLE_INSTALL_DIR)/include/svf
-	rm -rf $(NOELLE_INSTALL_DIR)/include/scaf
-	rm -rf $(NOELLE_INSTALL_DIR)/test
 	rm -f enable
 	rm -f .git/hooks/pre-commit
 
