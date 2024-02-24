@@ -2,6 +2,22 @@ cmake_minimum_required(VERSION 3.4.3)
 
 project(noelle)
 
+include(FetchContent)
+
+execute_process(
+  COMMAND llvm-config --obj-root
+  OUTPUT_VARIABLE LLVM_DIR
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  ERROR_STRIP_TRAILING_WHITESPACE
+)
+
+FetchContent_Declare(
+  svf
+  # GIT_REPOSITORY  "https://github.com/arcana-lab/SVF.git"
+  GIT_REPOSITORY  /nfs-scratch/fsv1684/repo/SVF
+  GIT_TAG         noelle-9
+)
+
 set(NOELLE_CMAKE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
 get_filename_component(
@@ -43,6 +59,7 @@ if(DEFINED NOELLE_SVF)
   if((NOELLE_SVF STREQUAL "ON") OR (NOELLE_SVF STREQUAL "1"))
     list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SVF")
     set(NOELLE_SVF ON)
+    FetchContent_MakeAvailable(svf)
   elseif((NOELLE_SVF STREQUAL "OFF") OR (NOELLE_SVF STREQUAL "0"))
     set(NOELLE_SVF OFF)
   else()
