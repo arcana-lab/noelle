@@ -15,6 +15,6 @@ done
 installDir=$(realpath $( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd )/..)
 
 # Set the command to execute
-cmdToExecute="opt --strip-named-metadata -load ${installDir}/lib/MetadataCleaner.so -MetadataCleaner -clean-loop-metadata -clean-prof-metadata -clean-pdg-metadata -clean-pdg-scc-metadata $@" 
+cmdToExecute="noelle-load --strip-named-metadata -MetadataCleaner -clean-loop-metadata -clean-prof-metadata -clean-pdg-metadata -clean-pdg-scc-metadata $@" 
 echo $cmdToExecute ;
 eval $cmdToExecute 
