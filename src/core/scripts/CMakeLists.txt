@@ -101,7 +101,6 @@ string(REPLACE ";" " " noelle_load_OPT_ARGS "${noelle_load_OPT_ARGS}")
 # noelle-norm
 
 set(noelle_norm_SVF_LIBS ${noelle_load_SVF_LIBS})
-set(noelle_norm_SVF_LIBS ${noelle_load_SVF_LIBS})
 if(NOELLE_SVF STREQUAL "ON")
   set(noelle_norm_SVF_ANALYSES
     -stat=false
@@ -114,6 +113,7 @@ set(args
   ${noelle_norm_SVF_LIBS}
   -mem2reg
   -simplifycfg-sink-common=false
+  ${noelle_norm_SVF_ANALYSES}
   -lowerswitch
   -mergereturn
   -break-crit-edges
@@ -122,7 +122,6 @@ set(args
   -indvars 
   -functionattrs 
   -rpo-functionattrs
-  ${noelle_norm_SVF_ANALYSES}
 )
 
 # generating `opt` arguments
@@ -134,8 +133,67 @@ foreach(arg IN LISTS args)
 endforeach()
 string(REPLACE ";" " " noelle_norm_OPT_ARGS "${noelle_norm_OPT_ARGS}")
 
+# noelle-simplification
+
+set(noelle_simplification_SVF_LIBS ${noelle_load_SVF_LIBS})
+if(NOELLE_SVF STREQUAL "ON")
+  set(noelle_simplification_SVF_ANALYSES
+    -stat=false
+    -break-constgeps
+  )
+endif()
+
+set(args
+  -basicaa
+  ${noelle_norm_SVF_LIBS}
+  -mem2reg
+  -tbaa
+  -early-cse-memssa
+  -licm
+  -simplifycfg
+  -simplifycfg-sink-common=false
+  -instcombine
+  -tailcallelim
+  -loop-simplify
+  -lcssa
+  -licm
+  -loop-unswitch
+  -globalopt
+  -instcombine
+  -ipsccp
+  -dce
+  -gvn
+  -dse
+  -adce
+  -loop-simplify
+  -lcssa
+  -indvars
+  -loop-deletion
+  -instcombine
+  -indvars
+  ${noelle_norm_SVF_ANALYSES}
+  -lowerswitch
+  -sroa
+  -mergereturn
+  --break-crit-edges
+  -loop-simplify
+  -lcssa
+  -functionattrs
+  -rpo-functionattrs
+)
+
+# generating `opt` arguments
+set(noelle_simplification_OPT_ARGS "")
+foreach(arg IN LISTS args)
+  if (NOT arg STREQUAL "")
+    list(APPEND noelle_simplification_OPT_ARGS "${arg}")
+  endif()
+endforeach()
+string(REPLACE ";" " " noelle_simplification_OPT_ARGS "${noelle_simplification_OPT_ARGS}")
+
 configure_file(noelle-load.in noelle-load @ONLY)
 configure_file(noelle-norm.in noelle-norm @ONLY)
+configure_file(noelle-simplification.in noelle-simplification @ONLY)
 
 install(
   FILES
@@ -153,7 +211,7 @@ install(
     ${CMAKE_CURRENT_BINARY_DIR}/noelle-norm
     noelle-pdg
     noelle-prof-coverage
-    noelle-simplification
+    ${CMAKE_CURRENT_BINARY_DIR}/noelle-simplification
   DESTINATION
     bin
   PERMISSIONS

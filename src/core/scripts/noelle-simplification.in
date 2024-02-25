@@ -1,0 +1,3 @@
+#!/bin/bash -ex
+
+opt @noelle_simplification_OPT_ARGS@ $@
