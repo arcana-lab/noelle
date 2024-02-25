@@ -1,6 +1,3 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
-installDir=$(noelle-config --prefix)
-
-set -x
 noelle-load -codesize $@ -disable-output

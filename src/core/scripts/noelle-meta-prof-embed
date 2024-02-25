@@ -1,7 +1,5 @@
 #!/bin/bash -ex
 
-installDir=$(noelle-config --prefix)
-
 # process the raw data
 outputFile=`mktemp`
 llvm-profdata merge $1 -output=$outputFile

@@ -1,7 +1,5 @@
 #!/bin/bash -e
 
-installDir=$(noelle-config --prefix)
-
 if test $# -lt 2 ; then
   echo "USAGE: `basename $0` SRC_BC BINARY [LIBRARY]*"
   exit 1
@@ -9,12 +7,10 @@ fi
 
 srcBC="$1"
 profExec="$2"
+profBC="${profExec}.bc"
 libs="${@:3}"
 
 set -x
-
-# local variables
-profBC="${profExec}.bc"
 
 # clean
 rm -f $profExec *.profraw

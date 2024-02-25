@@ -1,6 +1,3 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
-installDir=$(noelle-config --prefix)
-
-set -x
 noelle-load -PDGGenerator -noelle-pdg-verbose=3 -noelle-pdg-dump -disable-output $@

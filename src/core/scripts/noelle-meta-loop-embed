@@ -1,6 +1,4 @@
 #!/bin/bash -e
 
-installDir=$(noelle-config --prefix)
-
 set -x
 noelle-load -LoopMetadata $@

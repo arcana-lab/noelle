@@ -1,8 +1,4 @@
-#!/bin/bash -e
-
-installDir=$(noelle-config --prefix)
-
-set -x
+#!/bin/bash -ex
 
 # remove the PDG from the bitcode
 noelle-load -MetadataCleaner -clean-pdg-scc-metadata $@

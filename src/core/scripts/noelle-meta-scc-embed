@@ -1,6 +1,4 @@
 #!/bin/bash -ex
 
-installDir=$(noelle-config --prefix)
-
 # embed PDG metadata
 noelle-load -PDGGenerator -noelle-pdg-verbose=3 -noelle-pdg-scc-embed $@
