@@ -1,0 +1,3 @@
+#!/bin/bash -ex
+
+opt @noelle_load_OPT_ARGS@ ${@}
