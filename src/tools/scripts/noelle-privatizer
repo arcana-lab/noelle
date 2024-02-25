@@ -1,10 +1,10 @@
 #!/bin/bash -e
 
+trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
+
 # run the privatizer until a fixed point is reached
 echo "NOELLE: Privatizer: Start"
 
-set -x
 noelle-fixedpoint $1 $1 "noelle-load" -privatizer ${@:2}
-set +x
 
-echo "NOELLE: Privatizer: Exit" ;
+echo "NOELLE: Privatizer: Exit"

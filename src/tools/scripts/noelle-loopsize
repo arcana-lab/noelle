@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
+
 # It is not guaranteed that noelle-loopsize receives normalized bitcode
 # and, more importantly, bitcode where all loops have an ID.
 # So, we call a subset of noelle-norm that adds the loop IDs metadata,
@@ -7,7 +9,6 @@
 # which would be incorrect when noelle-loopsize is called in the context of
 # noelle-fixedpoint.
 
-set -x
 noelle-meta-loop-embed $@ -o $@
 noelle-load -loopsize -disable-output -noelle-min-hot=0 $@
 

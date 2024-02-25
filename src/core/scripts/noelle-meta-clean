@@ -1,8 +1,10 @@
 #!/bin/bash -e
 
+trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
+
 if test $# -lt 2 ; then
-  echo "USAGE: `basename $0` INPUT_BITCODE -o OUTPUT_BITCODE" ;
-  exit 1;
+  echo "USAGE: `basename $0` INPUT_BITCODE -o OUTPUT_BITCODE"
+  exit 1
 fi
 
 noelle-load --strip-named-metadata -MetadataCleaner -clean-loop-metadata -clean-prof-metadata -clean-pdg-metadata -clean-pdg-scc-metadata $@

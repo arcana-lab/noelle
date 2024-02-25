@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
+
 if test $# -lt 2 ; then
   echo "USAGE: `basename $0` INPUT_BITCODE -o OUTPUT_BITCODE"
   exit 1

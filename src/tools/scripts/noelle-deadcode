@@ -1,10 +1,10 @@
 #!/bin/bash -e
 
+trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
+
 # delete dead functions until a fixed point is reached
-echo "NOELLE: DeadFunctions: Start" ;
+echo "NOELLE: DeadFunctions: Start"
 
-set -x
 noelle-fixedpoint $1 $2 "noelle-load" -DeadFunctionEliminator ${@:3}
-set +x
 
-echo "NOELLE: DeadFunctions: Exit" ;
+echo "NOELLE: DeadFunctions: Exit"
