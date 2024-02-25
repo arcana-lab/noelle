@@ -1,8 +1,5 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 installDir=$(noelle-config --prefix)
 
-# Embed PDG Metadata
-cmdToExecute="noelle-load -PDGGenerator -noelle-pdg-verbose=3 -noelle-pdg-embed $@"
-echo $cmdToExecute ;
-eval $cmdToExecute ;
+noelle-load -PDGGenerator -noelle-pdg-verbose=3 -noelle-pdg-embed $@

@@ -2,7 +2,7 @@
 
 installDir=$(noelle-config --prefix)
 
-# Remove the PDG from the bitcode
-cmdToExecute="noelle-load -MetadataCleaner -clean-pdg-scc-metadata $@"
-echo $cmdToExecute ;
-eval $cmdToExecute 
+set -x
+
+# remove the PDG from the bitcode
+noelle-load -MetadataCleaner -clean-pdg-scc-metadata $@

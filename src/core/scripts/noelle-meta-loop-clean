@@ -7,7 +7,5 @@ if test $# -lt 2 ; then
   exit 1;
 fi
 
-# Remove the PDG from the bitcode
-cmdToExecute="noelle-load -MetadataCleaner -clean-loop-metadata=true $@" 
-echo $cmdToExecute ;
-eval $cmdToExecute 
+set -x
+noelle-load -MetadataCleaner -clean-loop-metadata=true $@

@@ -2,26 +2,28 @@
 
 installDir=$(noelle-config --prefix)
 
-# Fetch the inputs
 if test $# -lt 2 ; then
-  echo "USAGE: `basename $0` SRC_BC BINARY [LIBRARY]*" ;
-  exit 0;
+  echo "USAGE: `basename $0` SRC_BC BINARY [LIBRARY]*"
+  exit 1
 fi
-srcBC="$1" ;
-profExec="$2" ;
-libs="${@:3}" ;
 
-# Local variables
-profBC="${profExec}.bc" ;
+srcBC="$1"
+profExec="$2"
+libs="${@:3}"
 
-# Clean
-rm -f $profExec *.profraw ;
+set -x
 
-# Inject code needed by the profiler
-opt -pgo-instr-gen -instrprof $srcBC -o $profBC ;
+# local variables
+profBC="${profExec}.bc"
 
-# Generate the binary
-clang $profBC -fprofile-instr-generate ${libs} -o $profExec ;
+# clean
+rm -f $profExec *.profraw
 
-# Clean
-rm $profBC ;
+# inject code needed by the profiler
+opt -pgo-instr-gen -instrprof $srcBC -o $profBC
+
+# generate the binary
+clang $profBC -fprofile-instr-generate ${libs} -o $profExec
+
+# clean
+rm $profBC

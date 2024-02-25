@@ -2,9 +2,5 @@
 
 installDir=$(noelle-config --prefix)
 
-# Set the command to execute
-cmdToExecute="noelle-load -LoopMetadata ${@}"
-echo $cmdToExecute ;
-
-# Execute the command
-eval $cmdToExecute 
+set -x
+noelle-load -LoopMetadata $@

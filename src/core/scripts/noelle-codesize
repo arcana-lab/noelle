@@ -2,9 +2,5 @@
 
 installDir=$(noelle-config --prefix)
 
-# Set the command to execute
-cmdToExecute="noelle-load -codesize $@ -disable-output"
-echo $cmdToExecute ;
-
-# Execute the command
-eval $cmdToExecute 
+set -x
+noelle-load -codesize $@ -disable-output
