@@ -1,0 +1,6 @@
+#!/bin/bash -ex
+
+opt @noelle_norm_OPT_ARGS@ $@
+
+noelle-meta-loop-embed $3 -o $3
+

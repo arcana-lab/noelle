@@ -1,3 +1,5 @@
+# noelle-load
+
 set(noelle_load_SVF_LIBS "")
 set(noelle_load_SVF_ANALYSES "")
 set(noelle_load_SCAF_LIBS "")
@@ -96,11 +98,47 @@ foreach(arg IN LISTS args)
 endforeach()
 string(REPLACE ";" " " noelle_load_OPT_ARGS "${noelle_load_OPT_ARGS}")
 
+# noelle-norm
+
+set(noelle_norm_SVF_LIBS ${noelle_load_SVF_LIBS})
+set(noelle_norm_SVF_LIBS ${noelle_load_SVF_LIBS})
+if(NOELLE_SVF STREQUAL "ON")
+  set(noelle_norm_SVF_ANALYSES
+    -stat=false
+    -break-constgeps
+  )
+endif()
+
+set(args
+  -basicaa
+  ${noelle_norm_SVF_LIBS}
+  -mem2reg
+  -simplifycfg-sink-common=false
+  -lowerswitch
+  -mergereturn
+  -break-crit-edges
+  -loop-simplify
+  -lcssa
+  -indvars 
+  -functionattrs 
+  -rpo-functionattrs
+  ${noelle_norm_SVF_ANALYSES}
+)
+
+# generating `opt` arguments
+set(noelle_norm_OPT_ARGS "")
+foreach(arg IN LISTS args)
+  if (NOT arg STREQUAL "")
+    list(APPEND noelle_norm_OPT_ARGS "${arg}")
+  endif()
+endforeach()
+string(REPLACE ";" " " noelle_norm_OPT_ARGS "${noelle_norm_OPT_ARGS}")
+
 configure_file(noelle-load.in noelle-load @ONLY)
+configure_file(noelle-norm.in noelle-norm @ONLY)
 
 install(
   FILES
-    loopaa
     noelle-codesize
     ${CMAKE_CURRENT_BINARY_DIR}/noelle-load
     noelle-meta-clean
@@ -112,7 +150,7 @@ install(
     noelle-meta-prof-embed
     noelle-meta-scc-clean
     noelle-meta-scc-embed
-    noelle-norm
+    ${CMAKE_CURRENT_BINARY_DIR}/noelle-norm
     noelle-pdg
     noelle-prof-coverage
     noelle-simplification
