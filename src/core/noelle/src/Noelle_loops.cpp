@@ -85,14 +85,13 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
   return loops;
 }
 
-std::vector<LoopStructure *>
-    *Noelle::getLoopStructuresReachableFromEntryFunction(void) {
+std::vector<LoopStructure *> *Noelle::
+    getLoopStructuresReachableFromEntryFunction(void) {
   return this->getLoopStructuresReachableFromEntryFunction(this->minHot);
 }
 
-std::vector<LoopStructure *>
-    *Noelle::getLoopStructuresReachableFromEntryFunction(
-        double minimumHotness) {
+std::vector<LoopStructure *> *Noelle::
+    getLoopStructuresReachableFromEntryFunction(double minimumHotness) {
 
   /*
    * Default function to include loops
@@ -108,8 +107,8 @@ std::vector<LoopStructure *>
   return loops;
 }
 
-std::vector<LoopStructure *>
-    *Noelle::getLoopStructuresReachableFromEntryFunction(
+std::vector<LoopStructure *> *Noelle::
+    getLoopStructuresReachableFromEntryFunction(
         double minimumHotness,
         std::function<bool(LoopStructure *)> includeLoop) {
 
@@ -211,7 +210,9 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
     if (function->empty()) {
       continue;
     }
-    errs() << "Noelle:  Function \"" << function->getName() << "\"\n";
+    if (this->verbose >= Verbosity::Maximal) {
+      errs() << "Noelle:  Function \"" << function->getName() << "\"\n";
+    }
 
     /*
      * Check if the function is hot.
@@ -241,14 +242,18 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
       /*
        * Check if the loop is hot enough.
        */
-      errs() << "Noelle:     Loop \"" << *loop->getHeader()->getFirstNonPHI()
-             << "\" (";
+      if (this->verbose >= Verbosity::Maximal) {
+        errs() << "Noelle:     Loop \"" << *loop->getHeader()->getFirstNonPHI()
+               << "\" (";
+      }
       auto loopStructure = new LoopStructure{ loop };
 
-      errs() << (this->getProfiles()->getDynamicTotalInstructionCoverage(
-                     loopStructure)
-                 * 100)
-             << "%)\n";
+      if (this->verbose >= Verbosity::Maximal) {
+        errs() << (this->getProfiles()->getDynamicTotalInstructionCoverage(
+                       loopStructure)
+                   * 100)
+               << "%)\n";
+      }
 
       auto loopIDOpt = loopStructure->getID();
       assert(loopIDOpt);
@@ -256,8 +261,10 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
 
       if (minimumHotness > 0) {
         if (!isLoopHot(loopStructure, minimumHotness)) {
-          errs() << "Noelle:  Disable loop \"" << currentLoopIndex
-                 << "\" as cold code\n";
+          if (this->verbose >= Verbosity::Maximal) {
+            errs() << "Noelle:  Disable loop \"" << currentLoopIndex
+                   << "\" as cold code\n";
+          }
           delete loopStructure;
           continue;
         }
@@ -287,7 +294,9 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
        * Check if more than one thread is assigned to the current loop.
        * If that's the case, then we have to enable that loop.
        */
-      errs() << "Noelle:      Current index = " << currentLoopIndex << "\n";
+      if (this->verbose >= Verbosity::Maximal) {
+        errs() << "Noelle:      Current index = " << currentLoopIndex << "\n";
+      }
       auto maximumNumberOfCoresForTheParallelization =
           this->loopThreads[currentLoopIndex];
       if ((maximumNumberOfCoresForTheParallelization <= 1)
@@ -302,8 +311,10 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
         delete loopStructure;
         continue;
       }
-      errs() << "Noelle:      Threads = "
-             << maximumNumberOfCoresForTheParallelization << "\n";
+      if (this->verbose >= Verbosity::Maximal) {
+        errs() << "Noelle:      Threads = "
+               << maximumNumberOfCoresForTheParallelization << "\n";
+      }
 
       /*
        * The current loop needs to be considered as specified by the user.
