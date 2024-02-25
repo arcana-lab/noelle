@@ -5,5 +5,4 @@ if test $# -lt 2 ; then
   exit 1
 fi
 
-set -x
 noelle-load -MetadataCleaner -clean-pdg-metadata=true $@

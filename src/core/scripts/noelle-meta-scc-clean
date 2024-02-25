@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 # remove the PDG from the bitcode
 noelle-load -MetadataCleaner -clean-pdg-scc-metadata $@

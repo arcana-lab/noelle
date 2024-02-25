@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 # embed PDG metadata
 noelle-load -PDGGenerator -noelle-pdg-verbose=3 -noelle-pdg-scc-embed $@

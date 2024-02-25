@@ -1,138 +1,90 @@
 #!/bin/bash -e
 
-installDir=$(noelle-config --prefix)
+trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
-# Invocation:
+# usage:
 # noelle-fixedpoint INPUT_BITCODE OUTPUT_BITCODE LOADER ALL_OPTIONS_TO_PASS_TO_NOELLE_LOAD
 
-# Fetch the inputs
 if test $# -lt 3 ; then
-  echo "USAGE: `basename $0` INPUT_IR OUTPUT_IR [LOADERBIN]";
-  exit 1;
+  echo "USAGE: `basename $0` INPUT_IR OUTPUT_IR [LOADERBIN]"
+  exit 1
 fi
-loaderBin="$3" ;
+loaderBin=$3
 
-# Set the file names
-IRFileInput="`mktemp`" ;
-IRFileInputLL="`mktemp`" ;
-IRFileOutput="`mktemp`" ;
-IRFileOutputLL="`mktemp`" ;
-codeSize="`mktemp`" ;
+IRFileInput=`mktemp`
+IRFileInputLL=`mktemp`
+IRFileOutput=`mktemp`
+IRFileOutputLL=`mktemp`
+codeSize=`mktemp`
 
-# Print
-echo "NOELLE: FixedPoint: Start" ;
-echo "NOELLE: FixedPoint:   Loader: $loaderBin" ;
-echo "NOELLE: FixedPoint:   Options: ${@:4}" ;
-echo "NOELLE: FixedPoint:   Input: $1" ;
-echo "NOELLE: FixedPoint:   Output: $2" ;
-echo "NOELLE: FixedPoint:   Temporary input: $IRFileInput (.ll version is $IRFileInputLL)" ;
-echo "NOELLE: FixedPoint:   Temporary output: $IRFileOutput (.ll version is $IRFileOutputLL)" ;
+echo "NOELLE: FixedPoint: Start"
+echo "NOELLE: FixedPoint:   Loader: $loaderBin"
+echo "NOELLE: FixedPoint:   Options: ${@:4}"
+echo "NOELLE: FixedPoint:   Input: $1"
+echo "NOELLE: FixedPoint:   Output: $2"
+echo "NOELLE: FixedPoint:   Temporary input: $IRFileInput (.ll version is $IRFileInputLL)"
+echo "NOELLE: FixedPoint:   Temporary output: $IRFileOutput (.ll version is $IRFileOutputLL)"
 
-# Copy the initial input file
-cp $1 $IRFileInput ;
+# the input bitcode will not be affected
+cp $1 $IRFileInput
 
 # Normalize the code
-echo "NOELLE: FixedPoint:   Normalize the code" ;
-cmdToExecute="noelle-norm $IRFileInput -o $IRFileOutput" ;
-echo $cmdToExecute ;
-eval $cmdToExecute ;
+echo "NOELLE: FixedPoint:   Normalize the code"
 
-# Check if we got an error
-if test $? -ne 0 ; then
-  echo "NOELLE: FixedPoint: ERROR: ${cmdToExecute}" ;
-  exit 1;
-fi
+noelle-norm $IRFileInput -o $IRFileOutput
 
-cp $IRFileOutput $IRFileInput ;
+cp $IRFileOutput $IRFileInput
 
 # Invoke the enablers
-echo "NOELLE: FixedPoint:   Run until a fixed point is reached" ;
-let c=0; 
+echo "NOELLE: FixedPoint:   Run until a fixed point is reached"
+counter=0
 while true ; do
-  echo "NOELLE: FixedPoint:     Invocation $c" ;
+  echo "NOELLE: FixedPoint:     Invocation $c"
 
-  # Set the command to execute the enablers
-  cmdToExecute="$loaderBin ${@:4} $IRFileInput -o $IRFileOutput"
-  echo $cmdToExecute ;
-  eval $cmdToExecute ;
+  $loaderBin ${@:4} $IRFileInput -o $IRFileOutput
 
-  # Check if we got an error
-  if test $? -ne 0 ; then
-    echo "ERROR" ;
-    exit 1;
-  fi
   if ! test -f $IRFileOutput ; then
-    echo "ERROR" ;
-    exit 1;
+    echo "NOELLE: FixedPoint: ERROR"
+    exit 1
   fi
   if ! test -s $IRFileOutput ; then
-    echo "ERROR" ;
-    exit 1;
+    echo "NOELLE: FixedPoint: ERROR"
+    exit 1
   fi
 
-  # Check if the bitcode has been modified
-  # - Step 1: fetch the code size and loop code of the input bitcode
-  noelle-codesize $IRFileInput > $codeSize ;
-  # Check if we got an error
-  if test $? -ne 0 ; then
-    echo "NOELLE: FixedPoint: ERROR: noelle-codesize ${IRFileInput}" ;
-    exit 1;
-  fi
-  inputCodeLines=`tail -n 1 $codeSize | awk '{print $1}'` ;
-  noelle-loopsize $IRFileInput > $codeSize ;
-  # Check if we got an error
-  if test $? -ne 0 ; then
-    echo "NOELLE: FixedPoint: ERROR: noelle-loopsize ${IRFileInput}" ;
-    exit 1;
-  fi
-  inputLoopLines=`tail -n 1 $codeSize | awk '{print $1}'` ;
+  # check if the bitcode has been modified
+  #   step 1: fetch the code size and loop code of the input bitcode
+  noelle-codesize $IRFileInput > $codeSize
+  inputCodeLines=`tail -n 1 $codeSize | awk '{print $1}'`
+  noelle-loopsize $IRFileInput > $codeSize
+  inputLoopLines=`tail -n 1 $codeSize | awk '{print $1}'`
 
-  # - Step 2: fetch the code size and loop code of the output bitcode
-  noelle-codesize $IRFileOutput > $codeSize ;
-  # Check if we got an error
-  if test $? -ne 0 ; then
-    echo "NOELLE: FixedPoint: ERROR: noelle-codesize ${IRFileOutput}" ;
-    exit 1;
-  fi
-  outputCodeLines=`tail -n 1 $codeSize | awk '{print $1}'` ;
-  noelle-loopsize $IRFileOutput > $codeSize ;
-  # Check if we got an error
-  if test $? -ne 0 ; then
-    echo "NOELLE: FixedPoint: ERROR: noelle-loopsize ${IRFileOutput}" ;
-    exit 1;
-  fi
-  outputLoopLines=`tail -n 1 $codeSize | awk '{print $1}'` ;
+  #   step 2: fetch the code size and loop code of the output bitcode
+  noelle-codesize $IRFileOutput > $codeSize
+  outputCodeLines=`tail -n 1 $codeSize | awk '{print $1}'`
+  noelle-loopsize $IRFileOutput > $codeSize
+  outputLoopLines=`tail -n 1 $codeSize | awk '{print $1}'`
 
-  # - Step 3: compare the results
-  linesDifferent=`echo "$outputCodeLines - $inputCodeLines" | bc` ;
-  loopLinesDifferent=`echo "$outputLoopLines - $inputLoopLines" | bc` ;
+  #   step 3: compare the results
+  linesDifferent=`echo "$outputCodeLines - $inputCodeLines" | bc`
+  loopLinesDifferent=`echo "$outputLoopLines - $inputLoopLines" | bc`
   if test "$linesDifferent" == "0" -a "$loopLinesDifferent" == "0" ; then
-
-    # Copy the final output
-    cp $IRFileOutput $2 ;
-    break ;
+    cp $IRFileOutput $2
+    break
   fi
-  echo "NOELLE: FixedPoint:       There are $linesDifferent different instructions and $loopLinesDifferent different loop instructions" ;
+  echo "NOELLE: FixedPoint:       There are $linesDifferent different instructions and $loopLinesDifferent different loop instructions"
 
   # Normalize the code
-  echo "NOELLE: FixedPoint:       Normalize the code" ;
-  cmdToExecute="noelle-norm $IRFileOutput -o $IRFileOutput"
-  echo $cmdToExecute ;
-  eval $cmdToExecute ;
-  # Check if we got an error
-  if test $? -ne 0 ; then
-    echo "NOELLE: FixedPoint: ERROR: ${cmdToExecute}" ;
-    exit 1;
-  fi
+  echo "NOELLE: FixedPoint:       Normalize the code"
+  noelle-norm $IRFileOutput -o $IRFileOutput
 
-  # Copy the output to the input
-  cp $IRFileOutput $IRFileInput ;
+  # be ready for another iteration
+  cp $IRFileOutput $IRFileInput
 
-  let c=$c+1; 
+  counter=$((counter+1))
 done
 
-# Clean
-rm $IRFileInput $IRFileInputLL $IRFileOutput $IRFileOutputLL $codeSize ;
+rm $IRFileInput $IRFileInputLL $IRFileOutput $IRFileOutputLL $codeSize
 
-# Exit
-echo "NOELLE: FixedPoint: Exit" ;
+echo "NOELLE: FixedPoint:   Iteration count = $counter"
+echo "NOELLE: FixedPoint: Exit"

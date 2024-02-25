@@ -1,16 +1,3 @@
 #!/bin/bash -e
 
-installDir=$(noelle-config --prefix)
-
-# Check the inputs
-if test $# -lt 1 ; then
-  echo "USAGE: `basename $0` IR_FILE [OPTION]" ;
-  exit 1;
-fi
-
-# Set the command to execute
-cmdToExecute="noelle-load -PDGStats $@ -disable-output" 
-echo $cmdToExecute ;
-
-# Execute the command
-eval $cmdToExecute 
+noelle-load -PDGStats -disable-output $@

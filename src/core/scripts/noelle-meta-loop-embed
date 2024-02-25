@@ -1,4 +1,3 @@
 #!/bin/bash -e
 
-set -x
 noelle-load -LoopMetadata $@

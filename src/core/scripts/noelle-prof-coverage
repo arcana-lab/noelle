@@ -10,8 +10,6 @@ profExec="$2"
 profBC="${profExec}.bc"
 libs="${@:3}"
 
-set -x
-
 # clean
 rm -f $profExec *.profraw
 

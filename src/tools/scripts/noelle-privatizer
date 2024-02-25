@@ -1,10 +1,10 @@
 #!/bin/bash -e
 
-installDir=$(noelle-config --prefix)
+# run the privatizer until a fixed point is reached
+echo "NOELLE: Privatizer: Start"
 
-# Run the privatizer until a fixed point is reached
-echo "NOELLE: Privatizer: Start" ;
-cmdToExecute="noelle-fixedpoint $1 $1 \"noelle-load\" -privatizer ${@:2}"
-echo $cmdToExecute ;
-eval $cmdToExecute ;
+set -x
+noelle-fixedpoint $1 $1 "noelle-load" -privatizer ${@:2}
+set +x
+
 echo "NOELLE: Privatizer: Exit" ;

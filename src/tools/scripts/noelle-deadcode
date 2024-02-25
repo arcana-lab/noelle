@@ -1,10 +1,10 @@
 #!/bin/bash -e
 
-installDir=$(noelle-config --prefix)
-
-# Delete dead functions until a fixed point is reached
+# delete dead functions until a fixed point is reached
 echo "NOELLE: DeadFunctions: Start" ;
-cmdToExecute="noelle-fixedpoint $1 $2 \"noelle-load\" -DeadFunctionEliminator ${@:3}"
-echo $cmdToExecute ;
-eval $cmdToExecute ;
+
+set -x
+noelle-fixedpoint $1 $2 "noelle-load" -DeadFunctionEliminator ${@:3}
+set +x
+
 echo "NOELLE: DeadFunctions: Exit" ;
