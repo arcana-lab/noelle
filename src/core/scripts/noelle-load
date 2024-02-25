@@ -18,7 +18,7 @@ EXTRA_AA=""
 if test -f "${installDir}/lib/libSCAFUtilities.so" ; then
   SCAFPASS="-load ${installDir}/lib/libSCAFUtilities.so -load ${installDir}/lib/libMemoryAnalysisModules.so"
   LOOP_AA=`loopaa`
-  EXTRA_AA="${EXTRA_AA} -noellescaf"
+  EXTRA_AA="${EXTRA_AA} -noelle-scaf"
 else
   SCAFPASS=""
   LOOP_AA=" "
@@ -27,7 +27,7 @@ fi
 ###########     SVF
 if test -f "${installDir}/lib/libSvf.so" ; then
   WPAPASS="-load ${installDir}/lib/libSvf.so -load ${installDir}/lib/libCudd.so -stat=false"
-  EXTRA_AA="${EXTRA_AA} -noellesvf"
+  EXTRA_AA="${EXTRA_AA} -noelle-svf"
 else
   WPAPASS=""
 fi

@@ -56,7 +56,7 @@ public:
 
 // Next there is code to register your pass to "opt"
 char NoelleSCAFIntegration::ID = 0;
-static RegisterPass<NoelleSCAFIntegration> X("noellescaf",
+static RegisterPass<NoelleSCAFIntegration> X("noelle-scaf",
                                              "Integration with SCAF");
 
 // Next there is code to register your pass to "clang"
