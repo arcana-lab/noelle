@@ -17,6 +17,16 @@ if test $# -lt 1 ; then
   exit 1;
 fi
 
+verbosityLevel="0";
+for currentOption in "$@"
+do
+    valueOfCurrentOption=${currentOption#*=};
+    nameOfCurrentOption=${currentOption%=*};
+    if test "$nameOfCurrentOption" == "--noelle-verbose" ; then
+      verbosityLevel="$valueOfCurrentOption" ;
+    fi
+done
+
 ###########     LLVM alias analyses
 AA="-disable-basicaa -globals-aa -cfl-steens-aa -tbaa -scev-aa -cfl-anders-aa --objc-arc-aa"
 EXTRA_AA=""
@@ -57,8 +67,12 @@ OPTPASSES="-load ${installDir}/lib/CallGraph.so  ${WPAPASS} ${SCAFPASS} ${PDGPAS
 # Set the command to execute
 cmdToExecute="${OPT} ${OPTPASSES} ${ANALYSES} ${@}"
 
+# Print the command
+if test "$verbosityLevel" != "0" ; then
+  echo $cmdToExecute ;
+fi
+
 # Execute the command
-echo $cmdToExecute
 eval $cmdToExecute
 
 if test $? -ne 0 ; then
