@@ -1,11 +1,5 @@
-noelle_component_declare(repl)
-noelle_component_add_sources(
-  repl # component
-  FILES
+add_llvm_library(
+  Repl
+  MODULE
   src/Repl.cpp
 )
-noelle_component_commit(
-  repl # component name
-  Repl # shared library name
-)
-

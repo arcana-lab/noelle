@@ -1,11 +1,6 @@
-noelle_component_declare(dead_function_eliminator)
-noelle_component_add_sources(
-  dead_function_eliminator # component
-  FILES
+add_llvm_library(
+  DeadFunctionEliminator
+  MODULE
   src/DeadFunctionEliminator.cpp
   src/Pass.cpp
-)
-noelle_component_commit(
-  dead_function_eliminator # component name
-  DeadFunctionEliminator # shared library name
 )
