@@ -1,4 +1,4 @@
-add_noelle_component(tools)
+noelle_component_declare(tools)
 
 foreach(module IN LISTS NOELLE_CORE_MODULES)
   include_directories(../core/${module}/include)
@@ -16,7 +16,10 @@ endforeach()
 foreach(module IN LISTS NOELLE_TOOL_MODULES)
   add_subdirectory(${module})
 endforeach()
-add_subdirectory(scripts)
 
-get_target_property(tools_SOURCES tools SOURCES)
-add_llvm_library(NoelleTools MODULE "${tools_SOURCES}")
+noelle_component_commit(
+  tools # component name
+  NoelleTools # shared library name
+)
+
+add_subdirectory(scripts)

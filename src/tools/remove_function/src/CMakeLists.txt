@@ -25,4 +25,4 @@ include_directories(${LLVM_INCLUDE_DIRS}
   )
 
 # Declare the LLVM pass to compile
-add_noelle_component_sources(${PassName} MODULE ${Srcs})
+noelle_component_add_sources(${PassName} MODULE ${Srcs})

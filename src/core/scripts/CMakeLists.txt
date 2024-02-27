@@ -9,10 +9,20 @@ set(noelle_load_NOELLE_ANALYSES "")
 set(noelle_load_OTHER_LIBS "")
 set(noelle_load_OTHER_ANALYSES "")
 
-list(APPEND noelle_load_NOELLE_LIBS
-  "-load ${CMAKE_INSTALL_PREFIX}/lib/NoelleCore.so"
-  "-load ${CMAKE_INSTALL_PREFIX}/lib/NoelleTools.so"
-)
+get_target_property(NOELLE_LIBRARIES noelle_libraries NAMES)
+set(noelle_load_NOELLE_LIBS "")
+foreach(lib IN LISTS NOELLE_LIBRARIES)
+  list(APPEND noelle_load_NOELLE_LIBS
+    "-load ${CMAKE_INSTALL_PREFIX}/lib/${lib}.so"
+  )
+endforeach()
+
+message(STATUS "nnn ${noelle_load_NOELLE_LIBS}")
+
+# list(APPEND noelle_load_NOELLE_LIBS
+#   "-load ${CMAKE_INSTALL_PREFIX}/lib/NoelleCore.so"
+#   "-load ${CMAKE_INSTALL_PREFIX}/lib/NoelleTools.so"
+# )
 
 if(NOELLE_SVF STREQUAL "ON")
   list(APPEND noelle_load_SVF_LIBS

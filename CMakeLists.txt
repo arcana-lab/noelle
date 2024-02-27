@@ -172,12 +172,15 @@ add_custom_target(
     ${NOELLE_CMAKE_ROOT}/compile_commands.json
 )
 
-macro(add_noelle_component name)
+add_custom_target(noelle_libraries)
+set_target_properties(noelle_libraries PROPERTIES NAMES "")
+
+macro(noelle_component_declare name)
   add_custom_target(${name})
   set_target_properties(${name} PROPERTIES SOURCES "")
 endmacro()
 
-macro(add_noelle_component_sources component)
+macro(noelle_component_add_sources component)
   cmake_parse_arguments(ARG "" "" "FILES" ${ARGV})
   set(files "")
   foreach(file IN LISTS ARG_FILES)
@@ -187,6 +190,14 @@ macro(add_noelle_component_sources component)
   get_target_property(sources ${component} SOURCES)
   list(APPEND sources "${files}")
   set_target_properties(${component} PROPERTIES SOURCES "${sources}")
+endmacro()
+
+macro(noelle_component_commit name output)
+  get_target_property(sources ${name} SOURCES)
+  add_llvm_library(${output} MODULE "${sources}")
+  get_target_property(names noelle_libraries NAMES)
+  list(APPEND names ${output})
+  set_target_properties(noelle_libraries PROPERTIES NAMES "${names}")
 endmacro()
 
 add_subdirectory(src)
