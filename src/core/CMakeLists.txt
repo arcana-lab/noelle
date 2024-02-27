@@ -15,7 +15,7 @@ endforeach()
 
 noelle_component_commit(
   core # component name
-  NoelleCore # shared library name
+  Noelle # shared library name
 )
 
 add_subdirectory(noelle_config)

@@ -1,5 +1,6 @@
+noelle_component_declare(loop_stats)
 noelle_component_add_sources(
-  tools # component
+  loop_stats # component
   FILES
   src/LoopStats.cpp
   src/LoopStats_Dependences.cpp
@@ -8,4 +9,8 @@ noelle_component_add_sources(
   src/LoopStats_Loops.cpp
   src/LoopStats_Printer.cpp
   src/Pass.cpp
+)
+noelle_component_commit(
+  loop_stats # component name
+  LoopStats # shared library name
 )
