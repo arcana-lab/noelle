@@ -21,5 +21,3 @@ noelle_component_commit(
   tools # component name
   NoelleTools # shared library name
 )
-
-add_subdirectory(scripts)

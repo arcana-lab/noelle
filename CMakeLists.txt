@@ -201,3 +201,4 @@ macro(noelle_component_commit name output)
 endmacro()
 
 add_subdirectory(src)
+add_subdirectory(bin)

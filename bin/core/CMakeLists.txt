@@ -17,13 +17,6 @@ foreach(lib IN LISTS NOELLE_LIBRARIES)
   )
 endforeach()
 
-message(STATUS "nnn ${noelle_load_NOELLE_LIBS}")
-
-# list(APPEND noelle_load_NOELLE_LIBS
-#   "-load ${CMAKE_INSTALL_PREFIX}/lib/NoelleCore.so"
-#   "-load ${CMAKE_INSTALL_PREFIX}/lib/NoelleTools.so"
-# )
-
 if(NOELLE_SVF STREQUAL "ON")
   list(APPEND noelle_load_SVF_LIBS
     "-load ${CMAKE_INSTALL_PREFIX}/lib/libSvf.so"
@@ -206,7 +199,7 @@ configure_file(noelle-norm.in noelle-norm @ONLY)
 configure_file(noelle-simplification.in noelle-simplification @ONLY)
 
 install(
-  FILES
+  PROGRAMS
     noelle-codesize
     ${CMAKE_CURRENT_BINARY_DIR}/noelle-load
     noelle-meta-clean
@@ -224,8 +217,4 @@ install(
     ${CMAKE_CURRENT_BINARY_DIR}/noelle-simplification
   DESTINATION
     bin
-  PERMISSIONS
-    OWNER_EXECUTE OWNER_WRITE OWNER_READ
-    GROUP_EXECUTE GROUP_READ
-    WORLD_EXECUTE WORLD_READ
 )
