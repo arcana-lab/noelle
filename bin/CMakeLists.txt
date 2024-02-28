@@ -213,10 +213,14 @@ else()
 endif()
 
 string(REPLACE ";" " " NOELLE_CXX_FLAGS "${NOELLE_CXX_FLAGS}")
-
 string(REPLACE ";" " " NOELLE_CONFIG_NOELLE_LIBS "${noelle_load_NOELLE_LIBS}")
 string(REPLACE ";" " " NOELLE_CONFIG_SVF_LIBS "${noelle_load_SVF_LIBS}")
 string(REPLACE ";" " " NOELLE_CONFIG_SCAF_LIBS "${noelle_load_SCAF_LIBS}")
+string(REPLACE ";" " " NOELLE_CONFIG_NOELLE_ANALYSES "${noelle_load_NOELLE_ANALYSES}")
+string(REPLACE ";" " " NOELLE_CONFIG_SVF_ANALYSES "${noelle_load_SVF_ANALYSES}")
+string(REPLACE ";" " " NOELLE_CONFIG_SCAF_ANALYSES "${noelle_load_SCAF_ANALYSES}")
+string(REPLACE ";" " " NOELLE_CONFIG_LLVM_ANALYSES "${noelle_load_LLVM_ANALYSES}")
+string(REPLACE ";" " " NOELLE_CONFIG_OTHER_ANALYSES "${noelle_load_OTHER_ANALYSES}")
 
 configure_file(noelle-config.in noelle-config @ONLY)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/noelle-config DESTINATION bin)
