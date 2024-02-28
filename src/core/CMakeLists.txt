@@ -17,5 +17,3 @@ noelle_component_commit(
   core # component name
   Noelle # shared library name
 )
-
-add_subdirectory(noelle_config)
