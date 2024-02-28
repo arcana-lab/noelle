@@ -226,4 +226,7 @@ configure_file(noelle-config.in noelle-config @ONLY)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/noelle-config DESTINATION bin)
 
 add_subdirectory(core)
-add_subdirectory(tools)
+
+if(NOELLE_TOOLS STREQUAL ON)
+  add_subdirectory(tools)
+endif()

@@ -17,6 +17,11 @@ set(NOELLE_CXX_FLAGS
   -Wall
 )
 
+find_package(LLVM 9 REQUIRED CONFIG)
+include_directories(${LLVM_INCLUDE_DIRS})
+add_definitions(${LLVM_DEFINITIONS})
+link_directories(${LLVM_LIBRARY_DIRS})
+
 execute_process(
   COMMAND llvm-config --obj-root
   OUTPUT_VARIABLE LLVM_DIR
@@ -44,75 +49,46 @@ get_filename_component(
   NOELLE_CMAKE_ROOT ${NOELLE_CMAKE_ROOT} REALPATH
 )
 
-option(ENABLE_SPECULATION "SCAF speculation" OFF)
+function(noelle_acquire_option OPT)
+  if(${OPT} MATCHES "ON|On|on|1|aaa")
+    set(${OPT} ON PARENT_SCOPE)
+  elseif(${OPT} MATCHES "OFF|Off|off|0")
+    set(${OPT} OFF PARENT_SCOPE)
+  else()
+    message(FATAL_ERROR "${OPT} must be either ON or OFF")
+  endif()
+  message(STATUS "Option ${OPT} is ${${OPT}}")
+endfunction()
+
+option(NOELLE_SVF "SVF analysis modules" ON)
+option(NOELLE_SCAF "SCAF analysis modules" ON)
+option(NOELLE_AUTOTUNER "NOELLE autotuner module" ON)
+option(NOELLE_REPL "NOELLE REPL module" OFF)
+option(NOELLE_TOOLS "Tools built on top of NOELLE" ON)
+
+noelle_acquire_option(NOELLE_SVF)
+noelle_acquire_option(NOELLE_SCAF)
+noelle_acquire_option(NOELLE_AUTOTUNER)
+noelle_acquire_option(NOELLE_REPL)
+noelle_acquire_option(NOELLE_TOOLS)
+
 set(LLVM_ENABLE_UNWIND_TABLES ON)
 
-function(noelle_add_svf)
+if(NOELLE_SVF STREQUAL ON)
+  set(NOELLE_SVF ON)
   list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SVF")
-  set(NOELLE_CXX_FLAGS "${NOELLE_CXX_FLAGS}" PARENT_SCOPE)
-  set(NOELLE_SVF ON PARENT_SCOPE)
   FetchContent_MakeAvailable(svf)
-endfunction()
+  FetchContent_GetProperties(svf)
+  include_directories(${svf_SOURCE_DIR}/include)
+endif()
 
-function(noelle_add_scaf)
+if(NOELLE_SCAF STREQUAL ON)
   list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SCAF")
-  set(NOELLE_CXX_FLAGS "${NOELLE_CXX_FLAGS}" PARENT_SCOPE)
-  set(NOELLE_SCAF ON PARENT_SCOPE)
+  option(ENABLE_SPECULATION "SCAF speculation" OFF)
   FetchContent_MakeAvailable(scaf)
-endfunction()
-
-function(noelle_add_autotuner)
-  set(NOELLE_AUTOTUNER ON PARENT_SCOPE)
-  add_subdirectory(autotuner)
-endfunction()
-
-if(DEFINED NOELLE_SVF)
-  string(TOUPPER ${NOELLE_SVF} NOELLE_SVF)
-  if((NOELLE_SVF STREQUAL "ON") OR (NOELLE_SVF STREQUAL "1"))
-    noelle_add_svf()
-  elseif((NOELLE_SVF STREQUAL "OFF") OR (NOELLE_SVF STREQUAL "0"))
-    set(NOELLE_SVF OFF)
-  else()
-    message(FATAL_ERROR "'NOELLE_SVF' must be ON, OFF, 0 or 1")
-  endif()
-else()
-  # default behavior
-  noelle_add_svf()
+  FetchContent_GetProperties(scaf)
+  include_directories(${scaf_SOURCE_DIR}/include)
 endif()
-
-if(DEFINED NOELLE_SCAF)
-  string(TOUPPER ${NOELLE_SCAF} NOELLE_SCAF)
-  if((NOELLE_SCAF STREQUAL "ON") OR (NOELLE_SCAF STREQUAL "1"))
-    noelle_add_scaf()
-  elseif((NOELLE_SCAF STREQUAL "OFF") OR (NOELLE_SCAF STREQUAL "0"))
-    set(NOELLE_SCAF OFF)
-  else()
-    message(FATAL_ERROR "'NOELLE_SCAF' must be ON, OFF, 0 or 1")
-  endif()
-else()
-  # default behavior
-  noelle_add_scaf()
-endif()
-
-if(DEFINED NOELLE_AUTOTUNER)
-  string(TOUPPER ${NOELLE_AUTOTUNER} NOELLE_SVF)
-  if((NOELLE_AUTOTUNER STREQUAL "ON") OR (NOELLE_AUTOTUNER STREQUAL "1"))
-  elseif((NOELLE_AUTOTUNER STREQUAL "OFF") OR (NOELLE_AUTOTUNER STREQUAL "0"))
-    noelle_add_autotuner()
-  else()
-    message(FATAL_ERROR "'NOELLE_AUTOTUNER' must be ON, OFF, 0 or 1")
-  endif()
-else()
-  # default behavior
-  noelle_add_autotuner()
-endif()
-
-FetchContent_GetProperties(svf)
-FetchContent_GetProperties(scaf)
-
-message(STATUS "NOELLE: SCAF analysis is ${NOELLE_SCAF}")
-message(STATUS "NOELLE: SVF analysis is ${NOELLE_SVF}")
-message(STATUS "NOELLE: AUTOTUNER is ${NOELLE_AUTOTUNER}")
 
 file(READ ${NOELLE_CMAKE_ROOT}/VERSION NOELLE_VERSION)
 string(STRIP ${NOELLE_VERSION} NOELLE_VERSION)
@@ -123,23 +99,13 @@ install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/enable
   DESTINATION ${NOELLE_CMAKE_ROOT}
 )
-
 install(
-  FILES ${NOELLE_CMAKE_ROOT}/.githooks/pre-commit
+  PROGRAMS ${NOELLE_CMAKE_ROOT}/.githooks/pre-commit
   DESTINATION ${NOELLE_CMAKE_ROOT}/.git/hooks
-  PERMISSIONS
-    OWNER_EXECUTE OWNER_WRITE OWNER_READ
-    GROUP_EXECUTE GROUP_READ
-    WORLD_EXECUTE WORLD_READ
 )
 
 enable_language(C CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-find_package(LLVM 9 REQUIRED CONFIG)
-include_directories(${LLVM_INCLUDE_DIRS})
-add_definitions(${LLVM_DEFINITIONS})
-link_directories(${LLVM_LIBRARY_DIRS})
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
@@ -155,8 +121,8 @@ include_directories(
   ${scaf_SOURCE_DIR}/include
 )
 
-set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
-set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
+# set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
+# set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
 
 add_compile_options(${NOELLE_CXX_FLAGS})
 
@@ -200,5 +166,8 @@ macro(noelle_component_commit name output)
   set_target_properties(noelle_libraries PROPERTIES NAMES "${names}")
 endmacro()
 
+if(NOELLE_AUTOTUNER STREQUAL ON)
+  add_subdirectory(autotuner)
+endif()
 add_subdirectory(src)
 add_subdirectory(bin)

@@ -5,6 +5,8 @@ export NOELLE_INSTALL_DIR ?= $(shell realpath ./install)
 export NOELLE_SCAF ?= ON
 export NOELLE_SVF ?= ON
 export NOELLE_AUTOTUNER ?= ON
+export NOELLE_REPL ?= OFF
+export NOELLE_TOOLS ?= ON
 export MAKEFLAGS += --no-print-directory
 
 all: install
@@ -19,8 +21,11 @@ $(BUILD_DIR):
 	cmake -S . -B $(BUILD_DIR) -G "$(GENERATOR)" \
 		-DCMAKE_INSTALL_MESSAGE=LAZY \
 		-DCMAKE_INSTALL_PREFIX=$(NOELLE_INSTALL_DIR) \
-		-DNOELLE_SCAF=$(NOELLE_SCAF) \
-		-DNOELLE_SVF=$(NOELLE_SVF)
+	  -DNOELLE_SCAF=$(NOELLE_SCAF) \
+	  -DNOELLE_SVF=$(NOELLE_SVF) \
+	  -DNOELLE_AUTOTUNER=$(NOELLE_AUTOTUNER) \
+	  -DNOELLE_REPL=$(NOELLE_REPL) \
+	  -DNOELLE_TOOLS=$(NOELLE_TOOLS)
 
 tests: install
 	$(MAKE) -C tests

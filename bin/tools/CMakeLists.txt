@@ -6,8 +6,11 @@ install(
     noelle-loop-stats
     noelle-pdg-stats
     noelle-privatizer
-    noelle-repl
     noelle-rm-function
   DESTINATION
     bin
 )
+
+if(NOELLE_REPL STREQUAL ON)
+  install(PROGRAMS noelle-repl DESTINATION bin)
+endif()

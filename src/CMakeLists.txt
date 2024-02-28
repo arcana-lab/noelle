@@ -65,9 +65,12 @@ set(NOELLE_TOOL_MODULES
   scev_simplification
 )
 
-if(NOELLE_ENABLE_REPL)
+if(NOELLE_REPL STREQUAL ON)
   list(APPEND NOELLE_TOOL_MODULES repl)
 endif()
 
 add_subdirectory(core)
-add_subdirectory(tools)
+
+if(NOELLE_TOOLS STREQUAL ON)
+  add_subdirectory(tools)
+endif()
