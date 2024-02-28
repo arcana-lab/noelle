@@ -2,9 +2,11 @@
 
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
+installDir=$(noelle-config --prefix)
+
 # run the privatizer until a fixed point is reached
 echo "NOELLE: Privatizer: Start"
 
-noelle-fixedpoint $1 $1 "noelle-load" -privatizer ${@:2}
+noelle-fixedpoint $1 $1 "noelle-load" -load $installDir/lib/Privatizer.so -privatizer ${@:2}
 
 echo "NOELLE: Privatizer: Exit"

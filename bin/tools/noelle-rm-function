@@ -2,7 +2,9 @@
 
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
+installDir=$(noelle-config --prefix)
+
 # delete dead functions until a fixed point is reached
 echo "NOELLE: DeadFunctions: Start"
-noelle-load -noelle-rm-function $@
+noelle-load -load $installDir/lib/RemoveFunction.so -noelle-rm-function $@
 echo "NOELLE: DeadFunctions: Exit"

@@ -1,5 +1,5 @@
 add_llvm_library(
-  LICM
+  LoopInvariantCodeMotion
   MODULE
   src/LastLiveOutPeeler.cpp
   src/LastLiveOutStoreHoister.cpp

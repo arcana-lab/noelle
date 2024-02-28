@@ -2,7 +2,7 @@ install(
   PROGRAMS
     noelle-deadcode
     noelle-fixedpoint
-    noelle-loopsize
+    noelle-loop-size
     noelle-loop-stats
     noelle-pdg-stats
     noelle-privatizer

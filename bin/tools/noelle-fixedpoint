@@ -54,15 +54,15 @@ while true ; do
 
   # check if the bitcode has been modified
   #   step 1: fetch the code size and loop code of the input bitcode
-  noelle-codesize $IRFileInput > $codeSize
+  noelle-loop-size $IRFileInput > $codeSize
   inputCodeLines=`tail -n 1 $codeSize | awk '{print $1}'`
-  noelle-loopsize $IRFileInput > $codeSize
+  noelle-loop-size $IRFileInput > $codeSize
   inputLoopLines=`tail -n 1 $codeSize | awk '{print $1}'`
 
   #   step 2: fetch the code size and loop code of the output bitcode
-  noelle-codesize $IRFileOutput > $codeSize
+  noelle-loop-size $IRFileOutput > $codeSize
   outputCodeLines=`tail -n 1 $codeSize | awk '{print $1}'`
-  noelle-loopsize $IRFileOutput > $codeSize
+  noelle-loop-size $IRFileOutput > $codeSize
   outputLoopLines=`tail -n 1 $codeSize | awk '{print $1}'`
 
   #   step 3: compare the results

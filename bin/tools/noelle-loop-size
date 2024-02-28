@@ -9,6 +9,8 @@ trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 # which would be incorrect when noelle-loopsize is called in the context of
 # noelle-fixedpoint.
 
+installDir=$(noelle-config --prefix)
+
 noelle-meta-loop-embed $@ -o $@
-noelle-load -loopsize -disable-output -noelle-min-hot=0 $@
+noelle-load -load $installDir/lib/LoopSize.so -LoopSize -disable-output -noelle-min-hot=0 $@
 

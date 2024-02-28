@@ -2,4 +2,6 @@
 
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
-noelle-load -PDGStats -disable-output $@
+installDir=$(noelle-config --prefix)
+
+noelle-load -load $installDir/lib/PDGStats.so -PDGStats -disable-output $@
