@@ -142,7 +142,7 @@ add_custom_target(noelle_libraries)
 set_target_properties(noelle_libraries PROPERTIES NAMES "")
 
 function(noelle_component_declare name)
-  add_llvm_library(${name})
+  add_llvm_library(${name} MODULE)
   get_target_property(names noelle_libraries NAMES)
   list(APPEND names ${name})
   set_target_properties(noelle_libraries PROPERTIES NAMES "${names}")
