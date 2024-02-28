@@ -1,6 +1,6 @@
 BUILD_DIR ?= build
 export GENERATOR ?= Unix Makefiles
-export JOBS ?= 8
+export JOBS ?= 16
 export NOELLE_INSTALL_DIR ?= $(shell realpath ./install)
 export NOELLE_SCAF ?= ON
 export NOELLE_SVF ?= ON

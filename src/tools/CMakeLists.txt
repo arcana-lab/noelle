@@ -5,7 +5,7 @@ set(directories "")
 
 foreach(f IN LISTS all_core_files)
   if(IS_DIRECTORY ${f})
-    include_directories(${d}/include)
+    include_directories(${f}/include)
   endif()
 endforeach()
 
@@ -14,7 +14,7 @@ endforeach()
 file(GLOB all_tool_files "*")
 set(directories "")
 
-foreach(f IN LISTS all_files)
+foreach(f IN LISTS all_tool_files)
   if(IS_DIRECTORY ${f})
     list(APPEND directories ${f})
   endif()
@@ -25,7 +25,6 @@ if(NOELLE_REPL STREQUAL OFF)
 endif()
 
 foreach(module IN LISTS directories)
-  message(STATUS ${module})
   include_directories(${module}/include)
   install(
     DIRECTORY ${module}/include
