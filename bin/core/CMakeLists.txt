@@ -3,7 +3,6 @@ configure_file(noelle-simplification.in noelle-simplification @ONLY)
 
 install(
   PROGRAMS
-    noelle-codesize
     noelle-load
     noelle-meta-clean
     noelle-meta-loop-clean

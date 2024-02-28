@@ -33,7 +33,7 @@ void CodeSize::getAnalysisUsage(AnalysisUsage &AU) const {
 
 // Next there is code to register your pass to "opt"
 char CodeSize::ID = 0;
-static RegisterPass<CodeSize> X("codesize",
+static RegisterPass<CodeSize> X("CodeSize",
                                 "Print the code size",
                                 false,
                                 false);

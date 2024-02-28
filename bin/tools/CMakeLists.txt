@@ -1,5 +1,6 @@
 install(
   PROGRAMS
+    noelle-codesize
     noelle-deadcode
     noelle-fixedpoint
     noelle-loop-size

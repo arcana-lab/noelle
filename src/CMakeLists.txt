@@ -7,7 +7,6 @@ set(NOELLE_CORE_MODULES
   call_graph_analysis
   cfg_analysis
   cfg_transformer
-  codesize
   compilation_options_manager
   constants_manager
   dataflow
@@ -55,6 +54,7 @@ set(NOELLE_CORE_MODULES
 )
 
 set(NOELLE_TOOL_MODULES
+  code_size
   dead_function_eliminator
   loop_invariant_code_motion
   loop_size
