@@ -1,13 +1,13 @@
-noelle_component_add_sources(
-  core # component name
-  FILES
-  src/Hot_BasicBlock.cpp
-  src/Hot.cpp
-  src/Hot_Function.cpp
-  src/Hot_Instruction.cpp
-  src/Hot_Loop.cpp
-  src/Hot_Module.cpp
-  src/HotProfiler.cpp
-  src/Hot_SCC.cpp
-  src/Pass.cpp
+target_sources(
+  Noelle # component name
+  PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Hot_BasicBlock.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Hot.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Hot_Function.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Hot_Instruction.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Hot_Loop.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Hot_Module.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/HotProfiler.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Hot_SCC.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Pass.cpp
 )

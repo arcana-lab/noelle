@@ -1,10 +1,10 @@
-noelle_component_add_sources(
-  core # component name
-  FILES
-  src/Noelle.cpp
-  src/Noelle_dependences.cpp
-  src/Noelle_function.cpp
-  src/Noelle_loops.cpp
-  src/Noelle_transformations.cpp
-  src/Pass.cpp
+target_sources(
+  Noelle # component name
+  PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Noelle.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Noelle_dependences.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Noelle_function.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Noelle_loops.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Noelle_transformations.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Pass.cpp
 )

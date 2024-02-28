@@ -1,10 +1,10 @@
-noelle_component_add_sources(
-  core # component name
-  FILES
-  src/MetadataEntry.cpp
-  src/MetadataManager_annotations.cpp
-  src/MetadataManager.cpp
-  src/MetadataManager_Instruction.cpp
-  src/MetadataManager_Module.cpp
-  src/MetadataManager_PDG.cpp
+target_sources(
+  Noelle # component name
+  PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/MetadataEntry.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/MetadataManager_annotations.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/MetadataManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/MetadataManager_Instruction.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/MetadataManager_Module.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/MetadataManager_PDG.cpp
 )

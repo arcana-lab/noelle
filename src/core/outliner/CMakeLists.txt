@@ -1,6 +1,6 @@
-noelle_component_add_sources(
-  core # component name
-  FILES
-  src/Outliner.cpp
-  src/Pass.cpp
+target_sources(
+  Noelle # component name
+  PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Outliner.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Pass.cpp
 )

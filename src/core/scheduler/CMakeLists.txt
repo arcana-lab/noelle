@@ -1,6 +1,6 @@
-noelle_component_add_sources(
-  core # component name
-  FILES
-  src/SCCPartitionScheduler.cpp
-  src/Scheduler.cpp
+target_sources(
+  Noelle # component name
+  PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/SCCPartitionScheduler.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/Scheduler.cpp
 )

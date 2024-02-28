@@ -1,9 +1,9 @@
-noelle_component_add_sources(
-  core # component name
-  FILES
-  src/InductionVariable.cpp
-  src/InductionVariables.cpp
-  src/IVStepperUtility.cpp
-  src/LoopGoverningInductionVariable.cpp
-  src/LoopGoverningIVUtility.cpp
+target_sources(
+  Noelle # component name
+  PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/InductionVariable.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/InductionVariables.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/IVStepperUtility.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/LoopGoverningInductionVariable.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/LoopGoverningIVUtility.cpp
 )

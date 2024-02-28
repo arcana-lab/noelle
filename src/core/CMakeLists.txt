@@ -1,4 +1,4 @@
-noelle_component_declare(core)
+noelle_component_declare(Noelle)
 
 foreach(module IN LISTS NOELLE_CORE_MODULES)
   include_directories(${module}/include)
@@ -12,8 +12,3 @@ endforeach()
 foreach(module IN LISTS NOELLE_CORE_MODULES)
   add_subdirectory(${module})
 endforeach()
-
-noelle_component_commit(
-  core # component name
-  Noelle # shared library name
-)

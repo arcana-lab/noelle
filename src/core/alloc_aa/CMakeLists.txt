@@ -1,6 +1,6 @@
-noelle_component_add_sources(
-  core # component name
-  FILES
-  src/AllocAA.cpp
-  src/MemorySite.cpp
+target_sources(
+  Noelle # component name
+  PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/AllocAA.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/MemorySite.cpp
 )
