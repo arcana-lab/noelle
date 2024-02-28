@@ -9,6 +9,9 @@ function show_help() {
   echo "  --prefix         Print the installation directory path"
   echo "  --version        Print the library version"
   echo "  --include        Print the include directory"
+  echo "  --core-libs      Print the shared libraries used by the NOELLE core"
+  echo "  --svf-libs       Print the shared libraries used by SVF"
+  echo "  --scaf-libs      Print the shared libraries used by SCAF"
   echo "  --git-commit     Print the git commit hash used at compilation time"
   echo "  --git-origin     Print the git origin used during compilation"
   echo "  --llvm-build     Print the build type of the specific LLVM used by NOELLE"
@@ -38,6 +41,15 @@ for arg in "$@"; do
       ;;
     --include)
       echo "@CMAKE_INSTALL_PREFIX@/include"
+      ;;
+    --core-libs)
+      echo "@noelle_load_NOELLE_LIBS@"
+      ;;
+    --svf-libs)
+      echo "@noelle_load_SVF_LIBS@"
+      ;;
+    --scaf-libs)
+      echo "@noelle_load_SCAF_LIBS@"
       ;;
     --git-commit)
       echo "@NOELLE_GIT_COMMIT@"
