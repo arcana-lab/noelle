@@ -1,6 +1,7 @@
-add_llvm_library(
+noelle_tool_declare(CodeSize)
+target_sources(
   CodeSize
-  MODULE
+  PRIVATE
   src/CodeSize.cpp
   src/Pass.cpp
 )

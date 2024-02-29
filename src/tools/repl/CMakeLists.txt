@@ -1,5 +1,6 @@
-add_llvm_library(
+noelle_tool_declare(Repl)
+target_sources(
   Repl
-  MODULE
+  PRIVATE
   src/Repl.cpp
 )

@@ -1,6 +1,7 @@
-add_llvm_library(
+noelle_tool_declare(LoopSize)
+target_sources(
   LoopSize
-  MODULE
+  PRIVATE
   src/LoopSize.cpp
   src/Pass.cpp
 )

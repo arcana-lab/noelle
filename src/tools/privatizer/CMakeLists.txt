@@ -1,6 +1,7 @@
-add_llvm_library(
+noelle_tool_declare(Privatizer)
+target_sources(
   Privatizer
-  MODULE
+  PRIVATE
   src/GlobalToStack.cpp
   src/HeapToStack.cpp
   src/Pass.cpp

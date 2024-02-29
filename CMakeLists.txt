@@ -139,13 +139,22 @@ add_custom_target(
 )
 
 add_custom_target(noelle_libraries)
+add_custom_target(noelle_tool_libraries)
 set_target_properties(noelle_libraries PROPERTIES NAMES "")
+set_target_properties(noelle_tool_libraries PROPERTIES NAMES "")
 
 function(noelle_component_declare name)
   add_llvm_library(${name} MODULE)
   get_target_property(names noelle_libraries NAMES)
   list(APPEND names ${name})
   set_target_properties(noelle_libraries PROPERTIES NAMES "${names}")
+endfunction()
+
+function(noelle_tool_declare name)
+  add_llvm_library(${name} MODULE)
+  get_target_property(names noelle_tool_libraries NAMES)
+  list(APPEND names ${name})
+  set_target_properties(noelle_tool_libraries PROPERTIES NAMES "${names}")
 endfunction()
 
 if(NOELLE_AUTOTUNER STREQUAL ON)

@@ -1,6 +1,7 @@
-add_llvm_library(
+noelle_tool_declare(LoopInvariantCodeMotion)
+target_sources(
   LoopInvariantCodeMotion
-  MODULE
+  PRIVATE
   src/LastLiveOutPeeler.cpp
   src/LastLiveOutStoreHoister.cpp
   src/LoopInvariantCodeMotion.cpp

@@ -1,6 +1,7 @@
-add_llvm_library(
+noelle_tool_declare(RemoveFunction)
+target_sources(
   RemoveFunction
-  MODULE
+  PRIVATE
   src/Pass.cpp
   src/RemoveFunction.cpp
 )

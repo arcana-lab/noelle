@@ -1,5 +1,6 @@
-add_llvm_library(
+noelle_tool_declare(SCEVSimplification)
+target_sources(
   SCEVSimplification
-  MODULE
+  PRIVATE
   src/SCEVSimplification.cpp
 )

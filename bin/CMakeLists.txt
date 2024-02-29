@@ -222,6 +222,15 @@ string(REPLACE ";" " " NOELLE_CONFIG_SCAF_ANALYSES "${noelle_load_SCAF_ANALYSES}
 string(REPLACE ";" " " NOELLE_CONFIG_LLVM_ANALYSES "${noelle_load_LLVM_ANALYSES}")
 string(REPLACE ";" " " NOELLE_CONFIG_OTHER_ANALYSES "${noelle_load_OTHER_ANALYSES}")
 
+get_target_property(NOELLE_TOOL_LIBRARIES noelle_tool_libraries NAMES)
+set(NOELLE_CONFIG_TOOL_LIBS "")
+foreach(lib IN LISTS NOELLE_TOOL_LIBRARIES)
+  list(APPEND NOELLE_CONFIG_TOOL_LIBS
+    "-load ${CMAKE_INSTALL_PREFIX}/lib/${lib}.so"
+  )
+endforeach()
+string(REPLACE ";" " " NOELLE_CONFIG_TOOL_LIBS "${NOELLE_CONFIG_TOOL_LIBS}")
+
 configure_file(noelle-config.in noelle-config @ONLY)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/noelle-config DESTINATION bin)
 
