@@ -50,7 +50,7 @@ get_filename_component(
 )
 
 function(noelle_acquire_option OPT)
-  if(${OPT} MATCHES "ON|On|on|1|aaa")
+  if(${OPT} MATCHES "ON|On|on|1")
     set(${OPT} ON PARENT_SCOPE)
   elseif(${OPT} MATCHES "OFF|Off|off|0")
     set(${OPT} OFF PARENT_SCOPE)
@@ -120,9 +120,6 @@ include_directories(
   ${svf_SOURCE_DIR}/include
   ${scaf_SOURCE_DIR}/include
 )
-
-# set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
-# set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/)
 
 add_compile_options(${NOELLE_CXX_FLAGS})
 
