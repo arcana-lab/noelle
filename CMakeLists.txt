@@ -4,10 +4,17 @@ project(noelle)
 
 include(FetchContent)
 
-# See `cmake --help-policy CMP0077`
-# `OLD` specifies that the effects of this policy are whatever LLVM 9
-# assumed at that time.
-cmake_policy(SET CMP0077 OLD)
+option(NOELLE_SVF "SVF analysis modules" ON)
+option(NOELLE_SCAF "SCAF analysis modules" ON)
+option(NOELLE_TOOLS "Tools built on top of NOELLE" ON)
+option(NOELLE_AUTOTUNER "NOELLE autotuner module" ON)
+option(NOELLE_REPL "NOELLE REPL module" OFF)
+
+if(EXISTS config.cmake)
+  include(config.cmake)
+else()
+  include(config.default.cmake)
+endif()
 
 set(NOELLE_CXX_FLAGS 
   -O0
@@ -16,6 +23,11 @@ set(NOELLE_CXX_FLAGS
   -std=c++17
   -Wall
 )
+
+# See `cmake --help-policy CMP0077`
+# `OLD` specifies that the effects of this policy are whatever LLVM 9
+# assumed at that time.
+cmake_policy(SET CMP0077 OLD)
 
 find_package(LLVM 9 REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
@@ -59,12 +71,6 @@ function(noelle_acquire_option OPT)
   endif()
   message(STATUS "Option ${OPT} is ${${OPT}}")
 endfunction()
-
-option(NOELLE_SVF "SVF analysis modules" ON)
-option(NOELLE_SCAF "SCAF analysis modules" ON)
-option(NOELLE_AUTOTUNER "NOELLE autotuner module" ON)
-option(NOELLE_REPL "NOELLE REPL module" OFF)
-option(NOELLE_TOOLS "Tools built on top of NOELLE" ON)
 
 noelle_acquire_option(NOELLE_SVF)
 noelle_acquire_option(NOELLE_SCAF)

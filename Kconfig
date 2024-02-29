@@ -1,0 +1,23 @@
+config CMAKE_INSTALL_PREFIX
+  string "Installation directory for Noelle"
+  default ./install
+
+config NOELLE_SVF
+  bool "Use SVF analyses"
+  default y
+
+config NOELLE_SCAF
+  bool "Use SCAF analyses"
+  default y
+
+config NOELLE_TOOLS
+  bool "Install all the tools build on top of Noelle"
+  default y
+
+config NOELLE_AUTOTUNER
+  bool "Install the Noelle Autotuner"
+  default y
+
+config NOELLE_REPL
+  bool "Build the Noelle REPL tool"
+  default n
