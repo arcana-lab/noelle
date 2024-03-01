@@ -14,7 +14,9 @@ compile: $(BUILD_DIR)
 	cmake --build $(BUILD_DIR) -j$(JOBS) 
 
 $(BUILD_DIR):
-	cmake -S . -B $(BUILD_DIR) -G "$(GENERATOR)" -DCMAKE_INSTALL_MESSAGE=LAZY
+	cmake -S . -B $(BUILD_DIR) -G "$(GENERATOR)" \
+		-DCMAKE_INSTALL_MESSAGE=LAZY \
+		-DCMAKE_INSTALL_PREFIX=install
 
 tests: install
 	$(MAKE) -C tests
