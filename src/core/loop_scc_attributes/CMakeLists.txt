@@ -1,19 +1,19 @@
 target_sources(
   Noelle # component name
-  PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/AccumulatorOpInfo.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/BinaryReductionSCC.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/GenericSCC.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/InductionVariableSCC.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/LinearInductionVariableSCC.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/LoopCarriedSCC.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/LoopCarriedUnknownSCC.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/LoopIterationSCC.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/MemoryClonableSCC.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/PeriodicVariableSCC.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/RecomputableSCC.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/ReductionSCC.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/SingleAccumulatorRecomputableSCC.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/StackObjectClonableSCC.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/UnknownClosedFormSCC.cpp
+  PRIVATE
+  src/AccumulatorOpInfo.cpp
+  src/BinaryReductionSCC.cpp
+  src/GenericSCC.cpp
+  src/InductionVariableSCC.cpp
+  src/LinearInductionVariableSCC.cpp
+  src/LoopCarriedSCC.cpp
+  src/LoopCarriedUnknownSCC.cpp
+  src/LoopIterationSCC.cpp
+  src/MemoryClonableSCC.cpp
+  src/PeriodicVariableSCC.cpp
+  src/RecomputableSCC.cpp
+  src/ReductionSCC.cpp
+  src/SingleAccumulatorRecomputableSCC.cpp
+  src/StackObjectClonableSCC.cpp
+  src/UnknownClosedFormSCC.cpp
 )

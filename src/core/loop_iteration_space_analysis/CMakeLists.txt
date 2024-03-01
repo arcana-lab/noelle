@@ -1,5 +1,5 @@
 target_sources(
   Noelle # component name
-  PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/LoopIterationSpaceAnalysis.cpp
+  PRIVATE
+  src/LoopIterationSpaceAnalysis.cpp
 )

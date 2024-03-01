@@ -1,5 +1,5 @@
 target_sources(
   Noelle # component name
-  PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/InvariantManager.cpp
+  PRIVATE
+  src/InvariantManager.cpp
 )

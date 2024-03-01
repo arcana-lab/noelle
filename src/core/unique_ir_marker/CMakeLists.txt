@@ -1,10 +1,10 @@
 target_sources(
   Noelle # component name
-  PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/IDToValueMapper.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/UniqueIRConstants.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/UniqueIRMarker.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/UniqueIRMarkerPass.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/UniqueIRMarkerReader.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/UniqueIRVerifier.cpp
+  PRIVATE
+  src/IDToValueMapper.cpp
+  src/UniqueIRConstants.cpp
+  src/UniqueIRMarker.cpp
+  src/UniqueIRMarkerPass.cpp
+  src/UniqueIRMarkerReader.cpp
+  src/UniqueIRVerifier.cpp
 )
