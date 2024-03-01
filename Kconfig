@@ -1,4 +1,4 @@
-config CMAKE_INSTALL_PREFIX
+config NOELLE_INSTALL_DIR
   string "Installation directory for Noelle"
   default ./install
 

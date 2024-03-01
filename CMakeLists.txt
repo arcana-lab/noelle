@@ -1,12 +1,16 @@
-cmake_minimum_required(VERSION 3.4.3)
+cmake_minimum_required(VERSION 3.13)
 
 project(noelle)
 
 include(FetchContent)
 
 include(config.default.cmake)
-if(EXISTS config.cmake)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/config.cmake)
   include(config.cmake)
+endif()
+
+if(DEFINED NOELLE_INSTALL_DIR)
+  set(CMAKE_INSTALL_PREFIX ${NOELLE_INSTALL_DIR})
 endif()
 
 set(NOELLE_CXX_FLAGS 
@@ -17,10 +21,11 @@ set(NOELLE_CXX_FLAGS
   -Wall
 )
 
-# See `cmake --help-policy CMP0077`
-# `OLD` specifies that the effects of this policy are whatever LLVM 9
-# assumed at that time.
-cmake_policy(SET CMP0077 OLD)
+string(ASCII 27 Esc)
+set(Purple "${Esc}[35m")
+set(Magenta "${Esc}[35m")
+set(NoelleColor ${Purple})
+set(ColorReset "${Esc}[m")
 
 find_package(LLVM 9 REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
@@ -62,8 +67,10 @@ function(noelle_acquire_option OPT)
   else()
     message(FATAL_ERROR "${OPT} must be either ON or OFF")
   endif()
-  message(STATUS "Option ${OPT} is ${${OPT}}")
+  message(STATUS "Option ${NoelleColor}${OPT}${ColorReset} is ${${OPT}}")
 endfunction()
+
+message(STATUS "${NoelleColor}Install directory${ColorReset} is ${CMAKE_INSTALL_PREFIX}")
 
 noelle_acquire_option(NOELLE_SVF)
 noelle_acquire_option(NOELLE_SCAF)
