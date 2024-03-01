@@ -33,10 +33,6 @@ void print_usage(char *argv[]) {
             << "\t\t"
             << "Print the git origin used during compilation." << std::endl;
 
-  std::cout << "  --flags       "
-            << "\t\t"
-            << "Print the compilation options used to compile NOELLE."
-            << std::endl;
   std::cout
       << "  --llvm-prefix "
       << "\t\t"
