@@ -160,8 +160,5 @@ function(noelle_tool_declare name)
   set_target_properties(noelle_tool_libraries PROPERTIES NAMES "${names}")
 endfunction()
 
-if(NOELLE_AUTOTUNER STREQUAL ON)
-  add_subdirectory(autotuner)
-endif()
 add_subdirectory(src)
 add_subdirectory(bin)

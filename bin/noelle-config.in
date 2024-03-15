@@ -10,7 +10,7 @@ function show_help() {
   echo "  --version           Print the library version"
   echo "  --include           Print the include directory"
   echo "  --noelle-libs       Print the shared libraries used by the NOELLE core"
-  echo "  --tool-libs         Print the shared libraries used by the NOELLE core"
+  echo "  --tool-libs         Print the shared libraries of the NOELLE tools"
   echo "  --svf-libs          Print the shared libraries used by SVF"
   echo "  --scaf-libs         Print the shared libraries used by SCAF"
   echo "  --noelle-analyses   Print the deafult analyses provided and used by NOELLE"
