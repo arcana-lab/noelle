@@ -15,7 +15,7 @@
 
 ## Description
 NOELLE provides abstractions to help build advanced code analyses and transformations for LLVM IR code.
-GINO is built upon [SVF](https://svf-tools.github.io/SVF/), [SCAF](https://github.com/PrincetonUniversity/SCAF.git), and [LLVM](http://llvm.org).
+It is built upon [SVF](https://svf-tools.github.io/SVF/), [SCAF](https://github.com/PrincetonUniversity/SCAF.git), and [LLVM](http://llvm.org).
 
 NOELLE is in active development so more tools, tests, and abstractions will be added.
 
@@ -38,7 +38,7 @@ The only documentation available for NOELLE is:
 - [the wiki](https://github.com/arcana-lab/noelle/wiki) of the project
 
 ## Version
-The latest stable version is 9.13.1 (tag = `v9.13.1`).
+The latest stable version is 9.14.1 (tag = `v9.14.1`).
 
 ### Version Numbering Scheme
 The version number is in the form of \[v _Major.Minor.Revision_ \]
@@ -86,9 +86,6 @@ make ;
 The directory `src` includes sources of the noelle framework.
 Within this directory, `src/core` includes the abstractions provided by NOELLE.
 Also, `src/tools` includes code transformations that rely on the NOELLE's abstractions to modify the code.
-
-The directory `external` includes libraries that are external to NOELLE that are used by NOELLE.
-Some of these libraries are patched and/or extended for NOELLE.
 
 The directory `tests` includes unit tests.
 
