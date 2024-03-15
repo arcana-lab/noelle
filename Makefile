@@ -10,10 +10,10 @@ all: install
 install: external compile
 	cmake --install $(BUILD_DIR) 
 
-compile: $(BUILD_DIR)
+compile: build
 	cmake --build $(BUILD_DIR) -j$(JOBS) 
 
-$(BUILD_DIR):
+build:
 	cmake -S . -B $(BUILD_DIR) -G "$(GENERATOR)" \
 		-DCMAKE_INSTALL_MESSAGE=LAZY \
 		-DCMAKE_INSTALL_PREFIX=install
@@ -40,4 +40,4 @@ uninstall:
 	rm -f enable
 	rm -f .git/hooks/pre-commit
 
-.PHONY: all install compile external menuconfig tests format clean uninstall
+.PHONY: all build install compile external menuconfig tests format clean uninstall
