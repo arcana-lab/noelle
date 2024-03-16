@@ -7,7 +7,7 @@ export MENUCONFIG_STYLE = aquatic
 
 all: install
 
-install: external compile
+install: compile
 	cmake --install $(BUILD_DIR) 
 
 compile: build
@@ -40,4 +40,4 @@ uninstall:
 	rm -f enable
 	rm -f .git/hooks/pre-commit
 
-.PHONY: all build install compile external menuconfig tests format clean uninstall
+.PHONY: all build install compile menuconfig tests format clean uninstall
