@@ -242,23 +242,18 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
       /*
        * Check if the loop is hot enough.
        */
-      if (this->verbose >= Verbosity::Maximal) {
-        errs() << "Noelle:     Loop \"" << *loop->getHeader()->getFirstNonPHI()
-               << "\" (";
-      }
       auto loopStructure = new LoopStructure{ loop };
-
+      auto loopIDOpt = loopStructure->getID();
+      assert(loopIDOpt);
+      auto currentLoopIndex = loopIDOpt.value();
       if (this->verbose >= Verbosity::Maximal) {
+        errs() << "Noelle:     Loop " << currentLoopIndex << " \""
+               << *loop->getHeader()->getFirstNonPHI() << "\" (";
         errs() << (this->getProfiles()->getDynamicTotalInstructionCoverage(
                        loopStructure)
                    * 100)
                << "%)\n";
       }
-
-      auto loopIDOpt = loopStructure->getID();
-      assert(loopIDOpt);
-      auto currentLoopIndex = loopIDOpt.value();
-
       if (minimumHotness > 0) {
         if (!isLoopHot(loopStructure, minimumHotness)) {
           if (this->verbose >= Verbosity::Maximal) {
@@ -633,8 +628,10 @@ std::vector<LoopContent *> *Noelle::getLoopContents(double minimumHotness) {
      * Check if the function is hot.
      */
     if (!isFunctionHot(function, minimumHotness)) {
-      errs() << "Noelle:  Disable \"" << function->getName()
-             << "\" as cold function\n";
+      if (this->verbose >= Verbosity::Maximal) {
+        errs() << "Noelle:  Disable \"" << function->getName()
+               << "\" as cold function\n";
+      }
       continue;
     }
 
@@ -683,8 +680,10 @@ std::vector<LoopContent *> *Noelle::getLoopContents(double minimumHotness) {
       auto currentLoopIndex = loopIDOpt.value();
       if (minimumHotness > 0) {
         if (!this->isLoopHot(loopS, minimumHotness)) {
-          errs() << "Noelle:  Disable loop \"" << currentLoopIndex
-                 << "\" as cold code\n";
+          if (this->verbose >= Verbosity::Maximal) {
+            errs() << "Noelle:  Disable loop \"" << currentLoopIndex
+                   << "\" as cold code\n";
+          }
 
           /*
            * Free the memory.
