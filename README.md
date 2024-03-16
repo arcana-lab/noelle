@@ -2,7 +2,7 @@
 
 ## Table of Contents
 
-<p><img src="doc/arcana_logo.jpg" align="right" width="350" height="120"/></p>
+<p><img src="doc/figs/arcana_logo.jpg" align="right" width="350" height="120"/></p>
 
 - [Description](#description)
 - [Version](#version)
