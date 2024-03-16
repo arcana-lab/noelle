@@ -1,6 +1,6 @@
 config NOELLE_INSTALL_DIR
   string "Installation directory for Noelle"
-  default ./install
+  default "./install"
 
 config NOELLE_SVF
   bool "Use SVF analyses"

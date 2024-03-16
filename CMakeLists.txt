@@ -21,12 +21,6 @@ set(NOELLE_CXX_FLAGS
   -Wall
 )
 
-string(ASCII 27 Esc)
-set(Purple "${Esc}[35m")
-set(Magenta "${Esc}[35m")
-set(NoelleColor ${Purple})
-set(ColorReset "${Esc}[m")
-
 find_package(LLVM 9 REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
@@ -59,18 +53,26 @@ get_filename_component(
   NOELLE_CMAKE_ROOT ${NOELLE_CMAKE_ROOT} REALPATH
 )
 
+string(ASCII 27 Esc)
+set(Purple "${Esc}[35m")
+set(Green "${Esc}[32m")
+set(Red "${Esc}[31m")
+set(ColorReset "${Esc}[m")
+
 function(noelle_acquire_option OPT)
   if(${OPT} MATCHES "ON|On|on|1")
     set(${OPT} ON PARENT_SCOPE)
+    message(STATUS "${Purple}Option${ColorReset} ${OPT} ${Green}ON${ColorReset}")
   elseif(${OPT} MATCHES "OFF|Off|off|0")
     set(${OPT} OFF PARENT_SCOPE)
+    message(STATUS "${Purple}Option${ColorReset} ${OPT} ${Red}OFF${ColorReset}")
+  elseif(${OPT} MATCHES "OFF|Off|off|0")
   else()
     message(FATAL_ERROR "${OPT} must be either ON or OFF")
   endif()
-  message(STATUS "Option ${NoelleColor}${OPT}${ColorReset} is ${${OPT}}")
 endfunction()
 
-message(STATUS "${NoelleColor}Install directory${ColorReset} is ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "${Purple}Install directory${ColorReset} is ${CMAKE_INSTALL_PREFIX}")
 
 noelle_acquire_option(NOELLE_SVF)
 noelle_acquire_option(NOELLE_SCAF)
