@@ -1,15 +1,15 @@
 # <u>N</u>OELLE <u>O</u>ffers <u>E</u>mpowering <u>LL</u>VM <u>E</u>xtensions
 
-<p align="center"><img src="doc/arcana_logo.jpg" align="right" width="300" height="100"></img></p>
-
 ## Table of Contents
+
+<p><img src="doc/arcana_logo.jpg" align="right" width="350" height="120"/></p>
+
 - [Description](#description)
 - [Version](#version)
 - [Prerequisites](#prerequisites)
 - [Building and Installing](#building-and-installing)
 - [Testing](#testing)
 - [Repository structure](#repository-structure)
-- [Examples](#examples)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -18,7 +18,6 @@ NOELLE provides abstractions to help build advanced code analyses and transforma
 It is built upon [SVF](https://svf-tools.github.io/SVF/), [SCAF](https://github.com/PrincetonUniversity/SCAF.git), and [LLVM](http://llvm.org).
 
 NOELLE is in active development so more tools, tests, and abstractions will be added.
-
 
 This repository has been released to the general public in the hope of strengthening 
 [We](https://users.cs.northwestern.edu/~simonec/Team.html) released NOELLE's source code in the hope of benefiting 
@@ -70,11 +69,10 @@ To build and install NOELLE you need to configure it first, unless the [default 
 From the root directory:
 ```
 make menuconfig     # to customize the installation
-make
+make                # set the number of jobs with JOBS=8 (default is 16)
 ```
-The number of jobs can be changed with `make JOBS=4` (16 by default).
 
-To build with any other generator, e.g. Ninja, use `make GENERATOR=Ninja`.
+To build with any other generator, e.g. **Ninja**, use `make GENERATOR=Ninja`.
 
 Run `make uninstall` to uninstall without cleaning the build files.
 
@@ -85,7 +83,7 @@ For generality, the install directory is not removed.
 To run all tests, invoke the following commands:
 ```
 cd tests
-make clean      # optional but recommended
+make clean    # optional but recommended
 make
 ```
 
@@ -96,7 +94,7 @@ All tools are independent from each other.
 
 - `bin` contains the scripts through which the user will run all analyses and transformations
 - `doc` contains the documentation
-- `examples` contains examples of how to build an LLVM pass that uses NOELLE
+- `examples` contains examples of how to build LLVM pass that rely on NOELLE
 - `tests` contains unit tests
 
 ## NOELLE as an external project
@@ -143,11 +141,6 @@ FetchContent_GetProperties(noelle)
 include_directories(${noelle_SOURCE_DIR}/src/core/alloc_aa/include) # for example
 ```
 
-## Examples
-Examples of how to write an LLVM pass that relies on NOELLE can be found in `examples/passes`.
-
-If you have any trouble using this framework feel free to reach out to us for help (contact simone.campanoni@northwestern.edu).
-
 ## Contributing
 We welcome contributions from the community to improve this framework and evolve it to cater for more users.
 
@@ -157,6 +150,8 @@ To format all `.cpp` and `.hpp` files in the repository run `make format` from t
 
 Since git doesn't allow for git hooks to be installed when you clone the repository,
 cmake will install the pre-commit git hook upon installation.
+
+If you have any trouble using this framework feel free to reach out to us for help (contact simone.campanoni@northwestern.edu).
 
 ## License
 NOELLE is licensed under the [MIT License](./LICENSE.md).
