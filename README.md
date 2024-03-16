@@ -1,5 +1,6 @@
 # <u>N</u>OELLE <u>O</u>ffers <u>E</u>mpowering <u>LL</u>VM <u>E</u>xtensions
 
+<p align="center"><img src="doc/arcana_logo.jpg" align="right" width="300" height="100"></img></p>
 
 ## Table of Contents
 - [Description](#description)
@@ -11,7 +12,6 @@
 - [Examples](#examples)
 - [Contributing](#contributing)
 - [License](#license)
-
 
 ## Description
 NOELLE provides abstractions to help build advanced code analyses and transformations for LLVM IR code.
@@ -69,7 +69,7 @@ Check out the Zythos cluster guide [here](http://www.cs.northwestern.edu/~simone
 To build and install NOELLE you need to configure it first, unless the [default configuration](config.default.cmake) is satisfactory.
 From the root directory:
 ```
-make menuconfig         # to customize the installation
+make menuconfig     # to customize the installation
 make
 ```
 The number of jobs can be changed with `make JOBS=4` (16 by default).
@@ -144,7 +144,7 @@ include_directories(${noelle_SOURCE_DIR}/src/core/alloc_aa/include) # for exampl
 ```
 
 ## Examples
-LLVM passes in the directory `examples/passes` shows use cases of NOELLE.
+Examples of how to write an LLVM pass that relies on NOELLE can be found in `examples/passes`.
 
 If you have any trouble using this framework feel free to reach out to us for help (contact simone.campanoni@northwestern.edu).
 
