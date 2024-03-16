@@ -27,7 +27,7 @@ format:
 menuconfig:
 	@python3 bin/menuconfig.py
 
-clean:
+clean: uninstall
 	rm -rf $(BUILD_DIR)
 	rm -rf .config
 	$(MAKE) -C tests clean
