@@ -67,19 +67,22 @@ The guide about the Zythos cluster can be downloaded [here](http://www.cs.northw
 
 
 ## Building NOELLE
-To build and install NOELLE: run `make` from the repository root directory.
+
+To build and install NOELLE you need to configure it first.
+From the root directory run `make menuconfig` setting your preferences then run `make`.
 
 Run `make clean` from the root directory to clean the repository.
+This will also clean the configuration generated with `make menuconfig`.
 
 Run `make uninstall` from the root directory to uninstall the NOELLE installation.
-
+This will **not** clean the repository.
 
 ## Testing NOELLE
 To run all tests, invoke the following commands:
 ```
-make clean ; 
-cd tests ;
-make ;
+cd tests
+make clean      # optional but recommended
+make
 ```
 
 ## Repository structure
@@ -93,6 +96,51 @@ The directory `examples` includes examples of LLVM passes (and their tests) that
 
 Finally, the directory `doc` includes the documentation of NOELLE.
 
+## NOELLE as an external project
+
+NOELLE can be easily integrated your project with
+[ExternalProject](https://cmake.org/cmake/help/latest/module/ExternalProject.html)
+and [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)
+
+
+Example with **ExternalProject**.
+This will download, compile and install the repository at build time.
+By the time you compile your project, NOELLE will be already installed.
+
+```cmake
+include(ExternalProject)
+ExternalProject_Add(
+    noelle
+    GIT_REPOSITORY  "https://github.com/arcana-lab/noelle.git"
+    GIT_TAG         v9.14.1
+    BUILD_COMMAND   ${CMAKE_COMMAND} --build . -j16
+    INSTALL_COMMAND ${CMAKE_COMMAND} --install .
+    CMAKE_ARGS
+        -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/noelle
+        -DNOELLE_SVF=OFF
+        -DNOELLE_SCAF=OFF
+)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/noelle)
+```
+
+Example with **FetchContent**.
+This will only make the repository available as soon as cmake is run.
+Your project and noelle will then be compiled as a single project.
+
+```cmake
+include(FetchContent)
+FetchContent_Declare(
+    noelle
+    GIT_REPOSITORY  "https://github.com/arcana-lab/noelle.git"
+    GIT_TAG         v9.14.1
+)
+set(NOELLE_SVF OFF)
+set(NOELLE_SCAF OFF)
+FetchContent_MakeAvailable(noelle)
+FetchContent_GetProperties(noelle)
+# at this point noelle is available but NOT installed
+include_directories(${noelle_SOURCE_DIR}/src/core/alloc_aa/include) # for example
+```
 
 ## Examples of using NOELLE
 LLVM passes in the directory `examples/passes` shows use cases of NOELLE.
