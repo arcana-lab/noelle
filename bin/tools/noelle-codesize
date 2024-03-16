@@ -2,4 +2,4 @@
 
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
-noelle-load -codesize $@ -disable-output
+noelle-load -load $installDir/lib/CodeSize.so -CodeSize -disable-output $@
