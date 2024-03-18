@@ -1,40 +1,42 @@
-EXTERNAL_OPTIONS=
-DEBUG?=0
-JOBS?=8
+BUILD_DIR ?= build
+export GENERATOR ?= Unix Makefiles
+export JOBS ?= 8
+export NOELLE_INSTALL_DIR ?= $(shell realpath ./install)
+export NOELLE_SCAF ?= ON
+export NOELLE_SVF ?= ON
+export NOELLE_AUTOTUNER ?= ON
+export MAKEFLAGS += --no-print-directory
 
-all: hooks src
+all: install
 
-external:
-	cd external ; make DEBUG=$(DEBUG) JOBS=$(JOBS) $(EXTERNAL_OPTIONS);
+install: external compile
+	cmake --install $(BUILD_DIR) 
 
-src: external
-	cd src ; make ; 
+compile: $(BUILD_DIR)
+	cmake --build $(BUILD_DIR) -j$(JOBS) 
 
-src-fast: external
-	cd src ; make core-fast DEBUG=$(DEBUG) JOBS=$(JOBS);
-	cd src ; make tools-fast DEBUG=$(DEBUG) JOBS=$(JOBS);
+$(BUILD_DIR):
+	cmake -S . -B $(BUILD_DIR) -G "$(GENERATOR)" \
+		-DCMAKE_INSTALL_MESSAGE=LAZY \
+		-DCMAKE_INSTALL_PREFIX=$(NOELLE_INSTALL_DIR) \
+		-DNOELLE_SCAF=$(NOELLE_SCAF) \
+		-DNOELLE_SVF=$(NOELLE_SVF)
 
-tests: src
-	cd tests ; make ;
-
-hooks:
-	make -C .githooks
+tests: install
+	$(MAKE) -C tests
 
 format:
-	cd src ; ./scripts/format_source_code.sh
+	find ./src -regex '.*\.[c|h]pp' | xargs clang-format -i
 
 clean:
-	cd external ; make clean ; 
-	cd src ; make clean ; 
-	cd tests ; make clean; 
-	cd examples ; make clean ; 
-	find ./ -name .clangd -exec rm -rv {} +
-	find ./ -name .cache -exec rm -rv {} +
+	rm -rf $(BUILD_DIR)
+	$(MAKE) -C tests clean
+	$(MAKE) -C examples clean
+	rm -f compile_commands.json
 
-uninstall: clean
-	rm -f enable ;
-	rm -rf install ;
-	cd external ; make $@
-	if test -d .githooks ; then cd .githooks ; make clean ; fi;
+uninstall:
+	-cat $(BUILD_DIR)/install_manifest.txt | xargs rm -f
+	rm -f enable
+	rm -f .git/hooks/pre-commit
 
-.PHONY: src src-fast tests hooks format clean uninstall external
+.PHONY: all install compile external tests format clean uninstall

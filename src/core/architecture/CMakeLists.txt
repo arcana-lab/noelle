@@ -1,17 +1,5 @@
-# Project
-cmake_minimum_required(VERSION 3.13)
-project(Parallelization)
-
-# Dependences
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
-
-# Pass
-add_subdirectory(src)
-
-# Install
-install(
-  FILES
-  include/noelle/core/Architecture.hpp 
-  DESTINATION 
-  include/noelle/core
-  )
+add_llvm_library(
+  Architecture # pass name
+  MODULE
+  src/Architecture.cpp
+)

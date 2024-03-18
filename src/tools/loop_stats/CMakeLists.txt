@@ -1,17 +1,11 @@
-# Project
-cmake_minimum_required(VERSION 3.13)
-project(LoopStats)
-
-# Dependences
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
-
-# Pass
-add_subdirectory(src)
-
-# Install
-install(
-  FILES
-  include/LoopStats.hpp
-  DESTINATION 
-  include/noelle/tools
-  )
+add_llvm_library(
+  LoopStats # pass name
+  MODULE
+  src/LoopStats.cpp
+  src/LoopStats_Dependences.cpp
+  src/LoopStats_InductionVariables.cpp
+  src/LoopStats_Invariants.cpp
+  src/LoopStats_Loops.cpp
+  src/LoopStats_Printer.cpp
+  src/Pass.cpp
+)

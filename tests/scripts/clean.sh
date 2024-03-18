@@ -19,16 +19,7 @@ function cleanTests {
   cd ../ ;
 }
 
-./scripts/add_symbolic_link.sh ;
-
-cleanTests regression
-cleanTests performance
 cleanTests unit
-
-# Remove speedup info on performance tests
-cd performance ;
-rm -f *.txt ;
-cd ../ ;
 
 # Clean unit tests
 cd unit 

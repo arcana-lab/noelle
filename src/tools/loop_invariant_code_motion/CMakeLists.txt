@@ -1,17 +1,9 @@
-# Project
-cmake_minimum_required(VERSION 3.13)
-project(LICM)
-
-# Dependences
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
-
-# Pass
-add_subdirectory(src)
-
-# Install
-install(
-  FILES
-  include/noelle/tools/LoopInvariantCodeMotion.hpp
-  DESTINATION 
-  include/noelle/tools
-  )
+add_llvm_library(
+  LoopInvariantCodeMotion # pass name
+  MODULE
+  src/LastLiveOutPeeler.cpp
+  src/LastLiveOutStoreHoister.cpp
+  src/LoopInvariantCodeMotion.cpp
+  src/LoopInvariantHoister.cpp
+  src/Mem2RegNonAlloca.cpp
+)

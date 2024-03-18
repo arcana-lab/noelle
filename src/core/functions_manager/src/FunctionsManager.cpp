@@ -24,10 +24,10 @@
 namespace arcana::noelle {
 
 FunctionsManager::FunctionsManager(Module &m,
-                                   PDGAnalysis &noellePDGAnalysis,
+                                   PDGGenerator &noellePDGGenerator,
                                    Hot *profiles)
   : program{ m },
-    pdgAnalysis{ noellePDGAnalysis },
+    pdgAnalysis{ noellePDGGenerator },
     pcg{ nullptr },
     prof{ profiles } {
   return;

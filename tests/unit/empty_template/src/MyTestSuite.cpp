@@ -59,13 +59,13 @@ bool MyTestSuite::doInitialization(Module &M) {
 }
 
 void MyTestSuite::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<PDGAnalysis>();
+  AU.addRequired<PDGGenerator>();
 }
 
 bool MyTestSuite::runOnModule(Module &M) {
   errs() << "MyTestSuite: Start\n";
   auto mainFunction = M.getFunction("main");
-  auto pdg = getAnalysis<PDGAnalysis>().getPDG();
+  auto pdg = getAnalysis<PDGGenerator>().getPDG();
   auto fdg = pdg->createFunctionSubgraph(*mainFunction);
 
   suite->runTests((ModulePass &)*this);

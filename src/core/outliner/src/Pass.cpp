@@ -43,7 +43,7 @@ Outliner *OutlinerPass::getOutliner(void) const {
 
 // Next there is code to register your pass to "opt"
 char OutlinerPass::ID = 0;
-static RegisterPass<OutlinerPass> X("outliner", "Outline code");
+static RegisterPass<OutlinerPass> X("Outliner", "Outline code");
 
 // Next there is code to register your pass to "clang"
 static OutlinerPass *_PassMaker = NULL;

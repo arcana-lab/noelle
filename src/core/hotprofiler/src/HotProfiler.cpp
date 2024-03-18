@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/HotProfiler.hpp"
 
-using namespace llvm;
-using namespace arcana::noelle;
+namespace arcana::noelle {
 
 void HotProfiler::analyzeProfiles(Module &M) {
 
@@ -95,3 +94,5 @@ void HotProfiler::analyzeProfiles(Module &M) {
 Hot &HotProfiler::getHot(void) {
   return this->hot;
 }
+
+} // namespace arcana::noelle

@@ -259,8 +259,9 @@ Instruction *Privatizer::getInitProgramPoint(
     }
 
     /*
-     * The initialization for each element in the array must happen in the
-     * loop header, because otherwise the storeInst is not necessarily executed.
+     * The initialization for each element in the array (i.e. a storeInst
+     * that overwrites that element) must happen in each iteration,
+     * because otherwise the storeInst is not necessarily executed.
      * For example, this piece of code doesn't completely initialize
      * @globalArray.
      *
@@ -269,7 +270,13 @@ Instruction *Privatizer::getInitProgramPoint(
      *   if (i > 5) globalVar[i] = 7;
      * }
      */
-    if (storeInst->getParent() != LDI->getLoopStructure()->getHeader()) {
+    auto storeExecutedEachIteration = true;
+    for (auto latch : LDI->getLoopStructure()->getLatches()) {
+      storeExecutedEachIteration &=
+          DS->DT.dominates(storeInst, latch->getTerminator());
+    }
+
+    if (!storeExecutedEachIteration) {
       return nullptr;
     }
 

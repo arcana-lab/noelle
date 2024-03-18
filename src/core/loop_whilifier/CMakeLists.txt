@@ -1,17 +1,5 @@
-# Project
-cmake_minimum_required(VERSION 3.13)
-project(Whilifier)
-
-# Dependences
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
-
-# Pass
-add_subdirectory(src)
-
-# Install
-install(
-  FILES
-  include/noelle/core/LoopWhilify.hpp
-  DESTINATION 
-  include/noelle/core
-  )
+add_llvm_library(
+  LoopWhilifier # pass name
+  MODULE
+  src/LoopWhilify.cpp
+)

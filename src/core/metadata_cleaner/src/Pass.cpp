@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/CleanMetadata.hpp"
+#include "noelle/core/MetadataCleaner.hpp"
 
 namespace arcana::noelle {
 
@@ -31,30 +31,39 @@ static cl::opt<bool> CleanPDGMetadata(
     "clean-pdg-metadata",
     cl::init(false),
     cl::desc("noelle/core/Clean metadata of pdg"));
+static cl::opt<bool> CleanSCCMetadata(
+    "clean-pdg-scc-metadata",
+    cl::init(false),
+    cl::desc("noelle/core/Clean metadata of pdg scc"));
 static cl::opt<bool> CleanProfileMetadata(
     "clean-prof-metadata",
     cl::init(false),
     cl::desc("noelle/core/Clean metadata of profiles"));
 
-bool CleanMetadata::doInitialization(Module &M) {
+bool MetadataCleaner::doInitialization(Module &M) {
   this->cleanLoop = CleanLoopMetadata.getNumOccurrences() > 0 ? true : false;
   this->cleanPDG = CleanPDGMetadata.getNumOccurrences() > 0 ? true : false;
+  this->cleanSCC = CleanSCCMetadata.getNumOccurrences() > 0 ? true : false;
   this->cleanProf = CleanProfileMetadata.getNumOccurrences() > 0 ? true : false;
 
   return false;
 }
 
-void CleanMetadata::getAnalysisUsage(AnalysisUsage &AU) const {
+void MetadataCleaner::getAnalysisUsage(AnalysisUsage &AU) const {
   return;
 }
 
-bool CleanMetadata::runOnModule(Module &M) {
+bool MetadataCleaner::runOnModule(Module &M) {
   if (this->cleanLoop) {
     this->cleanLoopMetadata(M);
   }
 
   if (this->cleanPDG) {
     this->cleanPDGMetadata(M);
+  }
+
+  if (this->cleanSCC) {
+    this->cleanSCCMetadata(M);
   }
 
   if (this->cleanProf) {
@@ -65,26 +74,26 @@ bool CleanMetadata::runOnModule(Module &M) {
 }
 
 // Next there is code to register your pass to "opt"
-char CleanMetadata::ID = 0;
-static RegisterPass<CleanMetadata> X(
-    "CleanMetadata",
+char MetadataCleaner::ID = 0;
+static RegisterPass<MetadataCleaner> X(
+    "MetadataCleaner",
     "Clean the metadata embeded to the bitcode");
 
 // Next there is code to register your pass to "clang"
-static CleanMetadata *_PassMaker = NULL;
+static MetadataCleaner *_PassMaker = NULL;
 static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
                                         [](const PassManagerBuilder &,
                                            legacy::PassManagerBase &PM) {
                                           if (!_PassMaker) {
                                             PM.add(_PassMaker =
-                                                       new CleanMetadata());
+                                                       new MetadataCleaner());
                                           }
                                         }); // ** for -Ox
 static RegisterStandardPasses _RegPass2(
     PassManagerBuilder::EP_EnabledOnOptLevel0,
     [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
       if (!_PassMaker) {
-        PM.add(_PassMaker = new CleanMetadata());
+        PM.add(_PassMaker = new MetadataCleaner());
       }
     }); // ** for -O0
 

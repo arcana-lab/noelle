@@ -21,7 +21,7 @@
  */
 #include "noelle/core/Architecture.hpp"
 #include "noelle/core/PDG.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/LoopContent.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
@@ -29,7 +29,7 @@
 
 namespace arcana::noelle {
 
-LoopContent::LoopContent(LDGAnalysis &ldgAnalysis,
+LoopContent::LoopContent(LDGGenerator &ldgAnalysis,
                          CompilationOptionsManager *compilationOptionsManager,
                          PDG *fG,
                          LoopTree *loopNode,
@@ -44,7 +44,7 @@ LoopContent::LoopContent(LDGAnalysis &ldgAnalysis,
   return;
 }
 
-LoopContent::LoopContent(LDGAnalysis &ldgAnalysis,
+LoopContent::LoopContent(LDGGenerator &ldgAnalysis,
                          CompilationOptionsManager *compilationOptionsManager,
                          PDG *fG,
                          LoopTree *loopNode,
@@ -62,7 +62,7 @@ LoopContent::LoopContent(LDGAnalysis &ldgAnalysis,
 }
 
 LoopContent::LoopContent(
-    LDGAnalysis &ldgAnalysis,
+    LDGGenerator &ldgAnalysis,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopTree *loopNode,
@@ -85,7 +85,7 @@ LoopContent::LoopContent(
   return;
 }
 
-LoopContent::LoopContent(LDGAnalysis &ldgAnalysis,
+LoopContent::LoopContent(LDGGenerator &ldgAnalysis,
                          CompilationOptionsManager *compilationOptionsManager,
                          PDG *fG,
                          LoopTree *loopNode,
@@ -104,7 +104,7 @@ LoopContent::LoopContent(LDGAnalysis &ldgAnalysis,
 }
 
 LoopContent::LoopContent(
-    LDGAnalysis &ldgAnalysis,
+    LDGGenerator &ldgAnalysis,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopTree *loopNode,
@@ -129,7 +129,7 @@ LoopContent::LoopContent(
 }
 
 LoopContent::LoopContent(
-    LDGAnalysis &ldgAnalysis,
+    LDGGenerator &ldgAnalysis,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopTree *loopNode,
@@ -309,7 +309,7 @@ uint64_t LoopContent::computeTripCounts(Loop *l, ScalarEvolution &SE) {
 }
 
 std::pair<PDG *, SCCDAG *> LoopContent::createDGsForLoop(
-    LDGAnalysis &ldgAnalysis,
+    LDGGenerator &ldgAnalysis,
     CompilationOptionsManager *com,
     Loop *l,
     LoopTree *loopNode,
@@ -546,7 +546,7 @@ void LoopContent::removeUnnecessaryDependenciesWithThreadSafeLibraryFunctions(
     if (auto producerCall = dyn_cast<CallInst>(producer)) {
       auto callee = producerCall->getCalledFunction();
       if (callee != nullptr) {
-        if (PDGAnalysis::isTheLibraryFunctionThreadSafe(callee)) {
+        if (PDGGenerator::isTheLibraryFunctionThreadSafe(callee)) {
           edgesToRemove.insert(edge);
           continue;
         }

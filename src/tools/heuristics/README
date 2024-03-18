@@ -1,8 +1,0 @@
-This is the template to use for assignments of the Code Analysis and Transformation class at Northwestern
-
-To build: 
-  Compile and install your code by invoking ./run_me.sh
-  The script run_me.sh compiles and installs an LLVM-based compiler that includes your CAT in the directory ~/CAT
-
-To run:
-  opt -load ~/CAT/lib/PDGAnalysis.so -load ~/CAT/lib/PDGPrinter.so -disable-output -PDGPrinter test.bc

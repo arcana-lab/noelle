@@ -213,7 +213,7 @@ LoopGoverningInductionVariable::LoopGoverningInductionVariable(
 
       auto valueNodeInSCC = scc.fetchNode(value);
       for (auto edge : valueNodeInSCC->getIncomingEdges()) {
-        if (!isa<DataDependence<Value,Value>>(edge)) {
+        if (!isa<DataDependence<Value, Value>>(edge)) {
           continue;
         }
 

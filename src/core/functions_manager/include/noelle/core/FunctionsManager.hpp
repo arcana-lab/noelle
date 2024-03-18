@@ -23,14 +23,14 @@
 #define NOELLE_SRC_CORE_FUNCTIONS_MANAGER_FUNCTIONSMANAGER_H_
 
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/Hot.hpp"
 
 namespace arcana::noelle {
 
 class FunctionsManager {
 public:
-  FunctionsManager(Module &m, PDGAnalysis &noellePDGAnalysis, Hot *profiles);
+  FunctionsManager(Module &m, PDGGenerator &noellePDGGenerator, Hot *profiles);
 
   Function *getEntryFunction(void) const;
 
@@ -59,7 +59,7 @@ public:
 
 private:
   Module &program;
-  PDGAnalysis &pdgAnalysis;
+  PDGGenerator &pdgAnalysis;
   CallGraph *pcg;
   Hot *prof;
 };

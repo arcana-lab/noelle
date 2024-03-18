@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if test $# -lt 2 ; then
-  echo "USAGE: `basename $0` INPUT_BITCODE OUTPUT_BITCODE" ;
+  echo "USAGE: `basename $0` INPUT_BITCODE -o OUTPUT_BITCODE" ;
   exit 1;
 fi
 
@@ -15,15 +15,6 @@ done
 installDir=$(realpath $( cd -P "$( dirname "${SOURCE}" )" >/dev/null 2>&1 && pwd )/..)
 
 # Set the command to execute
-cmdToExecute="opt -enable-new-pm=0 -load ${installDir}/lib/CleanMetadata.so -CleanMetadata -clean-loop-metadata=true -clean-prof-metadata=true -clean-pdg-metadata=true $1 -o $2" 
+cmdToExecute="opt -enable-new-pm=0 --strip-named-metadata -load ${installDir}/lib/MetadataCleaner.so -MetadataCleaner -clean-loop-metadata -clean-prof-metadata -clean-pdg-metadata -clean-pdg-scc-metadata $@" 
 echo $cmdToExecute ;
-
-# Execute the command
-eval $cmdToExecute 
-
-# Set the command to execute
-cmdToExecute="opt --strip-named-metadata $2 -o $2" ;
-echo $cmdToExecute ;
-
-# Execute the command
 eval $cmdToExecute 

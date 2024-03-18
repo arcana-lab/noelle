@@ -21,7 +21,7 @@
  */
 #include "noelle/core/Utils.hpp"
 #include "noelle/core/Invariants.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 
 namespace arcana::noelle {
 
@@ -188,7 +188,7 @@ InvariantManager::InvarianceChecker::InvarianceChecker(
          * The instruction is a call to a library function.
          * Check if the function is pure.
          */
-        if (!PDGAnalysis::isTheLibraryFunctionPure(callee)) {
+        if (!PDGGenerator::isTheLibraryFunctionPure(callee)) {
           canEvolve = true;
         }
       }

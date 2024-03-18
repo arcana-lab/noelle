@@ -8,7 +8,6 @@
 #include <algorithm>
 
 #include "noelle/core/Noelle.hpp"
-#include "noelle/tools/DOALL.hpp"
 
 using namespace arcana::noelle;
 
@@ -26,7 +25,6 @@ struct CAT : public ModulePass {
   void printGraph(LoopNestingGraphLoopNode *node,
                   int level,
                   std::unordered_set<LoopNestingGraphLoopNode *> &allNodes,
-                  DOALL doall,
                   Noelle *noelle,
                   Hot *profiles,
                   bool must) {
@@ -38,7 +36,9 @@ struct CAT : public ModulePass {
     std::string spacedent = std::string(level * 3, ' ');
     auto LS = node->getLoop();
     auto LDI = noelle->getLoopContent(LS);
-    bool doallable = doall.canBeAppliedToLoop(LDI, nullptr);
+    auto sccManager = LDI->getSCCManager();
+    auto numberOfUnknownSCCs =
+        sccManager->getSCCsOfKind(GenericSCC::SCCKind::LOOP_CARRIED_UNKNOWN);
     // bool isOMP = LDI->isOMPLoop();
 
     // Iterate through the header BB until an instruction has debug information.
@@ -66,7 +66,7 @@ struct CAT : public ModulePass {
      *   errs() << "\033[0;33m !!OMP!!  \033[m";
      * }
      */
-    if (doallable) {
+    if (numberOfUnknownSCCs.size() == 0) {
       errs() << "\033[0;32m !!DOALL!!  \033[m";
     }
     node->print();
@@ -92,7 +92,6 @@ struct CAT : public ModulePass {
       printGraph(child->getChild(),
                  level + 1,
                  allNodes,
-                 doall,
                  noelle,
                  profiles,
                  must);
@@ -111,7 +110,6 @@ struct CAT : public ModulePass {
      */
     auto &noelle = getAnalysis<Noelle>();
     auto profiles = noelle.getProfiles();
-    DOALL doall{ noelle };
 
     /*
      * Fetch the loop nesting graph
@@ -128,7 +126,7 @@ struct CAT : public ModulePass {
 
     errs() << "\n###############################\n";
     for (auto node : rootNodes) {
-      printGraph(node, 0, allNodes, doall, &noelle, profiles, true);
+      printGraph(node, 0, allNodes, &noelle, profiles, true);
       errs() << "\n###############################\n";
     }
 

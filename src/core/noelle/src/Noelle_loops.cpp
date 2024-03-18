@@ -24,7 +24,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopStructure.hpp"
 #include "noelle/core/Noelle.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/Architecture.hpp"
 #include "noelle/core/LoopForest.hpp"
 #include "noelle/core/HotProfiler.hpp"
@@ -211,7 +211,9 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
     if (function->empty()) {
       continue;
     }
-    errs() << "Noelle:  Function \"" << function->getName() << "\"\n";
+    if (this->verbose >= Verbosity::Maximal) {
+      errs() << "Noelle:  Function \"" << function->getName() << "\"\n";
+    }
 
     /*
      * Check if the function is hot.
@@ -241,23 +243,24 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
       /*
        * Check if the loop is hot enough.
        */
-      errs() << "Noelle:     Loop \"" << *loop->getHeader()->getFirstNonPHI()
-             << "\" (";
       auto loopStructure = new LoopStructure{ loop };
-
-      errs() << (this->getProfiles()->getDynamicTotalInstructionCoverage(
-                     loopStructure)
-                 * 100)
-             << "%)\n";
-
       auto loopIDOpt = loopStructure->getID();
       assert(loopIDOpt);
       auto currentLoopIndex = loopIDOpt.value();
-
+      if (this->verbose >= Verbosity::Maximal) {
+        errs() << "Noelle:     Loop " << currentLoopIndex << " \""
+               << *loop->getHeader()->getFirstNonPHI() << "\" (";
+        errs() << (this->getProfiles()->getDynamicTotalInstructionCoverage(
+                       loopStructure)
+                   * 100)
+               << "%)\n";
+      }
       if (minimumHotness > 0) {
         if (!isLoopHot(loopStructure, minimumHotness)) {
-          errs() << "Noelle:  Disable loop \"" << currentLoopIndex
-                 << "\" as cold code\n";
+          if (this->verbose >= Verbosity::Maximal) {
+            errs() << "Noelle:  Disable loop \"" << currentLoopIndex
+                   << "\" as cold code\n";
+          }
           delete loopStructure;
           continue;
         }
@@ -287,7 +290,9 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
        * Check if more than one thread is assigned to the current loop.
        * If that's the case, then we have to enable that loop.
        */
-      errs() << "Noelle:      Current index = " << currentLoopIndex << "\n";
+      if (this->verbose >= Verbosity::Maximal) {
+        errs() << "Noelle:      Current index = " << currentLoopIndex << "\n";
+      }
       auto maximumNumberOfCoresForTheParallelization =
           this->loopThreads[currentLoopIndex];
       if ((maximumNumberOfCoresForTheParallelization <= 1)
@@ -302,8 +307,10 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
         delete loopStructure;
         continue;
       }
-      errs() << "Noelle:      Threads = "
-             << maximumNumberOfCoresForTheParallelization << "\n";
+      if (this->verbose >= Verbosity::Maximal) {
+        errs() << "Noelle:      Threads = "
+               << maximumNumberOfCoresForTheParallelization << "\n";
+      }
 
       /*
        * The current loop needs to be considered as specified by the user.
@@ -622,8 +629,10 @@ std::vector<LoopContent *> *Noelle::getLoopContents(double minimumHotness) {
      * Check if the function is hot.
      */
     if (!isFunctionHot(function, minimumHotness)) {
-      errs() << "Noelle:  Disable \"" << function->getName()
-             << "\" as cold function\n";
+      if (this->verbose >= Verbosity::Maximal) {
+        errs() << "Noelle:  Disable \"" << function->getName()
+               << "\" as cold function\n";
+      }
       continue;
     }
 
@@ -672,8 +681,10 @@ std::vector<LoopContent *> *Noelle::getLoopContents(double minimumHotness) {
       auto currentLoopIndex = loopIDOpt.value();
       if (minimumHotness > 0) {
         if (!this->isLoopHot(loopS, minimumHotness)) {
-          errs() << "Noelle:  Disable loop \"" << currentLoopIndex
-                 << "\" as cold code\n";
+          if (this->verbose >= Verbosity::Maximal) {
+            errs() << "Noelle:  Disable loop \"" << currentLoopIndex
+                   << "\" as cold code\n";
+          }
 
           /*
            * Free the memory.

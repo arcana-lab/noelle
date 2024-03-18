@@ -20,13 +20,14 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/LoopDistribution.hpp"
-#include "noelle/core/PDGAnalysis.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/HotProfiler.hpp"
 
-using namespace llvm;
-using namespace arcana::noelle;
+namespace arcana::noelle {
 
 LoopDistribution::LoopDistribution() {
 
   return;
 }
+
+} // namespace arcana::noelle

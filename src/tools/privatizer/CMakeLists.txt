@@ -1,16 +1,9 @@
-# Project
-cmake_minimum_required(VERSION 3.13)
-project(Privatizer)
-
-# Dependences
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
-
-# Pass
-add_subdirectory(src)
-
-# Install
-install(
-  FILES
-  DESTINATION 
-  include/noelle/tools
-  )
+add_llvm_library(
+  Privatizer # pass name
+  MODULE
+  src/GlobalToStack.cpp
+  src/HeapToStack.cpp
+  src/Pass.cpp
+  src/Privatizer.cpp
+  src/Utils.cpp
+)

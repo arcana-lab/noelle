@@ -197,7 +197,7 @@ bool SCC::hasCycle(bool ignoreControlDep) {
       auto node = nodesToVisit.front();
       nodesToVisit.pop();
       for (auto edge : node->getOutgoingEdges()) {
-        if (ignoreControlDep && isa<ControlDependence<Value,Value>>(edge))
+        if (ignoreControlDep && isa<ControlDependence<Value, Value>>(edge))
           continue;
 
         auto otherNode = edge->getDstNode();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020 Simone Campanoni
+ * Copyright 2019 - 2024 Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,17 +19,9 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
-#include <fstream>
-#include <algorithm>
-
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Support/raw_ostream.h"
-
 #include "LoopMetadataPass.hpp"
 
-using namespace llvm;
-using namespace arcana::noelle;
+namespace arcana::noelle {
 
 std::vector<LoopStructure *> LoopMetadataPass::getLoopStructuresWithoutNoelle(
     Module &M) {
@@ -78,3 +70,5 @@ bool LoopMetadataPass::setIDs(std::vector<LoopStructure *> &loopStructures) {
 
   return modified;
 }
+
+} // namespace arcana::noelle

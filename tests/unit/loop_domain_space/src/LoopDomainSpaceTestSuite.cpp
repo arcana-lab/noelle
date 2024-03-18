@@ -73,7 +73,7 @@ bool LoopDomainSpaceTestSuite::doInitialization(Module &M) {
 
 void LoopDomainSpaceTestSuite::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<Noelle>();
-  AU.addRequired<PDGAnalysis>();
+  AU.addRequired<PDGGenerator>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
 }
@@ -176,8 +176,8 @@ void LoopDomainSpaceTestSuite::computeAnalysisWithoutSCEVSimplification(void) {
   auto mainFunction = M->getFunction("main");
   auto LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
   auto SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
-  getAnalysis<PDGAnalysis>().releaseMemory();
-  auto pdg = getAnalysis<PDGAnalysis>().getPDG();
+  getAnalysis<PDGGenerator>().releaseMemory();
+  auto pdg = getAnalysis<PDGGenerator>().getPDG();
   auto fdg = pdg->createFunctionSubgraph(*mainFunction);
   auto topLoop = LI->getLoopsInPreorder()[0];
   auto loopDG = fdg->createLoopsSubgraph(topLoop);
@@ -231,8 +231,8 @@ void LoopDomainSpaceTestSuite::computeAnalysisWithSCEVSimplification(void) {
   auto mainFunction = M->getFunction("main");
   auto LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
   auto SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
-  getAnalysis<PDGAnalysis>().releaseMemory();
-  auto pdg = getAnalysis<PDGAnalysis>().getPDG();
+  getAnalysis<PDGGenerator>().releaseMemory();
+  auto pdg = getAnalysis<PDGGenerator>().getPDG();
   auto fdg = pdg->createFunctionSubgraph(*mainFunction);
   Loop *topLoop = LI->getLoopsInPreorder()[0];
   auto loopDG = fdg->createLoopsSubgraph(topLoop);

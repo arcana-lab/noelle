@@ -21,9 +21,9 @@
  */
 #include "noelle/core/Noelle.hpp"
 #include "noelle/core/ReductionSCC.hpp"
+#include "noelle/core/LoopIterationSCC.hpp"
 #include "noelle/core/InductionVariableSCC.hpp"
 #include "noelle/core/MemoryClonableSCC.hpp"
-#include "noelle/tools/DSWP.hpp"
 #include "SCCDAGAttrTestSuite.hpp"
 
 namespace arcana::noelle {
@@ -80,7 +80,7 @@ bool SCCDAGAttrTestSuite::doInitialization(Module &M) {
 }
 
 void SCCDAGAttrTestSuite::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<PDGAnalysis>();
+  AU.addRequired<PDGGenerator>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
@@ -115,9 +115,9 @@ bool SCCDAGAttrTestSuite::runOnModule(Module &M) {
   auto loopNode =
       forest->getInnermostLoopThatContains(&*topLoop->getHeader()->begin());
 
-  auto pdg = getAnalysis<PDGAnalysis>().getPDG();
+  auto pdg = getAnalysis<PDGGenerator>().getPDG();
   this->fdg = pdg->createFunctionSubgraph(*mainFunction);
-  LDGAnalysis ldg{};
+  LDGGenerator ldg{};
   this->ldi = new LoopContent(ldg,
                               this->noelle->getCompilationOptionsManager(),
                               fdg,
@@ -198,13 +198,110 @@ Values SCCDAGAttrTestSuite::reducibleSCCsAreFound(ModulePass &pass,
 Values SCCDAGAttrTestSuite::clonableSCCsAreFound(ModulePass &pass,
                                                  TestSuite &suite) {
   auto &attrPass = static_cast<SCCDAGAttrTestSuite &>(pass);
-  DSWP dswp{ *(attrPass.noelle), false, true };
   std::set<SCC *> sccs;
+
+  /*
+   * Fetch the set of SCC that could be safely copied between tasks.
+   */
+  std::set<GenericSCC *> clonableSCCs;
+  auto SCCDAG = attrPass.attrs->getSCCDAG();
+  auto loopNode = attrPass.ldi->getLoopHierarchyStructures();
+  for (auto nodePair : SCCDAG->internalNodePairs()) {
+
+    /*
+     * Fetch the current SCC.
+     */
+    auto currentSCC = nodePair.first;
+    auto currentSCCInfo = attrPass.attrs->getSCCAttrs(currentSCC);
+
+    /*
+     * Check if the current SCC can be removed (e.g., because it is due to
+     * induction variables). If it is, then this SCC has already been assigned
+     * to every dependent partition.
+     */
+    auto onlyTerminators = true;
+    for (auto iNodePair : currentSCC->internalNodePairs()) {
+      auto V = iNodePair.first;
+      if (auto inst = dyn_cast<Instruction>(V)) {
+        if (!isa<CmpInst>(inst) && !inst->isTerminator()) {
+          onlyTerminators = false;
+          break;
+        }
+      }
+    }
+    if (onlyTerminators) {
+      clonableSCCs.insert(currentSCCInfo);
+      continue;
+    }
+
+    /*
+     * Check if the SCC can be trivially cloned on all DSWP stages.
+     */
+    auto currentSCCNode = SCCDAG->fetchNode(currentSCC);
+    if (currentSCCNode->outDegree() > 0) {
+
+      /*
+       * First case: the SCC contains only instructions that do not represent
+       * actual computation. These instructions can always be replicated
+       * anywhere to any DSWP stage.
+       */
+      if (currentSCC->numInternalNodes() == 1) {
+        auto I = currentSCC->begin_internal_node_map()->first;
+        if (isa<PHINode>(I) || isa<GetElementPtrInst>(I) || isa<CastInst>(I)) {
+          clonableSCCs.insert(currentSCCInfo);
+          continue;
+        }
+      }
+
+      /*
+       * Second case: the SCC does not have memory dependences.
+       */
+      if (!currentSCCInfo->doesHaveMemoryDependencesWithin()) {
+
+        /*
+         * The SCC has no memory dependences.
+         *
+         * Check if there is no loop-carried dependence.
+         */
+        auto hasNoLoopCarriedDependence = isa<LoopIterationSCC>(currentSCCInfo);
+        if (hasNoLoopCarriedDependence) {
+          clonableSCCs.insert(currentSCCInfo);
+          continue;
+        }
+
+        /*
+         * The SCC has loop-carried dependences.
+         *
+         * Check if the loop-carried dependences are fully contained within
+         * sub-loops.
+         */
+        auto lcSCC = cast<LoopCarriedSCC>(currentSCCInfo);
+        auto topLoop = loopNode->getLoop();
+        auto lcFullyContained = true;
+        for (auto loopCarriedDependency : lcSCC->getLoopCarriedDependences()) {
+          auto valueFrom = loopCarriedDependency->getSrc();
+          auto valueTo = loopCarriedDependency->getDst();
+          assert(isa<Instruction>(valueFrom) && isa<Instruction>(valueTo));
+          if (loopNode->getInnermostLoopThatContains(
+                  cast<Instruction>(valueFrom))
+                  == topLoop
+              || loopNode->getInnermostLoopThatContains(
+                     cast<Instruction>(valueTo))
+                     == topLoop) {
+            lcFullyContained = false;
+            break;
+          }
+        }
+        if (lcFullyContained) {
+          clonableSCCs.insert(currentSCCInfo);
+          continue;
+        }
+      }
+    }
+  }
+
   for (auto node : attrPass.sccdag->getNodes()) {
     auto sccAttrs = attrPass.attrs->getSCCAttrs(node->getT());
-    auto clonableSCCs =
-        dswp.getClonableSCCs(attrPass.attrs,
-                             attrPass.ldi->getLoopHierarchyStructures());
     if (clonableSCCs.find(sccAttrs) != clonableSCCs.end()) {
       sccs.insert(node->getT());
     }

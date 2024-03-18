@@ -28,8 +28,7 @@
 /*
  * SCAF headers
  */
-#define ENABLE_SCAF
-#ifdef ENABLE_SCAF
+#ifdef NOELLE_ENABLE_SCAF
 #  include "scaf/MemoryAnalysisModules/LoopAA.h"
 #  include "scaf/Utilities/PDGQueries.h"
 #  include "scaf/Utilities/ModuleLoops.h"
@@ -40,7 +39,7 @@ namespace arcana::noelle {
 /*
  * SCAF
  */
-#ifdef ENABLE_SCAF
+#ifdef NOELLE_ENABLE_SCAF
 static liberty::LoopAA *NoelleSCAFAA = nullptr;
 static liberty::ModuleLoops *ModuleLoops = nullptr;
 #endif
@@ -77,7 +76,7 @@ static RegisterStandardPasses _RegPass2(
       }
     }); // ** for -O0
 
-void refinePDGWithLoopAwareMemDepAnalysis(LDGAnalysis &ldgAnalysis,
+void refinePDGWithLoopAwareMemDepAnalysis(LDGGenerator &ldgAnalysis,
                                           PDG *loopDG,
                                           Loop *l,
                                           LoopStructure *loopStructure,
@@ -98,7 +97,7 @@ void refinePDGWithLoopAwareMemDepAnalysis(LDGAnalysis &ldgAnalysis,
 }
 
 void refinePDGWithSCAF(PDG *loopDG, Loop *l) {
-#ifdef ENABLE_SCAF
+#ifdef NOELLE_ENABLE_SCAF
   assert(NoelleSCAFAA != nullptr);
 
   // replace it to the correct one for SCAF
@@ -348,7 +347,7 @@ bool NoelleSCAFIntegration::doInitialization(Module &M) {
 }
 
 void NoelleSCAFIntegration::getAnalysisUsage(AnalysisUsage &AU) const {
-#ifdef ENABLE_SCAF
+#ifdef NOELLE_ENABLE_SCAF
   AU.addRequired<liberty::LoopAA>();
   AU.addRequired<liberty::ModuleLoops>();
   AU.setPreservesAll();
@@ -357,7 +356,7 @@ void NoelleSCAFIntegration::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool NoelleSCAFIntegration::runOnModule(Module &M) {
-#ifdef ENABLE_SCAF
+#ifdef NOELLE_ENABLE_SCAF
   NoelleSCAFAA = getAnalysis<liberty::LoopAA>().getTopAA();
   ModuleLoops = &getAnalysis<liberty::ModuleLoops>();
   ModuleLoops->reset();
@@ -369,7 +368,7 @@ bool NoelleSCAFIntegration::runOnModule(Module &M) {
 std::set<AliasAnalysisEngine *> LoopContent::getLoopAliasAnalysisEngines(void) {
   std::set<AliasAnalysisEngine *> s;
 
-#ifdef ENABLE_SCAF
+#ifdef NOELLE_ENABLE_SCAF
   assert(NoelleSCAFAA != nullptr);
   auto aa = new LoopAliasAnalysisEngine("SCAF", NoelleSCAFAA);
   s.insert(aa);

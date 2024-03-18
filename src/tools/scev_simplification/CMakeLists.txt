@@ -1,17 +1,5 @@
-# Project
-cmake_minimum_required(VERSION 3.13)
-project(SCEVSimplification)
-
-# Dependences
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../scripts/DependencesCMake.txt)
-
-# Pass
-add_subdirectory(src)
-
-# Install
-install(
-  FILES
-  include/noelle/tools/SCEVSimplification.hpp
-  DESTINATION 
-  include/noelle/tools
-  )
+add_llvm_library(
+  SCEVSimplification # pass name
+  MODULE
+  src/SCEVSimplification.cpp
+)
