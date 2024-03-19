@@ -136,7 +136,7 @@ install(
 enable_language(C CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(LLVM 9 REQUIRED CONFIG)
+find_package(LLVM 14 REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 link_directories(${LLVM_LIBRARY_DIRS})
