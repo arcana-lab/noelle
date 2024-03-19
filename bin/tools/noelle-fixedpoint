@@ -2,9 +2,6 @@
 
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
-# usage:
-# noelle-fixedpoint INPUT_BITCODE OUTPUT_BITCODE LOADER ALL_OPTIONS_TO_PASS_TO_NOELLE_LOAD
-
 if test $# -lt 3 ; then
   echo "USAGE: `basename $0` INPUT_IR OUTPUT_IR [LOADERBIN]"
   exit 1
@@ -15,7 +12,7 @@ IRFileInput=`mktemp`
 IRFileInputLL=`mktemp`
 IRFileOutput=`mktemp`
 IRFileOutputLL=`mktemp`
-codeSize=`mktemp`
+size=`mktemp`
 
 echo "NOELLE: FixedPoint: Start"
 echo "NOELLE: FixedPoint:   Loader: $loaderBin"
@@ -31,6 +28,7 @@ cp $1 $IRFileInput
 # Normalize the code
 echo "NOELLE: FixedPoint:   Normalize the code"
 
+echo noelle-norm $IRFileInput -o $IRFileOutput
 noelle-norm $IRFileInput -o $IRFileOutput
 
 cp $IRFileOutput $IRFileInput
@@ -53,28 +51,28 @@ while true ; do
   fi
 
   # check if the bitcode has been modified
-  #   step 1: fetch the code size and loop code of the input bitcode
-  noelle-loop-size $IRFileInput > $codeSize
-  inputCodeLines=`tail -n 1 $codeSize | awk '{print $1}'`
-  noelle-loop-size $IRFileInput > $codeSize
-  inputLoopLines=`tail -n 1 $codeSize | awk '{print $1}'`
+  #   step 1: fetch the code size and loop size of the input bitcode
+  noelle-codesize $IRFileInput > $size
+  inputCodeSize=`tail -n 1 $size | awk '{print $1}'`
+  noelle-loop-size $IRFileInput > $size
+  inputLoopSize=`tail -n 1 $size | awk '{print $1}'`
 
-  #   step 2: fetch the code size and loop code of the output bitcode
-  noelle-loop-size $IRFileOutput > $codeSize
-  outputCodeLines=`tail -n 1 $codeSize | awk '{print $1}'`
-  noelle-loop-size $IRFileOutput > $codeSize
-  outputLoopLines=`tail -n 1 $codeSize | awk '{print $1}'`
+  #   step 2: fetch the code size and loop size of the output bitcode
+  noelle-codesize $IRFileOutput > $size
+  outputCodeSize=`tail -n 1 $size | awk '{print $1}'`
+  noelle-loop-size $IRFileOutput > $size
+  outputLoopSize=`tail -n 1 $size | awk '{print $1}'`
 
   #   step 3: compare the results
-  linesDifferent=`echo "$outputCodeLines - $inputCodeLines" | bc`
-  loopLinesDifferent=`echo "$outputLoopLines - $inputLoopLines" | bc`
+  linesDifferent=`echo "$outputCodeSize - $inputCodeSize" | bc`
+  loopLinesDifferent=`echo "$outputLoopSize - $inputLoopSize" | bc`
   if test "$linesDifferent" == "0" -a "$loopLinesDifferent" == "0" ; then
     cp $IRFileOutput $2
     break
   fi
   echo "NOELLE: FixedPoint:       There are $linesDifferent different instructions and $loopLinesDifferent different loop instructions"
 
-  # Normalize the code
+  # normalize the code
   echo "NOELLE: FixedPoint:       Normalize the code"
   noelle-norm $IRFileOutput -o $IRFileOutput
 
@@ -84,7 +82,7 @@ while true ; do
   counter=$((counter+1))
 done
 
-rm $IRFileInput $IRFileInputLL $IRFileOutput $IRFileOutputLL $codeSize
+rm $IRFileInput $IRFileInputLL $IRFileOutput $IRFileOutputLL $size
 
 echo "NOELLE: FixedPoint:   Iteration count = $counter"
 echo "NOELLE: FixedPoint: Exit"
