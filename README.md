@@ -1,6 +1,6 @@
 # <u>N</u>OELLE <u>O</u>ffers <u>E</u>mpowering <u>LL</u>VM <u>E</u>xtensions
 
-## Table of Contents
+[![Active Development](https://img.shields.io/badge/Maintenance%20Level-Actively%20Developed-brightgreen.svg)](https://gist.github.com/cheerfulstoic/d107229326a01ff0f333a1d3476e068d)
 
 <p><img src="doc/figs/arcana_logo.jpg" align="right" width="350" height="120"/></p>
 
@@ -17,11 +17,10 @@
 NOELLE provides abstractions to help build advanced code analyses and transformations for LLVM IR code.
 It is built upon [SVF](https://svf-tools.github.io/SVF/), [SCAF](https://github.com/PrincetonUniversity/SCAF.git), and [LLVM](http://llvm.org).
 
-NOELLE is in active development so more tools, tests, and abstractions will be added.
+[![Active Development](https://img.shields.io/badge/Maintenance%20Level-Actively%20Developed-brightgreen.svg)](https://gist.github.com/cheerfulstoic/d107229326a01ff0f333a1d3476e068d)
 
-This repository has been released to the general public in the hope of strengthening 
-[We](https://users.cs.northwestern.edu/~simonec/Team.html) released NOELLE's source code in the hope of benefiting 
-You are kindly asked to acknowledge any use of the tool by citing the following paper:
+[We](https://users.cs.northwestern.edu/~simonec/Team.html) released NOELLE's source code in the hope of enriching the resources available to the research community and compiler developers.
+You are kindly asked to acknowledge usage of the tool by citing the following paper:
 ```
 @inproceedings{NOELLE,
     title={{NOELLE} {O}ffers {E}mpowering {LL}VM {E}xtensions},
@@ -88,13 +87,13 @@ make
 ```
 
 ## Repository structure
-All the C++ source of the framework are in `src`.
-More specifically, `src/core` contains all the abstractions, while `src/tools` contains a set of tools build on top of the core.
-All tools are independent from each other.
 
 - `bin` contains the scripts through which the user will run all analyses and transformations
 - `doc` contains the documentation
 - `examples` contains examples of how to build LLVM pass that rely on NOELLE
+- `src` contains the C++ source of the framework
+- `src/core` contains all the main abstractions
+- `src/tools` contains a set of tools built on top of the core. All tools are independent from one another
 - `tests` contains unit tests
 
 ## NOELLE as an external project
