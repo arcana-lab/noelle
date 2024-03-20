@@ -32,7 +32,7 @@ FetchContent_Declare(
 FetchContent_Declare(
   scaf
   GIT_REPOSITORY  "https://github.com/PrincetonUniversity/SCAF.git"
-  GIT_TAG         v9.1.8
+  GIT_TAG         llvm14
 )
 
 set(NOELLE_CMAKE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
