@@ -109,10 +109,10 @@ private:
 
 template <class T, class SubT>
 DGEdge<T, SubT>::DGEdge(DependenceKind k, DGNode<T> *src, DGNode<T> *dst)
-  : kind{ k },
-    from{ src },
+  : from{ src },
     to{ dst },
     subEdges{ nullptr },
+    kind{ k },
     isLoopCarried(false) {
   return;
 }
