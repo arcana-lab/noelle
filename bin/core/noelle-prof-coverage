@@ -1,0 +1,25 @@
+#!/bin/bash -e
+
+trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
+
+if test $# -lt 2 ; then
+  echo "USAGE: `basename $0` SRC_BC BINARY [LIBRARY]*"
+  exit 1
+fi
+
+srcBC="$1"
+profExec="$2"
+profBC="${profExec}.bc"
+libs="${@:3}"
+
+# clean
+rm -f $profExec *.profraw
+
+# inject code needed by the profiler
+opt -pgo-instr-gen -instrprof $srcBC -o $profBC
+
+# generate the binary
+clang $profBC -fprofile-instr-generate ${libs} -o $profExec
+
+# clean
+rm $profBC

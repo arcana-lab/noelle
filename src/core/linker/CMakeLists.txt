@@ -1,5 +1,5 @@
-add_llvm_library(
-  Linker # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/Linker.cpp
 )

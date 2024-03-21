@@ -1,0 +1,115 @@
+#!/bin/bash -e
+
+trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
+
+installDir=$(noelle-config --prefix)
+
+printTypes () {
+  echo "TypeID | Name"
+  echo "     0 | LOOP_CARRIED"
+  echo "     1 | REDUCTION"
+  echo "     2 | BINARY_REDUCTION"
+  echo "     3 | LAST_REDUCTION"
+  echo "     4 | RECOMPUTABLE"
+  echo "     5 | SINGLE_ACCUMULATOR_RECOMPUTABLE"
+  echo "     6 | INDUCTION_VARIABLE"
+  echo "     7 | LINEAR_INDUCTION_VARIABLE"
+  echo "     8 | LAST_INDUCTION_VARIABLE"
+  echo "     9 | PERIODIC_VARIABLE"
+  echo "    10 | LAST_SINGLE_ACCUMULATOR_RECOMPUTABLE"
+  echo "    11 | UNKNOWN_CLOSED_FORM"
+  echo "    12 | LAST_RECOMPUTABLE"
+  echo "    13 | MEMORY_CLONABLE"
+  echo "    14 | STACK_OBJECT_CLONABLE"
+  echo "    15 | LAST_MEMORY_CLONABLE"
+  echo "    16 | LOOP_CARRIED_UNKNOWN"
+  echo "    17 | LAST_LOOP_CARRIED"
+  echo "    18 | LOOP_ITERATION"
+  echo "    19 | LAST_LOOP_ITERATION"
+}
+
+usage() {
+  echo "USAGE: `basename $0` INPUT_BC [OPTIONS]..."
+  echo
+  echo "Tool for printing info on SCCs of a given loop in a given function"
+  echo
+  echo "INPUT_BC              Input bitcode in .bc or .ll format"
+  echo
+  echo "Options:"
+  echo "--insts               Print the instructions of all SCC."
+  echo "--white-list=N,..     Comma-separated list of SCC IDs to print."
+  echo "--black-list=N,..     Comma-separated list of SCC IDs to not print."
+  echo "--func=F              Target function. Default is main."
+  echo "--loop=L              Target loop ID. Show them all with '--loops'."
+  echo "--loops               Show all loops with their ID."
+  echo "                      Use this number in '--loop'."
+  echo "--help                Display this message."
+  echo
+  echo "Use the following SCC type IDs as arguments to '--(white|black)-list':"
+  echo
+  printTypes
+}
+
+# --- beginning ------------------------------------------------------
+
+if test $# -lt 1 ; then
+  usage
+  exit 1
+fi
+
+# parsing arguments
+
+inputBC="$1"
+passArgs=""
+selectedFunction="main"
+for arg in "$@"; do
+  case ${arg} in
+    --white-list=*)
+      args="${arg#*=}"
+      passArgs="${passArgs} -noelle-scc-printer-white-list=$args"
+      shift
+      ;;
+    --black-list=*)
+      args="${arg#*=}"
+      passArgs="${passArgs} -noelle-scc-printer-black-list=$args"
+      shift
+      ;;
+    --loop=*)
+      args="${arg#*=}"
+      passArgs="${passArgs} -noelle-scc-printer-loop=$args"
+      shift
+      ;;
+    --func=*)
+      args="${arg#*=}"
+      selectedFunction=$args
+      passArgs="${passArgs} -noelle-scc-printer-func=$args"
+      shift
+      ;;
+    --insts)
+      passArgs="${passArgs} -noelle-scc-printer-insts"
+      shift
+      ;;
+    --details)
+      passArgs="${passArgs} -noelle-scc-printer-details"
+      shift
+      ;;
+    --loops)
+      passArgs="${passArgs} -noelle-scc-printer-loops"
+      shift
+      ;;
+    --help)
+      usage
+      exit 0
+      ;;
+    -*|--*)
+      echo "ERROR: Unknown option $arg"
+      usage
+      exit 1
+      ;;
+    *)
+      ;;
+  esac
+done
+
+echo -e "SCCPrinter: Selected function: \e[35m$selectedFunction\e[0m"
+noelle-load -load $installDir/lib/SCCPrinter.so -scc-printer -disable-output $passArgs $inputBC

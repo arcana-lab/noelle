@@ -1,6 +1,6 @@
-add_llvm_library(
-  LoopNestingGraph # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/LoopNestingGraph.cpp
   src/LoopNestingGraphEdge.cpp
   src/LoopNestingGraphNode.cpp

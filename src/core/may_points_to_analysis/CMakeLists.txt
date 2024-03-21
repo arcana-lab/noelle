@@ -1,6 +1,6 @@
-add_llvm_library(
-  MayPointsToAnalysis # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/MayPointsToAnalysis.cpp
   src/MpaSummary.cpp
   src/MpaUtils.cpp

@@ -1,6 +1,6 @@
-add_llvm_library(
-  AllocAA # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/AllocAA.cpp
   src/MemorySite.cpp
 )

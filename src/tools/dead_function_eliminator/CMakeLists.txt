@@ -1,6 +1,7 @@
-add_llvm_library(
-  DeadFunctionEliminator # pass name
-  MODULE
+noelle_tool_declare(DeadFunctionEliminator)
+target_sources(
+  DeadFunctionEliminator
+  PRIVATE
   src/DeadFunctionEliminator.cpp
   src/Pass.cpp
 )
