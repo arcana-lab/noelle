@@ -188,7 +188,7 @@ bool LoopStructure::isLoopInvariant(Value *value) const {
   /*
    * Check if value is an argument.
    */
-  if (auto arg = dyn_cast<Argument>(value)) {
+  if (isa<Argument>(value)) {
     return true;
   }
 
