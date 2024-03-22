@@ -99,7 +99,6 @@ std::unordered_set<Function *> Privatizer::getPrivatizableFunctions(
     }
 
     for (auto currentF : privatizable) {
-      auto funcSum = getFunctionSummary(currentF);
       if (!initializedBeforeAllUse(noelle, globalVar, currentF)) {
         return {};
       }
@@ -315,8 +314,6 @@ Instruction *Privatizer::getInitProgramPoint(
 
     LLVMContext &C = noelle.getProgramContext();
     auto arrayType = dyn_cast<ArrayType>(globalVar->getValueType());
-    auto arraySize =
-        ConstantInt::get(Type::getInt32Ty(C), arrayType->getNumElements());
 
     auto IV = GIV->getInductionVariable();
     auto startValue = IV->getStartValue();
@@ -459,12 +456,10 @@ bool Privatizer::transformG2S(Noelle &noelle,
   }
 
   for (auto currentF : privatizable) {
-    auto funcSum = getFunctionSummary(currentF);
     auto suffix = "in function " + currentF->getName() + "\n";
     auto globalVarName = globalVar->getName();
 
     modified = true;
-    auto &context = noelle.getProgramContext();
     auto &entryBlock = currentF->getEntryBlock();
     IRBuilder<> entryBuilder(entryBlock.getFirstNonPHI());
     Type *globalVarType = globalVar->getValueType();

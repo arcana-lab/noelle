@@ -218,7 +218,6 @@ bool DeadFunctionEliminator::runOnModule(Module &M) {
     if (F.empty()) {
       continue;
     }
-    auto n = pcg->getFunctionNode(&F);
     if (liveIslands.find(islands[&F]) != liveIslands.end()) {
       continue;
     }

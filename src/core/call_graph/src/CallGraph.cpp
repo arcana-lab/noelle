@@ -550,7 +550,7 @@ bool CallGraph::canFunctionEscape(Function *f) const {
     /*
      * Handle store instructions.
      */
-    if (auto storeInst = dyn_cast<StoreInst>(userInst)) {
+    if (isa<StoreInst>(userInst)) {
       return true;
     }
   }

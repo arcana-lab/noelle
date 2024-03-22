@@ -68,6 +68,9 @@ bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut(
       }
       stores.insert(cast<StoreInst>(value));
     }
+    if (!onlyStores){
+      continue ;
+    }
 
     /*
      * Alias-ing stores require further analysis to hoist

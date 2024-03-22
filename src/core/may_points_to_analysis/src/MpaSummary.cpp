@@ -208,7 +208,7 @@ BitVector MpaSummary::getEmptyBitVector(void) {
 
 BitVector MpaSummary::onlyPointsTo(NodeID memobjId) {
   auto emptyPts = getEmptyBitVector();
-  assert(memobjId >= 0 && memobjId < emptyPts.size());
+  assert(memobjId < emptyPts.size());
   emptyPts.set(memobjId);
   return emptyPts;
 }
