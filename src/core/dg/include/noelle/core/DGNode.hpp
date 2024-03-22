@@ -131,7 +131,6 @@ void DGNode<T>::addOutgoingEdge(DGEdge<T, T> *edge) {
 
 template <class T>
 void DGNode<T>::removeConnectedEdge(DGEdge<T, T> *edge) {
-  DGNode<T> *node;
   if (outgoingEdges.find(edge) != outgoingEdges.end()) {
     outgoingEdges.erase(edge);
   } else {
