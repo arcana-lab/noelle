@@ -1,6 +1,6 @@
-add_llvm_library(
-  Noelle # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/Noelle.cpp
   src/Noelle_dependences.cpp
   src/Noelle_function.cpp

@@ -1,6 +1,6 @@
-add_llvm_library(
-  MemoryCloningAnalysis # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/ClonableMemoryObject.cpp
   src/MemoryCloningAnalysis.cpp
 )

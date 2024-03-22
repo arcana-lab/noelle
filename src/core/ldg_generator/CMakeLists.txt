@@ -1,5 +1,5 @@
-add_llvm_library(
-  LDGGenerator # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/LDGGenerator.cpp
 )

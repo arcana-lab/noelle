@@ -1,6 +1,6 @@
-add_llvm_library(
-  LoopMetadata # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/LoopMetadata.cpp
   src/LoopMetadataPass.cpp
 )

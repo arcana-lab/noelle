@@ -35,7 +35,7 @@ void LoopSize::getAnalysisUsage(AnalysisUsage &AU) const {
 
 // Next there is code to register your pass to "opt"
 char LoopSize::ID = 0;
-static RegisterPass<LoopSize> X("loopsize",
+static RegisterPass<LoopSize> X("LoopSize",
                                 "Print the code size of loops",
                                 false,
                                 false);

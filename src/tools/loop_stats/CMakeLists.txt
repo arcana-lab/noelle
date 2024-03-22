@@ -1,6 +1,7 @@
-add_llvm_library(
-  LoopStats # pass name
-  MODULE
+noelle_tool_declare(LoopStats)
+target_sources(
+  LoopStats
+  PRIVATE
   src/LoopStats.cpp
   src/LoopStats_Dependences.cpp
   src/LoopStats_InductionVariables.cpp
@@ -9,3 +10,4 @@ add_llvm_library(
   src/LoopStats_Printer.cpp
   src/Pass.cpp
 )
+

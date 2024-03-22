@@ -1,6 +1,6 @@
-add_llvm_library(
-  HotProfiler # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/Hot_BasicBlock.cpp
   src/Hot.cpp
   src/Hot_Function.cpp

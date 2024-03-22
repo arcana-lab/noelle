@@ -1,6 +1,6 @@
-add_llvm_library(
-  SCCDAG # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/SCC.cpp
   src/SCCDAG.cpp
 )

@@ -1,6 +1,6 @@
-add_llvm_library(
-  LoopCarriedDependences # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/LoopCarriedCycle.cpp
   src/LoopCarriedDependencies.cpp
   src/LoopCarriedVariable.cpp

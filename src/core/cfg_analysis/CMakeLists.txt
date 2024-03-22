@@ -1,6 +1,6 @@
-add_llvm_library(
-  CFGAnalysis # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/CFGAnalysis.cpp
   src/Pass.cpp
 )

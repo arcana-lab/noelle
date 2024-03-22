@@ -1,6 +1,6 @@
-add_llvm_library(
-  MetadataCleaner # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/MetadataCleaner.cpp
   src/Pass.cpp
 )

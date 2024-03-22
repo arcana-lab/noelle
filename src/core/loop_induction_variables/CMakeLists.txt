@@ -1,6 +1,6 @@
-add_llvm_library(
-  LoopInductionVariables # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/InductionVariable.cpp
   src/InductionVariables.cpp
   src/IVStepperUtility.cpp
