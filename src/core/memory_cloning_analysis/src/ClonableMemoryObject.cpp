@@ -462,7 +462,7 @@ bool ClonableMemoryObject::identifyStoresAndOtherUsers(LoopStructure *loop,
       /*
        * No InvokeInst can receive the allocation in any form
        */
-      if (auto invokeInst = dyn_cast<InvokeInst>(inst)) {
+      if (isa<InvokeInst>(inst)) {
         return false;
       }
     }

@@ -134,7 +134,7 @@ std::set<Instruction *> BinaryReductionSCC::collectAccumulators(
     /*
      * Check if it is a PHI.
      */
-    if (auto phi = dyn_cast<PHINode>(V)) {
+    if (isa<PHINode>(V)) {
       continue;
     }
 

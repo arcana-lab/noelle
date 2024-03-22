@@ -204,7 +204,7 @@ bool LoopCarriedDependencies::isALoopCarriedDependence(
        */
       if (DS.DT.dominates(consumerI, producerI)
           && DS.DT.dominates(topLoopHeaderBranch, consumerI)) {
-        if (auto phiConsumer = dyn_cast<PHINode>(consumerI)) {
+        if (isa<PHINode>(consumerI)) {
           return false;
         }
       }

@@ -470,7 +470,7 @@ bool AllocAA::doesValueNotEscape(std::set<Instruction *> checked,
           if (doesValueNotEscape(checked, storedI))
             storedDoesNotEscape = true;
         }
-        if (auto storedC = dyn_cast<ConstantData>(stored))
+        if (isa<ConstantData>(stored))
           storedDoesNotEscape = true;
       }
 

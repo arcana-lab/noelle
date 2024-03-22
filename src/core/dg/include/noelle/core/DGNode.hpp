@@ -134,11 +134,11 @@ void DGNode<T>::removeConnectedEdge(DGEdge<T, T> *edge) {
   DGNode<T> *node;
   if (outgoingEdges.find(edge) != outgoingEdges.end()) {
     outgoingEdges.erase(edge);
-    node = edge->getDstNode();
   } else {
     incomingEdges.erase(edge);
-    node = edge->getSrcNode();
   }
+
+  return ;
 }
 
 template <class T>

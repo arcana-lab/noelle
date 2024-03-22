@@ -986,13 +986,14 @@ bool LoopIterationSpaceAnalysis::isInnerDimensionSubscriptsBounded(
                 if (conditionOffsetSCEV->getNumOperands() == 2) {
                   auto lhsSCEV = conditionOffsetSCEV->getOperand(0);
                   auto rhsSCEV = conditionOffsetSCEV->getOperand(1);
-                  if (lhsSCEV == sizeSCEVBase ^ rhsSCEV == sizeSCEVBase) {
+                  if ((lhsSCEV == sizeSCEVBase) ^ (rhsSCEV == sizeSCEVBase)) {
                     auto otherHandSideSCEV =
                         lhsSCEV == sizeSCEVBase ? rhsSCEV : lhsSCEV;
                     if (auto constOffsetSCEV =
                             dyn_cast<SCEVConstant>(otherHandSideSCEV)) {
-                      if (constOffsetSCEV->getValue()->isNegative())
+                      if (constOffsetSCEV->getValue()->isNegative()){
                         continue;
+                      }
                     }
                   }
                 }
