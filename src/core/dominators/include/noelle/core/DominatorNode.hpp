@@ -37,9 +37,9 @@ public:
   DominatorNode(const DominatorNode &node);
 
   BasicBlock *getBlock(void) const;
-  DominatorNode *getParent(void);
-  std::vector<DominatorNode *> getChildren(void);
-  unsigned getLevel(void) const;
+  DominatorNode *getParent(void) const;
+  std::vector<DominatorNode *> getChildren(void) const;
+  uint32_t getLevel(void) const;
   DominatorNode *getIDom(void);
 
   raw_ostream &print(raw_ostream &stream, std::string prefixToUse = "");

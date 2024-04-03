@@ -70,15 +70,15 @@ BasicBlock *DominatorNode::getBlock(void) const {
   return B;
 }
 
-DominatorNode *DominatorNode::getParent(void) {
+DominatorNode *DominatorNode::getParent(void) const {
   return parent;
 }
 
-std::vector<DominatorNode *> DominatorNode::getChildren(void) {
+std::vector<DominatorNode *> DominatorNode::getChildren(void) const {
   return children;
 }
 
-unsigned DominatorNode::getLevel(void) const {
+uint32_t DominatorNode::getLevel(void) const {
   return level;
 }
 
