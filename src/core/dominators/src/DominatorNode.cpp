@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +27,7 @@ DominatorNode::DominatorNode(const DTAliases::Node &node)
   : B{ node.getBlock() },
     level{ node.getLevel() },
     parent{ nullptr },
-    children{},
-    iDom{ nullptr } {
+    children{} {
 
   return;
 }
@@ -37,8 +36,7 @@ DominatorNode::DominatorNode(const DominatorNode &node)
   : B{ node.getBlock() },
     level{ node.getLevel() },
     parent{ nullptr },
-    children{},
-    iDom{ nullptr } {
+    children{} {
 
   return;
 }
@@ -55,8 +53,8 @@ raw_ostream &DominatorNode::print(raw_ostream &stream, std::string prefix) {
   else
     stream << "null";
   stream << " I Dom: ";
-  if (getIDom() && getIDom()->getBlock())
-    getIDom()->getBlock()->printAsOperand(stream);
+  if (getParent() && getParent()->getBlock())
+    getParent()->getBlock()->printAsOperand(stream);
   else
     stream << "null";
   stream << "\n" << prefix << "Children: ";
@@ -70,20 +68,16 @@ BasicBlock *DominatorNode::getBlock(void) const {
   return B;
 }
 
-DominatorNode *DominatorNode::getParent(void) {
+DominatorNode *DominatorNode::getParent(void) const {
   return parent;
 }
 
-std::vector<DominatorNode *> DominatorNode::getChildren(void) {
+std::vector<DominatorNode *> DominatorNode::getChildren(void) const {
   return children;
 }
 
-unsigned DominatorNode::getLevel(void) const {
+uint32_t DominatorNode::getLevel(void) const {
   return level;
-}
-
-DominatorNode *DominatorNode::getIDom(void) {
-  return iDom;
 }
 
 } // namespace arcana::noelle
