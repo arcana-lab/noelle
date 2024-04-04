@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -129,11 +129,6 @@ void DominatorForest::cloneNodes(std::set<NodeType *> &nodesToClone) {
    */
   for (auto node : nodesToClone) {
     auto summary = nodeMap[node];
-    auto iDom = node->getIDom();
-    if (nodeMap.find(iDom) != nodeMap.end()) {
-      summary->iDom = nodeMap[iDom];
-    }
-
     auto children = node->getChildren();
     for (auto child : children) {
       if (nodeMap.find(child) == nodeMap.end())

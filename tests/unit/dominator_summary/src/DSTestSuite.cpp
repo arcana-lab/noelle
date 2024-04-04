@@ -96,16 +96,16 @@ Values DSTestSuite::domNodeIsIdentical(DSTestSuite &pass,
     return { "Summary on: " + pass.suite->printToString(bb)
              + " not at the correct depth" };
   }
-  if (node.getIDom() == nullptr ^ nodeS.getIDom() == nullptr) {
+  if (node.getIDom() == nullptr ^ nodeS.getParent() == nullptr) {
     return { "Node does not exist across tree and summary of tree!\n"
              + std::string("Original node has immediate dominator: ")
              + std::to_string(node.getIDom() != nullptr)
              + "Summary node has immediate dominator: "
-             + std::to_string(nodeS.getIDom() != nullptr)
+             + std::to_string(nodeS.getParent() != nullptr)
              + pass.suite->printToString(bb) };
   }
   if (node.getIDom() != nullptr
-      && node.getIDom()->getBlock() != nodeS.getIDom()->getBlock()) {
+      && node.getIDom()->getBlock() != nodeS.getParent()->getBlock()) {
     return { "Immediate dominator summary is not correct for: "
              + pass.suite->printToString(bbS) };
   }

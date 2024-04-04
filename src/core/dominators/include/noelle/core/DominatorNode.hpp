@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -40,7 +40,6 @@ public:
   DominatorNode *getParent(void) const;
   std::vector<DominatorNode *> getChildren(void) const;
   uint32_t getLevel(void) const;
-  DominatorNode *getIDom(void);
 
   raw_ostream &print(raw_ostream &stream, std::string prefixToUse = "");
 
@@ -52,7 +51,6 @@ private:
 
   DominatorNode *parent;
   std::vector<DominatorNode *> children;
-  DominatorNode *iDom;
 };
 
 } // namespace arcana::noelle
