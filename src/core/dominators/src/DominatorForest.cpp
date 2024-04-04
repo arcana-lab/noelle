@@ -127,11 +127,6 @@ void DominatorForest::cloneLLVMNodes(
    */
   for (auto node : nodesToClone) {
     auto summary = nodeMap[node];
-    auto iDom = node->getIDom();
-    if (nodeMap.find(iDom) != nodeMap.end()) {
-      summary->iDom = nodeMap[iDom];
-    }
-
     for (auto child : node->children()) {
       if (nodeMap.find(child) == nodeMap.end())
         continue;
