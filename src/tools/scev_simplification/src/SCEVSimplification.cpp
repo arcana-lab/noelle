@@ -348,12 +348,7 @@ bool SCEVSimplification::simplifyIVRelatedSCEVs(
 void SCEVSimplification::cacheIVInfo(IVCachedInfo &ivCache,
                                      LoopTree *rootLoopNode,
                                      InductionVariableManager *ivManager) {
-
-  /*
-   * Fetch the loop
-   */
   assert(rootLoopNode != nullptr);
-  auto rootLoop = rootLoopNode->getLoop();
 
   /*
    * Detect all loop governing IVs across the nested loop structure

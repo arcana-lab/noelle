@@ -312,7 +312,6 @@ Instruction *Privatizer::getInitProgramPoint(
       return nullptr;
     }
 
-    LLVMContext &C = noelle.getProgramContext();
     auto arrayType = dyn_cast<ArrayType>(globalVar->getValueType());
 
     auto IV = GIV->getInductionVariable();

@@ -32,7 +32,6 @@ RemoveFunction::RemoveFunction()
 }
 
 bool RemoveFunction::runOnModule(Module &M) {
-  auto modified = false;
   errs() << this->prefix << "Start\n";
 
   /*

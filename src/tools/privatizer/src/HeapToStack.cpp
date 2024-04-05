@@ -175,7 +175,6 @@ std::unordered_map<Function *, LiveMemorySummary> Privatizer::collectH2S(
   for (auto f : heapAllocUsers) {
     auto fname = f->getName();
     auto suffix = "in function " + fname + "\n";
-    auto funcSum = getFunctionSummary(f);
     auto memSum = getLiveMemorySummary(noelle, f);
 
     if (memSum.allocable.empty()) {
