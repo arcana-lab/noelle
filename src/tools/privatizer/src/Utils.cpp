@@ -121,7 +121,6 @@ std::unordered_set<Function *> functionsInvokedFrom(Noelle &noelle,
                                                     Function *caller) {
 
   auto fm = noelle.getFunctionsManager();
-  auto mainF = fm->getEntryFunction();
   auto pcf = fm->getProgramCallGraph();
 
   auto insertMyCallees = [&](Function *caller,
