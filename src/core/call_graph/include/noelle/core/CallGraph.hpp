@@ -25,10 +25,8 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/CallGraphNode.hpp"
 #include "noelle/core/CallGraphEdge.hpp"
-#include "noelle/core/SCCCAG.hpp"
 
 namespace arcana::noelle {
-class SCCCAG;
 
 /*
  * Call graph.
@@ -50,10 +48,6 @@ public:
   std::unordered_map<Function *, CallGraph *> getIslands(void) const;
 
   bool canFunctionEscape(Function *f) const;
-
-  SCCCAG *getSCCCAG(void);
-
-  bool doesItBelongToASCC(Function *f);
 
   CallGraphFunctionFunctionEdge *getEdge(CallGraphFunctionNode *from,
                                          CallGraphFunctionNode *to) const;
@@ -85,7 +79,6 @@ private:
                      std::unordered_map<CallGraphFunctionNode *,
                                         CallGraphFunctionFunctionEdge *>>
       incomingEdges;
-  SCCCAG *scccag;
 
   CallGraph(Module &M);
 

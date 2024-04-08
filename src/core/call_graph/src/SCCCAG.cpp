@@ -24,7 +24,7 @@
 
 namespace arcana::noelle {
 
-SCCCAG::SCCCAG(CallGraph *cg) {
+SCCCAG::SCCCAG(CallGraph *cg) : cg{ cg } {
 
   /*
    * Create nodes.
@@ -172,13 +172,13 @@ void SCCCAG::createEdges(CallGraph *cg) {
          */
         auto dstCGNode = outgoingEdge->getCallee();
         auto dstSCCNode = this->fromCGNodeToSCC.at(dstCGNode);
-        auto &dstSCCNodeInEdges = this->incomingEdges[dstSCCNode];
 
         /*
-         * Add the edge (@sccFuncNode, @dstSCCNode)
+         * Add the edge (@sccNode, @dstSCCNode)
          */
-        sccNodeOutEdges.insert(dstSCCNode);
-        dstSCCNodeInEdges.insert(sccNode);
+        if (sccNodeOutEdges.find(dstSCCNode) == sccNodeOutEdges.end()) {
+          this->newEdge(sccNode, dstSCCNode);
+        }
       }
 
       continue;
@@ -211,14 +211,12 @@ void SCCCAG::createEdges(CallGraph *cg) {
         /*
          * We found an edge from an internal node of @sccNode to another node of
          * SCCCAG.
+         *
+         * Add the edge (@sccNode, @dstSCCNode)
          */
-        auto &dstSCCNodeInEdges = this->incomingEdges[dstSCCNode];
-
-        /*
-         * Add the edge (@sccFuncNode, @dstSCCNode)
-         */
-        sccNodeOutEdges.insert(dstSCCNode);
-        dstSCCNodeInEdges.insert(sccNode);
+        if (sccNodeOutEdges.find(dstSCCNode) == sccNodeOutEdges.end()) {
+          this->newEdge(sccNode, dstSCCNode);
+        }
       }
     }
   }
@@ -228,6 +226,10 @@ void SCCCAG::createEdges(CallGraph *cg) {
 
 std::set<SCCCAGNode *> SCCCAG::getNodes(void) const {
   return this->nodes;
+}
+
+std::set<SCCCAGEdge *> SCCCAG::getEdges(void) const {
+  return this->edges;
 }
 
 std::set<SCCCAGNode *> SCCCAG::getNodesWithInDegree(
@@ -258,7 +260,8 @@ std::set<SCCCAGNode *> SCCCAG::getNodesWithOutDegree(
   return selectedNodes;
 }
 
-std::set<SCCCAGNode *> SCCCAG::getOutgoingEdges(SCCCAGNode *n) const {
+std::unordered_map<SCCCAGNode *, SCCCAGEdge *> SCCCAG::getOutgoingEdges(
+    SCCCAGNode *n) const {
   if (this->outgoingEdges.find(n) == this->outgoingEdges.end()) {
     return {};
   }
@@ -267,13 +270,59 @@ std::set<SCCCAGNode *> SCCCAG::getOutgoingEdges(SCCCAGNode *n) const {
   return outEdges;
 }
 
-std::set<SCCCAGNode *> SCCCAG::getIncomingEdges(SCCCAGNode *n) const {
+std::unordered_map<SCCCAGNode *, SCCCAGEdge *> SCCCAG::getIncomingEdges(
+    SCCCAGNode *n) const {
   if (this->incomingEdges.find(n) == this->incomingEdges.end()) {
     return {};
   }
   auto &inEdges = this->incomingEdges.at(n);
 
   return inEdges;
+}
+
+SCCCAGEdge *SCCCAG::newEdge(SCCCAGNode *from, SCCCAGNode *to) {
+
+  /*
+   * Create a new edge.
+   */
+  auto newEdge = new SCCCAGEdge(from, to);
+  this->edges.insert(newEdge);
+
+  /*
+   * Register the new edge.
+   */
+  auto &outEdges = this->outgoingEdges[from];
+  assert(outEdges.find(to) == outEdges.end());
+  outEdges[to] = newEdge;
+
+  auto &inEdges = this->incomingEdges[to];
+  assert(inEdges.find(from) == inEdges.end());
+  inEdges[from] = newEdge;
+
+  return newEdge;
+}
+
+bool SCCCAG::doesItBelongToAnSCC(Function *f) {
+
+  /*
+   * Fetch the SCCCAG node of @f.
+   */
+  auto callGraphNode = this->cg->getFunctionNode(f);
+  assert(callGraphNode != nullptr);
+  auto localAGNode = this->getNode(callGraphNode);
+  assert(localAGNode != nullptr);
+
+  /*
+   * Check if the node belongs to an SCC.
+   */
+  if (localAGNode->isAnSCC()) {
+    return true;
+  }
+
+  /*
+   * The node doesn't belong to an SCC.
+   */
+  return false;
 }
 
 } // namespace arcana::noelle

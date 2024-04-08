@@ -24,7 +24,8 @@
 
 namespace arcana::noelle {
 
-CallGraph::CallGraph(Module &M) : m{ M }, scccag{ nullptr } {
+CallGraph::CallGraph(Module &M) : m{ M } {
+
   return;
 }
 
@@ -32,8 +33,7 @@ CallGraph::CallGraph(
     Module &M,
     std::function<bool(CallInst *)> hasIndCSCallees,
     std::function<const std::set<const Function *>(CallInst *)> getIndCSCallees)
-  : m{ M },
-    scccag{ nullptr } {
+  : m{ M } {
 
   /*
    * Create the function nodes.
@@ -163,51 +163,6 @@ void CallGraph::handleCallInstruction(
   }
 
   return;
-}
-
-SCCCAG *CallGraph::getSCCCAG(void) {
-
-  /*
-   * Check if we have already computed it.
-   */
-  if (this->scccag != nullptr) {
-    return this->scccag;
-  }
-
-  /*
-   * Compute the SCCCAG.
-   */
-  this->scccag = new SCCCAG(this);
-
-  return this->scccag;
-}
-
-bool CallGraph::doesItBelongToASCC(Function *f) {
-
-  /*
-   * Fetch the SCCCAG.
-   */
-  auto localAG = this->getSCCCAG();
-
-  /*
-   * Fetch the SCCCAG node of @f.
-   */
-  auto callGraphNode = this->getFunctionNode(f);
-  assert(callGraphNode != nullptr);
-  auto localAGNode = localAG->getNode(callGraphNode);
-  assert(localAGNode != nullptr);
-
-  /*
-   * Check if the node belongs to an SCC.
-   */
-  if (localAGNode->isAnSCC()) {
-    return true;
-  }
-
-  /*
-   * The node doesn't belong to an SCC.
-   */
-  return false;
 }
 
 std::unordered_map<Function *, CallGraph *> CallGraph::getIslands(void) const {

@@ -43,7 +43,7 @@ struct CAT : public ModulePass {
     /*
      * SCCDAG of the call graph: SCCCAG
      */
-    auto sccCAG = pcf->getSCCCAG();
+    auto sccCAG = new SCCCAG(pcf);
 
     /*
      * Print the nodes of the SCCCAG.
@@ -77,7 +77,9 @@ struct CAT : public ModulePass {
      */
     errs() << "SCCCAG:   Edges\n";
     for (auto node : sccCAG->getNodes()) {
-      for (auto dstNode : sccCAG->getOutgoingEdges(node)) {
+      for (auto dstNodePair : sccCAG->getOutgoingEdges(node)) {
+        auto edge = dstNodePair.second;
+        auto dstNode = edge->getDst();
         errs() << "SCCCAG:     " << node->getID() << " -> " << dstNode->getID()
                << "\n";
       }

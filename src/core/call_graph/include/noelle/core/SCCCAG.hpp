@@ -26,6 +26,7 @@
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/CallGraphTraits.hpp"
 #include "noelle/core/SCCCAGNode.hpp"
+#include "noelle/core/SCCCAGEdge.hpp"
 
 namespace arcana::noelle {
 class CallGraph;
@@ -36,27 +37,41 @@ public:
 
   SCCCAG() = delete;
 
+  bool doesItBelongToAnSCC(Function *f);
+
   SCCCAGNode *getNode(CallGraphFunctionNode *n) const;
 
   std::set<SCCCAGNode *> getNodes(void) const;
+
+  std::set<SCCCAGEdge *> getEdges(void) const;
 
   std::set<SCCCAGNode *> getNodesWithInDegree(uint64_t targetInDegree) const;
 
   std::set<SCCCAGNode *> getNodesWithOutDegree(uint64_t targetOutDegree) const;
 
-  std::set<SCCCAGNode *> getOutgoingEdges(SCCCAGNode *n) const;
+  std::unordered_map<SCCCAGNode *, SCCCAGEdge *> getOutgoingEdges(
+      SCCCAGNode *n) const;
 
-  std::set<SCCCAGNode *> getIncomingEdges(SCCCAGNode *n) const;
+  std::unordered_map<SCCCAGNode *, SCCCAGEdge *> getIncomingEdges(
+      SCCCAGNode *n) const;
 
 private:
+  CallGraph *cg;
   std::unordered_map<CallGraphFunctionNode *, SCCCAGNode *> fromCGNodeToSCC;
   std::set<SCCCAGNode *> nodes;
-  std::unordered_map<SCCCAGNode *, std::set<SCCCAGNode *>> outgoingEdges;
-  std::unordered_map<SCCCAGNode *, std::set<SCCCAGNode *>> incomingEdges;
+  std::set<SCCCAGEdge *> edges;
+  std::unordered_map<SCCCAGNode *,
+                     std::unordered_map<SCCCAGNode *, SCCCAGEdge *>>
+      outgoingEdges;
+  std::unordered_map<SCCCAGNode *,
+                     std::unordered_map<SCCCAGNode *, SCCCAGEdge *>>
+      incomingEdges;
 
   void createNodes(CallGraph *cg);
 
   void createEdges(CallGraph *cg);
+
+  SCCCAGEdge *newEdge(SCCCAGNode *from, SCCCAGNode *to);
 };
 
 } // namespace arcana::noelle
