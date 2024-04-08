@@ -19,44 +19,54 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_CALL_GRAPH_SCCCAG_H_
-#define NOELLE_SRC_CORE_CALL_GRAPH_SCCCAG_H_
+#ifndef NOELLE_SRC_CORE_CALL_GRAPH_SCCCAGNODE_H_
+#define NOELLE_SRC_CORE_CALL_GRAPH_SCCCAGNODE_H_
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/CallGraph.hpp"
-#include "noelle/core/CallGraphTraits.hpp"
-#include "noelle/core/SCCCAGNode.hpp"
 
 namespace arcana::noelle {
-class CallGraph;
 
-class SCCCAG {
+class SCCCAGNode {
 public:
-  SCCCAG(noelle::CallGraph *cg);
+  SCCCAGNode();
 
-  SCCCAG() = delete;
+  uint64_t getID(void) const;
 
-  SCCCAGNode *getNode(CallGraphFunctionNode *n) const;
+  virtual bool isAnSCC(void) const = 0;
 
-  std::set<SCCCAGNode *> getNodes(void) const;
+  virtual ~SCCCAGNode();
 
-  std::set<SCCCAGNode *> getNodesWithInDegree(uint64_t targetInDegree) const;
+protected:
+  uint64_t ID;
+};
 
-  std::set<SCCCAGNode *> getNodesWithOutDegree(uint64_t targetOutDegree) const;
+class SCCCAGNode_SCC : public SCCCAGNode {
+public:
+  SCCCAGNode_SCC(std::unordered_set<CallGraphFunctionNode *> const &nodes);
 
-  std::set<SCCCAGNode *> getOutgoingEdges(SCCCAGNode *n) const;
+  bool isAnSCC(void) const override;
 
-  std::set<SCCCAGNode *> getIncomingEdges(SCCCAGNode *n) const;
+  std::unordered_set<CallGraphFunctionNode *> getInternalNodes(void) const;
+
+  virtual ~SCCCAGNode_SCC();
 
 private:
-  std::unordered_map<CallGraphFunctionNode *, SCCCAGNode *> fromCGNodeToSCC;
-  std::set<SCCCAGNode *> nodes;
-  std::unordered_map<SCCCAGNode *, std::set<SCCCAGNode *>> outgoingEdges;
-  std::unordered_map<SCCCAGNode *, std::set<SCCCAGNode *>> incomingEdges;
+  std::unordered_set<CallGraphFunctionNode *> nodes;
+};
 
-  void createNodes(CallGraph *cg);
+class SCCCAGNode_Function : public SCCCAGNode {
+public:
+  SCCCAGNode_Function(CallGraphFunctionNode *n);
 
-  void createEdges(CallGraph *cg);
+  bool isAnSCC(void) const override;
+
+  CallGraphFunctionNode *getNode(void) const;
+
+  virtual ~SCCCAGNode_Function();
+
+private:
+  CallGraphFunctionNode *node;
 };
 
 } // namespace arcana::noelle
