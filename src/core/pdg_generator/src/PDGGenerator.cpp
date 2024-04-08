@@ -37,6 +37,7 @@ PDGGenerator::PDGGenerator()
     dumpPDG{ false },
     performThePDGComparison{ false },
     disableSVF{ false },
+    disableSVFCallGraph{ false },
     disableAllocAA{ false },
     disableRA{ false },
     printer{},
@@ -202,7 +203,7 @@ void PDGGenerator::trimDGUsingCustomAliasAnalysis(PDG *pdg) {
   /*
    * Invoke the TalkDown
    */
-  //auto &talkDown = getAnalysis<TalkDown>();
+  // auto &talkDown = getAnalysis<TalkDown>();
   // TODO
 
   return;

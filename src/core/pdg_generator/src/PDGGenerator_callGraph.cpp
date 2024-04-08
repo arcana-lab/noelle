@@ -33,7 +33,37 @@ noelle::CallGraph *PDGGenerator::getProgramCallGraph(void) {
    * Compute the call graph.
    */
   if (this->noelleCG == nullptr) {
-    this->noelleCG = NoelleSVFIntegration::getProgramCallGraph(*M);
+    if (this->disableSVFCallGraph) {
+      auto hasF = [](CallBase *call) -> bool {
+        if (call->getCalledFunction() == nullptr) {
+          return true;
+        }
+        return false;
+      };
+      auto getCallees = [this](CallBase *call) -> std::set<const Function *> {
+        /*
+         * Check if @call is a direct call.
+         */
+        auto calleeF = call->getCalledFunction();
+        if (calleeF != nullptr) {
+          return { calleeF };
+        }
+
+        /*
+         * @call is an indirect call.
+         */
+        auto callees = PDGGenerator::getFunctionsThatMightEscape(*M);
+        auto targetSignature = call->getFunctionType();
+        auto compatibleCallees =
+            PDGGenerator::getFunctionsWithSignature(callees, targetSignature);
+
+        return compatibleCallees;
+      };
+      this->noelleCG = new noelle::CallGraph(*M, hasF, getCallees);
+
+    } else {
+      this->noelleCG = NoelleSVFIntegration::getProgramCallGraph(*M);
+    }
   }
 
   /*
@@ -175,6 +205,52 @@ bool PDGGenerator::isUnhandledExternalFunction(const Function *F) {
 bool PDGGenerator::isInternalFunctionThatReachUnhandledExternalFunction(
     const Function *F) {
   return !F->empty() && !this->reachableUnhandledExternalFuncs[F].empty();
+}
+
+std::set<const Function *> PDGGenerator::getFunctionsWithSignature(
+    std::set<const Function *> functions,
+    FunctionType *signature) {
+  std::set<const Function *> compatibleCallees;
+  for (auto f : functions) {
+    if (f->getFunctionType() == signature) {
+      compatibleCallees.insert(f);
+    }
+  }
+
+  return compatibleCallees;
+}
+
+std::set<const Function *> PDGGenerator::getFunctionsThatMightEscape(
+    Module &currentProgram) {
+  std::set<const Function *> callees;
+
+  /*
+   * Collect all functions that escape and that are compatible with the
+   * signature of the call instruction.
+   */
+  for (auto &F : currentProgram) {
+
+    /*
+     * Check if @F is used for something that isn't a direct call.
+     * In this case, we cannot exclude (without additional analysis) that @F
+     * could be invoked indirectly.
+     */
+    for (auto user : F.users()) {
+      if (auto c = dyn_cast<CallBase>(user)) {
+        if (c->getCalledFunction() == &F) {
+          continue;
+        }
+      }
+
+      /*
+       * @F could be invoked indirectly as its address is used by a non-call
+       * instruction.
+       */
+      callees.insert(&F);
+    }
+  }
+
+  return callees;
 }
 
 } // namespace arcana::noelle

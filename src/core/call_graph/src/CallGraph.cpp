@@ -90,10 +90,14 @@ CallGraph::CallGraph(
 }
 
 std::unordered_set<CallGraphFunctionNode *> CallGraph::getFunctionNodes(
-    void) const {
+    bool mustHaveBody) const {
   std::unordered_set<CallGraphFunctionNode *> s;
 
   for (auto pair : this->functions) {
+    auto f = pair.first;
+    if (mustHaveBody && f->empty()) {
+      continue;
+    }
     s.insert(pair.second);
   }
 

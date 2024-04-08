@@ -40,7 +40,8 @@ public:
             std::function<const std::set<const Function *>(CallInst *)>
                 getIndCSCallees);
 
-  std::unordered_set<CallGraphFunctionNode *> getFunctionNodes(void) const;
+  std::unordered_set<CallGraphFunctionNode *> getFunctionNodes(
+      bool mustHaveBody = false) const;
 
   CallGraphFunctionNode *getEntryNode(void) const;
 

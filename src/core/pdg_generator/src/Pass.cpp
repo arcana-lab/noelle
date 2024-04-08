@@ -34,31 +34,43 @@ static cl::opt<int> PDGVerbose(
     cl::Hidden,
     cl::desc(
         "Verbose output (0: disabled, 1: minimal, 2: maximal, 3:maximal plus dumping PDG"));
+
 static cl::opt<bool> PDGEmbed("noelle-pdg-embed",
                               cl::ZeroOrMore,
                               cl::Hidden,
                               cl::desc("Embed the PDG"));
+
 static cl::opt<bool> SCCEmbed("noelle-pdg-scc-embed",
                               cl::ZeroOrMore,
                               cl::Hidden,
                               cl::desc("Embed the SCCs"));
+
 static cl::opt<bool> PDGDump("noelle-pdg-dump",
                              cl::ZeroOrMore,
                              cl::Hidden,
                              cl::desc("Dump the PDG"));
+
 static cl::opt<bool> PDGCheck("noelle-pdg-check",
                               cl::ZeroOrMore,
                               cl::Hidden,
                               cl::desc("Check the PDG"));
+
 static cl::opt<bool> PDGSVFDisable("noelle-disable-pdg-svf",
                                    cl::ZeroOrMore,
                                    cl::Hidden,
                                    cl::desc("Disable SVF"));
+
+static cl::opt<bool> PDGSVFCallGraphDisable("noelle-disable-pdg-svf-callgraph",
+                                            cl::ZeroOrMore,
+                                            cl::Hidden,
+                                            cl::desc("Disable SVF call graph"));
+
 static cl::opt<bool> PDGAllocAADisable(
     "noelle-disable-pdg-allocaa",
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Disable our custom alias analysis"));
+
 static cl::opt<bool> PDGRADisable(
     "noelle-disable-pdg-reaching-analysis",
     cl::ZeroOrMore,
@@ -73,6 +85,8 @@ bool PDGGenerator::doInitialization(Module &M) {
   this->performThePDGComparison =
       (PDGCheck.getNumOccurrences() > 0) ? true : false;
   this->disableSVF = (PDGSVFDisable.getNumOccurrences() > 0) ? true : false;
+  this->disableSVFCallGraph =
+      (PDGSVFCallGraphDisable.getNumOccurrences() > 0) ? true : false;
   this->disableAllocAA =
       (PDGAllocAADisable.getNumOccurrences() > 0) ? true : false;
   this->disableRA = (PDGRADisable.getNumOccurrences() > 0) ? true : false;
