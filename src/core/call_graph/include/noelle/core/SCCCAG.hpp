@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020 Simone Campanoni
+ * Copyright 2019 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -31,37 +31,44 @@ class CallGraph;
 
 class SCCCAGNode {
 public:
-  SCCCAGNode() = default;
+  SCCCAGNode();
+
+  uint64_t getID(void) const;
 
   virtual bool isAnSCC(void) const = 0;
 
   virtual ~SCCCAGNode();
+
+protected:
+  uint64_t ID;
 };
 
 class SCCCAGNode_SCC : public SCCCAGNode {
 public:
-  SCCCAGNode_SCC(std::unordered_set<CallGraphNode *> const &nodes);
+  SCCCAGNode_SCC(std::unordered_set<CallGraphFunctionNode *> const &nodes);
 
   bool isAnSCC(void) const override;
+
+  std::unordered_set<CallGraphFunctionNode *> getInternalNodes(void) const;
 
   virtual ~SCCCAGNode_SCC();
 
 private:
-  std::unordered_set<CallGraphNode *> nodes;
+  std::unordered_set<CallGraphFunctionNode *> nodes;
 };
 
 class SCCCAGNode_Function : public SCCCAGNode {
 public:
-  SCCCAGNode_Function(CallGraphNode *n);
+  SCCCAGNode_Function(CallGraphFunctionNode *n);
 
   bool isAnSCC(void) const override;
 
-  CallGraphNode *getNode(void) const;
+  CallGraphFunctionNode *getNode(void) const;
 
   virtual ~SCCCAGNode_Function();
 
 private:
-  CallGraphNode *node;
+  CallGraphFunctionNode *node;
 };
 
 class SCCCAG {
@@ -70,10 +77,27 @@ public:
 
   SCCCAG() = delete;
 
-  SCCCAGNode *getNode(CallGraphNode *n) const;
+  SCCCAGNode *getNode(CallGraphFunctionNode *n) const;
+
+  std::set<SCCCAGNode *> getNodes(void) const;
+
+  std::set<SCCCAGNode *> getNodesWithInDegree(uint64_t targetInDegree) const;
+
+  std::set<SCCCAGNode *> getNodesWithOutDegree(uint64_t targetOutDegree) const;
+
+  std::set<SCCCAGNode *> getOutgoingEdges(SCCCAGNode *n) const;
+
+  std::set<SCCCAGNode *> getIncomingEdges(SCCCAGNode *n) const;
 
 private:
-  std::unordered_map<CallGraphNode *, SCCCAGNode *> nodes;
+  std::unordered_map<CallGraphFunctionNode *, SCCCAGNode *> fromCGNodeToSCC;
+  std::set<SCCCAGNode *> nodes;
+  std::unordered_map<SCCCAGNode *, std::set<SCCCAGNode *>> outgoingEdges;
+  std::unordered_map<SCCCAGNode *, std::set<SCCCAGNode *>> incomingEdges;
+
+  void createNodes(CallGraph *cg);
+
+  void createEdges(CallGraph *cg);
 };
 
 } // namespace arcana::noelle

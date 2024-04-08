@@ -1,13 +1,23 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 char *weirdPtr;
 
+void myG2(void);
+void myF(void (*funcToInvoke)(void));
+
 void myG1(void) {
   printf("Inside myG1\n");
+  if (((int)weirdPtr) == rand()) {
+    myG2();
+  }
 }
 
 void myG2(void) {
   printf("Inside myG2\n");
+  if (((int)weirdPtr) == rand()) {
+    myF(myG1);
+  }
 }
 
 void myG3(void) {

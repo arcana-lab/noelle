@@ -24,6 +24,20 @@
 
 namespace arcana::noelle {
 
+SCCCAGNode::SCCCAGNode() {
+  static uint64_t currentID = 0;
+
+  this->ID = currentID;
+
+  currentID++;
+
+  return;
+}
+
+uint64_t SCCCAGNode::getID(void) const {
+  return this->ID;
+}
+
 SCCCAGNode::~SCCCAGNode() {
   return;
 }

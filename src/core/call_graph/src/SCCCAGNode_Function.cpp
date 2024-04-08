@@ -24,7 +24,10 @@
 
 namespace arcana::noelle {
 
-SCCCAGNode_Function::SCCCAGNode_Function(CallGraphNode *n) : node{ n } {
+SCCCAGNode_Function::SCCCAGNode_Function(CallGraphFunctionNode *n)
+  : SCCCAGNode{},
+    node{ n } {
+
   return;
 }
 
@@ -32,7 +35,7 @@ bool SCCCAGNode_Function::isAnSCC(void) const {
   return false;
 }
 
-CallGraphNode *SCCCAGNode_Function::getNode(void) const {
+CallGraphFunctionNode *SCCCAGNode_Function::getNode(void) const {
   return this->node;
 }
 
