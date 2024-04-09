@@ -76,6 +76,20 @@ struct CAT : public ModulePass {
         auto dstNode = edge->getDst();
         errs() << "SCCCAG:     " << node->getID() << " -> " << dstNode->getID()
                << "\n";
+
+        /*
+         * Print the sub-edges.
+         */
+        errs()
+            << "SCCCAG:       Because of the following edges in the call graph:\n";
+        for (auto subEdge : edge->getSubEdges()) {
+          auto callerNode = subEdge->getCaller();
+          auto calleeNode = subEdge->getCallee();
+          auto calleer = callerNode->getFunction();
+          auto callee = calleeNode->getFunction();
+          errs() << "SCCCAG:         \"" << calleer->getName()
+                 << "\" invokes \"" << callee->getName() << "\"\n";
+        }
       }
     }
     errs() << "\n";

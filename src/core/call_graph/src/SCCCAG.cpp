@@ -179,6 +179,13 @@ void SCCCAG::createEdges(CallGraph *cg) {
         if (sccNodeOutEdges.find(dstSCCNode) == sccNodeOutEdges.end()) {
           this->newEdge(sccNode, dstSCCNode);
         }
+
+        /*
+         * Add the sub-edge.
+         */
+        auto scccagEdge = sccNodeOutEdges.at(dstSCCNode);
+        assert(scccagEdge != nullptr);
+        scccagEdge->addSubEdge(outgoingEdge);
       }
 
       continue;
@@ -217,6 +224,13 @@ void SCCCAG::createEdges(CallGraph *cg) {
         if (sccNodeOutEdges.find(dstSCCNode) == sccNodeOutEdges.end()) {
           this->newEdge(sccNode, dstSCCNode);
         }
+
+        /*
+         * Add the sub-edge.
+         */
+        auto scccagEdge = sccNodeOutEdges.at(dstSCCNode);
+        assert(scccagEdge != nullptr);
+        scccagEdge->addSubEdge(outgoingEdge);
       }
     }
   }

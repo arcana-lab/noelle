@@ -34,9 +34,14 @@ public:
 
   SCCCAGNode *getDst(void) const;
 
+  void addSubEdge(CallGraphFunctionFunctionEdge *cgEdge);
+
+  std::unordered_set<CallGraphFunctionFunctionEdge *> getSubEdges(void) const;
+
 private:
   SCCCAGNode *f;
   SCCCAGNode *t;
+  std::unordered_set<CallGraphFunctionFunctionEdge *> subEdges;
 };
 
 } // namespace arcana::noelle

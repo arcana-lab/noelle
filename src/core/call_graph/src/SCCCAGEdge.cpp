@@ -36,4 +36,13 @@ SCCCAGNode *SCCCAGEdge::getDst(void) const {
   return this->t;
 }
 
+void SCCCAGEdge::addSubEdge(CallGraphFunctionFunctionEdge *cgEdge) {
+  this->subEdges.insert(cgEdge);
+}
+
+std::unordered_set<CallGraphFunctionFunctionEdge *> SCCCAGEdge::getSubEdges(
+    void) const {
+  return this->subEdges;
+}
+
 } // namespace arcana::noelle
