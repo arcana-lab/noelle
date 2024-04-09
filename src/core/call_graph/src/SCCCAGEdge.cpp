@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2022 Simone Campanoni
+ * Copyright 2023 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,27 +19,30 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/SCCCAG.hpp"
+#include "noelle/core/SCCCAGEdge.hpp"
 
 namespace arcana::noelle {
 
-SCCCAGNode::SCCCAGNode() {
-  static uint64_t currentID = 0;
-
-  this->ID = currentID;
-
-  currentID++;
+SCCCAGEdge::SCCCAGEdge(SCCCAGNode *from, SCCCAGNode *to) : f{ from }, t{ to } {
 
   return;
 }
 
-uint64_t SCCCAGNode::getID(void) const {
-  return this->ID;
+SCCCAGNode *SCCCAGEdge::getSrc(void) const {
+  return this->f;
 }
 
-SCCCAGNode::~SCCCAGNode() {
-  return;
+SCCCAGNode *SCCCAGEdge::getDst(void) const {
+  return this->t;
+}
+
+void SCCCAGEdge::addSubEdge(CallGraphFunctionFunctionEdge *cgEdge) {
+  this->subEdges.insert(cgEdge);
+}
+
+std::unordered_set<CallGraphFunctionFunctionEdge *> SCCCAGEdge::getSubEdges(
+    void) const {
+  return this->subEdges;
 }
 
 } // namespace arcana::noelle

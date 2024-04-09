@@ -46,6 +46,13 @@ CallGraph *FunctionsManager::getProgramCallGraph(void) {
   return this->pcg;
 }
 
+SCCCAG *FunctionsManager::getSCCDAGOfProgramCallGraph(void) {
+  auto cg = this->getProgramCallGraph();
+  auto sccdag = new SCCCAG(cg);
+
+  return sccdag;
+}
+
 bool FunctionsManager::isTheLibraryFunctionPure(Function *libraryFunction) {
 
   /*

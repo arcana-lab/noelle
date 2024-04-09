@@ -7,6 +7,7 @@ add_llvm_library(
   src/CallGraphTraits.cpp
   src/SCCCAG.cpp
   src/SCCCAGNode.cpp
+  src/SCCCAGEdge.cpp
   src/SCCCAGNode_Function.cpp
   src/SCCCAGNode_SCC.cpp
 )

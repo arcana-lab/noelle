@@ -153,42 +153,17 @@ const std::set<const Function *> NoelleSVFIntegration::getIndCSCallees(
 
   /*
    * SVF has not been enabled or it cannot handle @call.
+   *
+   * Collect all functions that escape and that are compatible with the
+   * signature of the call instruction.
    */
-  std::set<const Function *> callees;
   auto currentProgram = call->getModule();
-  for (auto &F : *currentProgram) {
+  auto callees = PDGGenerator::getFunctionsThatMightEscape(*currentProgram);
+  auto targetSignature = call->getFunctionType();
+  auto compatibleCallees =
+      PDGGenerator::getFunctionsWithSignature(callees, targetSignature);
 
-    /*
-     * Check if @F is used for something that isn't a direct call.
-     * In this case, @F could be invoked indirectly
-     */
-    for (auto user : F.users()) {
-      auto userAsInst = dyn_cast<Instruction>(user);
-      if (userAsInst == nullptr) {
-        continue;
-      }
-      if (isa<CallBase>(userAsInst)) {
-        continue;
-      }
-
-      /*
-       * @F could be invoked indirectly as its address is used by a non-call
-       * instruction that could store it in memory.
-       *
-       * Check if @F has the same signature of the function invoked by @call.
-       */
-      // TODO
-      if (true) {
-
-        /*
-         * @F has a signature that is compatible with @call.
-         */
-        callees.insert(&F);
-      }
-    }
-  }
-
-  return callees;
+  return compatibleCallees;
 }
 
 bool NoelleSVFIntegration::isReachableBetweenFunctions(const Function *from,

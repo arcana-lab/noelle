@@ -37,15 +37,12 @@ struct CAT : public ModulePass {
      * Call graph.
      */
     auto pcf = fm->getProgramCallGraph();
-    for (auto node : pcf->getFunctionNodes()) {
+    for (auto node : pcf->getFunctionNodes(true)) {
 
       /*
        * Fetch the next program's function.
        */
       auto f = node->getFunction();
-      if (f->empty()) {
-        continue;
-      }
 
       /*
        * Fetch the outgoing edges.

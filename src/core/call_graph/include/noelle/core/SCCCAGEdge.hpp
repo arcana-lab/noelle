@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2022 Simone Campanoni
+ * Copyright 2023 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,27 +19,31 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/SCCCAG.hpp"
+#ifndef NOELLE_SRC_CORE_CALL_GRAPH_SCCCAGEDGE_H_
+#define NOELLE_SRC_CORE_CALL_GRAPH_SCCCAGEDGE_H_
+
+#include "noelle/core/SCCCAGNode.hpp"
 
 namespace arcana::noelle {
 
-SCCCAGNode::SCCCAGNode() {
-  static uint64_t currentID = 0;
+class SCCCAGEdge {
+public:
+  SCCCAGEdge(SCCCAGNode *from, SCCCAGNode *to);
 
-  this->ID = currentID;
+  SCCCAGNode *getSrc(void) const;
 
-  currentID++;
+  SCCCAGNode *getDst(void) const;
 
-  return;
-}
+  void addSubEdge(CallGraphFunctionFunctionEdge *cgEdge);
 
-uint64_t SCCCAGNode::getID(void) const {
-  return this->ID;
-}
+  std::unordered_set<CallGraphFunctionFunctionEdge *> getSubEdges(void) const;
 
-SCCCAGNode::~SCCCAGNode() {
-  return;
-}
+private:
+  SCCCAGNode *f;
+  SCCCAGNode *t;
+  std::unordered_set<CallGraphFunctionFunctionEdge *> subEdges;
+};
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_CALL_GRAPH_SCCCAGEDGE_H_

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2022 Simone Campanoni
+ * Copyright 2019 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,27 +19,56 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_CORE_CALL_GRAPH_SCCCAGNODE_H_
+#define NOELLE_SRC_CORE_CALL_GRAPH_SCCCAGNODE_H_
+
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/SCCCAG.hpp"
+#include "noelle/core/CallGraph.hpp"
 
 namespace arcana::noelle {
 
-SCCCAGNode::SCCCAGNode() {
-  static uint64_t currentID = 0;
+class SCCCAGNode {
+public:
+  SCCCAGNode();
 
-  this->ID = currentID;
+  uint64_t getID(void) const;
 
-  currentID++;
+  virtual bool isAnSCC(void) const = 0;
 
-  return;
-}
+  virtual ~SCCCAGNode();
 
-uint64_t SCCCAGNode::getID(void) const {
-  return this->ID;
-}
+protected:
+  uint64_t ID;
+};
 
-SCCCAGNode::~SCCCAGNode() {
-  return;
-}
+class SCCCAGNode_SCC : public SCCCAGNode {
+public:
+  SCCCAGNode_SCC(std::unordered_set<CallGraphFunctionNode *> const &nodes);
+
+  bool isAnSCC(void) const override;
+
+  std::unordered_set<CallGraphFunctionNode *> getInternalNodes(void) const;
+
+  virtual ~SCCCAGNode_SCC();
+
+private:
+  std::unordered_set<CallGraphFunctionNode *> nodes;
+};
+
+class SCCCAGNode_Function : public SCCCAGNode {
+public:
+  SCCCAGNode_Function(CallGraphFunctionNode *n);
+
+  bool isAnSCC(void) const override;
+
+  CallGraphFunctionNode *getNode(void) const;
+
+  virtual ~SCCCAGNode_Function();
+
+private:
+  CallGraphFunctionNode *node;
+};
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_SRC_CORE_CALL_GRAPH_SCCCAG_H_

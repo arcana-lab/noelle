@@ -70,6 +70,13 @@ public:
 
   static bool canAccessMemory(Instruction *i);
 
+  static std::set<const Function *> getFunctionsThatMightEscape(
+      Module &currentProgram);
+
+  static std::set<const Function *> getFunctionsWithSignature(
+      std::set<const Function *> functions,
+      FunctionType *signature);
+
 private:
   Module *M;
   PDG *programDependenceGraph;
@@ -83,6 +90,7 @@ private:
   bool dumpPDG;
   bool performThePDGComparison;
   bool disableSVF;
+  bool disableSVFCallGraph;
   bool disableAllocAA;
   bool disableRA;
   PDGPrinter printer;

@@ -24,13 +24,20 @@
 
 namespace arcana::noelle {
 
-SCCCAGNode_SCC::SCCCAGNode_SCC(std::unordered_set<CallGraphNode *> const &nodes)
-  : nodes{ nodes } {
+SCCCAGNode_SCC::SCCCAGNode_SCC(
+    std::unordered_set<CallGraphFunctionNode *> const &nodes)
+  : SCCCAGNode{},
+    nodes{ nodes } {
   return;
 }
 
 bool SCCCAGNode_SCC::isAnSCC(void) const {
   return true;
+}
+
+std::unordered_set<CallGraphFunctionNode *> SCCCAGNode_SCC::getInternalNodes(
+    void) const {
+  return this->nodes;
 }
 
 SCCCAGNode_SCC::~SCCCAGNode_SCC() {

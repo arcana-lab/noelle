@@ -25,6 +25,8 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/Hot.hpp"
+#include "noelle/core/CallGraph.hpp"
+#include "noelle/core/SCCCAG.hpp"
 
 namespace arcana::noelle {
 
@@ -41,6 +43,8 @@ public:
   Function *getFunction(const std::string &name);
 
   CallGraph *getProgramCallGraph(void);
+
+  SCCCAG *getSCCDAGOfProgramCallGraph(void);
 
   Function *newFunction(const std::string &name, FunctionType &signature);
 

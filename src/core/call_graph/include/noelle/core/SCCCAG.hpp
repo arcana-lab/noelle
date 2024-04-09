@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020 Simone Campanoni
+ * Copyright 2019 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -25,44 +25,11 @@
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/CallGraphTraits.hpp"
+#include "noelle/core/SCCCAGNode.hpp"
+#include "noelle/core/SCCCAGEdge.hpp"
 
 namespace arcana::noelle {
 class CallGraph;
-
-class SCCCAGNode {
-public:
-  SCCCAGNode() = default;
-
-  virtual bool isAnSCC(void) const = 0;
-
-  virtual ~SCCCAGNode();
-};
-
-class SCCCAGNode_SCC : public SCCCAGNode {
-public:
-  SCCCAGNode_SCC(std::unordered_set<CallGraphNode *> const &nodes);
-
-  bool isAnSCC(void) const override;
-
-  virtual ~SCCCAGNode_SCC();
-
-private:
-  std::unordered_set<CallGraphNode *> nodes;
-};
-
-class SCCCAGNode_Function : public SCCCAGNode {
-public:
-  SCCCAGNode_Function(CallGraphNode *n);
-
-  bool isAnSCC(void) const override;
-
-  CallGraphNode *getNode(void) const;
-
-  virtual ~SCCCAGNode_Function();
-
-private:
-  CallGraphNode *node;
-};
 
 class SCCCAG {
 public:
@@ -70,10 +37,41 @@ public:
 
   SCCCAG() = delete;
 
-  SCCCAGNode *getNode(CallGraphNode *n) const;
+  bool doesItBelongToAnSCC(Function *f);
+
+  SCCCAGNode *getNode(CallGraphFunctionNode *n) const;
+
+  std::set<SCCCAGNode *> getNodes(void) const;
+
+  std::set<SCCCAGEdge *> getEdges(void) const;
+
+  std::set<SCCCAGNode *> getNodesWithInDegree(uint64_t targetInDegree) const;
+
+  std::set<SCCCAGNode *> getNodesWithOutDegree(uint64_t targetOutDegree) const;
+
+  std::unordered_map<SCCCAGNode *, SCCCAGEdge *> getOutgoingEdges(
+      SCCCAGNode *n) const;
+
+  std::unordered_map<SCCCAGNode *, SCCCAGEdge *> getIncomingEdges(
+      SCCCAGNode *n) const;
 
 private:
-  std::unordered_map<CallGraphNode *, SCCCAGNode *> nodes;
+  CallGraph *cg;
+  std::unordered_map<CallGraphFunctionNode *, SCCCAGNode *> fromCGNodeToSCC;
+  std::set<SCCCAGNode *> nodes;
+  std::set<SCCCAGEdge *> edges;
+  std::unordered_map<SCCCAGNode *,
+                     std::unordered_map<SCCCAGNode *, SCCCAGEdge *>>
+      outgoingEdges;
+  std::unordered_map<SCCCAGNode *,
+                     std::unordered_map<SCCCAGNode *, SCCCAGEdge *>>
+      incomingEdges;
+
+  void createNodes(CallGraph *cg);
+
+  void createEdges(CallGraph *cg);
+
+  SCCCAGEdge *newEdge(SCCCAGNode *from, SCCCAGNode *to);
 };
 
 } // namespace arcana::noelle
