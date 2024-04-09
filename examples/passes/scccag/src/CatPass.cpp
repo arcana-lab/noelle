@@ -33,17 +33,11 @@ struct CAT : public ModulePass {
      * Fetch the entry point.
      */
     auto fm = noelle.getFunctionsManager();
-    auto mainF = fm->getEntryFunction();
 
     /*
-     * Call graph.
+     * Fetch the SCCDAG of the program call graph: SCCCAG
      */
-    auto pcf = fm->getProgramCallGraph();
-
-    /*
-     * SCCDAG of the call graph: SCCCAG
-     */
-    auto sccCAG = new SCCCAG(pcf);
+    auto sccCAG = fm->getSCCDAGOfProgramCallGraph();
 
     /*
      * Print the nodes of the SCCCAG.

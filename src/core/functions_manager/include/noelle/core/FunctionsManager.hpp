@@ -44,6 +44,8 @@ public:
 
   CallGraph *getProgramCallGraph(void);
 
+  SCCCAG *getSCCDAGOfProgramCallGraph(void);
+
   Function *newFunction(const std::string &name, FunctionType &signature);
 
   std::set<Function *> getFunctions(void) const;
