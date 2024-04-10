@@ -3,7 +3,7 @@ export GENERATOR ?= Unix Makefiles
 export JOBS ?= 8
 export NOELLE_INSTALL_DIR ?= $(shell realpath ./install)
 export NOELLE_SCAF ?= ON
-export NOELLE_SVF ?= ON
+export NOELLE_SVF ?= OFF
 export NOELLE_AUTOTUNER ?= ON
 export MAKEFLAGS += --no-print-directory
 
