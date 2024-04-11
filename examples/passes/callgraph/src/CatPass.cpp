@@ -56,10 +56,6 @@ struct CAT : public ModulePass {
       /*
        * Print the outgoing edges.
        */
-      if (pcf->doesItBelongToASCC(f)) {
-        errs() << " The function \"" << f->getName()
-               << "\" is involved in an SCC\n";
-      }
       errs() << " The function \"" << f->getName() << "\"";
       errs() << " invokes the following functions:\n";
       for (auto callEdge : outEdges) {
@@ -102,13 +98,6 @@ struct CAT : public ModulePass {
                << " is not in the same island of main\n";
       }
     }
-
-    /*
-     * Fetch the SCCCAG
-     */
-    auto sccCAG = pcf->getSCCCAG();
-    auto mainNode = pcf->getFunctionNode(mainF);
-    auto sccOfMain = sccCAG->getNode(mainNode);
 
     return false;
   }

@@ -44,6 +44,7 @@ struct CAT : public ModulePass {
      */
     auto iterF = [](Value *src, DGEdge<Value, Value> *dep) -> bool {
       errs() << "   " << *src << " ";
+
       if (isa<ControlDependence<Value, Value>>(dep)) {
         errs() << " CONTROL ";
       } else {
