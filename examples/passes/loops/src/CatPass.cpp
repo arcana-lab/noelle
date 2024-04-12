@@ -51,7 +51,7 @@ struct CAT : public ModulePass {
       errs() << "Loop " << *entryInst << "\n";
 
       /*
-       * Fetch the LoopDependenceInfo
+       * Fetch the LoopContent
        */
       auto loop = noelle.getLoopContent(LS);
       auto loopNode = loop->getLoopHierarchyStructures();
@@ -108,7 +108,7 @@ struct CAT : public ModulePass {
 
     /*
      * Iterate over all loops,
-     * and compute the LoopDependenceInfo only for those that we care.
+     * and compute the LoopContent only for those that we care.
      */
     for (auto l : *loopStructures) {
       if (l->getNestingLevel() > 1) {
@@ -116,9 +116,9 @@ struct CAT : public ModulePass {
       }
 
       /*
-       * Get the LoopDependenceInfo
+       * Get the LoopContent
        */
-      auto ldi = noelle.getLoopContent(l);
+      auto lc = noelle.getLoopContent(l);
     }
 
     return false;
