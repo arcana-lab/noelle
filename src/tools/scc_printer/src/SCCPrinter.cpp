@@ -19,12 +19,16 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 
 #include "SCCPrinter.hpp"
+
+using namespace std;
 
 namespace arcana::noelle {
 
@@ -72,7 +76,13 @@ bool SCCPrinter::runOnModule(Module &M) {
   };
 
   auto LSs = noelle.getLoopStructures();
-  auto LS = (*LSs)[this->targetLoopID];
+  LoopStructure *LS = nullptr;
+  for (auto *x : *LSs) {
+    if (x->getID().value() == this->targetLoopID) {
+      LS = x;
+    }
+  }
+  assert(LS);
 
   auto LC = noelle.getLoopContent(LS);
   auto sccManager = LC->getSCCManager();
@@ -112,6 +122,8 @@ void SCCPrinter::printSCC(GenericSCC *scc) {
 }
 
 void SCCPrinter::printLoopIDs(std::vector<LoopStructure *> *LSs) {
+  errs() << this->prefix << "Selected function: \e[35m"
+         << this->targetFunctionName << "\e[0m\n";
   for (auto LS : *LSs) {
     int id = LS->getID().value();
     errs() << this->prefix << "\e[1;32mLoop ID " << id << "\e[0m:\n";

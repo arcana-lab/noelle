@@ -56,7 +56,6 @@ private:
   std::string prefix;
   std::string targetFunctionName;
   bool printSCCInstructions;
-  int targetSCCID;
   int targetLoopID;
   bool loopIDs;
   bool printDetails;
