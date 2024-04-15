@@ -37,53 +37,18 @@ struct CAT : public ModulePass {
      * Call graph.
      */
     auto pcf = fm->getProgramCallGraph();
-    for (auto node : pcf->getFunctionNodes(true)) {
 
-      /*
-       * Fetch the next program's function.
-       */
-      auto f = node->getFunction();
-
-      /*
-       * Fetch the outgoing edges.
-       */
-      auto outEdges = pcf->getOutgoingEdges(node);
-      if (outEdges.size() == 0) {
-        errs() << " The function \"" << f->getName() << "\" has no calls\n";
-        continue;
-      }
-
-      /*
-       * Print the outgoing edges.
-       */
-      errs() << " The function \"" << f->getName() << "\"";
-      errs() << " invokes the following functions:\n";
-      for (auto callEdge : outEdges) {
-        auto calleerNode = callEdge->getCaller();
-        auto calleeNode = callEdge->getCallee();
-        auto calleeF = calleeNode->getFunction();
-
-        errs() << "   [";
-        if (callEdge->isAMustCall()) {
-          errs() << "must";
-        } else {
-          errs() << "may";
-        }
-        errs() << "] \"" << calleeF->getName() << "\"\n";
-
-        /*
-         * Print the sub-edges.
-         */
-        for (auto subEdge : callEdge->getSubEdges()) {
-          auto callerSubEdge = subEdge->getCaller();
-          errs() << "     [";
-          if (subEdge->isAMustCall()) {
-            errs() << "must";
-          } else {
-            errs() << "may";
-          }
-          errs() << "] " << *callerSubEdge->getInstruction() << "\n";
-        }
+    /*
+     * Fetch the islands.
+     */
+    errs() << "Islands of the program call graph\n";
+    auto islands = pcf->getIslands();
+    auto islandOfMain = islands[mainF];
+    for (auto &F : M) {
+      auto islandOfF = islands[&F];
+      if (islandOfF != islandOfMain) {
+        errs() << " Function " << F.getName()
+               << " is not in the same island of main\n";
       }
     }
 
