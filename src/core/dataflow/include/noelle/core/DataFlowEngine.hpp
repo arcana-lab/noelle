@@ -96,7 +96,7 @@ protected:
       DataFlowResult *df);
 
 private:
-  DataFlowResult *applyCustomizableForwardAnalysis(
+  DataFlowResult *applyGeneralizedForwardAnalysis(
       Function *f,
       std::function<void(Instruction *, DataFlowResult *)> computeGEN,
       std::function<void(Instruction *, DataFlowResult *)> computeKILL,
@@ -104,6 +104,8 @@ private:
           initializeIN,
       std::function<void(Instruction *inst, std::set<Value *> &OUT)>
           initializeOUT,
+      std::function<std::list<BasicBlock *>(BasicBlock *bb)> getPredecessors,
+      std::function<std::list<BasicBlock *>(BasicBlock *bb)> getSuccessors,
       std::function<void(Instruction *inst,
                          Instruction *predecessor,
                          std::set<Value *> &IN,
@@ -114,7 +116,15 @@ private:
       std::function<void(std::list<BasicBlock *> &workingList, BasicBlock *bb)>
           appendBB,
       std::function<Instruction *(BasicBlock *bb)> getFirstInstruction,
-      std::function<Instruction *(BasicBlock *bb)> getLastInstruction);
+      std::function<Instruction *(BasicBlock *bb)> getLastInstruction,
+      std::function<std::set<Value *> &(DataFlowResult *df,
+                                        Instruction *instruction)>
+          getInSetOfInst,
+      std::function<std::set<Value *> &(DataFlowResult *df,
+                                        Instruction *instruction)>
+          getOutSetOfInst,
+      std::function<BasicBlock::iterator(BasicBlock *)> getEndIterator,
+      std::function<void(BasicBlock::iterator &)> incrementIterator);
 };
 
 } // namespace arcana::noelle
