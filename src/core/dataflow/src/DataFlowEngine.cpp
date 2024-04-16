@@ -85,25 +85,64 @@ DataFlowResult *DataFlowEngine::applyForward(
   auto getFirstInst = [](BasicBlock *bb) -> Instruction * {
     return &*bb->begin();
   };
+
   auto getLastInst = [](BasicBlock *bb) -> Instruction * {
     return bb->getTerminator();
   };
 
+  auto getPredecessors = [](BasicBlock *bb) -> std::list<BasicBlock *> {
+    std::list<BasicBlock *> Predecessors;
+    for (auto predecessor : predecessors(bb)) {
+      Predecessors.push_back(predecessor);
+    }
+    return Predecessors;
+  };
+
+  auto getSuccessors = [](BasicBlock *bb) -> std::list<BasicBlock *> {
+    std::list<BasicBlock *> Successors;
+    for (auto predecessor : successors(bb)) {
+      Successors.push_back(predecessor);
+    }
+    return Successors;
+  };
+
+  auto inSetOfInst = [](DataFlowResult *df,
+                        Instruction *inst) -> std::set<Value *> & {
+    return df->IN(inst);
+  };
+
+  auto outSetOfInst = [](DataFlowResult *df,
+                         Instruction *inst) -> std::set<Value *> & {
+    return df->OUT(inst);
+  };
+
+  auto getEndIterator = [](BasicBlock *bb) -> BasicBlock::iterator {
+    return bb->end();
+  };
+
+  auto incrementIterator = [](BasicBlock::iterator &iter) { iter++; };
+
   /*
    * Run the pass.
    */
-  auto dfaResult = this->applyCustomizableForwardAnalysis(f,
-                                                          computeGEN,
-                                                          computeKILL,
-                                                          initializeIN,
-                                                          initializeOUT,
-                                                          computeIN,
-                                                          computeOUT,
-                                                          appendBB,
-                                                          getFirstInst,
-                                                          getLastInst);
 
-  return dfaResult;
+  auto dfa = this->applyGeneralizedForwardAnalysis(f,
+                                                   computeGEN,
+                                                   computeKILL,
+                                                   initializeIN,
+                                                   initializeOUT,
+                                                   getPredecessors,
+                                                   getSuccessors,
+                                                   computeIN,
+                                                   computeOUT,
+                                                   appendBB,
+                                                   getFirstInst,
+                                                   getLastInst,
+                                                   inSetOfInst,
+                                                   outSetOfInst,
+                                                   getEndIterator,
+                                                   incrementIterator);
+  return dfa;
 }
 
 DataFlowResult *DataFlowEngine::applyBackward(
@@ -144,124 +183,76 @@ DataFlowResult *DataFlowEngine::applyBackward(
                        DataFlowResult *df)> computeOUT) {
 
   /*
-   * Compute the GENs and KILLs
+   * Define the customization
    */
-  auto df = new DataFlowResult{};
-  computeGENAndKILL(f, computeGEN, computeKILL, df);
+  auto appendBB = [](std::list<BasicBlock *> &workingList, BasicBlock *bb) {
+    workingList.push_front(bb);
+  };
 
-  /*
-   * Compute the IN and OUT
-   *
-   * Create the working list by adding all basic blocks to it.
-   */
-  std::unordered_set<BasicBlock *> computedOnce;
-  std::list<BasicBlock *> workingList;
-  for (auto &bb : *f) {
-    workingList.push_front(&bb);
-  }
-
-  /*
-   * Compute the INs and OUTs iteratively until the working list is empty.
-   */
-  while (!workingList.empty()) {
-
-    /*
-     * Fetch a basic block that needs to be processed.
-     */
-    auto bb = workingList.front();
-    workingList.pop_front();
-
-    /*
-     * Fetch the last instruction of the current basic block.
-     */
-    auto inst = bb->getTerminator();
-    assert(inst != nullptr);
-
-    /*
-     * Fetch IN[inst], OUT[inst], GEN[inst], and KILL[inst]
-     */
-    auto &inSetOfInst = df->IN(inst);
-    auto &outSetOfInst = df->OUT(inst);
-
-    /*
-     * Compute OUT[inst]
-     */
-    for (auto successorBB : successors(bb)) {
-
-      /*
-       * Fetch the current successor of "inst".
-       */
-      auto successorInst = &*successorBB->begin();
-
-      /*
-       * Compute OUT[inst]
-       */
-      computeOUT(inst, successorInst, outSetOfInst, df);
+  auto getPredecessors = [](BasicBlock *bb) -> std::list<BasicBlock *> {
+    std::list<BasicBlock *> Successors;
+    for (auto predecessor : successors(bb)) {
+      Successors.push_back(predecessor);
     }
+    return Successors;
+  };
 
-    /*
-     * Compute IN[inst]
-     */
-    auto oldSize = inSetOfInst.size();
-    computeIN(inst, inSetOfInst, df);
-
-    /*
-     * Check if IN[inst] changed.
-     */
-    if ((inSetOfInst.size() > oldSize)
-        || (computedOnce.find(bb) == computedOnce.end())) {
-
-      /*
-       * Remember that we have now computed this basic block.
-       */
-      computedOnce.insert(bb);
-
-      /*
-       * Propagate the new IN[inst] to the rest of the instructions of the
-       * current basic block.
-       */
-      BasicBlock::iterator iter(inst);
-      auto succI = cast<Instruction>(inst);
-      while (iter != bb->begin()) {
-
-        /*
-         * Move the iterator.
-         */
-        iter--;
-
-        /*
-         * Fetch the current instruction.
-         */
-        auto i = &*iter;
-
-        /*
-         * Compute OUT[i]
-         */
-        auto &outSetOfI = df->OUT(i);
-        computeOUT(i, succI, outSetOfI, df);
-
-        /*
-         * Compute IN[i]
-         */
-        auto &inSetOfI = df->IN(i);
-        computeIN(i, inSetOfI, df);
-
-        /*
-         * Update the successor.
-         */
-        succI = i;
-      }
-
-      /*
-       * Add predecessors of the current basic block to the working list.
-       */
-      for (auto predBB : predecessors(bb)) {
-        workingList.push_back(predBB);
-      }
+  auto getSuccessors = [](BasicBlock *bb) -> std::list<BasicBlock *> {
+    std::list<BasicBlock *> Predecessors;
+    for (auto predecessor : predecessors(bb)) {
+      Predecessors.push_back(predecessor);
     }
-  }
+    return Predecessors;
+  };
 
-  return df;
+  auto getFirstInst = [](BasicBlock *bb) -> Instruction * {
+    return bb->getTerminator();
+  };
+
+  auto getLastInst = [](BasicBlock *bb) -> Instruction * {
+    return &*bb->begin();
+  };
+
+  auto initializeIN = [](Instruction *inst, std::set<Value *> &IN) { return; };
+
+  auto initializeOUT = [](Instruction *inst, std::set<Value *> &OUT) {
+    return;
+  };
+
+  auto inSetOfInst = [](DataFlowResult *df,
+                        Instruction *inst) -> std::set<Value *> & {
+    return df->OUT(inst);
+  };
+
+  auto outSetOfInst = [](DataFlowResult *df,
+                         Instruction *inst) -> std::set<Value *> & {
+    return df->IN(inst);
+  };
+
+  auto getEndIterator = [](BasicBlock *bb) -> BasicBlock::iterator {
+    return bb->begin();
+  };
+
+  auto incrementIterator = [](BasicBlock::iterator &iter) { iter--; };
+
+  auto dfr = this->applyGeneralizedForwardAnalysis(f,
+                                                   computeGEN,
+                                                   computeKILL,
+                                                   initializeIN,
+                                                   initializeOUT,
+                                                   getPredecessors,
+                                                   getSuccessors,
+                                                   computeOUT,
+                                                   computeIN,
+                                                   appendBB,
+                                                   getFirstInst,
+                                                   getLastInst,
+                                                   inSetOfInst,
+                                                   outSetOfInst,
+                                                   getEndIterator,
+                                                   incrementIterator);
+
+  return dfr;
 }
 
 void DataFlowEngine::computeGENAndKILL(
@@ -283,13 +274,15 @@ void DataFlowEngine::computeGENAndKILL(
   return;
 }
 
-DataFlowResult *DataFlowEngine::applyCustomizableForwardAnalysis(
+DataFlowResult *DataFlowEngine::applyGeneralizedForwardAnalysis(
     Function *f,
     std::function<void(Instruction *, DataFlowResult *)> computeGEN,
     std::function<void(Instruction *, DataFlowResult *)> computeKILL,
     std::function<void(Instruction *inst, std::set<Value *> &IN)> initializeIN,
     std::function<void(Instruction *inst, std::set<Value *> &OUT)>
         initializeOUT,
+    std::function<std::list<BasicBlock *>(BasicBlock *bb)> getPredecessors,
+    std::function<std::list<BasicBlock *>(BasicBlock *bb)> getSuccessors,
     std::function<void(Instruction *inst,
                        Instruction *predecessor,
                        std::set<Value *> &IN,
@@ -300,7 +293,14 @@ DataFlowResult *DataFlowEngine::applyCustomizableForwardAnalysis(
     std::function<void(std::list<BasicBlock *> &workingList, BasicBlock *bb)>
         appendBB,
     std::function<Instruction *(BasicBlock *bb)> getFirstInstruction,
-    std::function<Instruction *(BasicBlock *bb)> getLastInstruction) {
+    std::function<Instruction *(BasicBlock *bb)> getLastInstruction,
+    std::function<std::set<Value *> &(DataFlowResult *df,
+                                      Instruction *instruction)> getInSetOfInst,
+    std::function<std::set<Value *> &(DataFlowResult *df,
+                                      Instruction *instruction)>
+        getOutSetOfInst,
+    std::function<BasicBlock::iterator(BasicBlock *)> getEndIterator,
+    std::function<void(BasicBlock::iterator &)> incrementIterator) {
 
   /*
    * Initialize IN and OUT sets.
@@ -326,29 +326,26 @@ DataFlowResult *DataFlowEngine::applyCustomizableForwardAnalysis(
    * Create the working list by adding all basic blocks to it.
    */
   std::list<BasicBlock *> workingList;
-  std::unordered_map<BasicBlock *, bool> worklingListContent;
   for (auto &bb : *f) {
     appendBB(workingList, &bb);
-    worklingListContent[&bb] = true;
   }
 
   /*
    * Compute the INs and OUTs iteratively until the working list is empty.
    */
-  std::unordered_map<Instruction *, bool> alreadyVisited;
+  std::unordered_set<BasicBlock *> computedOnce;
+
   while (!workingList.empty()) {
 
     /*
      * Fetch a basic block that needs to be processed.
      */
     auto bb = workingList.front();
-    assert(worklingListContent[bb] == true);
 
     /*
      * Remove the basic block from the workingList.
      */
     workingList.pop_front();
-    worklingListContent[bb] = false;
 
     /*
      * Fetch the first instruction of the basic block.
@@ -358,13 +355,13 @@ DataFlowResult *DataFlowEngine::applyCustomizableForwardAnalysis(
     /*
      * Fetch IN[inst], OUT[inst], GEN[inst], and KILL[inst]
      */
-    auto &inSetOfInst = df->IN(inst);
-    auto &outSetOfInst = df->OUT(inst);
+    auto &inSetOfInst = getInSetOfInst(df, inst);
+    auto &outSetOfInst = getOutSetOfInst(df, inst);
 
     /*
      * Compute the IN of the first instruction of the current basic block.
      */
-    for (auto predecessorBB : predecessors(bb)) {
+    for (auto predecessorBB : getPredecessors(bb)) {
 
       /*
        * Fetch the current predecessor of "inst".
@@ -380,23 +377,29 @@ DataFlowResult *DataFlowEngine::applyCustomizableForwardAnalysis(
     /*
      * Compute OUT[inst]
      */
-    auto oldSize = outSetOfInst.size();
+    auto oldSizeOut = outSetOfInst.size();
     computeOUT(inst, outSetOfInst, df);
 
     /* Check if the OUT of the first instruction of the current basic block
      * changed.
      */
-    if (false || (!alreadyVisited[inst]) || (outSetOfInst.size() != oldSize)) {
-      alreadyVisited[inst] = true;
+    if ((computedOnce.find(bb) == computedOnce.end())
+        || (outSetOfInst.size() != oldSizeOut)) {
+
+      computedOnce.insert(bb);
 
       /*
        * Propagate the new OUT[inst] to the rest of the instructions of the
        * current basic block.
        */
       BasicBlock::iterator iter(inst);
-      auto predI = inst;
-      iter++;
-      while (iter != bb->end()) {
+      auto predI = cast<Instruction>(inst);
+      while (iter != getEndIterator(bb)) {
+
+        /*
+         * Move the iterator.
+         */
+        incrementIterator(iter);
 
         /*
          * Fetch the current instruction.
@@ -406,35 +409,26 @@ DataFlowResult *DataFlowEngine::applyCustomizableForwardAnalysis(
         /*
          * Compute IN[i]
          */
-        auto &inSetOfI = df->IN(i);
+        auto &inSetOfI = getInSetOfInst(df, i);
         computeIN(i, predI, inSetOfI, df);
 
         /*
          * Compute OUT[i]
          */
-        auto &outSetOfI = df->OUT(i);
+        auto &outSetOfI = getOutSetOfInst(df, i);
         computeOUT(i, outSetOfI, df);
 
         /*
          * Update the predecessor.
          */
         predI = i;
-
-        /*
-         * Move the iterator.
-         */
-        iter++;
       }
 
       /*
        * Add successors of the current basic block to the working list.
        */
-      for (auto succBB : successors(bb)) {
-        if (worklingListContent[succBB] == true) {
-          continue;
-        }
+      for (auto succBB : getSuccessors(bb)) {
         workingList.push_back(succBB);
-        worklingListContent[succBB] = true;
       }
     }
   }
