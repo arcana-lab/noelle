@@ -67,9 +67,13 @@ struct CAT : public ModulePass {
     }
 
     /*
-     * Use the profiles.
+     * Fetch LoopContent for all program loops.
      */
     auto loops = noelle.getLoopContents();
+
+    /*
+     * Use the profiles.
+     */
     for (auto loop : *loops) {
 
       /*
