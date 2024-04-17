@@ -2,7 +2,7 @@
 
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
-noelle-eval opt \
+n-eval opt \
   @noelle_load_SVF_LIBS@ \
   @noelle_load_SCAF_LIBS@ \
   @noelle_load_CORE_LIBS@ \

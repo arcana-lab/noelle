@@ -152,7 +152,7 @@ string(REPLACE ";" " " NOELLE_CONFIG_TOOL_LIBS "${NOELLE_CONFIG_TOOL_LIBS}")
 
 configure_file(noelle-config.in noelle-config @ONLY)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/noelle-config DESTINATION bin)
-install(PROGRAMS noelle-eval DESTINATION bin)
+install(PROGRAMS n-eval DESTINATION bin)
 
 add_subdirectory(core)
 

@@ -7,7 +7,7 @@ if test $# -lt 2 ; then
   exit 1
 fi
 
-noelle-eval opt \
+n-eval opt \
   --strip-named-metadata \
   -load $(noelle-config --prefix)/lib/MetadataCleaner.so \
   -MetadataCleaner \
