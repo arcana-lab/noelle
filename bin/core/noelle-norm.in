@@ -2,7 +2,9 @@
 
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
-opt @noelle_norm_OPT_ARGS@ $@
+opt \
+  @noelle_norm_OPT_ARGS@ \
+  $@
 
 noelle-meta-loop-embed $3 -o $3
 
