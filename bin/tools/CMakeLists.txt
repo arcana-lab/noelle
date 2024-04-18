@@ -8,6 +8,7 @@ install(
     noelle-pdg-stats
     noelle-privatizer
     noelle-rm-function
+    noelle-scc-print
   DESTINATION
     bin
 )

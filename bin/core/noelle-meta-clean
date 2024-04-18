@@ -7,14 +7,13 @@ if test $# -lt 2 ; then
   exit 1
 fi
 
-opt \
+n-eval opt \
   --strip-named-metadata \
-  $(noelle-config --svf-libs) \
-  $(noelle-config --scaf-libs) \
-  $(noelle-config --noelle-libs) \
+  -load $(noelle-config --prefix)/lib/MetadataCleaner.so \
   -MetadataCleaner \
   -clean-loop-metadata \
   -clean-prof-metadata \
   -clean-pdg-metadata \
   -clean-pdg-scc-metadata \
   $@
+

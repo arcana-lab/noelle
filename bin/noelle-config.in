@@ -9,15 +9,13 @@ function show_help() {
   echo "  --prefix            Print the installation directory path"
   echo "  --version           Print the library version"
   echo "  --include           Print the include directory"
-  echo "  --noelle-libs       Print the shared libraries used by the NOELLE core"
+  echo "  --core-libs         Print the shared libraries used by the NOELLE core"
   echo "  --tool-libs         Print the shared libraries of the NOELLE tools"
   echo "  --svf-libs          Print the shared libraries used by SVF"
   echo "  --scaf-libs         Print the shared libraries used by SCAF"
-  echo "  --noelle-analyses   Print the default analyses provided and used by NOELLE"
   echo "  --svf-analyses      Print the default SVF analyses used by default"
   echo "  --scaf-analyses     Print the default SCAF analyses used by default"
   echo "  --llvm-analyses     Print the default LLVM analyses used by default"
-  echo "  --other-analyses    Print the other passes enabled by default"
   echo "  --git-commit        Print the git commit hash used at compilation time"
   echo "  --git-origin        Print the git origin used during compilation"
   echo "  --llvm-build        Print the build type of the specific LLVM used by NOELLE"
@@ -48,8 +46,8 @@ for arg in "$@"; do
     --include)
       echo "@CMAKE_INSTALL_PREFIX@/include"
       ;;
-    --noelle-libs)
-      echo "@NOELLE_CONFIG_NOELLE_LIBS@"
+    --core-libs)
+      echo "@NOELLE_CONFIG_CORE_LIBS@"
       ;;
     --tool-libs)
       echo "@NOELLE_CONFIG_TOOL_LIBS@"
@@ -60,9 +58,6 @@ for arg in "$@"; do
     --scaf-libs)
       echo "@NOELLE_CONFIG_SCAF_LIBS@"
       ;;
-    --noelle-analyses)
-      echo "@NOELLE_CONFIG_NOELLE_ANALYSES@"
-      ;;
     --svf-analyses)
       echo "@NOELLE_CONFIG_SVF_ANALYSES@"
       ;;
@@ -71,9 +66,6 @@ for arg in "$@"; do
       ;;
     --llvm-analyses)
       echo "@NOELLE_CONFIG_LLVM_ANALYSES@"
-      ;;
-    --other-analyses)
-      echo "@NOELLE_CONFIG_OTHER_ANALYSES@"
       ;;
     --git-commit)
       echo "@NOELLE_GIT_COMMIT@"

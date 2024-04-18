@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [[ $DEBUG > 0 ]]; then
+  echo $@
+fi
+
+$@

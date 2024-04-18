@@ -1,5 +1,42 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
-opt @noelle_simplification_OPT_ARGS@ $@
+n-eval opt \
+  -basicaa \
+  @noelle_simplification_SVF_LIBS@ \
+  -mem2reg \
+  -tbaa \
+  -early-cse-memssa \
+  -licm \
+  -simplifycfg \
+  -simplifycfg-sink-common=false \
+  -instcombine \
+  -tailcallelim \
+  -loop-simplify \
+  -lcssa \
+  -licm \
+  -loop-unswitch \
+  -globalopt \
+  -instcombine \
+  -ipsccp \
+  -dce \
+  -gvn \
+  -dse \
+  -adce \
+  -loop-simplify \
+  -lcssa \
+  -indvars \
+  -loop-deletion \
+  -instcombine \
+  -indvars \
+  @noelle_simplification_SVF_ANALYSES@ \
+  -lowerswitch \
+  -sroa \
+  -mergereturn \
+  --break-crit-edges \
+  -loop-simplify \
+  -lcssa \
+  -functionattrs \
+  -rpo-functionattrs \
+  $@
