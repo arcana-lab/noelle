@@ -45,7 +45,7 @@ void Privatizer::getAnalysisUsage(AnalysisUsage &AU) const {
 // Next there is code to register your pass to "opt"
 char Privatizer::ID = 0;
 static RegisterPass<Privatizer> X(
-    "privatizer",
+    "Privatizer",
     "Transforms to turn @malloc() / @calloc() and global variables to allocaInst");
 
 // Next there is code to register your pass to "clang"

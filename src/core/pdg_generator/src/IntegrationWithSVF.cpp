@@ -51,7 +51,7 @@ static PTACallGraph *svfCallGraph = nullptr;
 
 // Next there is code to register your pass to "opt"
 char NoelleSVFIntegration::ID = 0;
-static RegisterPass<NoelleSVFIntegration> X("noellesvf",
+static RegisterPass<NoelleSVFIntegration> X("noelle-svf",
                                             "Integration with SVF");
 
 // Next there is code to register your pass to "clang"

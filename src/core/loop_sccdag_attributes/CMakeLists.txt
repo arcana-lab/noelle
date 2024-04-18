@@ -1,6 +1,6 @@
-add_llvm_library(
-  LoopSCCDAGAttributes # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/SCCDAGAttrs.cpp
   src/SCCDAGPartition.cpp
 )

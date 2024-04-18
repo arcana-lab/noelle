@@ -1,0 +1,20 @@
+#!/bin/bash -e
+
+trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
+
+if test $# -lt 2 ; then
+  echo "USAGE: `basename $0` INPUT_BITCODE -o OUTPUT_BITCODE"
+  exit 1
+fi
+
+opt \
+  --strip-named-metadata \
+  $(noelle-config --svf-libs) \
+  $(noelle-config --scaf-libs) \
+  $(noelle-config --noelle-libs) \
+  -MetadataCleaner \
+  -clean-loop-metadata \
+  -clean-prof-metadata \
+  -clean-pdg-metadata \
+  -clean-pdg-scc-metadata \
+  $@

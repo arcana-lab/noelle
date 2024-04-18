@@ -1,0 +1,12 @@
+#!/bin/bash -e
+
+trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
+
+installDir=$(noelle-config --prefix)
+
+# delete dead functions until a fixed point is reached
+echo "NOELLE: DeadFunctions: Start"
+
+noelle-fixedpoint $1 $2 "noelle-load" -load $installDir/lib/DeadFunctionEliminator.so -DeadFunctionEliminator ${@:3}
+
+echo "NOELLE: DeadFunctions: Exit"

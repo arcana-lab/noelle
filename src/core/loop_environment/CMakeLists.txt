@@ -1,6 +1,6 @@
-add_llvm_library(
-  LoopEnvironment # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/LoopEnvironmentBuilder.cpp
   src/LoopEnvironment.cpp
   src/LoopEnvironmentUser.cpp

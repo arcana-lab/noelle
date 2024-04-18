@@ -1,6 +1,6 @@
-add_llvm_library(
-  BasicUtilities # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/BitMatrix.cpp
   src/ScalarEvolutionDelinearization.cpp
   src/ScalarEvolutionReferencer.cpp

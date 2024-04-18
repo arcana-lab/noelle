@@ -1,6 +1,6 @@
-add_llvm_library(
-  Outliner # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/Outliner.cpp
   src/Pass.cpp
 )

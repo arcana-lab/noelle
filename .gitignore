@@ -1,8 +1,8 @@
 .cache
 .clangd
-install
+.config
 build
 compile_commands.json
-external/svf
-external/scaf
+config.cmake
 enable
+install
