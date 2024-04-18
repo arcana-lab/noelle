@@ -6,6 +6,7 @@
 - [Version](#version)
 - [Prerequisites](#prerequisites)
 - [Building NOELLE](#building-noelle)
+- [Uninstalling NOELLE](#uninstalling-noelle)
 - [Testing NOELLE](#testing-noelle)
 - [Repository structure](#repository-structure)
 - [Examples of using NOELLE](#examples-of-using-noelle)
@@ -56,7 +57,7 @@ The version number is in the form of \[v _Major.Minor.Revision_ \]
 LLVM 9.0.0
 
 ### Northwestern
-Next is the information for those that have access to the Zythos cluster at Northwestern.
+Next is the information for those who have access to the Zythos cluster at Northwestern.
 
 To enable the correct LLVM, run the following command from any node of the Zythos cluster:
 ```
@@ -68,6 +69,8 @@ The guide about the Zythos cluster can be downloaded [here](http://www.cs.northw
 
 ## Building NOELLE
 To build and install NOELLE: run `make` from the repository root directory.
+
+## Uninstalling NOELLE
 
 Run `make clean` from the root directory to clean the repository.
 
@@ -104,7 +107,7 @@ If you have any trouble using this framework feel free to reach out to us for he
 
 ### Contributing to NOELLE
 NOELLE uses `clang-format` to ensure uniform styling across the project's source code.
-`clang-format` is run automatically as a pre-commit git hook, meaning that when you commit a file `clang-format` is automatically run on the file in-place.
+`clang-format` is run automatically as a pre-commit git hook, meaning that when you commit a file `clang-format` is automatically run on the file in place.
 
 Since git doesn't allow for git hooks to be installed when you clone the repository we manage this with our top-level Makefile.
 To install the NOELLE git hooks, run `make hooks` at the root of the directory.
@@ -112,7 +115,7 @@ This make rule is run at the start of the `make all` rule as well for ease of us
 
 
 ## Contributions
-We welcome contributions from the community to improve this framework and evolve it to cater for more users.
+We welcome contributions from the community to improve this framework and evolve it to cater to more users.
 
 
 ## License
