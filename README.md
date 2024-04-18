@@ -19,7 +19,7 @@ GINO is built upon [SVF](https://svf-tools.github.io/SVF/), [SCAF](https://githu
 
 NOELLE is in active development so more tools, tests, and abstractions will be added.
 
-We release NOELLE's source code in the hope of benefiting others. 
+We release NOELLE's source code in the hope others will benefit from it.
 You are kindly asked to acknowledge usage of the tool by citing the following paper:
 ```
 @inproceedings{NOELLE,
