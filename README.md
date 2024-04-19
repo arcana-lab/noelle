@@ -18,8 +18,6 @@
 NOELLE provides abstractions to help build advanced code analyses and transformations for LLVM IR code.
 It is built upon [SVF](https://svf-tools.github.io/SVF/), [SCAF](https://github.com/PrincetonUniversity/SCAF.git), and [LLVM](http://llvm.org).
 
-[![Active Development](https://img.shields.io/badge/Maintenance%20Level-Actively%20Developed-brightgreen.svg)](https://gist.github.com/cheerfulstoic/d107229326a01ff0f333a1d3476e068d)
-
 [We](https://users.cs.northwestern.edu/~simonec/Team.html) released NOELLE's source code in the hope of enriching the resources available to the research community and compiler developers.
 You are kindly asked to acknowledge usage of the tool by citing the following paper:
 ```
