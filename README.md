@@ -9,6 +9,7 @@
 - [Prerequisites](#prerequisites)
 - [Building and Installing](#building-and-installing)
 - [Testing](#testing)
+- [Uninstalling NOELLE](#uninstalling-noelle)
 - [Repository structure](#repository-structure)
 - [Contributing](#contributing)
 - [License](#license)
@@ -20,6 +21,7 @@ It is built upon [SVF](https://svf-tools.github.io/SVF/), [SCAF](https://github.
 [![Active Development](https://img.shields.io/badge/Maintenance%20Level-Actively%20Developed-brightgreen.svg)](https://gist.github.com/cheerfulstoic/d107229326a01ff0f333a1d3476e068d)
 
 [We](https://users.cs.northwestern.edu/~simonec/Team.html) released NOELLE's source code in the hope of enriching the resources available to the research community and compiler developers.
+=======
 You are kindly asked to acknowledge usage of the tool by citing the following paper:
 ```
 @inproceedings{NOELLE,
@@ -72,6 +74,9 @@ make                # set the number of jobs with JOBS=8 (default is 16)
 ```
 
 To build with any other generator, e.g. **Ninja**, use `make GENERATOR=Ninja`.
+
+## Uninstalling NOELLE
+Run `make clean` from the root directory to clean the repository.
 
 Run `make uninstall` to uninstall without cleaning the build files.
 
