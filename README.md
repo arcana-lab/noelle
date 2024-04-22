@@ -1,25 +1,24 @@
 # <u>N</u>OELLE <u>O</u>ffers <u>E</u>mpowering <u>LL</u>VM <u>E</u>xtensions
 
+[![Active Development](https://img.shields.io/badge/Maintenance%20Level-Actively%20Developed-brightgreen.svg)](https://gist.github.com/cheerfulstoic/d107229326a01ff0f333a1d3476e068d)
 
-## Table of Contents
+<p><img src="doc/figs/arcana_logo.jpg" align="right" width="350" height="120"/></p>
+
 - [Description](#description)
 - [Version](#version)
 - [Prerequisites](#prerequisites)
-- [Building NOELLE](#building-noelle)
-- [Testing NOELLE](#testing-noelle)
+- [Building and Installing](#building-and-installing)
+- [Testing](#testing)
+- [Uninstalling](#uninstalling)
 - [Repository structure](#repository-structure)
-- [Examples of using NOELLE](#examples-of-using-noelle)
-- [Contributions](#contributions)
+- [Contributing](#contributing)
 - [License](#license)
-
 
 ## Description
 NOELLE provides abstractions to help build advanced code analyses and transformations for LLVM IR code.
-GINO is built upon [SVF](https://svf-tools.github.io/SVF/), [SCAF](https://github.com/PrincetonUniversity/SCAF.git), and [LLVM](http://llvm.org).
+It is built upon [SVF](https://svf-tools.github.io/SVF/), [SCAF](https://github.com/PrincetonUniversity/SCAF.git), and [LLVM](http://llvm.org).
 
-NOELLE is in active development so more tools, tests, and abstractions will be added.
-
-We release NOELLE's source code in the hope of benefiting others. 
+[We](https://users.cs.northwestern.edu/~simonec/Team.html) released NOELLE's source code in the hope of enriching the resources available to the research community and compiler developers.
 You are kindly asked to acknowledge usage of the tool by citing the following paper:
 ```
 @inproceedings{NOELLE,
@@ -30,17 +29,17 @@ You are kindly asked to acknowledge usage of the tool by citing the following pa
 }
 ```
 
-The only documentation available for NOELLE is:
-- a [video](https://www.youtube.com/watch?v=whORNUUWIjI&t=7s) introducing NOELLE
-- the [paper](http://www.cs.northwestern.edu/~simonec/files/Research/papers/HELIX_CGO_2022.pdf)
-- the comments within the code
-- the slides we use in the class [Advanced Topics in Compilers](http://www.cs.northwestern.edu/~simonec/ATC.html)
-- [the wiki](https://github.com/arcana-lab/noelle/wiki) of the project
+The following material compose the documentation currently available:
+- An introductory [video](https://www.youtube.com/watch?v=whORNUUWIjI)
+- The [CGO 2022 Paper](http://www.cs.northwestern.edu/~simonec/files/Research/papers/HELIX_CGO_2022.pdf)
+- The slides used during [Advanced Topics in Compilers](http://www.cs.northwestern.edu/~simonec/ATC.html) at Northwestern
+- The [Github Wiki](https://github.com/arcana-lab/noelle/wiki) of the project
+- Comments in the source code
 
 ## Version
-The latest stable version is 9.14.0 (tag = `v9.14.0`).
+The latest stable version is 9.14.1 (tag = `v9.14.1`).
 
-### Version Numbering Scheme
+#### Version Numbering Scheme
 The version number is in the form of \[v _Major.Minor.Revision_ \]
 - **Major**: Each major version matches a specific LLVM version (e.g., version 9 matches LLVM 9, version 11 matches LLVM 11)
 - **Minor**: Starts from 0, each minor version represents either one or more API replacements/removals that might impact the users OR a forced update every six months (the minimum minor update frequency)
@@ -51,69 +50,110 @@ The version number is in the form of \[v _Major.Minor.Revision_ \]
 - **Minor**: At least once per six months, at most once per month (1/month ~ 2/year)
 - **Revision**: At least once per month, at most twice per week (2/week ~ 1/month)
 
-
 ## Prerequisites
 LLVM 9.0.0
 
-### Northwestern
-Next is the information for those that have access to the Zythos cluster at Northwestern.
-
-To enable the correct LLVM, run the following command from any node of the Zythos cluster:
+### Northwestern users
+Those who have access to the Zythos cluster at Northwestern can source LLVM 9.0.0 from any node of the cluster with:
 ```
 source /project/extra/llvm/9.0.0/enable
 ```
-
-The guide about the Zythos cluster can be downloaded [here](http://www.cs.northwestern.edu/~simonec/files/Research/manuals/Zythos_guide.pdf).
-
-
-## Building NOELLE
-To build and install NOELLE: run `make` from the repository root directory.
-
-Run `make clean` from the root directory to clean the repository.
-
-Run `make uninstall` from the root directory to uninstall the NOELLE installation.
+Check out the Zythos cluster guide [here](http://www.cs.northwestern.edu/~simonec/files/Research/manuals/Zythos_guide.pdf) for more.
 
 
-## Testing NOELLE
+## Building and Installing
+
+To build and install NOELLE you need to configure it first, unless the [default configuration](config.default.cmake) is satisfactory.
+From the root directory:
+```
+make menuconfig     # to customize the installation
+make                # set the number of jobs with JOBS=8 (default is 16)
+```
+
+To build with any other generator, e.g. **Ninja**, use `make GENERATOR=Ninja`.
+
+## Uninstalling
+
+In this order:
+
+Run `make uninstall` to uninstall without cleaning the build files.
+
+Run `make clean` to reset the repository to its initial state.
+For generality, the install directory is not removed.
+
+## Testing
 To run all tests, invoke the following commands:
 ```
-make clean ; 
-cd tests ;
-make ;
+cd tests
+make clean    # optional but recommended
+make
 ```
 
 ## Repository structure
-The directory `src` includes sources of the noelle framework.
-Within this directory, `src/core` includes the abstractions provided by NOELLE.
-Also, `src/tools` includes code transformations that rely on the NOELLE's abstractions to modify the code.
 
-The directory `external` includes libraries that are external to NOELLE that are used by NOELLE.
-Some of these libraries are patched and/or extended for NOELLE.
+- `bin` contains the scripts through which the user will run all analyses and transformations
+- `doc` contains the documentation
+- `examples` contains examples of how to build LLVM pass that rely on NOELLE
+- `src` contains the C++ source of the framework
+- `src/core` contains all the main abstractions
+- `src/tools` contains a set of tools built on top of the core. All tools are independent from one another
+- `tests` contains unit tests
 
-The directory `tests` includes unit tests.
+## NOELLE as an external project
 
-The directory `examples` includes examples of LLVM passes (and their tests) that rely on the NOELLE framework.
+NOELLE can be easily integrated your project with
+[ExternalProject](https://cmake.org/cmake/help/latest/module/ExternalProject.html)
+and [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html).
 
-Finally, the directory `doc` includes the documentation of NOELLE.
+By using **ExternalProject**, cmake will download, compile and install the repository at build time.
+By the time you compile your project, NOELLE will be already installed.
 
+```cmake
+include(ExternalProject)
+ExternalProject_Add(
+    noelle
+    GIT_REPOSITORY  "https://github.com/arcana-lab/noelle.git"
+    GIT_TAG         v9.14.1
+    BUILD_COMMAND   ${CMAKE_COMMAND} --build . -j16
+    INSTALL_COMMAND ${CMAKE_COMMAND} --install .
+    CMAKE_ARGS
+        -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/noelle
+        -DNOELLE_SVF=OFF
+        -DNOELLE_SCAF=OFF
+)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/noelle/include)
+```
 
-## Examples of using NOELLE
-LLVM passes in the directory `examples/passes` shows use cases of NOELLE.
+By using **FetchContent**, the repository will be made available as soon as cmake is run.
+your project and noelle will then be compiled as a single project.
 
-If you have any trouble using this framework feel free to reach out to us for help (contact simone.campanoni@northwestern.edu).
+```cmake
+include(FetchContent)
+FetchContent_Declare(
+    noelle
+    GIT_REPOSITORY  "https://github.com/arcana-lab/noelle.git"
+    GIT_TAG         v9.14.1
+)
+set(NOELLE_SVF OFF)
+set(NOELLE_SCAF OFF)
+FetchContent_MakeAvailable(noelle)
+FetchContent_GetProperties(noelle)
 
-### Contributing to NOELLE
-NOELLE uses `clang-format` to ensure uniform styling across the project's source code.
-`clang-format` is run automatically as a pre-commit git hook, meaning that when you commit a file `clang-format` is automatically run on the file in-place.
+# at this point noelle is available but NOT installed
+include_directories(${noelle_SOURCE_DIR}/src/core/alloc_aa/include) # for example
+```
 
-Since git doesn't allow for git hooks to be installed when you clone the repository we manage this with our top-level Makefile.
-To install the NOELLE git hooks, run `make hooks` at the root of the directory.
-This make rule is run at the start of the `make all` rule as well for ease of use.
-
-
-## Contributions
+## Contributing
 We welcome contributions from the community to improve this framework and evolve it to cater for more users.
 
+NOELLE uses `clang-format` to ensure uniform styling across the project's source code.
+To format all `.cpp` and `.hpp` files in the repository run `make format` from the root.
+`clang-format` is run automatically as a pre-commit git hook, meaning that when you commit a file `clang-format` is automatically run on the file in-place.
+
+Since git doesn't allow for git hooks to be installed when you clone the repository,
+cmake will install the pre-commit git hook upon installation.
+
+If you have any trouble using this framework feel free to reach out to us for help (contact simone.campanoni@northwestern.edu).
 
 ## License
 NOELLE is licensed under the [MIT License](./LICENSE.md).

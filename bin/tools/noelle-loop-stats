@@ -1,0 +1,7 @@
+#!/bin/bash -e
+
+trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
+
+installDir=$(noelle-config --prefix)
+
+noelle-load -load $installDir/lib/LoopStats.so -LoopStats -disable-output $@

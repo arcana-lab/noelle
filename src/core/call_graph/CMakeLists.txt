@@ -1,6 +1,6 @@
-add_llvm_library(
-  CallGraph # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/CallGraph.cpp
   src/CallGraphEdge.cpp
   src/CallGraphNode.cpp

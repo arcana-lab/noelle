@@ -1,6 +1,6 @@
-add_llvm_library(
-  LoopTransformer # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/LoopTransformer.cpp
   src/Pass.cpp
 )

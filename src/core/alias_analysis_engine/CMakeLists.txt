@@ -1,6 +1,6 @@
-add_llvm_library(
-  AliasAnalysisEngine # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/AliasAnalysisEngine.cpp
   src/LoopAliasAnalysisEngine.cpp
   src/ProgramAliasAnalysisEngine.cpp

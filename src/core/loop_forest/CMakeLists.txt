@@ -1,6 +1,6 @@
-add_llvm_library(
-  LoopForest # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/LoopForest.cpp
   src/LoopTree.cpp
 )

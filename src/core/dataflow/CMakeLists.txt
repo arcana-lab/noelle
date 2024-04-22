@@ -1,6 +1,6 @@
-add_llvm_library(
-  DataFlow # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/DataFlowAnalysis.cpp
   src/DataFlowEngine.cpp
   src/DataFlowResult.cpp

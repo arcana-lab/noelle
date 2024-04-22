@@ -1,5 +1,5 @@
-add_llvm_library(
-  TalkDown # pass name
-  MODULE
+target_sources(
+  Noelle # component name
+  PRIVATE
   src/TalkDown.cpp
 )

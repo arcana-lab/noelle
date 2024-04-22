@@ -1,0 +1,91 @@
+#!/bin/bash
+
+function show_help() {
+  echo "usage: $(basename $0) <OPTIONS>..."
+  echo
+  echo "Options"
+  echo "  --help              Print this help message"
+  echo "  --flags             Print the options used during compilation"
+  echo "  --prefix            Print the installation directory path"
+  echo "  --version           Print the library version"
+  echo "  --include           Print the include directory"
+  echo "  --core-libs         Print the shared libraries used by the NOELLE core"
+  echo "  --tool-libs         Print the shared libraries of the NOELLE tools"
+  echo "  --svf-libs          Print the shared libraries used by SVF"
+  echo "  --scaf-libs         Print the shared libraries used by SCAF"
+  echo "  --svf-analyses      Print the default SVF analyses used by default"
+  echo "  --scaf-analyses     Print the default SCAF analyses used by default"
+  echo "  --llvm-analyses     Print the default LLVM analyses used by default"
+  echo "  --git-commit        Print the git commit hash used at compilation time"
+  echo "  --git-origin        Print the git origin used during compilation"
+  echo "  --llvm-build        Print the build type of the specific LLVM used by NOELLE"
+  echo "  --llvm-prefix       Print the installation prefix of the specific LLVM used by NOELLE"
+  echo "  --llvm-version      Print the version of the specific LLVM used by NOELLE"
+}
+
+if [[ $# < 1 ]]; then
+  show_help
+  exit 0
+fi
+
+for arg in "$@"; do
+  case $arg in
+    -h | --help ) 
+      show_help
+      break
+      ;;
+    --flags) 
+      echo "@NOELLE_CXX_FLAGS@"
+      ;;
+    --prefix) 
+      echo "@CMAKE_INSTALL_PREFIX@"
+      ;;
+    --version)
+      echo "@NOELLE_VERSION@"
+      ;;
+    --include)
+      echo "@CMAKE_INSTALL_PREFIX@/include"
+      ;;
+    --core-libs)
+      echo "@NOELLE_CONFIG_CORE_LIBS@"
+      ;;
+    --tool-libs)
+      echo "@NOELLE_CONFIG_TOOL_LIBS@"
+      ;;
+    --svf-libs)
+      echo "@NOELLE_CONFIG_SVF_LIBS@"
+      ;;
+    --scaf-libs)
+      echo "@NOELLE_CONFIG_SCAF_LIBS@"
+      ;;
+    --svf-analyses)
+      echo "@NOELLE_CONFIG_SVF_ANALYSES@"
+      ;;
+    --scaf-analyses)
+      echo "@NOELLE_CONFIG_SCAF_ANALYSES@"
+      ;;
+    --llvm-analyses)
+      echo "@NOELLE_CONFIG_LLVM_ANALYSES@"
+      ;;
+    --git-commit)
+      echo "@NOELLE_GIT_COMMIT@"
+      ;;
+    --git-origin)
+      echo "@NOELLE_GIT_ORIGIN@"
+      ;;
+    --llvm-build)
+      echo "@LLVM_BUILD_TYPE@"
+      ;;
+    --llvm-prefix)
+      echo "@LLVM_INSTALL_PREFIX@"
+      ;;
+    --llvm-version)
+      echo "@LLVM_PACKAGE_VERSION@"
+      ;;
+    *)
+    echo "Unknown argument: $arg"
+    show_help
+    exit 1
+    ;;
+  esac
+done

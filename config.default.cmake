@@ -1,0 +1,5 @@
+option(NOELLE_SVF "SVF analysis modules" ON)
+option(NOELLE_SCAF "SCAF analysis modules" ON)
+option(NOELLE_TOOLS "Tools built on top of NOELLE" ON)
+option(NOELLE_AUTOTUNER "NOELLE autotuner module" ON)
+option(NOELLE_REPL "NOELLE REPL module" OFF)

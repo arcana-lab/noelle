@@ -1,0 +1,18 @@
+#!/bin/bash -e
+
+trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
+
+n-eval opt \
+  @noelle_load_SVF_LIBS@ \
+  @noelle_load_SCAF_LIBS@ \
+  @noelle_load_CORE_LIBS@ \
+  @noelle_load_LLVM_ANALYSES@ \
+  -scalar-evolution \
+  -loops \
+  -domtree \
+  -postdomtree \
+  @noelle_load_SCAF_ANALYSES@ \
+  @noelle_load_SVF_ANALYSES@ \
+  @noelle_load_SCAF_PASS@ \
+  @noelle_load_SVF_PASS@ \
+  $@
