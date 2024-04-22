@@ -8,6 +8,7 @@ if test $# -lt 2 ; then
 fi
 
 n-eval opt \
+  -enable-new-pm=0 \
   --strip-named-metadata \
   -load $(noelle-config --prefix)/lib/MetadataCleaner.so \
   -MetadataCleaner \

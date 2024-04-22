@@ -62,7 +62,7 @@ if(NOELLE_SVF STREQUAL "ON")
 endif()
 
 set(noelle_load_LLVM_ANALYSES
-  -disable-basicaa
+  --disable-basic-aa
   -globals-aa
   -cfl-steens-aa
   -tbaa
@@ -82,7 +82,7 @@ if(NOELLE_SVF STREQUAL "ON")
 endif()
 
 set(args
-  -basicaa
+  -basic-aa
   ${noelle_norm_SVF_LIBS}
   -mem2reg
   -simplifycfg-sink-common=false
@@ -93,8 +93,8 @@ set(args
   -loop-simplify
   -lcssa
   -indvars 
-  -functionattrs 
-  -rpo-functionattrs
+  --function-attrs 
+  --rpo-function-attrs
 )
 
 # generating `opt` arguments for noelle-norm

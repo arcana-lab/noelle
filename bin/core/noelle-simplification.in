@@ -3,7 +3,7 @@
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
 n-eval opt \
-  -basicaa \
+  --basic-aa \
   @noelle_simplification_SVF_LIBS@ \
   -mem2reg \
   -tbaa \
@@ -16,7 +16,6 @@ n-eval opt \
   -loop-simplify \
   -lcssa \
   -licm \
-  -loop-unswitch \
   -globalopt \
   -instcombine \
   -ipsccp \
@@ -37,6 +36,6 @@ n-eval opt \
   --break-crit-edges \
   -loop-simplify \
   -lcssa \
-  -functionattrs \
-  -rpo-functionattrs \
+  --function-attrs \
+  --rpo-function-attrs \
   $@
