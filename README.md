@@ -11,6 +11,7 @@
 - [Testing](#testing)
 - [Uninstalling](#uninstalling)
 - [Repository structure](#repository-structure)
+- [NOELLE as an external project](#NOELLE-as-an-external-project)
 - [Contributing](#contributing)
 - [License](#license)
 
