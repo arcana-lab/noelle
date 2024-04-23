@@ -5,6 +5,7 @@ install(
     noelle-fixedpoint
     noelle-loop-size
     noelle-loop-stats
+    noelle-meta-clean
     noelle-pdg-stats
     noelle-privatizer
     noelle-rm-function
