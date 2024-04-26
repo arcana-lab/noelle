@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Simone Campanoni
+ * Copyright 2021 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -46,23 +46,5 @@ bool LoopTransformer::runOnModule(Module &M) {
 // Next there is code to register your pass to "opt"
 char LoopTransformer::ID = 0;
 static RegisterPass<LoopTransformer> X("LoopTransformer", "Transform loops");
-
-// Next there is code to register your pass to "clang"
-static LoopTransformer *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-                                        [](const PassManagerBuilder &,
-                                           legacy::PassManagerBase &PM) {
-                                          if (!_PassMaker) {
-                                            PM.add(_PassMaker =
-                                                       new LoopTransformer());
-                                          }
-                                        }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new LoopTransformer());
-      }
-    }); // ** for -O0
 
 } // namespace arcana::noelle

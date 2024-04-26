@@ -54,21 +54,4 @@ void TalkDown::getAnalysisUsage(AnalysisUsage &AU) const {
 char TalkDown::ID = 0;
 static RegisterPass<TalkDown> X("TalkDown", "The TalkDown pass");
 
-// Next there is code to register your pass to "clang"
-static TalkDown *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-                                        [](const PassManagerBuilder &,
-                                           legacy::PassManagerBase &PM) {
-                                          if (!_PassMaker) {
-                                            PM.add(_PassMaker = new TalkDown());
-                                          }
-                                        }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new TalkDown());
-      }
-    }); // ** for -O0
-
 } // namespace arcana::noelle
