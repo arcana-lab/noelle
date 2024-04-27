@@ -11,6 +11,7 @@
 - [Testing](#testing)
 - [Uninstalling](#uninstalling)
 - [Repository structure](#repository-structure)
+- [NOELLE as an external project](#NOELLE-as-an-external-project)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -72,14 +73,6 @@ make                # set the number of jobs with JOBS=8 (default is 16)
 
 To build with any other generator, e.g. **Ninja**, use `make GENERATOR=Ninja`.
 
-## Uninstalling
-
-In this order:
-
-Run `make uninstall` to uninstall without cleaning the build files.
-
-Run `make clean` to reset the repository to its initial state.
-For generality, the install directory is not removed.
 
 ## Testing
 To run all tests, invoke the following commands:
@@ -88,6 +81,16 @@ cd tests
 make clean    # optional but recommended
 make
 ```
+
+## Uninstalling
+
+To uninstall NOELLE, please run the following commands:
+
+Run `make uninstall` to uninstall without cleaning the build files.
+
+Run `make clean` to reset the repository to its initial state.
+For generality, the install directory is not removed.
+
 
 ## Repository structure
 

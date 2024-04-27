@@ -14,7 +14,6 @@ configure_file(noelle-simplification.in noelle-simplification @ONLY)
 
 install(
   PROGRAMS
-    noelle-meta-clean
     noelle-meta-loop-clean
     noelle-meta-loop-embed
     noelle-meta-pdg-clean

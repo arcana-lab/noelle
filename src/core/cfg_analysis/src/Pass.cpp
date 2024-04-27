@@ -47,22 +47,4 @@ bool CFGAnalysis::runOnModule(Module &M) {
 char CFGAnalysis::ID = 0;
 static RegisterPass<CFGAnalysis> X("CFGAnalysis", "Transform a CFG");
 
-// Next there is code to register your pass to "clang"
-static CFGAnalysis *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-                                        [](const PassManagerBuilder &,
-                                           legacy::PassManagerBase &PM) {
-                                          if (!_PassMaker) {
-                                            PM.add(_PassMaker =
-                                                       new CFGAnalysis());
-                                          }
-                                        }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new CFGAnalysis());
-      }
-    }); // ** for -O0
-
 } // namespace arcana::noelle

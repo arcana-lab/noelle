@@ -54,23 +54,6 @@ char NoelleSVFIntegration::ID = 0;
 static RegisterPass<NoelleSVFIntegration> X("noelle-svf",
                                             "Integration with SVF");
 
-// Next there is code to register your pass to "clang"
-static NoelleSVFIntegration *_PassMaker = nullptr;
-static RegisterStandardPasses _RegPass1(
-    PassManagerBuilder::EP_OptimizerLast,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new NoelleSVFIntegration());
-      }
-    }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new NoelleSVFIntegration());
-      }
-    }); // ** for -O0
-
 NoelleSVFIntegration::NoelleSVFIntegration() : ModulePass{ ID } {
   return;
 }
