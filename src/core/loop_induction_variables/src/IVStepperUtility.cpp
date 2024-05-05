@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Sophia Boksenbaum Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -96,6 +96,21 @@ std::set<Instruction *> IVUtility::chunkInductionVariablePHI(
   }
 
   return chunkedIVValues;
+}
+
+CmpInst *IVUtility::isChunkCompleted(BasicBlock *preheaderBlock,
+                                     PHINode *chunkPHI) {
+
+  for (auto idx = 0; idx++ < chunkPHI->getNumIncomingValues(); idx++) {
+    auto B = chunkPHI->getIncomingBlock(idx);
+    if (preheaderBlock == B)
+      continue;
+
+    CmpInst *isChunkCompleted = cast<CmpInst>(
+        cast<SelectInst>(chunkPHI->getIncomingValue(idx))->getCondition());
+    return isChunkCompleted;
+  }
+  assert(false && "can't find isChunkCompleted");
 }
 
 void IVUtility::stepInductionVariablePHI(BasicBlock *preheaderBlock,

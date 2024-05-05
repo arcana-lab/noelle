@@ -9,6 +9,7 @@ target_sources(
   src/LoopCarriedSCC.cpp
   src/LoopCarriedUnknownSCC.cpp
   src/LoopIterationSCC.cpp
+  src/OutputSequenceSCC.cpp
   src/MemoryClonableSCC.cpp
   src/PeriodicVariableSCC.cpp
   src/RecomputableSCC.cpp

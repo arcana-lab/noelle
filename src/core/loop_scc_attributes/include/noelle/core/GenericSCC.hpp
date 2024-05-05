@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Sophia Boksenbaum, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -63,6 +63,9 @@ public:
     MEMORY_CLONABLE,
     STACK_OBJECT_CLONABLE,
     LAST_MEMORY_CLONABLE,
+
+    OUTPUT_SEQUENCE,
+    LAST_OUTPUT_SEQUENCE,
 
     LOOP_CARRIED_UNKNOWN,
 

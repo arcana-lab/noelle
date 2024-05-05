@@ -1,5 +1,6 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni, Brian Homerding
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni, Brian Homerding,
+                          Sophia Boksenbaum
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +27,7 @@
 #include "noelle/core/LinearInductionVariableSCC.hpp"
 #include "noelle/core/PeriodicVariableSCC.hpp"
 #include "noelle/core/StackObjectClonableSCC.hpp"
+#include "noelle/core/OutputSequenceSCC.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 #include "noelle/core/UnknownClosedFormSCC.hpp"
@@ -102,6 +104,7 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
         this->checkIfClonableByUsingLocalMemory(scc, loopNode);
     auto valuesToPropagateAcrossIterations =
         this->checkIfRecomputable(scc, loopNode);
+    auto outputInstructions = checkIfOutputSequence(scc, loopNode);
 
     auto isPeriodic = this->checkIfPeriodic(scc, loopNode);
 
@@ -178,6 +181,16 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
                                            loopCarriedDependences,
                                            stackObjectsThatAreClonable);
 
+    } else if (outputInstructions.size() > 0) {
+
+      /*
+       * The SCC is a sequence of output instructions.
+       */
+      auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+      sccInfo = new OutputSequenceSCC(scc,
+                                      rootLoop,
+                                      loopCarriedDependences,
+                                      outputInstructions);
     } else {
 
       /*
@@ -897,6 +910,63 @@ std::set<ClonableMemoryObject *> SCCDAGAttrs::checkIfClonableByUsingLocalMemory(
   }
 
   return locations;
+}
+
+std::set<CallInst *> SCCDAGAttrs::checkIfOutputSequence(
+    SCC *scc,
+    LoopTree *loopNode) const {
+
+  if (sccToLoopCarriedDependencies.find(scc)
+      == sccToLoopCarriedDependencies.end()) {
+    return {};
+  }
+
+  std::set<CallInst *> outputInsts;
+  std::set<DGEdge<Value, Value> *> blockingEdges;
+
+  for (auto loopCarriedDependency : sccToLoopCarriedDependencies.at(scc)) {
+    auto instFrom = loopCarriedDependency->getSrc();
+    if (isOutputInst(instFrom)) {
+      outputInsts.insert(cast<CallInst>(instFrom));
+    } else {
+      blockingEdges.insert(loopCarriedDependency);
+    }
+  }
+
+  if (outputInsts.size() == 0) {
+    return {};
+  }
+  if (blockingEdges.size() == 0) {
+    errs() << "Meow: Found an output sequence SCC:\n";
+    scc->printMinimal(errs());
+    errs() << "\n\n";
+    return outputInsts;
+  }
+
+  errs() << "Meow: Found a potential output sequence SCC blocked by:\n";
+  for (auto block : blockingEdges) {
+    block->print(errs());
+  }
+  errs() << "\n\n";
+  return {};
+}
+
+bool SCCDAGAttrs::isOutputInst(Value *I) const {
+  const StringSet<> outputFunctions{ "fprintf",        "printf",
+                                     "putc",           "puts",
+                                     "putchar",        "fputc",
+                                     "putc_unlocked",  "putchar_unlocked",
+                                     "fputc_unlocked", "perror" };
+
+  if (auto callI = dyn_cast<CallInst>(I)) {
+    if (auto called = callI->getCalledFunction()) {
+      auto name = called->getName();
+      if (outputFunctions.count(name)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 SCCDAG *SCCDAGAttrs::getSCCDAG(void) const {
