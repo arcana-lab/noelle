@@ -937,17 +937,8 @@ std::set<CallInst *> SCCDAGAttrs::checkIfOutputSequence(
     return {};
   }
   if (blockingEdges.size() == 0) {
-    errs() << "Meow: Found an output sequence SCC:\n";
-    scc->printMinimal(errs());
-    errs() << "\n\n";
     return outputInsts;
   }
-
-  errs() << "Meow: Found a potential output sequence SCC blocked by:\n";
-  for (auto block : blockingEdges) {
-    block->print(errs());
-  }
-  errs() << "\n\n";
   return {};
 }
 
