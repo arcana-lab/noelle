@@ -34,11 +34,6 @@ execute_process(
 )
 
 FetchContent_Declare(
-  svf
-  GIT_REPOSITORY  "https://github.com/arcana-lab/SVF.git"
-  GIT_TAG         noelle-9
-)
-FetchContent_Declare(
   scaf
   GIT_REPOSITORY  "https://github.com/PrincetonUniversity/SCAF.git"
   GIT_TAG         v9.1.9
@@ -85,9 +80,18 @@ set(LLVM_ENABLE_UNWIND_TABLES ON)
 if(NOELLE_SVF STREQUAL ON)
   set(NOELLE_SVF ON)
   list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SVF")
-  FetchContent_MakeAvailable(svf)
-  FetchContent_GetProperties(svf)
-  include_directories(${svf_SOURCE_DIR}/include)
+  if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/svf-v1.8)
+    set(URL "https://github.com/arcana-lab/SVF/releases/download/v1.8-noelle-9/svf-v1.8_x86_64.tar.gz")
+    file(DOWNLOAD "${URL}" "${CMAKE_CURRENT_BINARY_DIR}/svf-v1.8.tar.gz" STATUS DOWNLOAD_STATUS)
+    set(EXTRACT_DIR "${CMAKE_CURRENT_BINARY_DIR}/svf-v1.8")
+    file(MAKE_DIRECTORY "${EXTRACT_DIR}")
+    execute_process(COMMAND ${CMAKE_COMMAND} -E tar "-xf" "${CMAKE_CURRENT_BINARY_DIR}/svf-v1.8.tar.gz"
+      WORKING_DIRECTORY "${EXTRACT_DIR}"
+      RESULT_VARIABLE EXTRACT_RESULT)
+  endif()
+  include_directories(${CMAKE_CURRENT_BINARY_DIR}/svf-v1.8/include)
+  include_directories(${CMAKE_CURRENT_BINARY_DIR}/svf-v1.8/include/svf)
+  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/svf-v1.8/lib DESTINATION .)
 endif()
 
 if(NOELLE_SCAF STREQUAL ON)
@@ -125,8 +129,6 @@ include(HandleLLVMOptions)
 
 include_directories(
   ${LLVM_INCLUDE_DIRS}
-  ${svf_SOURCE_DIR}/include
-  ${scaf_SOURCE_DIR}/include
 )
 
 add_compile_options(${NOELLE_CXX_FLAGS})
