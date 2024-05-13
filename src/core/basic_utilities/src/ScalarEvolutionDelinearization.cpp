@@ -76,12 +76,15 @@ void ScalarEvolutionDelinearization::computeAccessFunctions(
     SmallVectorImpl<const SCEV *> &Subscripts,
     SmallVectorImpl<const SCEV *> &Sizes) {
   // Early exit in case this SCEV is not an affine multivariate function.
-  if (Sizes.empty())
+  if (Sizes.empty()) {
     return;
+  }
 
-  if (auto *AR = dyn_cast<SCEVAddRecExpr>(Expr))
-    if (!AR->isAffine())
+  if (auto *AR = dyn_cast<SCEVAddRecExpr>(Expr)) {
+    if (!AR->isAffine()) {
       return;
+    }
+  }
 
   /*
    * HACK: Ignore casts on subscripts
@@ -93,8 +96,9 @@ void ScalarEvolutionDelinearization::computeAccessFunctions(
                                 const SCEV *Den) -> const SCEV * {
     auto originalRes = Res;
 
-    if (Res->getType()->getPrimitiveSizeInBits() < 32)
+    if (Res->getType()->getPrimitiveSizeInBits() < 32) {
       return originalRes;
+    }
 
     // Res->print(errs() << "Res: " << Den->getType()->getIntegerBitWidth() << "
     // "); errs() << "\n"; Den->print(errs() << "Den: " <<
@@ -103,8 +107,9 @@ void ScalarEvolutionDelinearization::computeAccessFunctions(
     if (isa<SCEVSignExtendExpr>(Res) || isa<SCEVTruncateExpr>(Res)
         || isa<SCEVZeroExtendExpr>(Res)) {
       Res = peelCasts(dyn_cast<SCEVCastExpr>(Res)->getOperand(), Den);
-      if (Res->getType()->getPrimitiveSizeInBits() < 32)
+      if (Res->getType()->getPrimitiveSizeInBits() < 32) {
         return originalRes;
+      }
     }
 
     if (isa<SCEVAddExpr>(Res) || isa<SCEVMulExpr>(Res)
@@ -147,8 +152,9 @@ void ScalarEvolutionDelinearization::computeAccessFunctions(
         opI = peelCasts(opI, Den);
         changedOperand |= oldOpI != opI;
 
-        if (opI->getType()->getPrimitiveSizeInBits() < 32)
+        if (opI->getType()->getPrimitiveSizeInBits() < 32) {
           return originalRes;
+        }
 
         ops.push_back(opI);
       }
@@ -167,6 +173,8 @@ void ScalarEvolutionDelinearization::computeAccessFunctions(
           case scMulExpr:
             Res = SE.getMulExpr(ops, flags);
             break;
+          default:
+            return originalRes;
         }
       }
     }
