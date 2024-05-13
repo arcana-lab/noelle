@@ -855,8 +855,8 @@ void LoopScheduler::gatherNecessaryLoopState(void) {
   /*
    * Acquire loop blocks
    */
-  this->Blocks = std::set(this->TheLoop->getBasicBlocks().begin(),
-                          this->TheLoop->getBasicBlocks().end());
+  this->Blocks = std::set<BasicBlock *>(this->TheLoop->getBasicBlocks().begin(),
+                                        this->TheLoop->getBasicBlocks().end());
 
   /*
    * Acquire exit edges
