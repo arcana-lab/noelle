@@ -78,6 +78,7 @@ if(NOELLE_SVF STREQUAL "ON")
   set(noelle_norm_SVF_ANALYSES
     -stat=false
     -break-constgeps
+    -merge-rets
   )
 endif()
 
