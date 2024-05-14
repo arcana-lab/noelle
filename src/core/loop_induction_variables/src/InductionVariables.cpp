@@ -215,7 +215,7 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
                  * In this case, if the start value is < C, the loop wouldn't
                  * execute. Otherwise, it will never be < C and run infinitely.
                  */
-                bool unhandledCmp = false;
+                auto unhandledCmp = false;
                 switch (subloopExitCond->getPredicate()) {
                   case CmpInst::Predicate::ICMP_EQ:
                     if (!exitsOnTrue)
@@ -253,10 +253,15 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
                     if (!negativeStep)
                       subloopExitConstant += 1;
                     break;
+
+                  default:
+                    unhandledCmp = true;
+                    break;
                 }
 
-                if (unhandledCmp)
+                if (unhandledCmp) {
                   continue;
+                }
 
                 auto d = std::div(subloopExitConstant - subloopStartValue,
                                   subloopStepSize);
