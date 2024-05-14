@@ -364,12 +364,15 @@ void InductionVariable::deriveStepValue(
   assert(this->stepSCEV != nullptr && "stepSCEV is nullptr!\n");
 
   switch (stepSCEV->getSCEVType()) {
+
     case SCEVTypes::scConstant:
       deriveStepValueFromSCEVConstant(cast<SCEVConstant>(stepSCEV), multiplier);
       break;
+
     case SCEVTypes::scUnknown:
       deriveStepValueFromSCEVUnknown(cast<SCEVUnknown>(stepSCEV), LS);
       break;
+
     case SCEVTypes::scAddExpr:
     case SCEVTypes::scAddRecExpr:
     case SCEVTypes::scMulExpr:
@@ -392,9 +395,13 @@ void InductionVariable::deriveStepValue(
         this->stepSCEV = nullptr;
       }
       break;
-    case SCEVTypes::scCouldNotCompute:
+
+    default:
+      this->stepSCEV = nullptr;
       break;
   }
+
+  return;
 }
 
 void InductionVariable::deriveStepValueFromSCEVConstant(
