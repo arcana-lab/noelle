@@ -25,7 +25,7 @@
 #include "noelle/core/SystemHeaders.hpp"
 
 #include "noelle/core/DataFlowResult.hpp"
-#include "noelle/core/DataFlowEngine.hpp"
+#include "noelle/core/DataFlowEngineCFG.hpp"
 #include "noelle/core/DataFlowAnalysis.hpp"
 
 #endif // NOELLE_SRC_CORE_DATAFLOW_H_
