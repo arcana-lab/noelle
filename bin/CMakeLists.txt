@@ -54,10 +54,9 @@ endif()
 
 if(NOELLE_SVF STREQUAL "ON")
   list(APPEND noelle_load_SVF_LIBS
-    "-load ${CMAKE_INSTALL_PREFIX}/lib/libSvf.so"
-    "-load ${CMAKE_INSTALL_PREFIX}/lib/libCudd.so"
+    "-load ${CMAKE_INSTALL_PREFIX}/lib/libz3.so"
+    "-load ${CMAKE_INSTALL_PREFIX}/lib/SvfLLVM.so"
   )
-  list(APPEND noelle_load_SVF_ANALYSES -stat=false)
   list(APPEND noelle_load_SVF_PASS -noelle-svf)
 endif()
 
@@ -76,7 +75,6 @@ set(noelle_load_LLVM_ANALYSES
 set(noelle_norm_SVF_LIBS ${noelle_load_SVF_LIBS})
 if(NOELLE_SVF STREQUAL "ON")
   set(noelle_norm_SVF_ANALYSES
-    -stat=false
     -break-constgeps
     -merge-rets
   )
@@ -111,7 +109,6 @@ endforeach()
 set(noelle_simplification_SVF_LIBS ${noelle_load_SVF_LIBS})
 if(NOELLE_SVF STREQUAL "ON")
   set(noelle_simplification_SVF_ANALYSES
-    -stat=false
     -break-constgeps
   )
 endif()
