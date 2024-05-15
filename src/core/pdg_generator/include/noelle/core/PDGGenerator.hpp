@@ -102,7 +102,6 @@ private:
   std::unordered_map<const Function *, std::unordered_set<const Function *>>
       reachableUnhandledExternalFuncs;
 
-  void initializeSVF(Module &M);
   void identifyFunctionsThatInvokeUnhandledLibrary(Module &M);
   void printFunctionReachabilityResult();
   bool isSafeToQueryModRefOfSVF(CallBase *call, BitVector &bv);

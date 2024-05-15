@@ -123,11 +123,6 @@ bool PDGGenerator::runOnModule(Module &M) {
   this->M = &M;
 
   /*
-   * Initialize SVF.
-   */
-  initializeSVF(M);
-
-  /*
    * Function reachability analysis.
    */
   identifyFunctionsThatInvokeUnhandledLibrary(M);

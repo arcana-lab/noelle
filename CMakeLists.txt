@@ -85,9 +85,13 @@ set(LLVM_ENABLE_UNWIND_TABLES ON)
 if(NOELLE_SVF STREQUAL ON)
   set(NOELLE_SVF ON)
   list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SVF")
-  FetchContent_MakeAvailable(svf)
-  FetchContent_GetProperties(svf)
-  include_directories(${svf_SOURCE_DIR}/include)
+  FetchContent_Populate(svf)
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E env LLVM_DIR=${LLVM_DIR} bash build.sh ${CMAKE_INSTALL_PREFIX}
+    RESULT_VARIABLE CMD_ERROR
+    WORKING_DIRECTORY ${svf_SOURCE_DIR}
+  )
+  include_directories(${CMAKE_INSTALL_PREFIX}/include/svf)
 endif()
 
 if(NOELLE_SCAF STREQUAL ON)
@@ -125,8 +129,6 @@ include(HandleLLVMOptions)
 
 include_directories(
   ${LLVM_INCLUDE_DIRS}
-  ${svf_SOURCE_DIR}/include
-  ${scaf_SOURCE_DIR}/include
 )
 
 add_compile_options(${NOELLE_CXX_FLAGS})
