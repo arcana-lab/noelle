@@ -87,14 +87,20 @@ LoopGoverningIVUtility::LoopGoverningIVUtility(
   this->nonStrictPredicate = exitPredicate;
   this->strictPredicate = exitPredicate;
   switch (exitPredicate) {
+
     case CmpInst::Predicate::ICMP_NE:
+    case CmpInst::Predicate::FCMP_UNE:
+    case CmpInst::Predicate::FCMP_ONE:
 
       /*
        * This predicate is non-strict and will result in either 0 or 1
        * iteration(s)
        */
       break;
+
     case CmpInst::Predicate::ICMP_EQ:
+    case CmpInst::Predicate::FCMP_UEQ:
+    case CmpInst::Predicate::FCMP_OEQ:
       // This predicate is strict and needs to be extended to LTE/GTE to catch
       // jumping past the exiting value
       if (isStepValuePositive) {
@@ -105,10 +111,13 @@ LoopGoverningIVUtility::LoopGoverningIVUtility(
         this->strictPredicate = CmpInst::Predicate::ICMP_SLT;
       }
       break;
+
     case CmpInst::Predicate::ICMP_SLE:
     case CmpInst::Predicate::ICMP_SLT:
     case CmpInst::Predicate::ICMP_ULT:
     case CmpInst::Predicate::ICMP_ULE:
+    case CmpInst::Predicate::FCMP_ULT:
+    case CmpInst::Predicate::FCMP_ULE:
       // This predicate is non-strict. We simply assert that the step value has
       // the expected sign
 
@@ -120,10 +129,13 @@ LoopGoverningIVUtility::LoopGoverningIVUtility(
       assert(!isStepValuePositive
              && "IV step value is not compatible with exit condition!");
       break;
+
     case CmpInst::Predicate::ICMP_UGT:
     case CmpInst::Predicate::ICMP_UGE:
     case CmpInst::Predicate::ICMP_SGT:
     case CmpInst::Predicate::ICMP_SGE:
+    case CmpInst::Predicate::FCMP_UGT:
+    case CmpInst::Predicate::FCMP_UGE:
       // This predicate is non-strict. We simply assert that the step value has
       // the expected sign
 
@@ -135,6 +147,10 @@ LoopGoverningIVUtility::LoopGoverningIVUtility(
       assert(isStepValuePositive
              && "IV step value is not compatible with exit condition!");
       break;
+
+    default:
+      errs() << "LoopGoverningIVUtility: we do not handle a loop predicate\n";
+      abort();
   }
 
   /*
