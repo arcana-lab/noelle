@@ -54,8 +54,8 @@ endif()
 
 if(NOELLE_SVF STREQUAL "ON")
   list(APPEND noelle_load_SVF_LIBS
-    "-load ${CMAKE_INSTALL_PREFIX}/../../SVF/install/lib/libz3.so"
-    "-load ${CMAKE_INSTALL_PREFIX}/../../SVF/install/lib/SvfLLVM.so"
+    "-load ${CMAKE_INSTALL_PREFIX}/lib/libz3.so"
+    "-load ${CMAKE_INSTALL_PREFIX}/lib/SvfLLVM.so"
   )
   list(APPEND noelle_load_SVF_PASS -noelle-svf)
 endif()
