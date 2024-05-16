@@ -405,15 +405,6 @@ template <class T>
 std::unordered_set<DGNode<T> *> DG<T>::getLeafNodes(bool onlyInternal) {
   std::unordered_set<DGNode<T> *> leafNodes;
   if (onlyInternal) {
-    for (auto selfNode : allNodes) {
-      bool noChildNode = true;
-      for (auto edge : selfNode->getOutgoingEdges()) {
-        noChildNode &= (edge->getDstNode() == selfNode);
-      }
-      if (noChildNode)
-        leafNodes.insert(selfNode);
-    }
-  } else {
     for (auto selfNodePair : internalNodePairs()) {
       bool noChildNode = true;
       for (auto edge : selfNodePair.second->getOutgoingEdges()) {
@@ -421,6 +412,15 @@ std::unordered_set<DGNode<T> *> DG<T>::getLeafNodes(bool onlyInternal) {
       }
       if (noChildNode)
         leafNodes.insert(selfNodePair.second);
+    }
+  } else {
+    for (auto selfNode : allNodes) {
+      bool noChildNode = true;
+      for (auto edge : selfNode->getOutgoingEdges()) {
+        noChildNode &= (edge->getDstNode() == selfNode);
+      }
+      if (noChildNode)
+        leafNodes.insert(selfNode);
     }
   }
   return leafNodes;
