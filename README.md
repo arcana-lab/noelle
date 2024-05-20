@@ -6,6 +6,7 @@
 
 - [Description](#description)
 - [Version](#version)
+- [Status](#status)
 - [Prerequisites](#prerequisites)
 - [Building and Installing](#building-and-installing)
 - [Testing](#testing)
@@ -50,6 +51,15 @@ The version number is in the form of \[v _Major.Minor.Revision_ \]
 - **Major**: Matches the LLVM releases on a best-effort basis
 - **Minor**: At least once per six months, at most once per month (1/month ~ 2/year)
 - **Revision**: At least once per month, at most twice per week (2/week ~ 1/month)
+
+## Status
+Next is the status of NOELLE for different LLVM versions.
+
+| LLVM    | NOELLE's branch |  SVF included      | SCAF included      |
+| ------: | --------------: | :----------------: | :----------------: |
+|   9.0.0 | master          | :heavy_check_mark: | :heavy_check_mark: |
+|  14.0.6 | v14             | :heavy_check_mark: | :heavy_check_mark: |
+
 
 ## Prerequisites
 LLVM 9.0.0
