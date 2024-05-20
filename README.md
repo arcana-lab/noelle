@@ -39,7 +39,7 @@ The following material compose the documentation currently available:
 - Comments in the source code
 
 ## Version
-The latest stable version is 14.0.0 (tag = `v14.0.0`).
+The latest stable version is 14.0.1 (tag = `v14.0.1`).
 
 #### Version Numbering Scheme
 The version number is in the form of \[v _Major.Minor.Revision_ \]
@@ -65,9 +65,9 @@ Next is the status of NOELLE for different LLVM versions.
 LLVM 14.0.6
 
 ### Northwestern users
-Those who have access to the Zythos cluster at Northwestern can source LLVM 9.0.0 from any node of the cluster with:
+Those who have access to the Zythos cluster at Northwestern can source LLVM 14.0.6 from any node of the cluster with:
 ```
-source /project/extra/llvm/9.0.0/enable
+source /project/extra/llvm/14.0.6/enable
 ```
 Check out the Zythos cluster guide [here](http://www.cs.northwestern.edu/~simonec/files/Research/manuals/Zythos_guide.pdf) for more.
 
@@ -126,7 +126,7 @@ include(ExternalProject)
 ExternalProject_Add(
     noelle
     GIT_REPOSITORY  "https://github.com/arcana-lab/noelle.git"
-    GIT_TAG         v9.14.1
+    GIT_TAG         v14.0.1
     BUILD_COMMAND   ${CMAKE_COMMAND} --build . -j16
     INSTALL_COMMAND ${CMAKE_COMMAND} --install .
     CMAKE_ARGS
@@ -145,7 +145,7 @@ include(FetchContent)
 FetchContent_Declare(
     noelle
     GIT_REPOSITORY  "https://github.com/arcana-lab/noelle.git"
-    GIT_TAG         v9.14.1
+    GIT_TAG         v14.0.1
 )
 set(NOELLE_SVF OFF)
 set(NOELLE_SCAF OFF)
