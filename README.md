@@ -56,7 +56,7 @@ The version number is in the form of \[v _Major.Minor.Revision_ \]
 Next is the status of NOELLE for different LLVM versions.
 
 | LLVM    | NOELLE's branch |  SVF included      | SCAF included      |
-| ------- | --------------- | ------------------ | ------------------ |
+| ------: | --------------: | :----------------: | :----------------: |
 |   9.0.0 | master          | :heavy_check_mark: | :heavy_check_mark: |
 |  14.0.6 | v14             | :heavy_check_mark: | :heavy_check_mark: |
 
