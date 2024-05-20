@@ -39,7 +39,7 @@ The following material compose the documentation currently available:
 - Comments in the source code
 
 ## Version
-The latest stable version is 9.14.1 (tag = `v9.14.1`).
+The latest stable version is 14.0.0 (tag = `v14.0.0`).
 
 #### Version Numbering Scheme
 The version number is in the form of \[v _Major.Minor.Revision_ \]
@@ -62,7 +62,7 @@ Next is the status of NOELLE for different LLVM versions.
 
 
 ## Prerequisites
-LLVM 9.0.0
+LLVM 14.0.6
 
 ### Northwestern users
 Those who have access to the Zythos cluster at Northwestern can source LLVM 9.0.0 from any node of the cluster with:
