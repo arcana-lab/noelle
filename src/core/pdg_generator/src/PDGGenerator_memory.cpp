@@ -1318,7 +1318,7 @@ AliasResult PDGGenerator::doTheyAlias(PDG *pdg,
     auto memJ = MemoryLocation::get(instJAsInst);
     auto areTheSame = memI == memJ;
     if (areTheSame) {
-      aaResult = MustAlias;
+      aaResult = AliasResult::MustAlias;
     } else {
       aaResult = AA.alias(memI, memJ);
     }
