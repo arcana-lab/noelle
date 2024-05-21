@@ -35,7 +35,8 @@ OutputSequenceSCC::OutputSequenceSCC(
   return;
 }
 
-std::optional<int> OutputSequenceSCC::getMaxNumberOfPrintedBytes(CallInst *I) {
+std::optional<uint32_t> OutputSequenceSCC::getMaxNumberOfPrintedBytes(
+    CallInst *I) {
   if (auto fstring = OutputSequenceSCC::printConstantFstring(I)) {
     return OutputSequenceSCC::fstringMaxLength(fstring.value());
   }
@@ -57,11 +58,12 @@ std::optional<std::string> OutputSequenceSCC::printConstantFstring(
 }
 
 // parses only %[width][.precision](f|d|i)
-std::optional<int> OutputSequenceSCC::fstringMaxLength(std::string str) {
+std::optional<uint32_t> OutputSequenceSCC::fstringMaxLength(std::string str) {
   // number of digits in smallest negative + 3 for -0.
-  constexpr int doubleMaxLen = 3 + std::numeric_limits<double>::digits10
-                               + -std::numeric_limits<double>::min_exponent10;
-  static const int intMaxLen = std::to_string(INT_MIN).length();
+  constexpr uint32_t doubleMaxLen =
+      3 + std::numeric_limits<double>::digits10
+      + -std::numeric_limits<double>::min_exponent10;
+  static const uint32_t intMaxLen = std::to_string(INT_MIN).length();
 
   // % starts a placeholder, . starts precision
   enum PARSE_STATE { NONE, START_PLACEHOLDER, PRECISION };
@@ -70,10 +72,10 @@ std::optional<int> OutputSequenceSCC::fstringMaxLength(std::string str) {
   // missing width/precision specifiers are treated as 0.
   // this is fine because we always take the max with the
   // no-specifiers max length.
-  int width = 0;
-  int precision = 0;
+  uint32_t width = 0;
+  uint32_t precision = 0;
 
-  int totalLength = 0;
+  uint32_t totalLength = 0;
 
   for (const char &ch : str) {
     if (state == NONE) {

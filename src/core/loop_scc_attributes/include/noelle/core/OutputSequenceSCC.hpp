@@ -33,13 +33,13 @@ public:
       LoopStructure *loop,
       const std::set<DGEdge<Value, Value> *> &loopCarriedDependences);
 
-  static std::optional<int> getMaxNumberOfPrintedBytes(CallInst *);
+  static std::optional<uint32_t> getMaxNumberOfPrintedBytes(CallInst *);
 
   static bool classof(const GenericSCC *);
 
 protected:
   static std::optional<std::string> printConstantFstring(CallInst *);
-  static std::optional<int> fstringMaxLength(std::string);
+  static std::optional<uint32_t> fstringMaxLength(std::string);
 };
 
 } // namespace arcana::noelle
