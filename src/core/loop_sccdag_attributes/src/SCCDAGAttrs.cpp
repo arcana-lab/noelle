@@ -187,10 +187,8 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
        * The SCC is a sequence of output instructions.
        */
       auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
-      sccInfo = new OutputSequenceSCC(scc,
-                                      rootLoop,
-                                      loopCarriedDependences,
-                                      outputInstructions);
+      sccInfo = new OutputSequenceSCC(scc, rootLoop, loopCarriedDependences);
+
     } else {
 
       /*

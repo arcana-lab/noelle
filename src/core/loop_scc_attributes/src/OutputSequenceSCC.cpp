@@ -26,19 +26,13 @@ namespace arcana::noelle {
 OutputSequenceSCC::OutputSequenceSCC(
     SCC *s,
     LoopStructure *loop,
-    const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
-    const std::set<CallInst *> &outInsts)
+    const std::set<DGEdge<Value, Value> *> &loopCarriedDependences)
   : LoopCarriedSCC{ SCCKind::OUTPUT_SEQUENCE,
                     s,
                     loop,
                     loopCarriedDependences,
-                    false },
-    outputInstructions{ outInsts } {
+                    false } {
   return;
-}
-
-std::set<CallInst *> OutputSequenceSCC::getOutputInstructions(void) const {
-  return this->outputInstructions;
 }
 
 std::optional<int> OutputSequenceSCC::printConstantFstringMaxLength(

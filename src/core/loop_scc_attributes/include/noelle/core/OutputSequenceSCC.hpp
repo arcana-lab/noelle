@@ -31,19 +31,13 @@ public:
   OutputSequenceSCC(
       SCC *s,
       LoopStructure *loop,
-      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
-      const std::set<CallInst *> &outputInstructions);
-
-  std::set<CallInst *> getOutputInstructions(void) const;
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences);
 
   static std::optional<int> printConstantFstringMaxLength(CallInst *);
   static std::optional<std::string> printConstantFstring(CallInst *);
   static std::optional<int> fstringMaxLength(std::string);
 
   static bool classof(const GenericSCC *);
-
-protected:
-  std::set<CallInst *> outputInstructions;
 };
 
 } // namespace arcana::noelle
