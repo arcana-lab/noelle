@@ -76,7 +76,6 @@ set(noelle_norm_SVF_LIBS ${noelle_load_SVF_LIBS})
 if(NOELLE_SVF STREQUAL "ON")
   set(noelle_norm_SVF_ANALYSES
     -break-constgeps
-    -merge-rets
   )
 endif()
 
@@ -110,7 +109,6 @@ set(noelle_simplification_SVF_LIBS ${noelle_load_SVF_LIBS})
 if(NOELLE_SVF STREQUAL "ON")
   set(noelle_simplification_SVF_ANALYSES
     -break-constgeps
-    -merge-rets
   )
 endif()
 
