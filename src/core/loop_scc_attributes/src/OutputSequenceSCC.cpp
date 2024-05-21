@@ -41,20 +41,6 @@ std::set<CallInst *> OutputSequenceSCC::getOutputInstructions(void) const {
   return this->outputInstructions;
 }
 
-std::string OutputSequenceSCC::replacementName(const std::string &originalName,
-                                               bool knownMaxLength) {
-
-  int unlocked = originalName.rfind("_unlocked");
-  auto baseName = (unlocked ? originalName.substr(0, unlocked) : originalName);
-
-  if (baseName == "fputc") {
-    baseName = "putc";
-  }
-
-  return "NOELLE_Scylax_" + baseName
-         + (knownMaxLength ? "_knownMaxLength" : "");
-}
-
 std::optional<int> OutputSequenceSCC::printConstantFstringMaxLength(
     CallInst *I) {
   if (auto fstring = OutputSequenceSCC::printConstantFstring(I)) {

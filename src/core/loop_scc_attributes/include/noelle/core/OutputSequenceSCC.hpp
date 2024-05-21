@@ -36,9 +36,6 @@ public:
 
   std::set<CallInst *> getOutputInstructions(void) const;
 
-  static std::string replacementName(const std::string &originalName,
-                                     bool knownMaxLength);
-
   static std::optional<int> printConstantFstringMaxLength(CallInst *);
   static std::optional<std::string> printConstantFstring(CallInst *);
   static std::optional<int> fstringMaxLength(std::string);
