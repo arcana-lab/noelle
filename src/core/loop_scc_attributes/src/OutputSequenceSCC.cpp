@@ -35,8 +35,7 @@ OutputSequenceSCC::OutputSequenceSCC(
   return;
 }
 
-std::optional<int> OutputSequenceSCC::printConstantFstringMaxLength(
-    CallInst *I) {
+std::optional<int> OutputSequenceSCC::getMaxNumberOfPrintedBytes(CallInst *I) {
   if (auto fstring = OutputSequenceSCC::printConstantFstring(I)) {
     return OutputSequenceSCC::fstringMaxLength(fstring.value());
   }
