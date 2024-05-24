@@ -93,7 +93,7 @@ private:
                                      std::string outputFileName);
   static void groupNodesByCluster(
       std::unordered_map<std::string, std::set<std::string>> &clusterNodes,
-      int &numLines,
+      uint64_t &numLines,
       std::ifstream &ifile);
   static void writeClusterToFile(
       const std::unordered_map<std::string, std::set<std::string>>

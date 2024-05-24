@@ -173,7 +173,7 @@ void DGPrinter::addClusteringToDotFile(std::string inputFileName,
     return;
   }
 
-  int numLines = 0;
+  uint64_t numLines = 0;
   groupNodesByCluster(clusterNodes, numLines, ifile);
 
   if (clusterNodes.size() == 0) {
@@ -195,7 +195,7 @@ void DGPrinter::addClusteringToDotFile(std::string inputFileName,
   }
 
   std::string line;
-  for (int i = 0; i < numLines - 1; ++i) {
+  for (auto i = 0; i < numLines - 1; ++i) {
     getline(ifile, line);
     cfile << line << "\n";
   }
@@ -226,7 +226,7 @@ void DGPrinter::writeClusterToFile(
 
 void DGPrinter::groupNodesByCluster(
     std::unordered_map<std::string, std::set<std::string>> &clusterNodes,
-    int &numLines,
+    uint64_t &numLines,
     std::ifstream &ifile) {
   std::string CLUSTER_KEY = "cluster=";
   std::string NODE_NAME = "Node";
