@@ -903,7 +903,7 @@ SCCDAG *SCCDAGAttrs::getSCCDAG(void) const {
   return this->sccdag;
 }
 
-void SCCDAGAttrs::dumpToFile(int id) {
+void SCCDAGAttrs::dumpToFile(uint64_t id) {
   std::error_code EC;
   std::string filename = "sccdag-attrs-loop-" + std::to_string(id) + ".dot";
 

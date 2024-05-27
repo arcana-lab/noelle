@@ -77,7 +77,7 @@ public:
   /*
    * Debug methods
    */
-  void dumpToFile(int id);
+  void dumpToFile(uint64_t id);
 
   ~SCCDAGAttrs();
 

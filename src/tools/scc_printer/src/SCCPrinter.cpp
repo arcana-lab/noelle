@@ -88,7 +88,7 @@ bool SCCPrinter::runOnModule(Module &M) {
   auto sccManager = LC->getSCCManager();
   auto SCCNodes = sccManager->getSCCDAG()->getSCCs();
 
-  int id = 0;
+  uint64_t id = 0;
   for (auto sccNode : SCCNodes) {
     auto scc = sccManager->getSCCAttrs(sccNode);
     auto type = scc->getKind();
@@ -97,6 +97,7 @@ bool SCCPrinter::runOnModule(Module &M) {
     }
     id++;
   }
+
   return false;
 }
 
@@ -125,7 +126,7 @@ void SCCPrinter::printLoopIDs(std::vector<LoopStructure *> *LSs) {
   errs() << this->prefix << "Selected function: \e[35m"
          << this->targetFunctionName << "\e[0m\n";
   for (auto LS : *LSs) {
-    int id = LS->getID().value();
+    auto id = LS->getID().value();
     errs() << this->prefix << "\e[1;32mLoop ID " << id << "\e[0m:\n";
     errs() << *LS->getHeader() << "\n";
   }
