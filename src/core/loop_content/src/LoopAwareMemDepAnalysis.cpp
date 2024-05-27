@@ -298,8 +298,9 @@ void refinePDGWithLIDS(PDG *loopDG,
      * producer can NEVER reach the consumer during the same iteration
      */
     auto &afterInstructions = dfr->OUT(fromInst);
-    if (afterInstructions.find(toInst) != afterInstructions.end())
+    if (afterInstructions.find(toInst) != afterInstructions.end()){
       continue;
+    }
 
     if (LIDS->areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(
             fromInst,
