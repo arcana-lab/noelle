@@ -83,9 +83,7 @@ public:
    *
    * Warning: this modifies the IR code.
    */
-  void deleteMetadata(LoopStructure *loop,
-                      const std::string &metadataName,
-                      const std::string &metadataValue);
+  void deleteMetadata(LoopStructure *loop, const std::string &metadataName);
 
   /*
    *************** Instruction APIs
@@ -125,9 +123,7 @@ public:
    *
    * Warning: this modifies the IR code.
    */
-  void deleteMetadata(Instruction *inst,
-                      const std::string &metadataName,
-                      const std::string &metadataValue);
+  void deleteMetadata(Instruction *inst, const std::string &metadataName);
 
   void removePDGMetadata(void);
 

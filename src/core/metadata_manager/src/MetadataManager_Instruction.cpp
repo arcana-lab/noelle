@@ -116,8 +116,7 @@ void MetadataManager::setMetadata(Instruction *inst,
 }
 
 void MetadataManager::deleteMetadata(Instruction *inst,
-                                     const std::string &metadataName,
-                                     const std::string &metadataValue) {
+                                     const std::string &metadataName) {
 
   /*
    * Check if the metadata node already exists.
