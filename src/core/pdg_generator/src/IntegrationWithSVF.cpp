@@ -68,16 +68,32 @@ void NoelleSVFIntegration::getAnalysisUsage(AnalysisUsage &AU) const {
 
 bool NoelleSVFIntegration::runOnModule(Module &M) {
 #ifdef NOELLE_ENABLE_SVF
+
   /*
-   * Select SVF options
+   * Select the alias analyses to run in SVF.
    */
-  // Pointer Analysis
   SVF::Options::PASelected.parseAndSetValue("nander");
   SVF::Options::PASelected.parseAndSetValue("sander");
   SVF::Options::PASelected.parseAndSetValue("ander");
-  // Alias analyis rule: return NoAlias if any pta says no alias
+
+  /*
+   * The sfrander pointer analysis gives an incorrect (NoAlias) result,
+   * which generates a smaller and incorrectlty disconnected SCC and
+   * gets distributed through the LoopDistribution pass.
+   * This, in the end, results in a segfault of the test LoopDistribution5.
+   * An bug report has been created to SVF:
+   * https://github.com/SVF-tools/SVF/issues/1475
+   */
+  // SVF::Options::PASelected.parseAndSetValue("sfrander");
+
+  /*
+   * Alias analyis rule: return NoAlias if any pta says no alias
+   */
   SVF::Options::AliasRule.parseAndSetValue("veto");
-  // Disable SVF stats
+
+  /*
+   * Disable SVF stats
+   */
   SVF::Options::PStat.setValue(false);
 
   /*
