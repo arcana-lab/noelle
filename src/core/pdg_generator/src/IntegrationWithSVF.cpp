@@ -74,7 +74,6 @@ bool NoelleSVFIntegration::runOnModule(Module &M) {
   // Pointer Analysis
   SVF::Options::PASelected.parseAndSetValue("nander");
   SVF::Options::PASelected.parseAndSetValue("sander");
-  SVF::Options::PASelected.parseAndSetValue("sfrander");
   SVF::Options::PASelected.parseAndSetValue("ander");
   // Alias analyis rule: return NoAlias if any pta says no alias
   SVF::Options::AliasRule.parseAndSetValue("veto");
