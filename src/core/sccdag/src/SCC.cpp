@@ -157,7 +157,7 @@ raw_ostream &SCC::print(raw_ostream &stream,
    */
   auto sortedDeps = DG::sortDependences(allEdges);
   stream << prefixToUse << "Edges: " << sortedDeps.size() << "\n";
-  auto edgesPrinted = 0;
+  uint64_t edgesPrinted = 0;
   for (auto edge : sortedDeps) {
     if (edgesPrinted++ >= maxEdges) {
       stream << prefixToUse << "  ....\n";
