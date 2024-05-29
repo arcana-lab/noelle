@@ -195,7 +195,7 @@ void DGPrinter::addClusteringToDotFile(std::string inputFileName,
   }
 
   std::string line;
-  for (auto i = 0; i < numLines - 1; ++i) {
+  for (uint64_t i = 0; i < (numLines - 1); ++i) {
     getline(ifile, line);
     cfile << line << "\n";
   }
