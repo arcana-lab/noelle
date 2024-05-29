@@ -115,7 +115,7 @@ int64_t SCC::numberOfInstructions(void) const {
 
 raw_ostream &SCC::print(raw_ostream &stream,
                         std::string prefixToUse,
-                        int maxEdges) {
+                        uint64_t maxEdges) {
 
   /*
    * Print instructions that compose the SCC.

@@ -12,7 +12,7 @@ cpp="clang" ;
 optlevel="-O3" ;
 
 # Generate parallel optimized bitcode 
-cmd="noelle-parallelizer ${args}" ;
+cmd="gino ${args}" ;
 echo ${cmd} ;
 eval ${cmd} ;
 

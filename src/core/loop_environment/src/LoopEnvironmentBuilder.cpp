@@ -289,7 +289,7 @@ void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> &builder) {
   auto int64 = IntegerType::get(builder.getContext(), 64);
   auto zeroV = cast<Value>(ConstantInt::get(int64, 0));
   auto fetchCastedEnvPtr =
-      [&](Value *arr, int envIndex, Type *ptrType) -> Value * {
+      [&](Value *arr, uint32_t envIndex, Type *ptrType) -> Value * {
     /*
      * Compute the offset of the variable with index "envIndex" that is stored
      * inside the environment.

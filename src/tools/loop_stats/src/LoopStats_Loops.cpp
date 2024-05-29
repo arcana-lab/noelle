@@ -24,7 +24,7 @@
 namespace arcana::noelle {
 
 void LoopStats::collectStatsForLoop(Hot *profiles,
-                                    int id,
+                                    uint32_t id,
                                     ScalarEvolution &SE,
                                     PDG *loopDG,
                                     Loop &llvmLoop) {

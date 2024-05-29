@@ -1041,7 +1041,7 @@ bool SCEVSimplification::isUpCastPossible(
    * from no larger than the pointer size
    * to no smaller than MIN_BIT_SIZE bits
    */
-  const int MIN_BIT_SIZE = ptrSizeInBits < 32 ? ptrSizeInBits : 32;
+  const uint32_t MIN_BIT_SIZE = ptrSizeInBits < 32 ? ptrSizeInBits : 32;
   auto isValidOperationWhenUpCasted = [&](Instruction *inst) -> bool {
     // inst->print(errs() << "Checking validity of: "); errs() << "\n";
 

@@ -88,7 +88,7 @@ public:
    */
   raw_ostream &print(raw_ostream &stream,
                      std::string prefixToUse = "",
-                     int maxEdges = 15);
+                     uint64_t maxEdges = 15);
 
   /*
    * Print

@@ -234,8 +234,7 @@ void MetadataManager::setMetadata(LoopStructure *loop,
 }
 
 void MetadataManager::deleteMetadata(LoopStructure *loop,
-                                     const std::string &metadataName,
-                                     const std::string &metadataValue) {
+                                     const std::string &metadataName) {
 
   /*
    * Fetch the header terminator.
