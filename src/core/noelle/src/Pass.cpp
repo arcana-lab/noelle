@@ -144,7 +144,9 @@ bool Noelle::doInitialization(Module &M) {
     this->enabledTransformations.erase(INLINER_ID);
   }
   if (DisableLoopAwareDependenceAnalyses.getNumOccurrences() == 0) {
-    this->loopAwareDependenceAnalysis = true;
+    this->ldgAnalysis.enableLoopDependenceAnalyses(true);
+  } else {
+    this->ldgAnalysis.enableLoopDependenceAnalyses(false);
   }
 
   /*

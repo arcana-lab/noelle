@@ -271,8 +271,7 @@ private:
       uint32_t techniquesToDisable,
       uint32_t DOALLChunkSize,
       uint32_t maxCores,
-      std::unordered_set<LoopContentOptimization> optimizations,
-      bool enableLoopAwareDependenceAnalysis);
+      std::unordered_set<LoopContentOptimization> optimizations);
 
   LoopContent *getLoopContentForLoop(
       LoopTree *loopNode,
@@ -283,8 +282,7 @@ private:
       uint32_t techniquesToDisable,
       uint32_t DOALLChunkSize,
       uint32_t maxCores,
-      std::unordered_set<LoopContentOptimization> optimizations,
-      bool enableLoopAwareDependenceAnalysis);
+      std::unordered_set<LoopContentOptimization> optimizations);
 
   bool isLoopHot(LoopStructure *loopStructure, double minimumHotness);
   bool isFunctionHot(Function *function, double minimumHotness);

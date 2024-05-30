@@ -61,8 +61,6 @@ public:
    */
   bool isOptimizationEnabled(LoopContentOptimization optimization) const;
 
-  bool areLoopAwareAnalysesEnabled(void) const;
-
   std::unordered_set<LoopContentOptimization> getOptimizationsEnabled(
       void) const;
 
@@ -73,7 +71,6 @@ private:
       enabledTransformations; /* Transformations enabled. */
   std::unordered_set<LoopContentOptimization>
       enabledOptimizations; /* Optimizations enabled. */
-  bool _areLoopAwareAnalysesEnabled;
 };
 
 } // namespace arcana::noelle

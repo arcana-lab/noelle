@@ -62,19 +62,18 @@ static RegisterPass<NoelleSCAFIntegration> X("noelle-scaf",
 void refinePDGWithLoopAwareMemDepAnalysis(LDGGenerator &ldgAnalysis,
                                           PDG *loopDG,
                                           Loop *l,
-                                          LoopStructure *loopStructure,
                                           LoopTree *loops,
-                                          LoopIterationSpaceAnalysis *LIDS) {
-  refinePDGWithSCAF(loopDG, l);
-
-  if (LIDS) {
-    refinePDGWithLIDS(loopDG, loopStructure, loops, LIDS);
+                                          InductionVariableManager &ivManager,
+                                          ScalarEvolution &SE) {
+  if (ldgAnalysis.areLoopDependenceAnalysesEnabled()) {
+    refinePDGWithSCAF(loopDG, l);
   }
+  return;
 
   /*
    * Run the loop-centric data dependence analyses.
    */
-  ldgAnalysis.improveDependenceGraph(loopDG, loopStructure);
+  ldgAnalysis.generateLoopDependenceGraph(loopDG, SE, ivManager, *loops);
 
   return;
 }
@@ -199,125 +198,6 @@ void refinePDGWithSCAF(PDG *loopDG, Loop *l) {
     }
   }
 #endif
-
-  return;
-}
-
-// TODO: Refactor along with HELIX's exact same implementation of this method
-DataFlowResult *computeReachabilityFromInstructions(
-    LoopStructure *loopStructure) {
-  assert(loopStructure != nullptr);
-
-  auto loopHeader = loopStructure->getHeader();
-  auto loopFunction = loopStructure->getFunction();
-
-  /*
-   * Run the data flow analysis needed to identify the locations where signal
-   * instructions will be placed.
-   */
-  auto dfa = DataFlowEngine{};
-  auto computeGEN = [](Instruction *i, DataFlowResult *df) {
-    assert(i != nullptr);
-    assert(df != nullptr);
-    auto &gen = df->GEN(i);
-    gen.insert(i);
-    return;
-  };
-  auto computeOUT = [loopHeader](Instruction *inst,
-                                 Instruction *succ,
-                                 std::set<Value *> &OUT,
-                                 DataFlowResult *df) {
-    assert(succ != nullptr);
-    assert(df != nullptr);
-
-    /*
-     * Check if the successor is the header.
-     * In this case, we do not propagate the reachable instructions.
-     * We do this because we are interested in understanding the reachability of
-     * instructions within a single iteration.
-     */
-    auto succBB = succ->getParent();
-    if (succBB == loopHeader) {
-      return;
-    }
-
-    /*
-     * Propagate the data flow values.
-     */
-    auto &inS = df->IN(succ);
-    OUT.insert(inS.begin(), inS.end());
-    return;
-  };
-  auto computeIN =
-      [](Instruction *inst, std::set<Value *> &IN, DataFlowResult *df) {
-        assert(inst != nullptr);
-        assert(df != nullptr);
-
-        auto &genI = df->GEN(inst);
-        auto &outI = df->OUT(inst);
-        IN.insert(outI.begin(), outI.end());
-        IN.insert(genI.begin(), genI.end());
-        return;
-      };
-
-  return dfa.applyBackward(loopFunction, computeGEN, computeIN, computeOUT);
-}
-
-void refinePDGWithLIDS(PDG *loopDG,
-                       LoopStructure *loopStructure,
-                       LoopTree *loops,
-                       LoopIterationSpaceAnalysis *LIDS) {
-
-  /*
-   * Compute the reachability of instructions within the loop.
-   */
-  auto dfr = computeReachabilityFromInstructions(loopStructure);
-
-  std::unordered_set<DGEdge<Value, Value> *> edgesToRemove;
-  for (auto dependency :
-       LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(
-           *loopStructure,
-           loops,
-           *loopDG)) {
-
-    /*
-     * Do not waste time on edges that aren't memory dependencies
-     */
-    if (!isa<MemoryDependence<Value, Value>>(dependency)) {
-      continue;
-    }
-
-    auto fromInst = dyn_cast<Instruction>(dependency->getSrc());
-    auto toInst = dyn_cast<Instruction>(dependency->getDst());
-    if (!fromInst || !toInst)
-      continue;
-
-    /*
-     * Loop carried dependencies are conservatively marked as such; we can only
-     * remove dependencies between a producer and consumer where we know the
-     * producer can NEVER reach the consumer during the same iteration
-     */
-    auto &afterInstructions = dfr->OUT(fromInst);
-    if (afterInstructions.find(toInst) != afterInstructions.end()){
-      continue;
-    }
-
-    if (LIDS->areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(
-            fromInst,
-            toInst)) {
-      edgesToRemove.insert(dependency);
-    }
-  }
-
-  for (auto edge : edgesToRemove) {
-    edge->setLoopCarried(false);
-    loopDG->removeEdge(edge);
-  }
-
-  /*
-   * Free the memory
-   */
-  delete dfr;
 
   return;
 }

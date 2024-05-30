@@ -430,15 +430,12 @@ std::pair<PDG *, SCCDAG *> LoopContent::createDGsForLoop(
    * Perform loop-aware memory dependence analysis to refine the loop dependence
    * graph.
    */
-  auto domainSpace = LoopIterationSpaceAnalysis(loopNode, ivManager, SE);
-  if (this->loopTransformationsManager->areLoopAwareAnalysesEnabled()) {
-    refinePDGWithLoopAwareMemDepAnalysis(ldgAnalysis,
-                                         loopDG,
-                                         l,
-                                         loopStructure,
-                                         loopNode,
-                                         &domainSpace);
-  }
+  refinePDGWithLoopAwareMemDepAnalysis(ldgAnalysis,
+                                       loopDG,
+                                       l,
+                                       loopNode,
+                                       ivManager,
+                                       SE);
 
   /*
    * Analyze the loop to identify opportunities of cloning stack objects.

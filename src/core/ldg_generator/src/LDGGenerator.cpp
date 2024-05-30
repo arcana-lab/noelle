@@ -20,15 +20,70 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/LDGGenerator.hpp"
+#include "noelle/core/LoopIterationSpaceAnalysis.hpp"
+#include "noelle/core/LoopCarriedDependencies.hpp"
+#include "noelle/core/DataFlow.hpp"
 
 namespace arcana::noelle {
 
-LDGGenerator::LDGGenerator() {
-  return;
-}
+// TODO: Refactor along with HELIX's exact same implementation of this method
+DataFlowResult *computeReachabilityFromInstructions(
+    LoopStructure *loopStructure) {
+  assert(loopStructure != nullptr);
 
-void LDGGenerator::addAnalysis(DependenceAnalysis *a) {
-  this->ddAnalyses.insert(a);
+  auto loopHeader = loopStructure->getHeader();
+  auto loopFunction = loopStructure->getFunction();
+
+  /*
+   * Run the data flow analysis needed to identify the locations where signal
+   * instructions will be placed.
+   */
+  auto dfa = DataFlowEngine{};
+  auto computeGEN = [](Instruction *i, DataFlowResult *df) {
+    assert(i != nullptr);
+    assert(df != nullptr);
+    auto &gen = df->GEN(i);
+    gen.insert(i);
+    return;
+  };
+  auto computeOUT = [loopHeader](Instruction *inst,
+                                 Instruction *succ,
+                                 std::set<Value *> &OUT,
+                                 DataFlowResult *df) {
+    assert(succ != nullptr);
+    assert(df != nullptr);
+
+    /*
+     * Check if the successor is the header.
+     * In this case, we do not propagate the reachable instructions.
+     * We do this because we are interested in understanding the reachability of
+     * instructions within a single iteration.
+     */
+    auto succBB = succ->getParent();
+    if (succBB == loopHeader) {
+      return;
+    }
+
+    /*
+     * Propagate the data flow values.
+     */
+    auto &inS = df->IN(succ);
+    OUT.insert(inS.begin(), inS.end());
+    return;
+  };
+  auto computeIN =
+      [](Instruction *inst, std::set<Value *> &IN, DataFlowResult *df) {
+        assert(inst != nullptr);
+        assert(df != nullptr);
+
+        auto &genI = df->GEN(inst);
+        auto &outI = df->OUT(inst);
+        IN.insert(outI.begin(), outI.end());
+        IN.insert(genI.begin(), genI.end());
+        return;
+      };
+
+  return dfa.applyBackward(loopFunction, computeGEN, computeIN, computeOUT);
 }
 
 void LDGGenerator::improveDependenceGraph(PDG *loopDG, LoopStructure *loop) {
@@ -132,6 +187,123 @@ void LDGGenerator::removeDependences(PDG *loopDG, LoopStructure *loop) {
   return;
 }
 
+LDGGenerator::LDGGenerator() {
+  return;
+}
+
+void LDGGenerator::addAnalysis(DependenceAnalysis *a) {
+  this->ddAnalyses.insert(a);
+}
+
+PDG *LDGGenerator::generateLoopDependenceGraph(
+    PDG *functionDG,
+    ScalarEvolution &scalarEvolution,
+    InductionVariableManager &ivManager,
+    LoopTree &loopNode) {
+
+  /*
+   * Fetch the loop.
+   */
+  auto loop = loopNode.getLoop();
+
+  /*
+   * Create a dependence graph including only the instructions within @loop from
+   * the function dependence graph.
+   *
+   * FIXME Currently, the functionDG passed as input is this graph.
+   */
+  auto ldg = functionDG;
+
+  /*
+   * Check if loop-centric dependence analyses are enabled.
+   */
+  if (this->areLoopDependenceAnalysesEnabled()) {
+
+    /*
+     * Run the iteration space analysis.
+     */
+    this->runAffineAnalysis(*ldg, scalarEvolution, ivManager, loopNode);
+
+    /*
+     * Run the loop-centric dependence analyses.
+     */
+    this->improveDependenceGraph(ldg, loop);
+  }
+
+  return ldg;
+}
+
+void LDGGenerator::runAffineAnalysis(PDG &loopDG,
+                                     ScalarEvolution &scalarEvolution,
+                                     InductionVariableManager &ivManager,
+                                     LoopTree &loopNode) {
+
+  /*
+   * Fetch the loop.
+   */
+  auto loopStructure = loopNode.getLoop();
+
+  /*
+   * Create the analysis.
+   */
+  auto domainSpace =
+      LoopIterationSpaceAnalysis(&loopNode, ivManager, scalarEvolution);
+
+  /*
+   * Compute the reachability of instructions within the loop.
+   */
+  auto dfr = computeReachabilityFromInstructions(loopStructure);
+
+  std::unordered_set<DGEdge<Value, Value> *> edgesToRemove;
+  for (auto dependency :
+       LoopCarriedDependencies::getLoopCarriedDependenciesForLoop(
+           *loopStructure,
+           &loopNode,
+           loopDG)) {
+
+    /*
+     * Do not waste time on edges that aren't memory dependencies
+     */
+    if (!isa<MemoryDependence<Value, Value>>(dependency)) {
+      continue;
+    }
+
+    auto fromInst = dyn_cast<Instruction>(dependency->getSrc());
+    auto toInst = dyn_cast<Instruction>(dependency->getDst());
+    if (!fromInst || !toInst)
+      continue;
+
+    /*
+     * Loop carried dependencies are conservatively marked as such; we can only
+     * remove dependencies between a producer and consumer where we know the
+     * producer can NEVER reach the consumer during the same iteration
+     */
+    auto &afterInstructions = dfr->OUT(fromInst);
+    if (afterInstructions.find(toInst) != afterInstructions.end()) {
+      continue;
+    }
+
+    if (domainSpace
+            .areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(
+                fromInst,
+                toInst)) {
+      edgesToRemove.insert(dependency);
+    }
+  }
+
+  for (auto edge : edgesToRemove) {
+    edge->setLoopCarried(false);
+    loopDG.removeEdge(edge);
+  }
+
+  /*
+   * Free the memory
+   */
+  delete dfr;
+
+  return;
+}
+
 void LDGGenerator::removeLoopCarriedDependences(PDG *loopDG,
                                                 LoopStructure *loop) {
 
@@ -189,6 +361,14 @@ void LDGGenerator::removeLoopCarriedDependences(PDG *loopDG,
   }
 
   return;
+}
+
+void LDGGenerator::enableLoopDependenceAnalyses(bool enabled) {
+  this->loopDependenceAnalysesEnabled = enabled;
+}
+
+bool LDGGenerator::areLoopDependenceAnalysesEnabled(void) const {
+  return this->loopDependenceAnalysesEnabled;
 }
 
 } // namespace arcana::noelle

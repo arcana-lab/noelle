@@ -32,7 +32,6 @@ Noelle::Noelle()
     program{ nullptr },
     profiles{ nullptr },
     programDependenceGraph{ nullptr },
-    loopAwareDependenceAnalysis{ false },
     pdgAnalysis{ nullptr },
     ldgAnalysis{},
     fm{ nullptr },

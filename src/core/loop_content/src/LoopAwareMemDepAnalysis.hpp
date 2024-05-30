@@ -24,7 +24,6 @@
 
 #include "noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"
-#include "noelle/core/LoopIterationSpaceAnalysis.hpp"
 #include "noelle/core/LoopForest.hpp"
 #include "noelle/core/LDGGenerator.hpp"
 
@@ -34,17 +33,12 @@ namespace arcana::noelle {
 void refinePDGWithLoopAwareMemDepAnalysis(LDGGenerator &ldgAnalysis,
                                           PDG *loopDG,
                                           Loop *l,
-                                          LoopStructure *loopStructure,
                                           LoopTree *loops,
-                                          LoopIterationSpaceAnalysis *LIDS);
+                                          InductionVariableManager &ivManager,
+                                          ScalarEvolution &SE);
 
 // Refine the loop PDG with SCAF
 void refinePDGWithSCAF(PDG *loopDG, Loop *l);
-
-void refinePDGWithLIDS(PDG *loopDG,
-                       LoopStructure *loopStructure,
-                       LoopTree *loops,
-                       LoopIterationSpaceAnalysis *LIDS);
 
 } // namespace arcana::noelle
 
