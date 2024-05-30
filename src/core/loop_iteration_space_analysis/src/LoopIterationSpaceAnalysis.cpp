@@ -53,7 +53,8 @@ bool LoopIterationSpaceAnalysis::
     areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(
         Instruction *I,
         Instruction *J) const {
-  if (false || (!I) || (!J)
+  if (   (!I) 
+      || (!J)
       || (this->accessSpaceByInstruction.find(I)
           == this->accessSpaceByInstruction.end())
       || (this->accessSpaceByInstruction.find(J)
