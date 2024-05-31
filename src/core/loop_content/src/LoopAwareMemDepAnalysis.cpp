@@ -62,14 +62,12 @@ static RegisterPass<NoelleSCAFIntegration> X("noelle-scaf",
 void refinePDGWithLoopAwareMemDepAnalysis(LDGGenerator &ldgAnalysis,
                                           PDG *loopDG,
                                           Loop *l,
-                                          LoopStructure *loopStructure,
                                           LoopTree *loops,
                                           LoopIterationSpaceAnalysis *LIDS) {
   refinePDGWithSCAF(loopDG, l);
 
-  if (LIDS) {
-    refinePDGWithLIDS(loopDG, loopStructure, loops, LIDS);
-  }
+  auto loopStructure = loops->getLoop();
+  refinePDGWithLIDS(loopDG, loopStructure, loops, LIDS);
 
   /*
    * Run the loop-centric data dependence analyses.
@@ -298,7 +296,7 @@ void refinePDGWithLIDS(PDG *loopDG,
      * producer can NEVER reach the consumer during the same iteration
      */
     auto &afterInstructions = dfr->OUT(fromInst);
-    if (afterInstructions.find(toInst) != afterInstructions.end()){
+    if (afterInstructions.find(toInst) != afterInstructions.end()) {
       continue;
     }
 
