@@ -68,7 +68,6 @@ void refinePDGWithLoopAwareMemDepAnalysis(LDGGenerator &ldgAnalysis,
   if (ldgAnalysis.areLoopDependenceAnalysesEnabled()) {
     refinePDGWithSCAF(loopDG, l);
   }
-  return;
 
   /*
    * Run the loop-centric data dependence analyses.

@@ -447,6 +447,16 @@ LoopContent *Noelle::getLoopContent(BasicBlock *header,
   }
 
   /*
+   * Check if the loop-centric dependence analyses are enabled.
+   */
+  auto switchToTrue = false;
+  if (ldgAnalysis.areLoopDependenceAnalysesEnabled()
+      && (!enableLoopAwareDependenceAnalysis)) {
+    ldgAnalysis.enableLoopDependenceAnalyses(false);
+    switchToTrue = true;
+  }
+
+  /*
    * Fetch the loop content.
    */
   auto ldi = this->getLoopContentForLoop(header,
@@ -456,6 +466,13 @@ LoopContent *Noelle::getLoopContent(BasicBlock *header,
                                          ltm->getChunkSize(),
                                          ltm->getMaximumNumberOfCores(),
                                          ltm->getOptimizationsEnabled());
+
+  /*
+   * Check if we need to re-enable the loop-centric dependence analysis.
+   */
+  if (switchToTrue) {
+    ldgAnalysis.enableLoopDependenceAnalyses(true);
+  }
 
   return ldi;
 }
