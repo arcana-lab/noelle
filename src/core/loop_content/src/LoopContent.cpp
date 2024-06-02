@@ -432,8 +432,7 @@ std::pair<PDG *, SCCDAG *> LoopContent::createDGsForLoop(
    */
   refinePDGWithLoopAwareMemDepAnalysis(ldgAnalysis,
                                        loopDG,
-                                       l,
-                                       loopNode,
+                                       *loopNode,
                                        ivManager,
                                        SE);
 

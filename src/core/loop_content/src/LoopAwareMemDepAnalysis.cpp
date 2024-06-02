@@ -61,29 +61,31 @@ static RegisterPass<NoelleSCAFIntegration> X("noelle-scaf",
 
 void refinePDGWithLoopAwareMemDepAnalysis(LDGGenerator &ldgAnalysis,
                                           PDG *loopDG,
-                                          Loop *l,
-                                          LoopTree *loops,
+                                          LoopTree &loops,
                                           InductionVariableManager &ivManager,
                                           ScalarEvolution &SE) {
   if (ldgAnalysis.areLoopDependenceAnalysesEnabled()) {
-    refinePDGWithSCAF(loopDG, l);
+    refinePDGWithSCAF(loopDG, loops);
   }
 
   /*
    * Run the loop-centric data dependence analyses.
    */
-  ldgAnalysis.generateLoopDependenceGraph(loopDG, SE, ivManager, *loops);
+  ldgAnalysis.generateLoopDependenceGraph(loopDG, SE, ivManager, loops);
 
   return;
 }
 
-void refinePDGWithSCAF(PDG *loopDG, Loop *l) {
+void refinePDGWithSCAF(PDG *loopDG, LoopTree &loopNode) {
 #ifdef NOELLE_ENABLE_SCAF
   assert(NoelleSCAFAA != nullptr);
 
-  // replace it to the correct one for SCAF
-  auto li = &ModuleLoops->getAnalysis_LoopInfo(l->getHeader()->getParent());
-  l = li->getLoopFor(l->getHeader());
+  /*
+   * Get the LLVM loop for SCAF.
+   */
+  auto loopStructure = loopNode.getLoop();
+  auto li = &ModuleLoops->getAnalysis_LoopInfo(loopStructure->getFunction());
+  auto l = li->getLoopFor(loopStructure->getHeader());
 
   /*
    * Iterate over all the edges of the loop PDG and collect memory deps to be

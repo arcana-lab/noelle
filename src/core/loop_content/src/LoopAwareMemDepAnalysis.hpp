@@ -32,13 +32,12 @@ namespace arcana::noelle {
 // Perform loop-aware memory dependence analysis to refine the loop PDG
 void refinePDGWithLoopAwareMemDepAnalysis(LDGGenerator &ldgAnalysis,
                                           PDG *loopDG,
-                                          Loop *l,
-                                          LoopTree *loops,
+                                          LoopTree &loops,
                                           InductionVariableManager &ivManager,
                                           ScalarEvolution &SE);
 
 // Refine the loop PDG with SCAF
-void refinePDGWithSCAF(PDG *loopDG, Loop *l);
+void refinePDGWithSCAF(PDG *loopDG, LoopTree &loopNode);
 
 } // namespace arcana::noelle
 
