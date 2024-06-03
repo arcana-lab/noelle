@@ -26,8 +26,8 @@ namespace arcana::noelle {
 
 Mem2RegNonAlloca::Mem2RegNonAlloca(LoopContent const &LDI, Noelle &noelle)
   : LDI{ LDI },
-    invariants{ *LDI.getInvariantManager() },
-    noelle{ noelle } {
+    noelle{ noelle },
+    invariants{ *LDI.getInvariantManager() } {
   return;
 }
 
@@ -133,7 +133,6 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations(
    * Identify SCC containing only loads/stores on a single memory location
    * along with any computation that does NOT alias the loads/stores
    */
-  auto loopStructure = LDI.getLoopStructure();
   auto sccManager = LDI.getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
   std::map<Value *, SCC *> singleMemoryLocationsBySCC{};
@@ -319,8 +318,6 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC(SCC *scc,
      * after the traversal
      */
     if (lastRegisterValueByBlock.find(B) == lastRegisterValueByBlock.end()) {
-
-      bool pushOffExecutionUntilPredecessorsAreTraversed = false;
       for (auto predBlock : predecessors(B)) {
         if (lastRegisterValueByBlock.find(predBlock)
             != lastRegisterValueByBlock.end())
@@ -558,11 +555,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC(SCC *scc,
 bool Mem2RegNonAlloca::hoistMemoryInstructionsRelyingOnExistingRegisterValues(
     SCC *scc,
     Value *memoryLocation) {
-
   auto orderedMemoryInstsByBlock = collectOrderedMemoryInstsByBlock(scc);
-
-  auto loopStructure = LDI.getLoopStructure();
-  auto loopHeader = loopStructure->getHeader();
 
   // Build a list of basic blocks that collect 2+ unique stored values (store
   // merging blocks)

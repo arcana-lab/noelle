@@ -26,7 +26,6 @@
 #include "noelle/core/LoopContent.hpp"
 #include "noelle/core/Invariants.hpp"
 #include "noelle/core/Noelle.hpp"
-
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/SubCFGs.hpp"
 #include "noelle/core/SCCDAG.hpp"
