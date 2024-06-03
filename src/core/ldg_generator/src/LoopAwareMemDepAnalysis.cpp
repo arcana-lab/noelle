@@ -22,7 +22,6 @@
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 #include "noelle/core/LoopAliasAnalysisEngine.hpp"
-#include "noelle/core/LoopContent.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
 
 /*
@@ -58,23 +57,6 @@ public:
 char NoelleSCAFIntegration::ID = 0;
 static RegisterPass<NoelleSCAFIntegration> X("noelle-scaf",
                                              "Integration with SCAF");
-
-void refinePDGWithLoopAwareMemDepAnalysis(LDGGenerator &ldgAnalysis,
-                                          PDG *loopDG,
-                                          LoopTree &loops,
-                                          InductionVariableManager &ivManager,
-                                          ScalarEvolution &SE) {
-  if (ldgAnalysis.areLoopDependenceAnalysesEnabled()) {
-    refinePDGWithSCAF(loopDG, loops);
-  }
-
-  /*
-   * Run the loop-centric data dependence analyses.
-   */
-  ldgAnalysis.generateLoopDependenceGraph(loopDG, SE, ivManager, loops);
-
-  return;
-}
 
 void refinePDGWithSCAF(PDG *loopDG, LoopTree &loopNode) {
 #ifdef NOELLE_ENABLE_SCAF
@@ -230,7 +212,8 @@ bool NoelleSCAFIntegration::runOnModule(Module &M) {
   return false;
 }
 
-std::set<AliasAnalysisEngine *> LoopContent::getLoopAliasAnalysisEngines(void) {
+std::set<AliasAnalysisEngine *> LDGGenerator::getLoopAliasAnalysisEngines(
+    void) {
   std::set<AliasAnalysisEngine *> s;
 
 #ifdef NOELLE_ENABLE_SCAF

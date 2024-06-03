@@ -34,7 +34,6 @@
 #include "noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/LoopIterationSpaceAnalysis.hpp"
 #include "noelle/core/LoopTransformationsOptions.hpp"
-#include "noelle/core/AliasAnalysisEngine.hpp"
 #include "noelle/core/LDGGenerator.hpp"
 
 namespace arcana::noelle {
@@ -163,8 +162,6 @@ public:
    */
   ~LoopContent();
 
-  static std::set<AliasAnalysisEngine *> getLoopAliasAnalysisEngines(void);
-
 private:
   /*
    * Fields
@@ -220,8 +217,6 @@ private:
       LoopTree *loopNode,
       PDG *loopDG,
       DominatorSummary &DS);
-
-  SCCDAG *computeSCCDAGWithOnlyVariableAndControlDependences(PDG *loopDG);
 };
 
 } // namespace arcana::noelle
