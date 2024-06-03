@@ -75,16 +75,7 @@ bool NoelleSVFIntegration::runOnModule(Module &M) {
   SVF::Options::PASelected.parseAndSetValue("nander");
   SVF::Options::PASelected.parseAndSetValue("sander");
   SVF::Options::PASelected.parseAndSetValue("ander");
-
-  /*
-   * The sfrander pointer analysis gives an incorrect (NoAlias) result,
-   * which generates a smaller and incorrectlty disconnected SCC and
-   * gets distributed through the LoopDistribution pass.
-   * This, in the end, results in a segfault of the test LoopDistribution5.
-   * An bug report has been created to SVF:
-   * https://github.com/SVF-tools/SVF/issues/1475
-   */
-  // SVF::Options::PASelected.parseAndSetValue("sfrander");
+  SVF::Options::PASelected.parseAndSetValue("sfrander");
 
   /*
    * Alias analyis rule: return NoAlias if any pta says no alias
