@@ -31,8 +31,7 @@ LoopTransformationsManager::LoopTransformationsManager(
   : chunkSize{ chunkSize },
     maxCores{ maxNumberOfCores },
     enabledTransformations{},
-    enabledOptimizations{ optimizations },
-    _areLoopAwareAnalysesEnabled{ enableLoopAwareDependenceAnalyses } {
+    enabledOptimizations{ optimizations } {
 
   return;
 }
@@ -42,7 +41,6 @@ LoopTransformationsManager::LoopTransformationsManager(
   this->chunkSize = other.chunkSize;
   this->maxCores = other.maxCores;
   this->enabledTransformations = other.enabledTransformations;
-  this->_areLoopAwareAnalysesEnabled = other._areLoopAwareAnalysesEnabled;
 
   return;
 }
@@ -84,10 +82,6 @@ bool LoopTransformationsManager::isOptimizationEnabled(
   auto enabled = this->enabledOptimizations.find(optimization)
                  != this->enabledOptimizations.end();
   return enabled;
-}
-
-bool LoopTransformationsManager::areLoopAwareAnalysesEnabled(void) const {
-  return this->_areLoopAwareAnalysesEnabled;
 }
 
 std::unordered_set<LoopContentOptimization> LoopTransformationsManager::

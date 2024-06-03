@@ -39,5 +39,6 @@ uninstall:
 	-cat $(BUILD_DIR)/install_manifest.txt | xargs rm -f
 	rm -f enable
 	rm -f .git/hooks/pre-commit
+	find ./ -type d -empty -delete
 
 .PHONY: all build install compile menuconfig tests format clean uninstall

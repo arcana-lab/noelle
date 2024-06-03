@@ -26,6 +26,7 @@
 #include "noelle/core/DependenceAnalysis.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/LoopStructure.hpp"
+#include "noelle/core/InductionVariables.hpp"
 
 namespace arcana::noelle {
 
@@ -35,13 +36,26 @@ public:
 
   void addAnalysis(DependenceAnalysis *a);
 
-  void improveDependenceGraph(PDG *loopDG, LoopStructure *loop);
+  bool areLoopDependenceAnalysesEnabled(void) const;
+
+  void enableLoopDependenceAnalyses(bool enabled);
+
+  PDG *generateLoopDependenceGraph(PDG *functionDG,
+                                   ScalarEvolution &scalarEvolution,
+                                   InductionVariableManager &ivManager,
+                                   LoopTree &loopNode);
 
 private:
   std::set<DependenceAnalysis *> ddAnalyses;
+  bool loopDependenceAnalysesEnabled;
 
   void removeDependences(PDG *loopDG, LoopStructure *loop);
   void removeLoopCarriedDependences(PDG *loopDG, LoopStructure *loop);
+  void runAffineAnalysis(PDG &loopDG,
+                         ScalarEvolution &scalarEvolution,
+                         InductionVariableManager &ivManager,
+                         LoopTree &loopNode);
+  void improveDependenceGraph(PDG *loopDG, LoopStructure *loop);
 };
 
 } // namespace arcana::noelle
