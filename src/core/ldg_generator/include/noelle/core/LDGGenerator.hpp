@@ -23,10 +23,12 @@
 #define NOELLE_SRC_CORE_LDG_GENERATOR_LDGANALYSIS_H_
 
 #include "noelle/core/SystemHeaders.hpp"
+#include "noelle/core/CompilationOptionsManager.hpp"
 #include "noelle/core/DependenceAnalysis.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/LoopStructure.hpp"
 #include "noelle/core/InductionVariables.hpp"
+#include "noelle/core/AliasAnalysisEngine.hpp"
 
 namespace arcana::noelle {
 
@@ -42,8 +44,14 @@ public:
 
   PDG *generateLoopDependenceGraph(PDG *functionDG,
                                    ScalarEvolution &scalarEvolution,
-                                   InductionVariableManager &ivManager,
+                                   DominatorSummary &DS,
+                                   CompilationOptionsManager *com,
+                                   Loop *l,
                                    LoopTree &loopNode);
+
+  SCCDAG *computeSCCDAGWithOnlyVariableAndControlDependences(PDG *loopDG);
+
+  static std::set<AliasAnalysisEngine *> getLoopAliasAnalysisEngines(void);
 
 private:
   std::set<DependenceAnalysis *> ddAnalyses;

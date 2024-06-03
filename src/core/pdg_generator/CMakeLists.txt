@@ -13,4 +13,6 @@ target_sources(
   src/PDGGenerator_metadata.cpp
   src/PDGGenerator_metadata_embedder.cpp
   src/PDGGenerator_metadata_scc_embedder.cpp
+  src/PDGGenerator_metadata_cleaner.cpp
+  src/PDGGenerator_metadata_cleanAndEmbedder.cpp
 )

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni, Brian Homerding
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni, Brian Homerding
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,6 @@
 #include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/LoopContent.hpp"
-#include "LoopAwareMemDepAnalysis.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 
 namespace arcana::noelle {
@@ -233,7 +232,7 @@ LoopContent::LoopContent(
    * And then, we can identify IVs from this new SCCDAG.
    */
   auto loopSCCDAGWithoutMemoryDeps =
-      this->computeSCCDAGWithOnlyVariableAndControlDependences(loopDG);
+      ldgAnalysis.computeSCCDAGWithOnlyVariableAndControlDependences(loopDG);
   this->inductionVariables =
       new InductionVariableManager(this->loop,
                                    *invariantManager,
@@ -318,123 +317,15 @@ std::pair<PDG *, SCCDAG *> LoopContent::createDGsForLoop(
     ScalarEvolution &SE) {
 
   /*
-   * Create the loop dependence graph.
-   */
-  for (auto edge : functionDG->getEdges()) {
-    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
-  }
-  auto loopDG = functionDG->createLoopsSubgraph(l);
-  for (auto edge : loopDG->getEdges()) {
-    assert(!edge->isLoopCarriedDependence() && "Flag was already set");
-  }
-
-  /*
-   * Remove dependences thank to compilation options.
-   */
-  if (com->arePRVGsNonDeterministic()) {
-    std::set<DGEdge<Value, Value> *> toDelete;
-    for (auto edge : loopDG->getEdges()) {
-      if (!isa<MemoryDependence<Value, Value>>(edge)) {
-        continue;
-      }
-      auto vo = edge->getSrc();
-      auto vi = edge->getDst();
-      if (!isa<CallBase>(vo)) {
-        continue;
-      }
-      if (!isa<CallBase>(vi)) {
-        continue;
-      }
-      auto voCall = cast<CallBase>(vo);
-      auto viCall = cast<CallBase>(vi);
-
-      /*
-       * Fetch the callees.
-       */
-      auto voCallee = voCall->getCalledFunction();
-      auto viCallee = viCall->getCalledFunction();
-      if ((viCallee == nullptr) && (voCallee == nullptr)) {
-        continue;
-      }
-
-      /*
-       * Check if one of the calls is a PRVGs.
-       */
-      if (((voCallee != nullptr) && (voCallee->getName() != "rand"))
-          && ((viCallee != nullptr) && (viCallee->getName() != "rand"))) {
-        continue;
-      }
-
-      /*
-       * One of the call is a PRVG.
-       * Hence, all memory dependences with a PRVG can be removed.
-       *
-       * We can remove this dependence as PRVGs are non-deterministics.
-       */
-      toDelete.insert(edge);
-    }
-
-    /*
-     * Remove dependences.
-     */
-    for (auto edge : toDelete) {
-      loopDG->removeEdge(edge);
-    }
-  }
-
-  /*
-   * Fetch the set of instructions that compose the loop.
-   */
-  std::vector<Value *> loopInternals;
-  for (auto internalNode : loopDG->internalNodePairs()) {
-    loopInternals.push_back(internalNode.first);
-  }
-
-  /*
-   * Compute the SCCDAG using only variable-related dependences.
-   * This will be used to detect induction variables.
-   */
-  auto loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
-  auto loopSCCDAGWithoutMemoryDeps =
-      this->computeSCCDAGWithOnlyVariableAndControlDependences(loopInternalDG);
-
-  /*
-   * Detect the loop-carried data dependences.
-   *
-   * HACK: The reason LoopCarriedDependencies is constructed SPECIFICALLY with
-   * the DG that is used to query it is because it holds references to edges
-   * copied to that specific instance of the DG. Edges are NOT referential to a
-   * single DG source. When they are, this won't need to be done
-   *
-   * HACK: The SCCDAG is constructed with a loop internal DG to avoid external
-   * nodes in the loop DG which provide context (live-ins/live-outs) but which
-   * complicate analyzing the resulting SCCDAG
-   */
-  LoopCarriedDependencies::setLoopCarriedDependencies(loopNode, DS, *loopDG);
-
-  /*
-   * Detect loop invariants and induction variables.
-   */
-  auto loopStructure = loopNode->getLoop();
-  auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
-  auto env = LoopEnvironment(loopDG, loopExitBlocks, {});
-  auto invManager = InvariantManager(loopStructure, loopDG);
-  auto ivManager = InductionVariableManager(loopNode,
-                                            invManager,
-                                            SE,
-                                            *loopSCCDAGWithoutMemoryDeps,
-                                            env,
-                                            *l);
-
-  /*
    * Perform loop-aware memory dependence analysis to refine the loop dependence
    * graph.
    */
-  refinePDGWithLoopAwareMemDepAnalysis(ldgAnalysis,
-                                       loopDG,
-                                       *loopNode,
-                                       ivManager,
-                                       SE);
+  auto loopDG = ldgAnalysis.generateLoopDependenceGraph(functionDG,
+                                                        SE,
+                                                        DS,
+                                                        com,
+                                                        l,
+                                                        *loopNode);
 
   /*
    * Analyze the loop to identify opportunities of cloning stack objects.
@@ -459,13 +350,17 @@ std::pair<PDG *, SCCDAG *> LoopContent::createDGsForLoop(
   /*
    * Build a SCCDAG of loop-internal instructions
    */
-  loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
+  std::vector<Value *> loopInternals;
+  for (auto internalNode : loopDG->internalNodePairs()) {
+    loopInternals.push_back(internalNode.first);
+  }
+  auto loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
   auto loopSCCDAG = new SCCDAG(loopInternalDG);
 
-/*
- * Safety check: check that the SCCDAG includes all instructions of the loop
- * given as input.
- */
+  /*
+   * Safety check: check that the SCCDAG includes all instructions of the loop
+   * given as input.
+   */
 #ifdef DEBUG
 
   /*
@@ -728,41 +623,6 @@ SCCDAGAttrs *LoopContent::getSCCManager(void) const {
 
 LoopEnvironment *LoopContent::getEnvironment(void) const {
   return this->environment;
-}
-
-SCCDAG *LoopContent::computeSCCDAGWithOnlyVariableAndControlDependences(
-    PDG *loopDG) {
-
-  /*
-   * Compute the set of internal instructions of the loop.
-   */
-  std::vector<Value *> loopInternals;
-  for (auto internalNode : loopDG->internalNodePairs()) {
-    loopInternals.push_back(internalNode.first);
-  }
-
-  /*
-   * Collect the dependences that we want to ignore.
-   */
-  std::unordered_set<DGEdge<Value, Value> *> memDeps{};
-  for (auto currentDependence : loopDG->getSortedDependences()) {
-    if (isa<MemoryDependence<Value, Value>>(currentDependence)) {
-      memDeps.insert(currentDependence);
-    }
-  }
-
-  /*
-   * Compute the new loop dependence graph
-   */
-  auto loopDGWithoutMemoryDeps =
-      loopDG->createSubgraphFromValues(loopInternals, false, memDeps);
-
-  /*
-   * Compute the SCCDAG
-   */
-  auto loopSCCDAGWithoutMemoryDeps = new SCCDAG(loopDGWithoutMemoryDeps);
-
-  return loopSCCDAGWithoutMemoryDeps;
 }
 
 LoopTransformationsManager *LoopContent::getLoopTransformationsManager(

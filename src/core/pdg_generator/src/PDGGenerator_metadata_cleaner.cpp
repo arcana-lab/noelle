@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Angelo Matni, Simone Campanoni, Brian Homerding
+ * Copyright 2016 - 2023  Angelo Matni, Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,26 +19,38 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_CONTENT_LOOPAWAREMEMDEPANALYSIS_H_
-#define NOELLE_SRC_CORE_LOOP_CONTENT_LOOPAWAREMEMDEPANALYSIS_H_
-
 #include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/PDG.hpp"
-#include "noelle/core/LoopForest.hpp"
-#include "noelle/core/LDGGenerator.hpp"
+#include "noelle/core/TalkDown.hpp"
+#include "noelle/core/PDGPrinter.hpp"
+#include "noelle/core/PDGGenerator.hpp"
 
 namespace arcana::noelle {
 
-// Perform loop-aware memory dependence analysis to refine the loop PDG
-void refinePDGWithLoopAwareMemDepAnalysis(LDGGenerator &ldgAnalysis,
-                                          PDG *loopDG,
-                                          LoopTree &loops,
-                                          InductionVariableManager &ivManager,
-                                          ScalarEvolution &SE);
+void PDGGenerator::cleanPDGMetadata() {
+  errs() << "Clean PDG Metadata\n";
 
-// Refine the loop PDG with SCAF
-void refinePDGWithSCAF(PDG *loopDG, LoopTree &loopNode);
+  for (auto &F : this->M->functions()) {
+    if (F.hasMetadata("noelle.pdg.args.id")) {
+      F.setMetadata("noelle.pdg.args.id", nullptr);
+    }
+    if (F.hasMetadata("noelle.pdg.edges")) {
+      F.setMetadata("noelle.pdg.edges", nullptr);
+    }
+    
+    for (auto &B : F) {
+      for (auto &I : B) {
+        if (I.getMetadata("noelle.pdg.inst.id")) {
+          I.setMetadata("noelle.pdg.inst.id", nullptr);
+        }
+      }
+    }
+  }
 
-} // namespace arcana::noelle
+  if (auto n = this->M->getNamedMetadata("noelle.module.pdg")) {
+    this->M->eraseNamedMetadata(n);
+  }
 
-#endif // NOELLE_SRC_CORE_LOOP_CONTENT_LOOPAWAREMEMDEPANALYSIS_H_
+  return;
+}
+
+}

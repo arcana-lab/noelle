@@ -77,6 +77,8 @@ public:
       std::set<const Function *> functions,
       FunctionType *signature);
 
+  void cleanAndEmbedPDGAsMetadata(PDG *pdg);
+
 private:
   Module *M;
   PDG *programDependenceGraph;
@@ -119,6 +121,8 @@ private:
       std::function<void(DGEdge<Value, Value> *dependenceMissingInPdg2)> func);
 
   bool hasPDGAsMetadata(Module &);
+
+  void cleanPDGMetadata();
 
   PDG *constructPDGFromMetadata(Module &);
   void constructNodesFromMetadata(PDG *,
