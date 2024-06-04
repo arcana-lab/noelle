@@ -1,5 +1,6 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni, Brian Homerding
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni, Brian Homerding,
+                          Sophia Boksenbaum
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -118,6 +119,10 @@ private:
 
   std::set<Instruction *> checkIfRecomputable(SCC *scc,
                                               LoopTree *loopNode) const;
+
+  std::set<CallInst *> checkIfOutputSequence(SCC *scc,
+                                             LoopTree *loopNode) const;
+  bool isOutputInst(Value *I) const;
 
   bool isClonableByInductionVars(SCC *scc) const;
 };

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Sophia Boksenbaum, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -40,6 +40,12 @@ public:
       PHINode *ivPHI,
       PHINode *chunkPHI,
       Value *chunkStepSize);
+
+  /*
+   * Finds the isChunkCompleted CmpInst for a previously created chunkPHI
+   */
+  static CmpInst *isChunkCompleted(BasicBlock *preheaderBlock,
+                                   PHINode *chunkPHI);
 
   /*
    * Inserts instruction to add offsetValue to startValue. Returns the result of
