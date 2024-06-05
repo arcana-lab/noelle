@@ -136,10 +136,10 @@ public:
     return make_range(allEdges.begin(), allEdges.end());
   }
 
-  iterator_range<node_map_iterator> internalNodePairs() {
+  iterator_range<node_map_iterator> internalNodePairs(void) {
     return make_range(internalNodeMap.begin(), internalNodeMap.end());
   }
-  iterator_range<node_map_iterator> externalNodePairs() {
+  iterator_range<node_map_iterator> externalNodePairs(void) {
     return make_range(externalNodeMap.begin(), externalNodeMap.end());
   }
 
