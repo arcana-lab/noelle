@@ -154,6 +154,9 @@ double Hot::getAverageTotalInstructionsPerIteration(LoopStructure *loop) const {
    * Fetch the average number of iterations per invocation.
    */
   auto itersPerInvocation = this->getAverageLoopIterationsPerInvocation(loop);
+  if (itersPerInvocation == 0) {
+    return 0;
+  }
 
   /*
    * Compute the average instructions per iteration.
