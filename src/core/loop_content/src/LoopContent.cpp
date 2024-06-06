@@ -350,11 +350,7 @@ std::pair<PDG *, SCCDAG *> LoopContent::createDGsForLoop(
   /*
    * Build a SCCDAG of loop-internal instructions
    */
-  std::vector<Value *> loopInternals;
-  for (auto internalNode : loopDG->internalNodePairs()) {
-    loopInternals.push_back(internalNode.first);
-  }
-  auto loopInternalDG = loopDG->createSubgraphFromValues(loopInternals, false);
+  auto loopInternalDG = loopDG->clone(false);
   auto loopSCCDAG = new SCCDAG(loopInternalDG);
 
   /*

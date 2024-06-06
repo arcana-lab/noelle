@@ -406,6 +406,30 @@ std::unordered_set<DGEdge<Value, Value> *> PDG::getDependences(Value *from,
   return edgeSet;
 }
 
+PDG *PDG::clone(bool includeExternalNodes) {
+
+  /*
+   * Collect nodes to include in the clone.
+   */
+  std::vector<Value *> currentNodes;
+  for (auto internalNode : this->internalNodePairs()) {
+    currentNodes.push_back(internalNode.first);
+  }
+  if (includeExternalNodes) {
+    for (auto externalNode : this->externalNodePairs()) {
+      currentNodes.push_back(externalNode.first);
+    }
+  }
+
+  /*
+   * Clone the DG.
+   */
+  auto cloneDG =
+      this->createSubgraphFromValues(currentNodes, includeExternalNodes);
+
+  return cloneDG;
+}
+
 PDG::~PDG() {
   for (auto *edge : allEdges)
     if (edge)

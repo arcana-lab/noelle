@@ -128,6 +128,7 @@ public:
       bool linkToExternal,
       std::unordered_set<DGEdge<Value, Value> *> edgesToIgnore);
 
+  PDG *clone(bool includeExternalNodes);
   std::vector<Value *> getSortedValues(void);
 
   std::vector<DGEdge<Value, Value> *> getSortedDependences(void);
