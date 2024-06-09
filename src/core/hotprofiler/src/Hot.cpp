@@ -48,7 +48,7 @@ void Hot::computeProgramInvocations(Module &M) {
      * Fetch the number of invocations of the basic block and its length.
      */
     auto totalBBInsts = this->getInvocations(bb);
-    auto bbLength = std::distance(bb->begin(), bb->end());
+    auto bbLength = this->getStaticInstructions(bb);
 
     /*
      * Update the module counter
@@ -73,7 +73,9 @@ void Hot::computeProgramInvocations(Module &M) {
      */
     uint64_t c = 0;
     for (auto &bb : *f) {
-      c += this->getStaticInstructions(&bb);
+      auto totalBBInsts =
+          (this->getInvocations(&bb) * this->getStaticInstructions(&bb));
+      c += totalBBInsts;
     }
     this->functionSelfInstructions[f] = c;
   }
@@ -149,7 +151,7 @@ void Hot::computeTotalInstructions(Module &moduleToAnalyze) {
        * Fetch the next call instruction to F.
        */
       auto userOfF = useOfF.getUser();
-      if (!isa<Instruction>(userOfF)) {
+      if (!isa<CallBase>(userOfF)) {
         continue;
       }
       callerOfF = cast<Instruction>(userOfF);
@@ -231,7 +233,7 @@ void Hot::computeTotalInstructions(
   /*
    * Iterate over all instructions.
    */
-  double t = 0;
+  uint64_t t = 0;
   for (auto &inst : instructions(&F)) {
 
     /*
@@ -272,7 +274,7 @@ void Hot::computeTotalInstructions(
     /*
      * Check if the callee is known and we can inspect its body.
      */
-    if (false || (callee == nullptr) || (callee->empty())) {
+    if ((callee == nullptr) || (callee->empty())) {
       continue;
     }
     assert(this->hasBeenExecuted(callee));
@@ -332,20 +334,22 @@ void Hot::computeTotalInstructions(
      * that the distribution of total instructions per callee invocation is
      * uniform among its dynamic callers.
      */
-    auto calleeTotalInstsPerInvocation =
+    auto calleeTotalInstsPerInvocationOfCalleeTmp =
         ((double)calleeTotalInsts) / ((double)this->getInvocations(callee));
+    auto calleeTotalInstsPerInvocationOfCallee =
+        (uint64_t)calleeTotalInstsPerInvocationOfCalleeTmp;
 
     /*
      * Add the fraction of the total of the callee associated to the current
      * instruction.
      */
-    t += (calleeTotalInstsPerInvocation * ((double)instructionInvocations));
+    t += (calleeTotalInstsPerInvocationOfCallee * instructionInvocations);
   }
 
   /*
    * Set the total counter.
    */
-  this->setFunctionTotalInstructions(&F, (uint64_t)t);
+  this->setFunctionTotalInstructions(&F, t);
 
   return;
 }

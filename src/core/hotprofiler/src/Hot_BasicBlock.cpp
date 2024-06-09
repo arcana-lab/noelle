@@ -80,11 +80,10 @@ uint64_t Hot::getTotalInstructions(BasicBlock *bb) const {
 }
 
 uint64_t Hot::getStaticInstructions(BasicBlock *bb) const {
-  auto inv = this->getInvocations(bb);
-
   auto bbLength = std::distance(bb->begin(), bb->end());
+  assert(bbLength > 0);
 
-  return inv * bbLength;
+  return bbLength;
 }
 
 uint64_t Hot::getStaticInstructions(

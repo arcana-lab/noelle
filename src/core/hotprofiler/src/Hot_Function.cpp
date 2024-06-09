@@ -27,9 +27,7 @@ namespace arcana::noelle {
 uint64_t Hot::getStaticInstructions(Function *f) const {
   uint64_t t = 0;
   for (auto &bb : *f) {
-    auto bbLength = std::distance(bb.begin(), bb.end());
-    // t += this->getStaticInstructions(&bb);
-    t += bbLength;
+    t += this->getStaticInstructions(&bb);
   }
 
   return t;
