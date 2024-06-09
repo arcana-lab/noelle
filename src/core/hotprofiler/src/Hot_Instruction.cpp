@@ -98,6 +98,14 @@ uint64_t Hot::getSelfInstructions(Instruction *i) const {
   return this->getInvocations(i);
 }
 
+double Hot::getDynamicTotalInstructionCoverage(Instruction *i) const {
+  auto mInsts = this->getTotalInstructions();
+  auto iInsts = this->getTotalInstructions(i);
+  auto hotness = ((double)iInsts) / ((double)mInsts);
+
+  return hotness;
+}
+
 bool Hot::hasBeenExecuted(Instruction *i) const {
   if (this->getInvocations(i) == 0) {
     return false;

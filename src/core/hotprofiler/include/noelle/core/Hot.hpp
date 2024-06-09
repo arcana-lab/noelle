@@ -47,6 +47,8 @@ public:
 
   uint64_t getTotalInstructions(Instruction *i) const;
 
+  double getDynamicTotalInstructionCoverage(Instruction *i) const;
+
   /*
    * =========================== Basic blocks ================================
    */

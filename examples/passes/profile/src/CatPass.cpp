@@ -64,6 +64,19 @@ struct CAT : public ModulePass {
              << "\": Total       = " << hot->getTotalInstructions(F) << "\n";
       errs() << "Function: \"" << F->getName() << "\": Coverage    = "
              << (hot->getDynamicTotalInstructionCoverage(F)) * 100 << "%\n";
+
+      for (auto &inst : instructions(F)) {
+        if (isa<LoadInst>(&inst) || isa<StoreInst>(&inst)) {
+          errs() << "  Memory instruction: \"" << inst << "\"\n";
+          errs() << "    Self = " << hot->getSelfInstructions(&inst) << "\n";
+          errs() << "    Total = " << hot->getTotalInstructions(&inst) << "\n";
+          errs() << "    Coverage = "
+                 << (hot->getDynamicTotalInstructionCoverage(F)) * 100 << "%\n";
+          assert(hot->getSelfInstructions(&inst) < hot->getSelfInstructions(F));
+          assert(hot->getTotalInstructions(&inst)
+                 < hot->getTotalInstructions(F));
+        }
+      }
     }
 
     /*
@@ -99,23 +112,6 @@ struct CAT : public ModulePass {
              << hot->getAverageTotalInstructionsPerInvocation(LS) << "\n";
       errs() << "    Coverage in terms of total instructions = "
              << (hot->getDynamicTotalInstructionCoverage(LS) * 100) << "%\n";
-    }
-
-    /*
-     * Fetch the entry point.
-     */
-    auto mainF = fm->getEntryFunction();
-
-    /*
-     * Print the coverage per instruction of the loop.
-     */
-    for (auto &bb : *mainF) {
-      for (auto &inst : bb) {
-        errs() << "Instruction: \"" << inst
-               << "\": Self  = " << hot->getSelfInstructions(&inst) << "\n";
-        errs() << "Instruction: \"" << inst
-               << "\": Total = " << hot->getTotalInstructions(&inst) << "\n";
-      }
     }
 
     return false;
