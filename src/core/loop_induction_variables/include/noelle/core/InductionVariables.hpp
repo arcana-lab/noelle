@@ -26,7 +26,7 @@
 #include "llvm/Analysis/IVDescriptors.h"
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/ScalarEvolutionReferencer.hpp"
-#include "noelle/core/LoopForest.hpp"
+#include "arcana/noelle/core/LoopForest.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
 #include "arcana/noelle/core/Dominators.hpp"
 #include "noelle/core/SCCDAG.hpp"

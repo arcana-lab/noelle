@@ -23,8 +23,8 @@
 #define NOELLE_SRC_CORE_LDG_GENERATOR_LDGANALYSIS_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/CompilationOptionsManager.hpp"
-#include "noelle/core/DependenceAnalysis.hpp"
+#include "arcana/noelle/core/CompilationOptionsManager.hpp"
+#include "arcana/noelle/core/DependenceAnalysis.hpp"
 #include "noelle/core/PDG.hpp"
 #include "arcana/noelle/core/LoopStructure.hpp"
 #include "noelle/core/InductionVariables.hpp"

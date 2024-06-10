@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_LOOP_CONTENT_LOOPDEPENDENCEINFO_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/CompilationOptionsManager.hpp"
+#include "arcana/noelle/core/CompilationOptionsManager.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/InductionVariables.hpp"
@@ -34,7 +34,7 @@
 #include "noelle/core/SCCDAGAttrs.hpp"
 #include "arcana/noelle/core/LoopIterationSpaceAnalysis.hpp"
 #include "noelle/core/LoopTransformationsOptions.hpp"
-#include "noelle/core/LDGGenerator.hpp"
+#include "arcana/noelle/core/LDGGenerator.hpp"
 
 namespace arcana::noelle {
 

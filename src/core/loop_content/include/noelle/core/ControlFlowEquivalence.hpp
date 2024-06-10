@@ -25,7 +25,7 @@
 #include <memory>
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/Dominators.hpp"
-#include "noelle/core/LoopForest.hpp"
+#include "arcana/noelle/core/LoopForest.hpp"
 
 namespace arcana::noelle {
 

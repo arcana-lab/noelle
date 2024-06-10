@@ -21,8 +21,8 @@
  */
 #include "arcana/noelle/core/LoopTransformer.hpp"
 #include "arcana/noelle/core/Scheduler.hpp"
-#include "noelle/core/LoopWhilify.hpp"
-#include "noelle/core/LoopUnroll.hpp"
+#include "arcana/noelle/core/LoopWhilify.hpp"
+#include "arcana/noelle/core/LoopUnroll.hpp"
 #include "arcana/noelle/core/LoopDistribution.hpp"
 
 namespace arcana::noelle {

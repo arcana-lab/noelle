@@ -31,8 +31,8 @@
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
 #include "arcana/noelle/core/MayPointsToAnalysis.hpp"
-#include "noelle/core/DependenceAnalysis.hpp"
-#include "noelle/core/CallGraphAnalysis.hpp"
+#include "arcana/noelle/core/DependenceAnalysis.hpp"
+#include "arcana/noelle/core/CallGraphAnalysis.hpp"
 
 namespace arcana::noelle {
 

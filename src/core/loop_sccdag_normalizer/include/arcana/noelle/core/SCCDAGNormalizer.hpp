@@ -26,7 +26,7 @@
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCCDAGPartition.hpp"
-#include "noelle/core/LoopForest.hpp"
+#include "arcana/noelle/core/LoopForest.hpp"
 
 namespace arcana::noelle {
 

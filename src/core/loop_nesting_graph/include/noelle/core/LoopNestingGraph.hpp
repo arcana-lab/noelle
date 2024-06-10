@@ -24,7 +24,7 @@
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/LoopStructure.hpp"
-#include "noelle/core/FunctionsManager.hpp"
+#include "arcana/noelle/core/FunctionsManager.hpp"
 #include "noelle/core/LoopNestingGraphNode.hpp"
 #include "noelle/core/LoopNestingGraphEdge.hpp"
 

@@ -24,8 +24,8 @@
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"
-#include "noelle/core/LoopForest.hpp"
-#include "noelle/core/LDGGenerator.hpp"
+#include "arcana/noelle/core/LoopForest.hpp"
+#include "arcana/noelle/core/LDGGenerator.hpp"
 
 namespace arcana::noelle {
 
