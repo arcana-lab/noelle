@@ -42,7 +42,7 @@
 #include "noelle/core/CompilationOptionsManager.hpp"
 #include "noelle/core/CFGAnalysis.hpp"
 #include "noelle/core/CFGTransformer.hpp"
-#include "noelle/core/Linker.hpp"
+#include "arcana/noelle/core/Linker.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
 #include "noelle/core/MayPointsToAnalysis.hpp"
 #include "noelle/core/DependenceAnalysis.hpp"
