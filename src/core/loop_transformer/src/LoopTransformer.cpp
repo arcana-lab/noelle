@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/LoopTransformer.hpp"
-#include "noelle/core/Scheduler.hpp"
+#include "arcana/noelle/core/Scheduler.hpp"
 #include "noelle/core/LoopWhilify.hpp"
 #include "noelle/core/LoopUnroll.hpp"
 #include "noelle/core/LoopDistribution.hpp"

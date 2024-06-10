@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/TalkDown.hpp"
+#include "arcana/noelle/core/TalkDown.hpp"
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/PDGGenerator.hpp"
 
@@ -36,7 +36,7 @@ void PDGGenerator::cleanPDGMetadata() {
     if (F.hasMetadata("noelle.pdg.edges")) {
       F.setMetadata("noelle.pdg.edges", nullptr);
     }
-    
+
     for (auto &B : F) {
       for (auto &I : B) {
         if (I.getMetadata("noelle.pdg.inst.id")) {
@@ -53,4 +53,4 @@ void PDGGenerator::cleanPDGMetadata() {
   return;
 }
 
-}
+} // namespace arcana::noelle

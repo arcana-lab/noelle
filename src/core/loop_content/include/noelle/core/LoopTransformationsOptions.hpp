@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_LOOP_CONTENT_LOOPTRANSFORMATIONSOPTIONS_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Transformations.hpp"
+#include "arcana/noelle/core/Transformations.hpp"
 
 namespace arcana::noelle {
 

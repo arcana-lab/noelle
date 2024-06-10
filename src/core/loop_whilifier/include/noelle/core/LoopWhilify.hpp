@@ -24,7 +24,7 @@
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopContent.hpp"
-#include "noelle/core/Scheduler.hpp"
+#include "arcana/noelle/core/Scheduler.hpp"
 
 namespace arcana::noelle {
 
