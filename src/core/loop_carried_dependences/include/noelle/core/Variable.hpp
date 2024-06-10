@@ -24,7 +24,7 @@
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/LoopStructure.hpp"
-#include "noelle/core/PDG.hpp"
+#include "arcana/noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "arcana/noelle/core/LoopForest.hpp"

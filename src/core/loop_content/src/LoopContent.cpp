@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/Architecture.hpp"
-#include "noelle/core/PDG.hpp"
+#include "arcana/noelle/core/PDG.hpp"
 #include "arcana/noelle/core/PDGGenerator.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/LoopContent.hpp"

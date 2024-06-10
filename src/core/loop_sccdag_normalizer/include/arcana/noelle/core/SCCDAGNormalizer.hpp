@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_LOOP_SCCDAG_NORMALIZER_SCCDAGNORMALIZER_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/PDG.hpp"
+#include "arcana/noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCCDAGPartition.hpp"
 #include "arcana/noelle/core/LoopForest.hpp"

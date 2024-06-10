@@ -35,8 +35,8 @@
 
 #include "noelle/core/DGBase.hpp"
 #include "noelle/core/DGGraphTraits.hpp"
-#include "noelle/core/PDG.hpp"
-#include "noelle/core/PDGTraits.hpp"
+#include "arcana/noelle/core/PDG.hpp"
+#include "arcana/noelle/core/PDGTraits.hpp"
 
 #include "llvm/ADT/GraphTraits.h"
 #include "llvm/Analysis/DOTGraphTraitsPass.h"
