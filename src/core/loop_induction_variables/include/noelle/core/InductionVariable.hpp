@@ -31,7 +31,7 @@
 #include "arcana/noelle/core/Dominators.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
-#include "noelle/core/Invariants.hpp"
+#include "arcana/noelle/core/Invariants.hpp"
 
 namespace arcana::noelle {
 

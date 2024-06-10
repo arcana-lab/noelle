@@ -25,7 +25,7 @@
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/Invariants.hpp"
+#include "arcana/noelle/core/Invariants.hpp"
 #include "arcana/noelle/core/Dominators.hpp"
 
 namespace arcana::noelle {

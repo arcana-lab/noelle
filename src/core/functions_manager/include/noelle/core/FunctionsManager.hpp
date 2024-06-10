@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_FUNCTIONS_MANAGER_FUNCTIONSMANAGER_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/PDGGenerator.hpp"
+#include "arcana/noelle/core/PDGGenerator.hpp"
 #include "noelle/core/Hot.hpp"
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/SCCCAG.hpp"

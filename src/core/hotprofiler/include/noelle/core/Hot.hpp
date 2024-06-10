@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_HOTPROFILER_HOT_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopStructure.hpp"
+#include "arcana/noelle/core/LoopStructure.hpp"
 #include "noelle/core/SCC.hpp"
 
 namespace arcana::noelle {

@@ -23,7 +23,7 @@
 #include "arcana/noelle/core/Scheduler.hpp"
 #include "noelle/core/LoopWhilify.hpp"
 #include "noelle/core/LoopUnroll.hpp"
-#include "noelle/core/LoopDistribution.hpp"
+#include "arcana/noelle/core/LoopDistribution.hpp"
 
 namespace arcana::noelle {
 

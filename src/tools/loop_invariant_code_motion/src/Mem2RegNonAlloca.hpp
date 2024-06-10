@@ -24,7 +24,7 @@
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopContent.hpp"
-#include "noelle/core/Invariants.hpp"
+#include "arcana/noelle/core/Invariants.hpp"
 #include "arcana/noelle/core/Noelle.hpp"
 #include "arcana/noelle/core/PDGPrinter.hpp"
 #include "noelle/core/SubCFGs.hpp"

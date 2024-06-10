@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/Linker.hpp"
-#include "noelle/core/Architecture.hpp"
+#include "arcana/noelle/core/Architecture.hpp"
 
 namespace arcana::noelle {
 

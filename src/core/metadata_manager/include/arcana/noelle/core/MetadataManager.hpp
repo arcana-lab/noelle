@@ -23,8 +23,8 @@
 #define NOELLE_SRC_CORE_METADATA_MANAGER_METADATAMANAGER_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopStructure.hpp"
-#include "noelle/core/MetadataEntry.hpp"
+#include "arcana/noelle/core/LoopStructure.hpp"
+#include "arcana/noelle/core/MetadataEntry.hpp"
 
 namespace arcana::noelle {
 

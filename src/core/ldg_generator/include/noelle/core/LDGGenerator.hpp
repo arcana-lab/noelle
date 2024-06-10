@@ -26,7 +26,7 @@
 #include "noelle/core/CompilationOptionsManager.hpp"
 #include "noelle/core/DependenceAnalysis.hpp"
 #include "noelle/core/PDG.hpp"
-#include "noelle/core/LoopStructure.hpp"
+#include "arcana/noelle/core/LoopStructure.hpp"
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
 

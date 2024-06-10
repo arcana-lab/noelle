@@ -30,7 +30,7 @@
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"
-#include "noelle/core/MayPointsToAnalysis.hpp"
+#include "arcana/noelle/core/MayPointsToAnalysis.hpp"
 #include "noelle/core/DependenceAnalysis.hpp"
 #include "noelle/core/CallGraphAnalysis.hpp"
 

@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_LOOP_NESTING_GRAPH_LOOPNESTINGGRAPH_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopStructure.hpp"
+#include "arcana/noelle/core/LoopStructure.hpp"
 #include "noelle/core/FunctionsManager.hpp"
 #include "noelle/core/LoopNestingGraphNode.hpp"
 #include "noelle/core/LoopNestingGraphEdge.hpp"

@@ -21,8 +21,8 @@
  */
 #include "arcana/noelle/core/Noelle.hpp"
 #include "noelle/core/HotProfiler.hpp"
-#include "noelle/core/PDGGenerator.hpp"
-#include "noelle/core/Architecture.hpp"
+#include "arcana/noelle/core/PDGGenerator.hpp"
+#include "arcana/noelle/core/Architecture.hpp"
 
 namespace arcana::noelle {
 

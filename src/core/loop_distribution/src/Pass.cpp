@@ -19,8 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/LoopDistribution.hpp"
-#include "noelle/core/PDGGenerator.hpp"
+#include "arcana/noelle/core/LoopDistribution.hpp"
+#include "arcana/noelle/core/PDGGenerator.hpp"
 #include "noelle/core/HotProfiler.hpp"
 
 namespace arcana::noelle {

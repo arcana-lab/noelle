@@ -20,8 +20,8 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/Utils.hpp"
-#include "noelle/core/Invariants.hpp"
-#include "noelle/core/PDGGenerator.hpp"
+#include "arcana/noelle/core/Invariants.hpp"
+#include "arcana/noelle/core/PDGGenerator.hpp"
 
 namespace arcana::noelle {
 

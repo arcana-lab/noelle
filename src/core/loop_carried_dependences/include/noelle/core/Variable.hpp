@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_LOOP_CARRIED_DEPENDENCES_VARIABLE_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopStructure.hpp"
+#include "arcana/noelle/core/LoopStructure.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"

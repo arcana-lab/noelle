@@ -24,7 +24,7 @@
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/MemoryClonableSCC.hpp"
-#include "noelle/core/ClonableMemoryObject.hpp"
+#include "arcana/noelle/core/ClonableMemoryObject.hpp"
 
 namespace arcana::noelle {
 

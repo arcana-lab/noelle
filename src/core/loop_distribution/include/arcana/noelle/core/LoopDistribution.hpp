@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_LOOP_DISTRIBUTION_LOOPDISTRIBUTION_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopStructure.hpp"
+#include "arcana/noelle/core/LoopStructure.hpp"
 #include "noelle/core/LoopContent.hpp"
 #include "noelle/core/SCC.hpp"
 

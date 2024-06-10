@@ -32,7 +32,7 @@
 #include "noelle/core/LoopGoverningInductionVariable.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
 #include "noelle/core/Variable.hpp"
-#include "noelle/core/MemoryCloningAnalysis.hpp"
+#include "arcana/noelle/core/MemoryCloningAnalysis.hpp"
 
 namespace arcana::noelle {
 

@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/LDGGenerator.hpp"
-#include "noelle/core/LoopIterationSpaceAnalysis.hpp"
+#include "arcana/noelle/core/LoopIterationSpaceAnalysis.hpp"
 #include "noelle/core/LoopCarriedDependencies.hpp"
 #include "noelle/core/DataFlow.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
