@@ -34,7 +34,7 @@
 #include "noelle/core/HotProfiler.hpp"
 #include "noelle/core/Scheduler.hpp"
 #include "noelle/core/MetadataManager.hpp"
-#include "noelle/core/LoopTransformer.hpp"
+#include "arcana/noelle/core/LoopTransformer.hpp"
 #include "noelle/core/FunctionsManager.hpp"
 #include "noelle/core/GlobalsManager.hpp"
 #include "arcana/noelle/core/TypesManager.hpp"

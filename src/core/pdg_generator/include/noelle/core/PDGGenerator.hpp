@@ -24,7 +24,7 @@
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"
-#include "noelle/core/AllocAA.hpp"
+#include "arcana/noelle/core/AllocAA.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/DataFlow.hpp"
