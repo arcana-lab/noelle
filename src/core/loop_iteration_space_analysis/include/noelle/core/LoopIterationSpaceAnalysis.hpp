@@ -22,11 +22,11 @@
 #ifndef NOELLE_SRC_CORE_LDG_ANALYSIS_LOOPITERATIONSPACEANALYSIS_H_
 #define NOELLE_SRC_CORE_LDG_ANALYSIS_LOOPITERATIONSPACEANALYSIS_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/InductionVariables.hpp"
-#include "noelle/core/ScalarEvolutionDelinearization.hpp"
+#include "arcana/noelle/core/ScalarEvolutionDelinearization.hpp"
 #include "noelle/core/LoopGoverningInductionVariable.hpp"
 #include "noelle/core/IVStepperUtility.hpp"
 

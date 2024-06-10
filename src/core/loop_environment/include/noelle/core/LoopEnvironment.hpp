@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_LOOP_ENVIRONMENT_LOOPENVIRONMENT_H_
 #define NOELLE_SRC_CORE_LOOP_ENVIRONMENT_LOOPENVIRONMENT_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"
 
 namespace arcana::noelle {

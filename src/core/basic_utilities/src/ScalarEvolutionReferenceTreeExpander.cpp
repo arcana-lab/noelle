@@ -4,7 +4,7 @@
  * insertion block
  */
 
-#include "noelle/core/ScalarEvolutionReferencer.hpp"
+#include "arcana/noelle/core/ScalarEvolutionReferencer.hpp"
 
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallSet.h"

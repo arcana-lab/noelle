@@ -22,8 +22,8 @@
 #ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_REDUCTIONSCC_H_
 #define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_REDUCTIONSCC_H_
 
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Dominators.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/Dominators.hpp"
 #include "noelle/core/LoopCarriedSCC.hpp"
 
 namespace arcana::noelle {

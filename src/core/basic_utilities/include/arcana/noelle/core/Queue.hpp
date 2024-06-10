@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,22 +19,22 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_DOMINATORS_H_
-#define NOELLE_SRC_CORE_DOMINATORS_H_
+#ifndef NOELLE_SRC_CORE_BASIC_UTILITIES_QUEUE_H_
+#define NOELLE_SRC_CORE_BASIC_UTILITIES_QUEUE_H_
 
-#include "noelle/core/DominatorNode.hpp"
-#include "noelle/core/DominatorForest.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 
-namespace arcana::noelle {
+namespace llvm {
 
-class DominatorSummary {
+class Queue {
 public:
-  DominatorSummary(DominatorTree &DT, PostDominatorTree &PDT);
-  DominatorSummary(DominatorSummary &DS, std::set<BasicBlock *> &bbSubset);
-
-  DominatorForest DT, PDT;
+  std::unordered_map<int, int> queueSizeToIndex;
+  std::vector<Type *> queueElementTypes;
+  std::vector<Function *> queuePushes;
+  std::vector<Function *> queuePops;
+  std::vector<Type *> queueTypes;
 };
 
-} // namespace arcana::noelle
+} // namespace llvm
 
-#endif // NOELLE_SRC_CORE_DOMINATORS_H_
+#endif // NOELLE_SRC_CORE_BASIC_UTILITIES_QUEUE_H_

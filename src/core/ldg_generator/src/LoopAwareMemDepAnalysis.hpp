@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_LOOP_CONTENT_LOOPAWAREMEMDEPANALYSIS_H_
 #define NOELLE_SRC_CORE_LOOP_CONTENT_LOOPAWAREMEMDEPANALYSIS_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/LoopForest.hpp"
 #include "noelle/core/LDGGenerator.hpp"

@@ -22,8 +22,8 @@
 #ifndef NOELLE_SRC_CORE_LINKER_H_
 #define NOELLE_SRC_CORE_LINKER_H_
 
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/TypesManager.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/TypesManager.hpp"
 #include "noelle/core/LoopStructure.hpp"
 
 namespace arcana::noelle {

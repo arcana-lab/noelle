@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_METADATA_MANAGER_METADATAMANAGER_H_
 #define NOELLE_SRC_CORE_METADATA_MANAGER_METADATAMANAGER_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopStructure.hpp"
 #include "noelle/core/MetadataEntry.hpp"
 

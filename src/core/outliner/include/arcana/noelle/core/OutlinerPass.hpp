@@ -22,8 +22,8 @@
 #ifndef NOELLE_SRC_CORE_OUTLINER_OUTLINERPASS_H_
 #define NOELLE_SRC_CORE_OUTLINER_OUTLINERPASS_H_
 
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Outliner.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/Outliner.hpp"
 
 namespace arcana::noelle {
 

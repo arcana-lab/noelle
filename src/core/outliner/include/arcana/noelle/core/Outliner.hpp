@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2020  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,22 +19,28 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_BASIC_UTILITIES_QUEUE_H_
-#define NOELLE_SRC_CORE_BASIC_UTILITIES_QUEUE_H_
+#ifndef NOELLE_SRC_CORE_OUTLINER_H_
+#define NOELLE_SRC_CORE_OUTLINER_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 
-namespace llvm {
+namespace arcana::noelle {
 
-class Queue {
+class Outliner {
 public:
-  std::unordered_map<int, int> queueSizeToIndex;
-  std::vector<Type *> queueElementTypes;
-  std::vector<Function *> queuePushes;
-  std::vector<Function *> queuePops;
-  std::vector<Type *> queueTypes;
+  Outliner();
+
+  Function *outline(
+      std::unordered_set<Instruction *> const &instructionsToOutline,
+      Instruction *injectCallJustBeforeThis);
+
+  Function *outline(
+      std::unordered_set<BasicBlock *> const &basicBlocksToOutline,
+      Instruction *injectCallJustBeforeThis);
+
+private:
 };
 
-} // namespace llvm
+} // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_BASIC_UTILITIES_QUEUE_H_
+#endif // NOELLE_SRC_CORE_OUTLINER_H_

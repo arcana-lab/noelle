@@ -22,8 +22,8 @@
 #ifndef NOELLE_SRC_CORE_SCCDAG_H_
 #define NOELLE_SRC_CORE_SCCDAG_H_
 
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/BitMatrix.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/BitMatrix.hpp"
 #include "noelle/core/DGBase.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCC.hpp"

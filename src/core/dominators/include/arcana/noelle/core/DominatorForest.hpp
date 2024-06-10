@@ -23,7 +23,7 @@
 #ifndef NOELLE_SRC_CORE_DOMINATORS_DOMINATORFOREST_H_
 #define NOELLE_SRC_CORE_DOMINATORS_DOMINATORFOREST_H_
 
-#include "noelle/core/DominatorNode.hpp"
+#include "arcana/noelle/core/DominatorNode.hpp"
 
 namespace arcana::noelle {
 

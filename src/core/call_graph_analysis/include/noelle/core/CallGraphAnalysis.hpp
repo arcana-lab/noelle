@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_CALL_GRAPH_ANALYSIS_CALL_GRAPH_ANALYSIS_H
 #define NOELLE_SRC_CORE_CALL_GRAPH_ANALYSIS_CALL_GRAPH_ANALYSIS_H
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DGBase.hpp"
 #include "noelle/core/LoopStructure.hpp"
 

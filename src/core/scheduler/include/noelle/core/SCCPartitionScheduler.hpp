@@ -22,8 +22,8 @@
 #ifndef NOELLE_SRC_CORE_SCHEDULER_SCCPARTITIONSCHEDULER_H_
 #define NOELLE_SRC_CORE_SCHEDULER_SCCPARTITIONSCHEDULER_H_
 
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Dominators.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/Dominators.hpp"
 #include "noelle/core/LoopContent.hpp"
 #include "noelle/core/DataFlowResult.hpp"
 #include "noelle/core/SCCDAGPartition.hpp"

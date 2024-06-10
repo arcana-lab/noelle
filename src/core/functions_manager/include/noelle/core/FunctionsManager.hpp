@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_FUNCTIONS_MANAGER_FUNCTIONSMANAGER_H_
 #define NOELLE_SRC_CORE_FUNCTIONS_MANAGER_FUNCTIONSMANAGER_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/Hot.hpp"
 #include "noelle/core/CallGraph.hpp"

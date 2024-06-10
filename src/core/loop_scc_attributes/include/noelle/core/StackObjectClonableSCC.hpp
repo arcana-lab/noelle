@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_STACKOBJECTCLONABLESCC_H_
 #define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_STACKOBJECTCLONABLESCC_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/MemoryClonableSCC.hpp"
 #include "noelle/core/ClonableMemoryObject.hpp"
 

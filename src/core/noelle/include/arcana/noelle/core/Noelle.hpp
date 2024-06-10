@@ -22,10 +22,10 @@
 #ifndef NOELLE_H_
 #define NOELLE_H_
 
-#include "noelle/core/Dominators.hpp"
+#include "arcana/noelle/core/Dominators.hpp"
 #include "noelle/core/LoopNestingGraph.hpp"
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Queue.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/Queue.hpp"
 #include "noelle/core/LoopForest.hpp"
 #include "noelle/core/PDGGenerator.hpp"
 #include "noelle/core/LDGGenerator.hpp"
@@ -37,7 +37,7 @@
 #include "noelle/core/LoopTransformer.hpp"
 #include "noelle/core/FunctionsManager.hpp"
 #include "noelle/core/GlobalsManager.hpp"
-#include "noelle/core/TypesManager.hpp"
+#include "arcana/noelle/core/TypesManager.hpp"
 #include "noelle/core/ConstantsManager.hpp"
 #include "noelle/core/CompilationOptionsManager.hpp"
 #include "noelle/core/CFGAnalysis.hpp"

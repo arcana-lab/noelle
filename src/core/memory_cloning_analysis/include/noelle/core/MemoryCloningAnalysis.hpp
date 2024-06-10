@@ -23,11 +23,11 @@
 #ifndef NOELLE_SRC_CORE_MEMORY_CLONING_ANALYSIS_MEMORYCLONINGANALYSIS_H_
 #define NOELLE_SRC_CORE_MEMORY_CLONING_ANALYSIS_MEMORYCLONINGANALYSIS_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/PDG.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/Invariants.hpp"
-#include "noelle/core/Dominators.hpp"
+#include "arcana/noelle/core/Dominators.hpp"
 #include "noelle/core/ClonableMemoryObject.hpp"
 
 namespace arcana::noelle {

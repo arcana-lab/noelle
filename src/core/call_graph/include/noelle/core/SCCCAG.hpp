@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_CALL_GRAPH_SCCCAG_H_
 #define NOELLE_SRC_CORE_CALL_GRAPH_SCCCAG_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/CallGraphTraits.hpp"
 #include "noelle/core/SCCCAGNode.hpp"

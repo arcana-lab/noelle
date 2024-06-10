@@ -1,5 +1,5 @@
 /*
- * Copyright 2020  Simone Campanoni
+ * Copyright 2020 - 2022  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,28 +19,32 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_OUTLINER_H_
-#define NOELLE_SRC_CORE_OUTLINER_H_
+#ifndef NOELLE_SRC_CORE_TYPES_MANAGER_TYPESMANAGER_H_
+#define NOELLE_SRC_CORE_TYPES_MANAGER_TYPESMANAGER_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 
 namespace arcana::noelle {
 
-class Outliner {
+class TypesManager {
 public:
-  Outliner();
+  TypesManager(Module &m);
 
-  Function *outline(
-      std::unordered_set<Instruction *> const &instructionsToOutline,
-      Instruction *injectCallJustBeforeThis);
+  Type *getIntegerType(uint32_t bitwidth) const;
 
-  Function *outline(
-      std::unordered_set<BasicBlock *> const &basicBlocksToOutline,
-      Instruction *injectCallJustBeforeThis);
+  Type *getVoidPointerType(void) const;
+
+  Type *getVoidType(void) const;
+
+  /*
+   * Return the size in bytes.
+   */
+  uint64_t getSizeOfType(Type *t) const;
 
 private:
+  Module &program;
 };
 
 } // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_OUTLINER_H_
+#endif // NOELLE_SRC_CORE_TYPES_MANAGER_TYPESMANAGER_H_

@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_BASIC_UTILITIES_SCALAREVOLUTIONDELINEARIZATION_H_
 #define NOELLE_SRC_CORE_BASIC_UTILITIES_SCALAREVOLUTIONDELINEARIZATION_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 
 namespace llvm {
 

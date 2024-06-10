@@ -1,7 +1,7 @@
 #ifndef NOELLE_SRC_CORE_UNIQUE_IR_MARKER_UNIQUEIRCONSTANTS_H_
 #define NOELLE_SRC_CORE_UNIQUE_IR_MARKER_UNIQUEIRCONSTANTS_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 
 using llvm::StringRef;
 

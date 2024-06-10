@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_CFG_TRANSFORMER_CFGTRANSFORMER_H_
 #define NOELLE_SRC_CORE_CFG_TRANSFORMER_CFGTRANSFORMER_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 
 namespace arcana::noelle {
 

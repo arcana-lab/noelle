@@ -1,7 +1,7 @@
 #ifndef NOELLE_SRC_CORE_BASIC_UTILITIES_BITMATRIX_H_
 #define NOELLE_SRC_CORE_BASIC_UTILITIES_BITMATRIX_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 
 using namespace llvm;
 

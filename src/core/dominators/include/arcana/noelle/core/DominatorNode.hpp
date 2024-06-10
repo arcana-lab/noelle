@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 - 2022  Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,32 +19,40 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_TYPES_MANAGER_TYPESMANAGER_H_
-#define NOELLE_SRC_CORE_TYPES_MANAGER_TYPESMANAGER_H_
+#ifndef NOELLE_SRC_CORE_DOMINATORS_DOMINATORNODE_H_
+#define NOELLE_SRC_CORE_DOMINATORS_DOMINATORNODE_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "llvm/Analysis/PostDominators.h"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 
 namespace arcana::noelle {
 
-class TypesManager {
+namespace DTAliases {
+using Node = DomTreeNodeBase<BasicBlock>;
+}
+
+class DominatorNode {
 public:
-  TypesManager(Module &m);
+  DominatorNode(const DTAliases::Node &node);
+  DominatorNode(const DominatorNode &node);
 
-  Type *getIntegerType(uint32_t bitwidth) const;
+  BasicBlock *getBlock(void) const;
+  DominatorNode *getParent(void) const;
+  std::vector<DominatorNode *> getChildren(void) const;
+  uint32_t getLevel(void) const;
 
-  Type *getVoidPointerType(void) const;
+  raw_ostream &print(raw_ostream &stream, std::string prefixToUse = "");
 
-  Type *getVoidType(void) const;
-
-  /*
-   * Return the size in bytes.
-   */
-  uint64_t getSizeOfType(Type *t) const;
+  friend class DominatorForest;
 
 private:
-  Module &program;
+  BasicBlock *B;
+  uint32_t level;
+
+  DominatorNode *parent;
+  std::vector<DominatorNode *> children;
 };
 
 } // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_TYPES_MANAGER_TYPESMANAGER_H_
+#endif // NOELLE_SRC_CORE_DOMINATORS_DOMINATORNODE_H_

@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_LDG_GENERATOR_LDGANALYSIS_H_
 #define NOELLE_SRC_CORE_LDG_GENERATOR_LDGANALYSIS_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/CompilationOptionsManager.hpp"
 #include "noelle/core/DependenceAnalysis.hpp"
 #include "noelle/core/PDG.hpp"

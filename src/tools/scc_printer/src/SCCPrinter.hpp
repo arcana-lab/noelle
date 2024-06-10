@@ -25,7 +25,7 @@
 #include <string>
 #include <vector>
 
-#include "noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/Noelle.hpp"
 #include "noelle/core/GenericSCC.hpp"
 
 namespace arcana::noelle {

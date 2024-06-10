@@ -22,8 +22,8 @@
 #ifndef NOELLE_SRC_CORE_CONSTANTS_MANAGER_CONSTANTSMANAGER_H_
 #define NOELLE_SRC_CORE_CONSTANTS_MANAGER_CONSTANTSMANAGER_H_
 
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/TypesManager.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/TypesManager.hpp"
 
 namespace arcana::noelle {
 

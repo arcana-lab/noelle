@@ -22,8 +22,8 @@
 #ifndef NOELLE_SRC_TOOLS_SCEV_SIMPLIFICATION_SCEVSIMPLIFICATION_H_
 #define NOELLE_SRC_TOOLS_SCEV_SIMPLIFICATION_SCEVSIMPLIFICATION_H_
 
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/Noelle.hpp"
 #include "noelle/core/LoopContent.hpp"
 
 namespace arcana::noelle {

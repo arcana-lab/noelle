@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_LOOP_SCCDAG_ATTRIBUTES_SCCDAGATTRS_H_
 #define NOELLE_SRC_CORE_LOOP_SCCDAG_ATTRIBUTES_SCCDAGATTRS_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"
 #include "noelle/core/GenericSCC.hpp"

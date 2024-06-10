@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_MAY_POINTS_TO_ANALYSIS_MPAUTILS_H_
 #define NOELLE_SRC_CORE_MAY_POINTS_TO_ANALYSIS_MPAUTILS_H_
 
-#include "noelle/core/Utils.hpp"
+#include "arcana/noelle/core/Utils.hpp"
 
 namespace arcana::noelle {
 

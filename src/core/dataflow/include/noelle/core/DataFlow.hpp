@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_DATAFLOW_H_
 #define NOELLE_SRC_CORE_DATAFLOW_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 
 #include "noelle/core/DataFlowResult.hpp"
 #include "noelle/core/DataFlowEngine.hpp"

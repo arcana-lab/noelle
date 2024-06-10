@@ -22,8 +22,8 @@
 #ifndef NOELLE_SRC_CORE_LOOP_CARRIED_DEPENDENCES_LOOPCARRIEDDEPENDENCIES_H_
 #define NOELLE_SRC_CORE_LOOP_CARRIED_DEPENDENCES_LOOPCARRIEDDEPENDENCIES_H_
 
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Dominators.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/Dominators.hpp"
 #include "noelle/core/DGBase.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/SCC.hpp"

@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_PDG_ANALYSIS_PDGANALYSIS_H_
 #define NOELLE_SRC_CORE_PDG_ANALYSIS_PDGANALYSIS_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/TalkDown.hpp"
 #include "noelle/core/AllocAA.hpp"
 #include "noelle/core/PDG.hpp"

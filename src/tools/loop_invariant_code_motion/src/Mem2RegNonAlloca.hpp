@@ -22,10 +22,10 @@
 #ifndef NOELLE_SRC_TOOLS_LOOP_INVARIANT_CODE_MOTION_MEM2REGNONALLOCA_H_
 #define NOELLE_SRC_TOOLS_LOOP_INVARIANT_CODE_MOTION_MEM2REGNONALLOCA_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/LoopContent.hpp"
 #include "noelle/core/Invariants.hpp"
-#include "noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/Noelle.hpp"
 #include "noelle/core/PDGPrinter.hpp"
 #include "noelle/core/SubCFGs.hpp"
 #include "noelle/core/SCCDAG.hpp"
