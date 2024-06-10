@@ -26,7 +26,7 @@
 #include "arcana/noelle/core/TalkDown.hpp"
 #include "arcana/noelle/core/AllocAA.hpp"
 #include "noelle/core/PDG.hpp"
-#include "noelle/core/PDGPrinter.hpp"
+#include "arcana/noelle/core/PDGPrinter.hpp"
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/AliasAnalysisEngine.hpp"

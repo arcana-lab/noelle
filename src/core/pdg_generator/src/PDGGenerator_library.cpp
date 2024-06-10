@@ -21,7 +21,7 @@
  */
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/TalkDown.hpp"
-#include "noelle/core/PDGPrinter.hpp"
+#include "arcana/noelle/core/PDGPrinter.hpp"
 #include "noelle/core/PDGGenerator.hpp"
 #include "arcana/noelle/core/Utils.hpp"
 

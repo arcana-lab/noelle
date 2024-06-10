@@ -21,7 +21,7 @@
  */
 #include "noelle/tools/LoopStats.hpp"
 
-#include "noelle/core/PDGPrinter.hpp"
+#include "arcana/noelle/core/PDGPrinter.hpp"
 
 using namespace llvm;
 using namespace arcana::noelle;

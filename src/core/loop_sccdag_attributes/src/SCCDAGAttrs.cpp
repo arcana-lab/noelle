@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/SCCDAGAttrs.hpp"
-#include "noelle/core/PDGPrinter.hpp"
+#include "arcana/noelle/core/PDGPrinter.hpp"
 #include "noelle/core/BinaryReductionSCC.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
 #include "noelle/core/LinearInductionVariableSCC.hpp"
