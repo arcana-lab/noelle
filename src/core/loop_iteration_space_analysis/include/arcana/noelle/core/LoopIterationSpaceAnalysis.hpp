@@ -25,10 +25,10 @@
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/SCCDAG.hpp"
 #include "arcana/noelle/core/SCC.hpp"
-#include "noelle/core/InductionVariables.hpp"
+#include "arcana/noelle/core/InductionVariables.hpp"
 #include "arcana/noelle/core/ScalarEvolutionDelinearization.hpp"
-#include "noelle/core/LoopGoverningInductionVariable.hpp"
-#include "noelle/core/IVStepperUtility.hpp"
+#include "arcana/noelle/core/LoopGoverningInductionVariable.hpp"
+#include "arcana/noelle/core/IVStepperUtility.hpp"
 
 namespace arcana::noelle {
 

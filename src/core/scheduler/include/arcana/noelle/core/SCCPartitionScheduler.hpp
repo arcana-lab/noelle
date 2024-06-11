@@ -25,7 +25,7 @@
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/Dominators.hpp"
 #include "arcana/noelle/core/LoopContent.hpp"
-#include "noelle/core/DataFlowResult.hpp"
+#include "arcana/noelle/core/DataFlowResult.hpp"
 #include "arcana/noelle/core/SCCDAGPartition.hpp"
 
 namespace arcana::noelle {

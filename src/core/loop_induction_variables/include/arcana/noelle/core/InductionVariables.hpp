@@ -32,8 +32,8 @@
 #include "arcana/noelle/core/SCCDAG.hpp"
 #include "arcana/noelle/core/SCC.hpp"
 #include "arcana/noelle/core/Invariants.hpp"
-#include "noelle/core/InductionVariable.hpp"
-#include "noelle/core/LoopGoverningInductionVariable.hpp"
+#include "arcana/noelle/core/InductionVariable.hpp"
+#include "arcana/noelle/core/LoopGoverningInductionVariable.hpp"
 
 namespace arcana::noelle {
 

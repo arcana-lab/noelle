@@ -24,7 +24,7 @@
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/SCC.hpp"
-#include "noelle/core/InductionVariable.hpp"
+#include "arcana/noelle/core/InductionVariable.hpp"
 
 namespace arcana::noelle {
 

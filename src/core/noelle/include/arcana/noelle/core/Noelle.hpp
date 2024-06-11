@@ -29,7 +29,7 @@
 #include "arcana/noelle/core/LoopForest.hpp"
 #include "arcana/noelle/core/PDGGenerator.hpp"
 #include "arcana/noelle/core/LDGGenerator.hpp"
-#include "noelle/core/DataFlow.hpp"
+#include "arcana/noelle/core/DataFlow.hpp"
 #include "arcana/noelle/core/LoopContent.hpp"
 #include "arcana/noelle/core/HotProfiler.hpp"
 #include "arcana/noelle/core/Scheduler.hpp"

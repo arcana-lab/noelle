@@ -23,8 +23,8 @@
 #define NOELLE_SRC_CORE_LOOP_INDUCTION_VARIABLES_IVSTEPPERUTILITY_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/InductionVariables.hpp"
-#include "noelle/core/LoopGoverningInductionVariable.hpp"
+#include "arcana/noelle/core/InductionVariables.hpp"
+#include "arcana/noelle/core/LoopGoverningInductionVariable.hpp"
 
 namespace arcana::noelle {
 

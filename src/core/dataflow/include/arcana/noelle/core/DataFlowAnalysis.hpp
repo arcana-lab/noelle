@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_DATAFLOW_DATAFLOWANALYSIS_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/DataFlowResult.hpp"
+#include "arcana/noelle/core/DataFlowResult.hpp"
 
 namespace arcana::noelle {
 

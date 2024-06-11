@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/CFGAnalysis.hpp"
-#include "noelle/core/DataFlowAnalysis.hpp"
+#include "arcana/noelle/core/DataFlowAnalysis.hpp"
 
 namespace arcana::noelle {
 

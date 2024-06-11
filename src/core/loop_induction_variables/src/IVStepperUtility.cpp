@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/IVStepperUtility.hpp"
+#include "arcana/noelle/core/IVStepperUtility.hpp"
 
 namespace arcana::noelle {
 

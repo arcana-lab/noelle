@@ -22,7 +22,7 @@
 #include "arcana/noelle/core/LDGGenerator.hpp"
 #include "arcana/noelle/core/LoopIterationSpaceAnalysis.hpp"
 #include "arcana/noelle/core/LoopCarriedDependencies.hpp"
-#include "noelle/core/DataFlow.hpp"
+#include "arcana/noelle/core/DataFlow.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
 
 namespace arcana::noelle {
