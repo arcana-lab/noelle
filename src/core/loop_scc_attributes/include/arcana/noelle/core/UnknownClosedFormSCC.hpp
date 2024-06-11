@@ -19,52 +19,27 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_BINARYREDUCTIONSCC_H_
-#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_BINARYREDUCTIONSCC_H_
+#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_UNKNOWNCLOSEDFORMSCC_H_
+#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_UNKNOWNCLOSEDFORMSCC_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/ReductionSCC.hpp"
-#include "arcana/noelle/core/Dominators.hpp"
-#include "arcana/noelle/core/Variable.hpp"
+#include "arcana/noelle/core/RecomputableSCC.hpp"
 
 namespace arcana::noelle {
 
-class BinaryReductionSCC : public ReductionSCC {
+class UnknownClosedFormSCC : public RecomputableSCC {
 public:
-  BinaryReductionSCC(
+  UnknownClosedFormSCC(
       SCC *s,
       LoopStructure *loop,
       const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
-      LoopCarriedVariable *variable,
-      DominatorSummary &dom);
-
-  BinaryReductionSCC(
-      SCC *s,
-      LoopStructure *loop,
-      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
-      Value *initialValue,
-      Instruction::BinaryOps reductionOperation,
-      PHINode *accumulator,
-      Value *identity);
-
-  BinaryReductionSCC() = delete;
-
-  Instruction::BinaryOps getReductionOperation(void) const;
+      const std::set<Instruction *> &valuesToPropagateAcrossLoopIterations);
 
   static bool classof(const GenericSCC *s);
 
 protected:
-  Instruction::BinaryOps reductionOperation;
-
-  void setBinaryReductionInformation(Value *initialValue,
-                                     DominatorSummary &dom,
-                                     LoopStructure &loop);
-
-  std::set<Instruction *> collectAccumulators(LoopStructure &LS);
-
-  iterator_range<instruction_iterator> getAccumulators(void);
 };
 
 } // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_BINARYREDUCTIONSCC_H_
+#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_UNKNOWNCLOSEDFORMSCC_H_

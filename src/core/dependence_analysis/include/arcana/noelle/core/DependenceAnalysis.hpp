@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_DEPENDENCE_ANALYSIS_DEPENDENCE_ANALYSIS_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/DGBase.hpp"
+#include "arcana/noelle/core/DGBase.hpp"
 #include "arcana/noelle/core/LoopStructure.hpp"
 
 namespace arcana::noelle {

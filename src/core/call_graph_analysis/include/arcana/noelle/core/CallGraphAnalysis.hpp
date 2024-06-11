@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_CALL_GRAPH_ANALYSIS_CALL_GRAPH_ANALYSIS_H
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/DGBase.hpp"
+#include "arcana/noelle/core/DGBase.hpp"
 #include "arcana/noelle/core/LoopStructure.hpp"
 
 namespace arcana::noelle {

@@ -19,50 +19,29 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_REDUCTIONSCC_H_
-#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_REDUCTIONSCC_H_
+#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPITERATIONSCC_H_
+#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPITERATIONSCC_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "arcana/noelle/core/Dominators.hpp"
-#include "noelle/core/LoopCarriedSCC.hpp"
+#include "arcana/noelle/core/GenericSCC.hpp"
 
 namespace arcana::noelle {
 
-class ReductionSCC : public LoopCarriedSCC {
+class LoopIterationSCC : public GenericSCC {
 public:
-  ReductionSCC() = delete;
+  /*
+   * Constructors.
+   */
+  LoopIterationSCC(SCC *s, LoopStructure *loop);
 
-  Value *getInitialValue(void) const;
-
-  Value *getIdentityValue(void) const;
-
-  PHINode *getPhiThatAccumulatesValuesBetweenLoopIterations(void) const;
+  LoopIterationSCC() = delete;
 
   static bool classof(const GenericSCC *s);
 
 protected:
-  Value *initialValue;
-  PHINode *accumulator;
-  Value *identity;
-  PHINode *headerAccumulator;
-
-  ReductionSCC(SCCKind K,
-               SCC *s,
-               LoopStructure *loop,
-               const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
-               DominatorSummary &dom);
-
-  ReductionSCC(SCCKind K,
-               SCC *s,
-               LoopStructure *loop,
-               const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
-               Value *initialValue,
-               PHINode *accumulator,
-               Value *identity);
-
-  void initializeObject(LoopStructure &loop);
+  LoopIterationSCC(SCCKind K, SCC *s, LoopStructure *loop);
 };
 
 } // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_REDUCTIONSCC_H_
+#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPITERATIONSCC_H_

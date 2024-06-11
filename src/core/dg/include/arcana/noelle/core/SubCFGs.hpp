@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_DG_SUBCFGS_H_
 
 #include "llvm/Support/GraphWriter.h"
-#include "noelle/core/DGBase.hpp"
+#include "arcana/noelle/core/DGBase.hpp"
 
 namespace arcana::noelle {
 

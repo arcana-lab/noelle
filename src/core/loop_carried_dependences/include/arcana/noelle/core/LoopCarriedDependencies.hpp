@@ -24,7 +24,7 @@
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/Dominators.hpp"
-#include "noelle/core/DGBase.hpp"
+#include "arcana/noelle/core/DGBase.hpp"
 #include "arcana/noelle/core/SCCDAG.hpp"
 #include "arcana/noelle/core/SCC.hpp"
 #include "arcana/noelle/core/LoopForest.hpp"

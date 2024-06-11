@@ -21,14 +21,14 @@
  */
 #include "arcana/noelle/core/SCCDAGAttrs.hpp"
 #include "arcana/noelle/core/PDGPrinter.hpp"
-#include "noelle/core/BinaryReductionSCC.hpp"
-#include "noelle/core/LoopIterationSCC.hpp"
-#include "noelle/core/LinearInductionVariableSCC.hpp"
-#include "noelle/core/PeriodicVariableSCC.hpp"
-#include "noelle/core/StackObjectClonableSCC.hpp"
-#include "noelle/core/LoopCarriedUnknownSCC.hpp"
+#include "arcana/noelle/core/BinaryReductionSCC.hpp"
+#include "arcana/noelle/core/LoopIterationSCC.hpp"
+#include "arcana/noelle/core/LinearInductionVariableSCC.hpp"
+#include "arcana/noelle/core/PeriodicVariableSCC.hpp"
+#include "arcana/noelle/core/StackObjectClonableSCC.hpp"
+#include "arcana/noelle/core/LoopCarriedUnknownSCC.hpp"
 #include "arcana/noelle/core/LoopCarriedDependencies.hpp"
-#include "noelle/core/UnknownClosedFormSCC.hpp"
+#include "arcana/noelle/core/UnknownClosedFormSCC.hpp"
 
 namespace arcana::noelle {
 

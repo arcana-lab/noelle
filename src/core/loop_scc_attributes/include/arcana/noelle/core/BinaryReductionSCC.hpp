@@ -19,32 +19,52 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LINEARINDUCTIONVARIABLESCC_H_
-#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LINEARINDUCTIONVARIABLESCC_H_
+#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_BINARYREDUCTIONSCC_H_
+#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_BINARYREDUCTIONSCC_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "arcana/noelle/core/InductionVariables.hpp"
-#include "noelle/core/InductionVariableSCC.hpp"
+#include "arcana/noelle/core/ReductionSCC.hpp"
+#include "arcana/noelle/core/Dominators.hpp"
+#include "arcana/noelle/core/Variable.hpp"
 
 namespace arcana::noelle {
 
-class LinearInductionVariableSCC : public InductionVariableSCC {
+class BinaryReductionSCC : public ReductionSCC {
 public:
-  LinearInductionVariableSCC(
+  BinaryReductionSCC(
       SCC *s,
       LoopStructure *loop,
       const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
-      DominatorSummary &dom,
-      const std::set<InductionVariable *> &IVs);
+      LoopCarriedVariable *variable,
+      DominatorSummary &dom);
 
-  std::set<InductionVariable *> getIVs(void) const;
+  BinaryReductionSCC(
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+      Value *initialValue,
+      Instruction::BinaryOps reductionOperation,
+      PHINode *accumulator,
+      Value *identity);
+
+  BinaryReductionSCC() = delete;
+
+  Instruction::BinaryOps getReductionOperation(void) const;
 
   static bool classof(const GenericSCC *s);
 
 protected:
-  std::set<InductionVariable *> _IVs;
+  Instruction::BinaryOps reductionOperation;
+
+  void setBinaryReductionInformation(Value *initialValue,
+                                     DominatorSummary &dom,
+                                     LoopStructure &loop);
+
+  std::set<Instruction *> collectAccumulators(LoopStructure &LS);
+
+  iterator_range<instruction_iterator> getAccumulators(void);
 };
 
 } // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LINEARINDUCTIONVARIABLESCC_H_
+#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_BINARYREDUCTIONSCC_H_

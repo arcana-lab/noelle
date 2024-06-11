@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021 Simone Campanoni
+ * Copyright 2016 - 2024 Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,11 +22,7 @@
 #ifndef NOELLE_SRC_TOOLS_SCCPRINTER_H
 #define NOELLE_SRC_TOOLS_SCCPRINTER_H
 
-#include <string>
-#include <vector>
-
 #include "arcana/noelle/core/Noelle.hpp"
-#include "noelle/core/GenericSCC.hpp"
 
 namespace arcana::noelle {
 

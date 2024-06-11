@@ -22,8 +22,8 @@
 #ifndef NOELLE_SRC_CORE_DG_DGGRAPHTRAITS_H_
 #define NOELLE_SRC_CORE_DG_DGGRAPHTRAITS_H_
 
-#include "noelle/core/DGBase.hpp"
-#include "noelle/core/SubCFGs.hpp"
+#include "arcana/noelle/core/DGBase.hpp"
+#include "arcana/noelle/core/SubCFGs.hpp"
 
 namespace arcana::noelle {
 

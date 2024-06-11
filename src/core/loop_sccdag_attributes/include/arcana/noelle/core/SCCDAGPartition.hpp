@@ -25,7 +25,7 @@
 #include "arcana/noelle/core/LoopStructure.hpp"
 #include "arcana/noelle/core/SCC.hpp"
 #include "arcana/noelle/core/SCCDAG.hpp"
-#include "noelle/core/DGGraphTraits.hpp"
+#include "arcana/noelle/core/DGGraphTraits.hpp"
 #include "arcana/noelle/core/LoopForest.hpp"
 
 namespace arcana::noelle {

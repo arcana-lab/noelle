@@ -25,7 +25,7 @@
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/Noelle.hpp"
 #include "arcana/noelle/core/PDGPrinter.hpp"
-#include "noelle/core/SubCFGs.hpp"
+#include "arcana/noelle/core/SubCFGs.hpp"
 
 namespace arcana::noelle {
 

@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/InductionVariable.hpp"
-#include "noelle/core/MemoryDependence.hpp"
+#include "arcana/noelle/core/MemoryDependence.hpp"
 
 namespace arcana::noelle {
 

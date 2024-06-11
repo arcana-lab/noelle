@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_PDG_TRAITS_H_
 #define NOELLE_SRC_CORE_PDG_TRAITS_H_
 
-#include "noelle/core/DGGraphTraits.hpp"
+#include "arcana/noelle/core/DGGraphTraits.hpp"
 #include "arcana/noelle/core/PDG.hpp"
 
 namespace llvm {

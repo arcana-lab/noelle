@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_LOOP_ENVIRONMENT_LOOPENVIRONMENTBUILDER_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/BinaryReductionSCC.hpp"
+#include "arcana/noelle/core/BinaryReductionSCC.hpp"
 #include "arcana/noelle/core/LoopEnvironment.hpp"
 #include "arcana/noelle/core/LoopEnvironmentUser.hpp"
 

@@ -19,44 +19,39 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_RECOMPUTABLESCC_H_
-#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_RECOMPUTABLESCC_H_
+#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPCARRIEDSCC_H_
+#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPCARRIEDSCC_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopCarriedSCC.hpp"
-#include "arcana/noelle/core/Dominators.hpp"
+#include "arcana/noelle/core/GenericSCC.hpp"
 
 namespace arcana::noelle {
 
-class RecomputableSCC : public LoopCarriedSCC {
+class LoopCarriedSCC : public GenericSCC {
 public:
-  RecomputableSCC() = delete;
+  LoopCarriedSCC() = delete;
 
-  std::set<Instruction *> getValuesToPropagateAcrossLoopIterations(void) const;
+  std::set<DGEdge<Value, Value> *> getLoopCarriedDependences(void) const;
+
+  /*
+   * @return true if different instances of the SCC executed in different loop
+   * iterations can commute. Return false otherwise.
+   */
+  bool isCommutative(void) const;
 
   static bool classof(const GenericSCC *s);
 
 protected:
-  std::set<Instruction *> values;
+  std::set<DGEdge<Value, Value> *> lcDeps;
+  bool _commutative;
 
-  RecomputableSCC(
-      SCCKind K,
-      SCC *s,
-      LoopStructure *loop,
-      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
-      const std::set<Instruction *> &values,
-      bool commutative);
-
-  RecomputableSCC(
-      SCCKind K,
-      SCC *s,
-      LoopStructure *loop,
-      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
-      bool commutative);
-
-  void addValue(Instruction *v);
+  LoopCarriedSCC(SCCKind K,
+                 SCC *s,
+                 LoopStructure *loop,
+                 const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+                 bool commutative);
 };
 
 } // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_RECOMPUTABLESCC_H_
+#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPCARRIEDSCC_H_

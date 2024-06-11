@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_DG_VARIABLE_DEPENDENCE_H_
 #define NOELLE_SRC_CORE_DG_VARIABLE_DEPENDENCE_H_
 
-#include "noelle/core/DataDependence.hpp"
+#include "arcana/noelle/core/DataDependence.hpp"
 
 namespace arcana::noelle {
 

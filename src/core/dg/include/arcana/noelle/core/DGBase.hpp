@@ -23,14 +23,14 @@
 #define NOELLE_SRC_CORE_DG_DGBASE_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/DGNode.hpp"
-#include "noelle/core/DGEdge.hpp"
-#include "noelle/core/DataDependence.hpp"
-#include "noelle/core/MayMemoryDependence.hpp"
-#include "noelle/core/MustMemoryDependence.hpp"
-#include "noelle/core/VariableDependence.hpp"
-#include "noelle/core/ControlDependence.hpp"
-#include "noelle/core/UndefinedDependence.hpp"
+#include "arcana/noelle/core/DGNode.hpp"
+#include "arcana/noelle/core/DGEdge.hpp"
+#include "arcana/noelle/core/DataDependence.hpp"
+#include "arcana/noelle/core/MayMemoryDependence.hpp"
+#include "arcana/noelle/core/MustMemoryDependence.hpp"
+#include "arcana/noelle/core/VariableDependence.hpp"
+#include "arcana/noelle/core/ControlDependence.hpp"
+#include "arcana/noelle/core/UndefinedDependence.hpp"
 
 namespace arcana::noelle {
 

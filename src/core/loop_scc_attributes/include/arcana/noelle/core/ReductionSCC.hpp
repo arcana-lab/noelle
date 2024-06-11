@@ -19,41 +19,50 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_PERIODICVARIABLESCC_H_
-#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_PERIODICVARIABLESCC_H_
+#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_REDUCTIONSCC_H_
+#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_REDUCTIONSCC_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/SingleAccumulatorRecomputableSCC.hpp"
+#include "arcana/noelle/core/Dominators.hpp"
+#include "arcana/noelle/core/LoopCarriedSCC.hpp"
 
 namespace arcana::noelle {
 
-class PeriodicVariableSCC : public SingleAccumulatorRecomputableSCC {
+class ReductionSCC : public LoopCarriedSCC {
 public:
-  PeriodicVariableSCC() = delete;
+  ReductionSCC() = delete;
 
   Value *getInitialValue(void) const;
 
-  Value *getPeriod(void) const;
+  Value *getIdentityValue(void) const;
 
-  Value *getStepValue(void) const;
+  PHINode *getPhiThatAccumulatesValuesBetweenLoopIterations(void) const;
 
   static bool classof(const GenericSCC *s);
 
-  PeriodicVariableSCC(
-      SCC *s,
-      LoopStructure *loop,
-      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
-      DominatorSummary &dom,
-      Value *initialValue,
-      Value *period,
-      Value *step);
-
 protected:
   Value *initialValue;
-  Value *period;
-  Value *step;
+  PHINode *accumulator;
+  Value *identity;
+  PHINode *headerAccumulator;
+
+  ReductionSCC(SCCKind K,
+               SCC *s,
+               LoopStructure *loop,
+               const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+               DominatorSummary &dom);
+
+  ReductionSCC(SCCKind K,
+               SCC *s,
+               LoopStructure *loop,
+               const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+               Value *initialValue,
+               PHINode *accumulator,
+               Value *identity);
+
+  void initializeObject(LoopStructure &loop);
 };
 
 } // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_PERIODICVARIABLESCC_H_
+#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_REDUCTIONSCC_H_

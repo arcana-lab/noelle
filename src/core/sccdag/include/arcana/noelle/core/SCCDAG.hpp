@@ -24,7 +24,7 @@
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/BitMatrix.hpp"
-#include "noelle/core/DGBase.hpp"
+#include "arcana/noelle/core/DGBase.hpp"
 #include "arcana/noelle/core/PDG.hpp"
 #include "arcana/noelle/core/SCC.hpp"
 

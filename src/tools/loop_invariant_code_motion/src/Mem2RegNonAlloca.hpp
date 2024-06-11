@@ -27,7 +27,7 @@
 #include "arcana/noelle/core/Invariants.hpp"
 #include "arcana/noelle/core/Noelle.hpp"
 #include "arcana/noelle/core/PDGPrinter.hpp"
-#include "noelle/core/SubCFGs.hpp"
+#include "arcana/noelle/core/SubCFGs.hpp"
 #include "arcana/noelle/core/SCCDAG.hpp"
 
 namespace arcana::noelle {

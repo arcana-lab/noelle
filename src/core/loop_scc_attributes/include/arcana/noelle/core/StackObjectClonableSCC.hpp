@@ -19,29 +19,37 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPITERATIONSCC_H_
-#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPITERATIONSCC_H_
+#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_STACKOBJECTCLONABLESCC_H_
+#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_STACKOBJECTCLONABLESCC_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/GenericSCC.hpp"
+#include "arcana/noelle/core/MemoryClonableSCC.hpp"
+#include "arcana/noelle/core/ClonableMemoryObject.hpp"
 
 namespace arcana::noelle {
 
-class LoopIterationSCC : public GenericSCC {
+class StackObjectClonableSCC : public MemoryClonableSCC {
 public:
-  /*
-   * Constructors.
-   */
-  LoopIterationSCC(SCC *s, LoopStructure *loop);
+  StackObjectClonableSCC(
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+      const std::set<ClonableMemoryObject *> &locations);
 
-  LoopIterationSCC() = delete;
+  StackObjectClonableSCC() = delete;
+
+  /*
+   * Return the memory locations that can be safely clone to void reusing the
+   * same memory locations between invocations of this SCC.
+   */
+  std::set<AllocaInst *> getMemoryLocationsToClone(void) const;
 
   static bool classof(const GenericSCC *s);
 
 protected:
-  LoopIterationSCC(SCCKind K, SCC *s, LoopStructure *loop);
+  std::set<ClonableMemoryObject *> _clonableMemoryLocations;
 };
 
 } // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPITERATIONSCC_H_
+#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_STACKOBJECTCLONABLESCC_H_

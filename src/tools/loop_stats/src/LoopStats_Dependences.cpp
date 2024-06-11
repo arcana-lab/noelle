@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/tools/LoopStats.hpp"
-#include "noelle/core/LoopCarriedUnknownSCC.hpp"
+#include "arcana/noelle/core/LoopCarriedUnknownSCC.hpp"
 
 namespace arcana::noelle {
 

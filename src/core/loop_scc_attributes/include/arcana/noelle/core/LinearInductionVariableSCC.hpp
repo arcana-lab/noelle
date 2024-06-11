@@ -19,29 +19,32 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_INDUCTIONVARIABLESCC_H_
-#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_INDUCTIONVARIABLESCC_H_
+#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LINEARINDUCTIONVARIABLESCC_H_
+#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LINEARINDUCTIONVARIABLESCC_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/SingleAccumulatorRecomputableSCC.hpp"
+#include "arcana/noelle/core/InductionVariables.hpp"
+#include "arcana/noelle/core/InductionVariableSCC.hpp"
 
 namespace arcana::noelle {
 
-class InductionVariableSCC : public SingleAccumulatorRecomputableSCC {
+class LinearInductionVariableSCC : public InductionVariableSCC {
 public:
-  InductionVariableSCC() = delete;
+  LinearInductionVariableSCC(
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+      DominatorSummary &dom,
+      const std::set<InductionVariable *> &IVs);
+
+  std::set<InductionVariable *> getIVs(void) const;
 
   static bool classof(const GenericSCC *s);
 
 protected:
-  InductionVariableSCC(
-      SCCKind K,
-      SCC *s,
-      LoopStructure *loop,
-      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
-      DominatorSummary &dom);
+  std::set<InductionVariable *> _IVs;
 };
 
 } // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_INDUCTIONVARIABLESCC_H_
+#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LINEARINDUCTIONVARIABLESCC_H_

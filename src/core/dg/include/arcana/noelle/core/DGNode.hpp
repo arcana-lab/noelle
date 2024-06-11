@@ -137,7 +137,7 @@ void DGNode<T>::removeConnectedEdge(DGEdge<T, T> *edge) {
     incomingEdges.erase(edge);
   }
 
-  return ;
+  return;
 }
 
 template <class T>

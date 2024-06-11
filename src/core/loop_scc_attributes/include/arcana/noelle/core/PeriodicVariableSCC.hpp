@@ -19,33 +19,41 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_SINGLEACCUMULATORRECOMPUTABLESCC_H_
-#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_SINGLEACCUMULATORRECOMPUTABLESCC_H_
+#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_PERIODICVARIABLESCC_H_
+#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_PERIODICVARIABLESCC_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/RecomputableSCC.hpp"
+#include "arcana/noelle/core/SingleAccumulatorRecomputableSCC.hpp"
 
 namespace arcana::noelle {
 
-class SingleAccumulatorRecomputableSCC : public RecomputableSCC {
+class PeriodicVariableSCC : public SingleAccumulatorRecomputableSCC {
 public:
-  SingleAccumulatorRecomputableSCC() = delete;
+  PeriodicVariableSCC() = delete;
 
-  PHINode *getPhiThatAccumulatesValuesBetweenLoopIterations(void) const;
+  Value *getInitialValue(void) const;
+
+  Value *getPeriod(void) const;
+
+  Value *getStepValue(void) const;
 
   static bool classof(const GenericSCC *s);
 
-protected:
-  PHINode *accumulator;
-
-  SingleAccumulatorRecomputableSCC(
-      SCCKind K,
+  PeriodicVariableSCC(
       SCC *s,
       LoopStructure *loop,
       const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
-      DominatorSummary &dom);
+      DominatorSummary &dom,
+      Value *initialValue,
+      Value *period,
+      Value *step);
+
+protected:
+  Value *initialValue;
+  Value *period;
+  Value *step;
 };
 
 } // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_SINGLEACCUMULATORRECOMPUTABLESCC_H_
+#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_PERIODICVARIABLESCC_H_

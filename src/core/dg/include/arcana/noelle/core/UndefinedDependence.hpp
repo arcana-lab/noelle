@@ -19,21 +19,21 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_DG_MUST_MEMORY_DEPENDENCE_H_
-#define NOELLE_SRC_CORE_DG_MUST_MEMORY_DEPENDENCE_H_
+#ifndef NOELLE_SRC_CORE_DG_UNDEFINED_DEPENDENCE_H_
+#define NOELLE_SRC_CORE_DG_UNDEFINED_DEPENDENCE_H_
 
-#include "noelle/core/MemoryDependence.hpp"
+#include "arcana/noelle/core/DGEdge.hpp"
 
 namespace arcana::noelle {
 
 template <class T, class SubT>
-class MustMemoryDependence : public MemoryDependence<T, SubT> {
+class UndefinedDependence : public DGEdge<T, SubT> {
 public:
-  MustMemoryDependence(DGNode<T> *src, DGNode<T> *dst, DataDependenceType t);
+  UndefinedDependence(DGNode<T> *src, DGNode<T> *dst);
 
-  MustMemoryDependence(const MustMemoryDependence<T, SubT> &edgeToCopy);
+  UndefinedDependence(const UndefinedDependence<T, SubT> &edgeToCopy);
 
-  MustMemoryDependence() = delete;
+  UndefinedDependence() = delete;
 
   std::string toString(void) override;
 
@@ -41,26 +41,23 @@ public:
 };
 
 template <class T, class SubT>
-MustMemoryDependence<T, SubT>::MustMemoryDependence(DGNode<T> *src,
-                                                    DGNode<T> *dst,
-                                                    DataDependenceType t)
-  : MemoryDependence<T, SubT>(
-      DGEdge<T, SubT>::DependenceKind::MUST_MEMORY_DEPENDENCE,
-      src,
-      dst,
-      t) {
+UndefinedDependence<T, SubT>::UndefinedDependence(DGNode<T> *src,
+                                                  DGNode<T> *dst)
+  : DGEdge<T, SubT>(DGEdge<T, SubT>::DependenceKind::UNDEFINED_DEPENDENCE,
+                    src,
+                    dst) {
   return;
 }
 
 template <class T, class SubT>
-MustMemoryDependence<T, SubT>::MustMemoryDependence(
-    const MustMemoryDependence<T, SubT> &edgeToCopy)
-  : MemoryDependence<T, SubT>(edgeToCopy) {
+UndefinedDependence<T, SubT>::UndefinedDependence(
+    const UndefinedDependence<T, SubT> &edgeToCopy)
+  : DGEdge<T, SubT>(edgeToCopy) {
   return;
 }
 
 template <class T, class SubT>
-std::string MustMemoryDependence<T, SubT>::toString(void) {
+std::string UndefinedDependence<T, SubT>::toString(void) {
   if (this->getNumberOfSubEdges() > 0) {
     std::string edgesStr;
     raw_string_ostream ros(edgesStr);
@@ -75,17 +72,15 @@ std::string MustMemoryDependence<T, SubT>::toString(void) {
   if (this->isLoopCarriedDependence()) {
     ros << "Loop-carried ";
   }
-  ros << "Data ";
-  ros << this->dataDepToString();
-  ros << " (must) from memory\n";
+  ros << "Undefined\n";
   ros.flush();
   return edgeStr;
 }
 
 template <class T, class SubT>
-bool MustMemoryDependence<T, SubT>::classof(const DGEdge<T, SubT> *s) {
-  auto sKind = s->getKind();
-  return (sKind == DGEdge<T, SubT>::DependenceKind::MUST_MEMORY_DEPENDENCE);
+bool UndefinedDependence<T, SubT>::classof(const DGEdge<T, SubT> *s) {
+  return (s->getKind()
+          == DGEdge<T, SubT>::DependenceKind::UNDEFINED_DEPENDENCE);
 }
 
 } // namespace arcana::noelle

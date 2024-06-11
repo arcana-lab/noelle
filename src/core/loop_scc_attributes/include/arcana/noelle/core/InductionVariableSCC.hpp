@@ -19,29 +19,29 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPCARRIEDUNKNOWNSCC_H_
-#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPCARRIEDUNKNOWNSCC_H_
+#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_INDUCTIONVARIABLESCC_H_
+#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_INDUCTIONVARIABLESCC_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "arcana/noelle/core/Dominators.hpp"
-#include "noelle/core/LoopCarriedSCC.hpp"
+#include "arcana/noelle/core/SingleAccumulatorRecomputableSCC.hpp"
 
 namespace arcana::noelle {
 
-class LoopCarriedUnknownSCC : public LoopCarriedSCC {
+class InductionVariableSCC : public SingleAccumulatorRecomputableSCC {
 public:
-  LoopCarriedUnknownSCC(
-      SCC *s,
-      LoopStructure *loop,
-      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences);
-
-  LoopCarriedUnknownSCC() = delete;
+  InductionVariableSCC() = delete;
 
   static bool classof(const GenericSCC *s);
 
 protected:
+  InductionVariableSCC(
+      SCCKind K,
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+      DominatorSummary &dom);
 };
 
 } // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPCARRIEDUNKNOWNSCC_H_
+#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_INDUCTIONVARIABLESCC_H_

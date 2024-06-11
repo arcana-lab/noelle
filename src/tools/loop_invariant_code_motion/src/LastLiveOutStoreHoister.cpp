@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/tools/LoopInvariantCodeMotion.hpp"
-#include "noelle/core/LoopIterationSCC.hpp"
+#include "arcana/noelle/core/LoopIterationSCC.hpp"
 
 namespace arcana::noelle {
 

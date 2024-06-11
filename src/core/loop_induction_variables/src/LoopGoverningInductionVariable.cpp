@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/LoopGoverningInductionVariable.hpp"
-#include "noelle/core/DataDependence.hpp"
+#include "arcana/noelle/core/DataDependence.hpp"
 
 namespace arcana::noelle {
 

@@ -19,28 +19,44 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_MEMORYCLONABLESCC_H_
-#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_MEMORYCLONABLESCC_H_
+#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_RECOMPUTABLESCC_H_
+#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_RECOMPUTABLESCC_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopCarriedSCC.hpp"
+#include "arcana/noelle/core/LoopCarriedSCC.hpp"
+#include "arcana/noelle/core/Dominators.hpp"
 
 namespace arcana::noelle {
 
-class MemoryClonableSCC : public LoopCarriedSCC {
+class RecomputableSCC : public LoopCarriedSCC {
 public:
-  MemoryClonableSCC() = delete;
+  RecomputableSCC() = delete;
+
+  std::set<Instruction *> getValuesToPropagateAcrossLoopIterations(void) const;
 
   static bool classof(const GenericSCC *s);
 
 protected:
-  MemoryClonableSCC(
+  std::set<Instruction *> values;
+
+  RecomputableSCC(
       SCCKind K,
       SCC *s,
       LoopStructure *loop,
-      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences);
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+      const std::set<Instruction *> &values,
+      bool commutative);
+
+  RecomputableSCC(
+      SCCKind K,
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+      bool commutative);
+
+  void addValue(Instruction *v);
 };
 
 } // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_MEMORYCLONABLESCC_H_
+#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_RECOMPUTABLESCC_H_

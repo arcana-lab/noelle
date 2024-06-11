@@ -33,8 +33,8 @@
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/CallGraph.h"
 
-#include "noelle/core/DGBase.hpp"
-#include "noelle/core/DGGraphTraits.hpp"
+#include "arcana/noelle/core/DGBase.hpp"
+#include "arcana/noelle/core/DGGraphTraits.hpp"
 #include "arcana/noelle/core/PDG.hpp"
 #include "arcana/noelle/core/PDGTraits.hpp"
 

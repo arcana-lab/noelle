@@ -19,21 +19,23 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_UNKNOWNCLOSEDFORMSCC_H_
-#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_UNKNOWNCLOSEDFORMSCC_H_
+#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPCARRIEDUNKNOWNSCC_H_
+#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPCARRIEDUNKNOWNSCC_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/RecomputableSCC.hpp"
+#include "arcana/noelle/core/Dominators.hpp"
+#include "arcana/noelle/core/LoopCarriedSCC.hpp"
 
 namespace arcana::noelle {
 
-class UnknownClosedFormSCC : public RecomputableSCC {
+class LoopCarriedUnknownSCC : public LoopCarriedSCC {
 public:
-  UnknownClosedFormSCC(
+  LoopCarriedUnknownSCC(
       SCC *s,
       LoopStructure *loop,
-      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
-      const std::set<Instruction *> &valuesToPropagateAcrossLoopIterations);
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences);
+
+  LoopCarriedUnknownSCC() = delete;
 
   static bool classof(const GenericSCC *s);
 
@@ -42,4 +44,4 @@ protected:
 
 } // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_UNKNOWNCLOSEDFORMSCC_H_
+#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPCARRIEDUNKNOWNSCC_H_

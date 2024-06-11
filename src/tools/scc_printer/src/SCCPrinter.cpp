@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "arcana/noelle/core/SCCDAGAttrs.hpp"
-#include "noelle/core/LoopCarriedUnknownSCC.hpp"
+#include "arcana/noelle/core/LoopCarriedUnknownSCC.hpp"
 
 #include "SCCPrinter.hpp"
 

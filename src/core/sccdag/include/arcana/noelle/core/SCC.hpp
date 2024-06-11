@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_SCCDAG_SCC_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/DGBase.hpp"
+#include "arcana/noelle/core/DGBase.hpp"
 
 namespace arcana::noelle {
 

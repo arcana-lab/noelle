@@ -19,39 +19,33 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPCARRIEDSCC_H_
-#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPCARRIEDSCC_H_
+#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_SINGLEACCUMULATORRECOMPUTABLESCC_H_
+#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_SINGLEACCUMULATORRECOMPUTABLESCC_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/GenericSCC.hpp"
+#include "arcana/noelle/core/RecomputableSCC.hpp"
 
 namespace arcana::noelle {
 
-class LoopCarriedSCC : public GenericSCC {
+class SingleAccumulatorRecomputableSCC : public RecomputableSCC {
 public:
-  LoopCarriedSCC() = delete;
+  SingleAccumulatorRecomputableSCC() = delete;
 
-  std::set<DGEdge<Value, Value> *> getLoopCarriedDependences(void) const;
-
-  /*
-   * @return true if different instances of the SCC executed in different loop
-   * iterations can commute. Return false otherwise.
-   */
-  bool isCommutative(void) const;
+  PHINode *getPhiThatAccumulatesValuesBetweenLoopIterations(void) const;
 
   static bool classof(const GenericSCC *s);
 
 protected:
-  std::set<DGEdge<Value, Value> *> lcDeps;
-  bool _commutative;
+  PHINode *accumulator;
 
-  LoopCarriedSCC(SCCKind K,
-                 SCC *s,
-                 LoopStructure *loop,
-                 const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
-                 bool commutative);
+  SingleAccumulatorRecomputableSCC(
+      SCCKind K,
+      SCC *s,
+      LoopStructure *loop,
+      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
+      DominatorSummary &dom);
 };
 
 } // namespace arcana::noelle
 
-#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_LOOPCARRIEDSCC_H_
+#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_SINGLEACCUMULATORRECOMPUTABLESCC_H_
