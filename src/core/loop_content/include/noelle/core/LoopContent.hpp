@@ -31,7 +31,7 @@
 #include "noelle/core/LoopGoverningInductionVariable.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
 #include "noelle/core/LoopEnvironmentBuilder.hpp"
-#include "noelle/core/SCCDAGAttrs.hpp"
+#include "arcana/noelle/core/SCCDAGAttrs.hpp"
 #include "arcana/noelle/core/LoopIterationSpaceAnalysis.hpp"
 #include "noelle/core/LoopTransformationsOptions.hpp"
 #include "arcana/noelle/core/LDGGenerator.hpp"

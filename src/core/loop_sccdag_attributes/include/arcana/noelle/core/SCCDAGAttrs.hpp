@@ -31,7 +31,7 @@
 #include "noelle/core/PeriodicVariableSCC.hpp"
 #include "noelle/core/LoopGoverningInductionVariable.hpp"
 #include "noelle/core/LoopEnvironment.hpp"
-#include "noelle/core/Variable.hpp"
+#include "arcana/noelle/core/Variable.hpp"
 #include "arcana/noelle/core/MemoryCloningAnalysis.hpp"
 
 namespace arcana::noelle {

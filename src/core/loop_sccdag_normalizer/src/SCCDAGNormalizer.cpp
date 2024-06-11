@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/SCCDAGNormalizer.hpp"
-#include "noelle/core/LoopCarriedDependencies.hpp"
+#include "arcana/noelle/core/LoopCarriedDependencies.hpp"
 
 namespace arcana::noelle {
 

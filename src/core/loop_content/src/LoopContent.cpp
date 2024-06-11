@@ -24,7 +24,7 @@
 #include "arcana/noelle/core/PDGGenerator.hpp"
 #include "noelle/core/SCCDAG.hpp"
 #include "noelle/core/LoopContent.hpp"
-#include "noelle/core/LoopCarriedDependencies.hpp"
+#include "arcana/noelle/core/LoopCarriedDependencies.hpp"
 
 namespace arcana::noelle {
 

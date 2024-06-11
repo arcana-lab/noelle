@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/SCCDAGAttrs.hpp"
+#include "arcana/noelle/core/SCCDAGAttrs.hpp"
 #include "arcana/noelle/core/PDGPrinter.hpp"
 #include "noelle/core/BinaryReductionSCC.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
@@ -27,7 +27,7 @@
 #include "noelle/core/PeriodicVariableSCC.hpp"
 #include "noelle/core/StackObjectClonableSCC.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
-#include "noelle/core/LoopCarriedDependencies.hpp"
+#include "arcana/noelle/core/LoopCarriedDependencies.hpp"
 #include "noelle/core/UnknownClosedFormSCC.hpp"
 
 namespace arcana::noelle {

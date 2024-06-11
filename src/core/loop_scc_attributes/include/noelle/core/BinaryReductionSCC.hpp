@@ -25,7 +25,7 @@
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/ReductionSCC.hpp"
 #include "arcana/noelle/core/Dominators.hpp"
-#include "noelle/core/Variable.hpp"
+#include "arcana/noelle/core/Variable.hpp"
 
 namespace arcana::noelle {
 

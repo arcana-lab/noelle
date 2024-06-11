@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/HotProfiler.hpp"
+#include "arcana/noelle/core/HotProfiler.hpp"
 
 namespace arcana::noelle {
 

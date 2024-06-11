@@ -24,7 +24,7 @@
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/PDGGenerator.hpp"
-#include "noelle/core/Hot.hpp"
+#include "arcana/noelle/core/Hot.hpp"
 #include "noelle/core/CallGraph.hpp"
 #include "noelle/core/SCCCAG.hpp"
 

@@ -25,7 +25,7 @@
 #include "llvm/Analysis/BlockFrequencyInfo.h"
 #include "llvm/Analysis/BranchProbabilityInfo.h"
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/Hot.hpp"
+#include "arcana/noelle/core/Hot.hpp"
 
 namespace arcana::noelle {
 

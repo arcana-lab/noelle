@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "noelle/core/DataFlow.hpp"
-#include "noelle/core/LoopCarriedDependencies.hpp"
+#include "arcana/noelle/core/LoopCarriedDependencies.hpp"
 #include "noelle/core/LoopAliasAnalysisEngine.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
 

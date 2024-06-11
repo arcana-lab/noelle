@@ -23,7 +23,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "noelle/core/SCCDAGAttrs.hpp"
+#include "arcana/noelle/core/SCCDAGAttrs.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 
 #include "SCCPrinter.hpp"

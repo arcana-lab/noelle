@@ -21,7 +21,7 @@
  */
 #include "arcana/noelle/core/Architecture.hpp"
 #include "arcana/noelle/core/Noelle.hpp"
-#include "noelle/core/HotProfiler.hpp"
+#include "arcana/noelle/core/HotProfiler.hpp"
 
 namespace arcana::noelle {
 

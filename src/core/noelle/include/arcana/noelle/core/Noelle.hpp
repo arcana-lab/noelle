@@ -31,7 +31,7 @@
 #include "arcana/noelle/core/LDGGenerator.hpp"
 #include "noelle/core/DataFlow.hpp"
 #include "noelle/core/LoopContent.hpp"
-#include "noelle/core/HotProfiler.hpp"
+#include "arcana/noelle/core/HotProfiler.hpp"
 #include "arcana/noelle/core/Scheduler.hpp"
 #include "arcana/noelle/core/MetadataManager.hpp"
 #include "arcana/noelle/core/LoopTransformer.hpp"

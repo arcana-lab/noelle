@@ -21,7 +21,7 @@
  */
 #include "arcana/noelle/core/LDGGenerator.hpp"
 #include "arcana/noelle/core/LoopIterationSpaceAnalysis.hpp"
-#include "noelle/core/LoopCarriedDependencies.hpp"
+#include "arcana/noelle/core/LoopCarriedDependencies.hpp"
 #include "noelle/core/DataFlow.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
 
