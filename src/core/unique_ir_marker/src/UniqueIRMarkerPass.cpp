@@ -1,6 +1,6 @@
-#include "noelle/core/UniqueIRMarker.hpp"
-#include "noelle/core/UniqueIRVerifier.hpp"
-#include "noelle/core/UniqueIRMarkerPass.hpp"
+#include "arcana/noelle/core/UniqueIRMarker.hpp"
+#include "arcana/noelle/core/UniqueIRVerifier.hpp"
+#include "arcana/noelle/core/UniqueIRMarkerPass.hpp"
 
 using namespace llvm;
 

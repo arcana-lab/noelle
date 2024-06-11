@@ -1,4 +1,4 @@
-#include "noelle/core/UniqueIRConstants.hpp"
+#include "arcana/noelle/core/UniqueIRConstants.hpp"
 
 namespace arcana::noelle {
 

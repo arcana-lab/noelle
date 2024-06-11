@@ -3,7 +3,7 @@
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
 
-#include "noelle/core/UniqueIRMarker.hpp"
+#include "arcana/noelle/core/UniqueIRMarker.hpp"
 
 namespace arcana::noelle {
 

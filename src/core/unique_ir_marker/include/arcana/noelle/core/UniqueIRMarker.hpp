@@ -2,8 +2,8 @@
 #define NOELLE_SRC_CORE_UNIQUE_IR_MARKER_UNIQUEIRMARKER_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/UniqueIRConstants.hpp"
-#include "noelle/core/UniqueIRMarkerReader.hpp"
+#include "arcana/noelle/core/UniqueIRConstants.hpp"
+#include "arcana/noelle/core/UniqueIRMarkerReader.hpp"
 
 using namespace llvm;
 

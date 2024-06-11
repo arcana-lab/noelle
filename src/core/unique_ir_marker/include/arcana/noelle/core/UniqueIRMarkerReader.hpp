@@ -4,7 +4,7 @@
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include <optional>
 
-#include "noelle/core/UniqueIRConstants.hpp"
+#include "arcana/noelle/core/UniqueIRConstants.hpp"
 
 using std::nullopt;
 using std::optional;

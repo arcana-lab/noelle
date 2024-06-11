@@ -1,6 +1,6 @@
-#include "noelle/core/IDToValueMapper.hpp"
-#include "noelle/core/UniqueIRMarkerReader.hpp"
-#include "noelle/core/IDToValueMapper.hpp"
+#include "arcana/noelle/core/IDToValueMapper.hpp"
+#include "arcana/noelle/core/UniqueIRMarkerReader.hpp"
+#include "arcana/noelle/core/IDToValueMapper.hpp"
 
 using std::addressof;
 
