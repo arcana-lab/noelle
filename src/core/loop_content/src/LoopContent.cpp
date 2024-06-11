@@ -19,12 +19,12 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/Architecture.hpp"
-#include "noelle/core/PDG.hpp"
-#include "noelle/core/PDGGenerator.hpp"
-#include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/LoopContent.hpp"
-#include "noelle/core/LoopCarriedDependencies.hpp"
+#include "arcana/noelle/core/Architecture.hpp"
+#include "arcana/noelle/core/PDG.hpp"
+#include "arcana/noelle/core/PDGGenerator.hpp"
+#include "arcana/noelle/core/SCCDAG.hpp"
+#include "arcana/noelle/core/LoopContent.hpp"
+#include "arcana/noelle/core/LoopCarriedDependencies.hpp"
 
 namespace arcana::noelle {
 

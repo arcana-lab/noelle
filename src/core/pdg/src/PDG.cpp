@@ -29,7 +29,7 @@
 #include <set>
 #include <queue>
 
-#include "noelle/core/PDG.hpp"
+#include "arcana/noelle/core/PDG.hpp"
 
 namespace arcana::noelle {
 

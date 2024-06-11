@@ -22,8 +22,8 @@
 #ifndef NOELLE_SRC_CORE_PDG_ANALYSIS_INTEGRATIONWITHSVF_H_
 #define NOELLE_SRC_CORE_PDG_ANALYSIS_INTEGRATIONWITHSVF_H_
 
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/CallGraph.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/CallGraph.hpp"
 
 namespace arcana::noelle {
 

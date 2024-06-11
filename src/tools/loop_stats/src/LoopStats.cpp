@@ -19,9 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/tools/LoopStats.hpp"
-
-#include "noelle/core/PDGPrinter.hpp"
+#include "arcana/noelle/tools/LoopStats.hpp"
+#include "arcana/noelle/core/PDGPrinter.hpp"
 
 using namespace llvm;
 using namespace arcana::noelle;

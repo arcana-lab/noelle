@@ -19,9 +19,9 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/DataFlow.hpp"
-#include "noelle/core/LoopCarriedDependencies.hpp"
-#include "noelle/core/LoopAliasAnalysisEngine.hpp"
+#include "arcana/noelle/core/DataFlow.hpp"
+#include "arcana/noelle/core/LoopCarriedDependencies.hpp"
+#include "arcana/noelle/core/LoopAliasAnalysisEngine.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
 
 /*

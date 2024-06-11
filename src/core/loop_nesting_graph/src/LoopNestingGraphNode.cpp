@@ -19,10 +19,10 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/LoopStructure.hpp"
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopNestingGraphNode.hpp"
-#include "noelle/core/LoopNestingGraphEdge.hpp"
+#include "arcana/noelle/core/LoopStructure.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/LoopNestingGraphNode.hpp"
+#include "arcana/noelle/core/LoopNestingGraphEdge.hpp"
 
 namespace arcana::noelle {
 

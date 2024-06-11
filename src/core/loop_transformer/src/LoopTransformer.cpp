@@ -19,11 +19,11 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/LoopTransformer.hpp"
-#include "noelle/core/Scheduler.hpp"
-#include "noelle/core/LoopWhilify.hpp"
-#include "noelle/core/LoopUnroll.hpp"
-#include "noelle/core/LoopDistribution.hpp"
+#include "arcana/noelle/core/LoopTransformer.hpp"
+#include "arcana/noelle/core/Scheduler.hpp"
+#include "arcana/noelle/core/LoopWhilify.hpp"
+#include "arcana/noelle/core/LoopUnroll.hpp"
+#include "arcana/noelle/core/LoopDistribution.hpp"
 
 namespace arcana::noelle {
 

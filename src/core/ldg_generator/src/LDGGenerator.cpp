@@ -19,10 +19,10 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/LDGGenerator.hpp"
-#include "noelle/core/LoopIterationSpaceAnalysis.hpp"
-#include "noelle/core/LoopCarriedDependencies.hpp"
-#include "noelle/core/DataFlow.hpp"
+#include "arcana/noelle/core/LDGGenerator.hpp"
+#include "arcana/noelle/core/LoopIterationSpaceAnalysis.hpp"
+#include "arcana/noelle/core/LoopCarriedDependencies.hpp"
+#include "arcana/noelle/core/DataFlow.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
 
 namespace arcana::noelle {

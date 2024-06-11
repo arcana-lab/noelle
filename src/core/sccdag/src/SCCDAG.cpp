@@ -19,10 +19,10 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/DGGraphTraits.hpp"
-#include "noelle/core/PDGTraits.hpp"
-#include "noelle/core/SCCDAG.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/DGGraphTraits.hpp"
+#include "arcana/noelle/core/PDGTraits.hpp"
+#include "arcana/noelle/core/SCCDAG.hpp"
 #include "llvm/InitializePasses.h"
 
 namespace arcana::noelle {

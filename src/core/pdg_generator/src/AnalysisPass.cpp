@@ -31,7 +31,7 @@
 #include "llvm/Analysis/PostDominators.h"
 #include "llvm/ADT/iterator_range.h"
 
-#include "noelle/core/PDGGenerator.hpp"
+#include "arcana/noelle/core/PDGGenerator.hpp"
 
 namespace arcana::noelle {
 

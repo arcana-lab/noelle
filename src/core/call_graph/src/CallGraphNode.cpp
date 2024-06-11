@@ -19,8 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/CallGraphNode.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/CallGraphNode.hpp"
 
 namespace arcana::noelle {
 

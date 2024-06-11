@@ -19,11 +19,11 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/Noelle.hpp"
-#include "noelle/core/ReductionSCC.hpp"
-#include "noelle/core/LoopIterationSCC.hpp"
-#include "noelle/core/InductionVariableSCC.hpp"
-#include "noelle/core/MemoryClonableSCC.hpp"
+#include "arcana/noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/ReductionSCC.hpp"
+#include "arcana/noelle/core/LoopIterationSCC.hpp"
+#include "arcana/noelle/core/InductionVariableSCC.hpp"
+#include "arcana/noelle/core/MemoryClonableSCC.hpp"
 #include "SCCDAGAttrTestSuite.hpp"
 
 namespace arcana::noelle {

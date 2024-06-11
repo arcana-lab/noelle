@@ -21,13 +21,13 @@
  */
 #include <algorithm>
 
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopStructure.hpp"
-#include "noelle/core/Noelle.hpp"
-#include "noelle/core/PDGGenerator.hpp"
-#include "noelle/core/Architecture.hpp"
-#include "noelle/core/LoopForest.hpp"
-#include "noelle/core/HotProfiler.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/LoopStructure.hpp"
+#include "arcana/noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/PDGGenerator.hpp"
+#include "arcana/noelle/core/Architecture.hpp"
+#include "arcana/noelle/core/LoopForest.hpp"
+#include "arcana/noelle/core/HotProfiler.hpp"
 
 namespace arcana::noelle {
 

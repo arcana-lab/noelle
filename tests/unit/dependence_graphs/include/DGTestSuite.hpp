@@ -26,11 +26,11 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
 
-#include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/PDG.hpp"
-#include "noelle/core/SCC.hpp"
-#include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/PDGGenerator.hpp"
+#include "arcana/noelle/core/PDGPrinter.hpp"
+#include "arcana/noelle/core/PDG.hpp"
+#include "arcana/noelle/core/SCC.hpp"
+#include "arcana/noelle/core/SCCDAG.hpp"
+#include "arcana/noelle/core/PDGGenerator.hpp"
 #include "TestSuite.hpp"
 
 #include <sstream>

@@ -19,8 +19,8 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/CFGAnalysis.hpp"
-#include "noelle/core/DataFlowAnalysis.hpp"
+#include "arcana/noelle/core/CFGAnalysis.hpp"
+#include "arcana/noelle/core/DataFlowAnalysis.hpp"
 
 namespace arcana::noelle {
 

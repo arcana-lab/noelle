@@ -22,8 +22,8 @@
 #ifndef NOELLE_SRC_CORE_LOOP_METADATA_LOOPMETADATAPASS_H_
 #define NOELLE_SRC_CORE_LOOP_METADATA_LOOPMETADATAPASS_H_
 
-#include "noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopStructure.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/LoopStructure.hpp"
 
 using namespace llvm;
 

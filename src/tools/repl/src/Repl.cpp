@@ -20,10 +20,10 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "Repl.hpp"
-#include "noelle/core/Noelle.hpp"
-#include "noelle/core/LoopContent.hpp"
-#include "noelle/core/PDG.hpp"
-#include "noelle/core/SCCDAG.hpp"
+#include "arcana/noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/LoopContent.hpp"
+#include "arcana/noelle/core/PDG.hpp"
+#include "arcana/noelle/core/SCCDAG.hpp"
 
 // GNU Readline
 #include <readline/history.h>

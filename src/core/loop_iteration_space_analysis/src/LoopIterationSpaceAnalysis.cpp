@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/LoopIterationSpaceAnalysis.hpp"
+#include "arcana/noelle/core/LoopIterationSpaceAnalysis.hpp"
 
 namespace arcana::noelle {
 
@@ -53,8 +53,7 @@ bool LoopIterationSpaceAnalysis::
     areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(
         Instruction *I,
         Instruction *J) const {
-  if (   (!I) 
-      || (!J)
+  if ((!I) || (!J)
       || (this->accessSpaceByInstruction.find(I)
           == this->accessSpaceByInstruction.end())
       || (this->accessSpaceByInstruction.find(J)
@@ -992,7 +991,7 @@ bool LoopIterationSpaceAnalysis::isInnerDimensionSubscriptsBounded(
                         lhsSCEV == sizeSCEVBase ? rhsSCEV : lhsSCEV;
                     if (auto constOffsetSCEV =
                             dyn_cast<SCEVConstant>(otherHandSideSCEV)) {
-                      if (constOffsetSCEV->getValue()->isNegative()){
+                      if (constOffsetSCEV->getValue()->isNegative()) {
                         continue;
                       }
                     }

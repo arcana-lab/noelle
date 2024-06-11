@@ -34,10 +34,10 @@
 #include "llvm/Support/GraphWriter.h"
 #include "llvm/Support/DOTGraphTraits.h"
 
-#include "noelle/core/PDGTraits.hpp"
-#include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/SCCDAGGraphTraits.hpp"
+#include "arcana/noelle/core/PDGTraits.hpp"
+#include "arcana/noelle/core/SCCDAG.hpp"
+#include "arcana/noelle/core/PDGPrinter.hpp"
+#include "arcana/noelle/core/SCCDAGGraphTraits.hpp"
 
 namespace arcana::noelle {
 

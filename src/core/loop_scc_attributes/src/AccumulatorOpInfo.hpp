@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_ACCUMULATOROPINFO_H_
 #define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_ACCUMULATOROPINFO_H_
 
-#include "noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/SystemHeaders.hpp"
 
 namespace arcana::noelle {
 

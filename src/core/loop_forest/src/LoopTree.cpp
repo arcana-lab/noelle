@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/LoopForest.hpp"
+#include "arcana/noelle/core/LoopForest.hpp"
 
 namespace arcana::noelle {
 

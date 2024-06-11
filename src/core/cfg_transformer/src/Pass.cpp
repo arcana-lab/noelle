@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/core/CFGTransformer.hpp"
+#include "arcana/noelle/core/CFGTransformer.hpp"
 #include "llvm/Analysis/PostDominators.h"
 
 namespace arcana::noelle {
