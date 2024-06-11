@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_CORE_CALL_GRAPH_SCCCAGEDGE_H_
 #define NOELLE_SRC_CORE_CALL_GRAPH_SCCCAGEDGE_H_
 
-#include "noelle/core/SCCCAGNode.hpp"
+#include "arcana/noelle/core/SCCCAGNode.hpp"
 
 namespace arcana::noelle {
 

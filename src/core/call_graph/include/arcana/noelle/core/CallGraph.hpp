@@ -23,8 +23,8 @@
 #define NOELLE_SRC_CORE_CALL_GRAPH_CALLGRAPH_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/CallGraphNode.hpp"
-#include "noelle/core/CallGraphEdge.hpp"
+#include "arcana/noelle/core/CallGraphNode.hpp"
+#include "arcana/noelle/core/CallGraphEdge.hpp"
 
 namespace arcana::noelle {
 

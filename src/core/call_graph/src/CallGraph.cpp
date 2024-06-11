@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/CallGraph.hpp"
+#include "arcana/noelle/core/CallGraph.hpp"
 
 namespace arcana::noelle {
 

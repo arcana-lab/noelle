@@ -25,8 +25,8 @@
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/PDGGenerator.hpp"
 #include "arcana/noelle/core/Hot.hpp"
-#include "noelle/core/CallGraph.hpp"
-#include "noelle/core/SCCCAG.hpp"
+#include "arcana/noelle/core/CallGraph.hpp"
+#include "arcana/noelle/core/SCCCAG.hpp"
 
 namespace arcana::noelle {
 

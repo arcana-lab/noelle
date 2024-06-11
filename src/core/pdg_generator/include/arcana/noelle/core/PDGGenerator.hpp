@@ -28,7 +28,7 @@
 #include "arcana/noelle/core/PDG.hpp"
 #include "arcana/noelle/core/PDGPrinter.hpp"
 #include "arcana/noelle/core/DataFlow.hpp"
-#include "noelle/core/CallGraph.hpp"
+#include "arcana/noelle/core/CallGraph.hpp"
 #include "arcana/noelle/core/AliasAnalysisEngine.hpp"
 #include "arcana/noelle/core/MayPointsToAnalysis.hpp"
 #include "arcana/noelle/core/DependenceAnalysis.hpp"

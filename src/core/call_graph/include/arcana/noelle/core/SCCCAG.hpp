@@ -23,10 +23,10 @@
 #define NOELLE_SRC_CORE_CALL_GRAPH_SCCCAG_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/CallGraph.hpp"
-#include "noelle/core/CallGraphTraits.hpp"
-#include "noelle/core/SCCCAGNode.hpp"
-#include "noelle/core/SCCCAGEdge.hpp"
+#include "arcana/noelle/core/CallGraph.hpp"
+#include "arcana/noelle/core/CallGraphTraits.hpp"
+#include "arcana/noelle/core/SCCCAGNode.hpp"
+#include "arcana/noelle/core/SCCCAGEdge.hpp"
 
 namespace arcana::noelle {
 class CallGraph;
