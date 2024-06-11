@@ -23,7 +23,7 @@
 #include "arcana/noelle/core/TalkDown.hpp"
 #include "arcana/noelle/core/PDGPrinter.hpp"
 #include "arcana/noelle/core/PDGGenerator.hpp"
-#include "noelle/core/SCCDAG.hpp"
+#include "arcana/noelle/core/SCCDAG.hpp"
 
 namespace arcana::noelle {
 

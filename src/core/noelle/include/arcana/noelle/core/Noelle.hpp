@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2023  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -23,14 +23,14 @@
 #define NOELLE_H_
 
 #include "arcana/noelle/core/Dominators.hpp"
-#include "noelle/core/LoopNestingGraph.hpp"
+#include "arcana/noelle/core/LoopNestingGraph.hpp"
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/Queue.hpp"
 #include "arcana/noelle/core/LoopForest.hpp"
 #include "arcana/noelle/core/PDGGenerator.hpp"
 #include "arcana/noelle/core/LDGGenerator.hpp"
 #include "noelle/core/DataFlow.hpp"
-#include "noelle/core/LoopContent.hpp"
+#include "arcana/noelle/core/LoopContent.hpp"
 #include "arcana/noelle/core/HotProfiler.hpp"
 #include "arcana/noelle/core/Scheduler.hpp"
 #include "arcana/noelle/core/MetadataManager.hpp"
@@ -43,7 +43,7 @@
 #include "arcana/noelle/core/CFGAnalysis.hpp"
 #include "arcana/noelle/core/CFGTransformer.hpp"
 #include "arcana/noelle/core/Linker.hpp"
-#include "noelle/core/AliasAnalysisEngine.hpp"
+#include "arcana/noelle/core/AliasAnalysisEngine.hpp"
 #include "arcana/noelle/core/MayPointsToAnalysis.hpp"
 #include "arcana/noelle/core/DependenceAnalysis.hpp"
 #include "arcana/noelle/core/CallGraphAnalysis.hpp"

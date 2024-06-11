@@ -1,4 +1,4 @@
-#include "noelle/core/LoopAliasAnalysisEngine.hpp"
+#include "arcana/noelle/core/LoopAliasAnalysisEngine.hpp"
 
 namespace arcana::noelle {
 

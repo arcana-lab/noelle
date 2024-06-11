@@ -1,7 +1,7 @@
 #ifndef NOELLE_SRC_CORE_ALIAS_ANALYSIS_ENGINE_PROGRAMALIASANALYSISENGINE_H_
 #define NOELLE_SRC_CORE_ALIAS_ANALYSIS_ENGINE_PROGRAMALIASANALYSISENGINE_H_
 
-#include "noelle/core/AliasAnalysisEngine.hpp"
+#include "arcana/noelle/core/AliasAnalysisEngine.hpp"
 
 namespace arcana::noelle {
 

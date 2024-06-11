@@ -23,14 +23,14 @@
 #define NOELLE_SRC_CORE_LOOP_SCCDAG_ATTRIBUTES_SCCDAGATTRS_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/SCC.hpp"
+#include "arcana/noelle/core/SCCDAG.hpp"
+#include "arcana/noelle/core/SCC.hpp"
 #include "noelle/core/GenericSCC.hpp"
 #include "noelle/core/LoopCarriedSCC.hpp"
 #include "noelle/core/InductionVariables.hpp"
 #include "noelle/core/PeriodicVariableSCC.hpp"
 #include "noelle/core/LoopGoverningInductionVariable.hpp"
-#include "noelle/core/LoopEnvironment.hpp"
+#include "arcana/noelle/core/LoopEnvironment.hpp"
 #include "arcana/noelle/core/Variable.hpp"
 #include "arcana/noelle/core/MemoryCloningAnalysis.hpp"
 

@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_LOOP_WHILIFIER_LOOPWHILIFY_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopContent.hpp"
+#include "arcana/noelle/core/LoopContent.hpp"
 #include "arcana/noelle/core/Scheduler.hpp"
 
 namespace arcana::noelle {

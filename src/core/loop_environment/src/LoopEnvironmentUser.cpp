@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/Architecture.hpp"
-#include "noelle/core/LoopEnvironmentUser.hpp"
+#include "arcana/noelle/core/LoopEnvironmentUser.hpp"
 
 namespace arcana::noelle {
 

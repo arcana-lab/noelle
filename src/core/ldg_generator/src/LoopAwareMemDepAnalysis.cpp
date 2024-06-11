@@ -21,7 +21,7 @@
  */
 #include "noelle/core/DataFlow.hpp"
 #include "arcana/noelle/core/LoopCarriedDependencies.hpp"
-#include "noelle/core/LoopAliasAnalysisEngine.hpp"
+#include "arcana/noelle/core/LoopAliasAnalysisEngine.hpp"
 #include "LoopAwareMemDepAnalysis.hpp"
 
 /*

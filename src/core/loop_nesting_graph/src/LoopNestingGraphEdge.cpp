@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopNestingGraphEdge.hpp"
+#include "arcana/noelle/core/LoopNestingGraphEdge.hpp"
 
 namespace arcana::noelle {
 

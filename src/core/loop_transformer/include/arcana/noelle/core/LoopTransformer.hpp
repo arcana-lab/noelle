@@ -26,7 +26,7 @@
 #include "llvm/Transforms/Utils/UnrollLoop.h"
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/LoopContent.hpp"
+#include "arcana/noelle/core/LoopContent.hpp"
 
 namespace arcana::noelle {
 

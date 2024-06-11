@@ -26,7 +26,7 @@
 #include "arcana/noelle/core/BitMatrix.hpp"
 #include "noelle/core/DGBase.hpp"
 #include "arcana/noelle/core/PDG.hpp"
-#include "noelle/core/SCC.hpp"
+#include "arcana/noelle/core/SCC.hpp"
 
 namespace arcana::noelle {
 

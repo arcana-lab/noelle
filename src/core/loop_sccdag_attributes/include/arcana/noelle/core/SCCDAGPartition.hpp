@@ -23,8 +23,8 @@
 #define NOELLE_SRC_CORE_LOOP_SCCDAG_ATTRIBUTES_SCCDAGPARTITION_H_
 
 #include "arcana/noelle/core/LoopStructure.hpp"
-#include "noelle/core/SCC.hpp"
-#include "noelle/core/SCCDAG.hpp"
+#include "arcana/noelle/core/SCC.hpp"
+#include "arcana/noelle/core/SCCDAG.hpp"
 #include "noelle/core/DGGraphTraits.hpp"
 #include "arcana/noelle/core/LoopForest.hpp"
 

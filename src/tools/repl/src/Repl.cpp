@@ -21,9 +21,9 @@
  */
 #include "Repl.hpp"
 #include "arcana/noelle/core/Noelle.hpp"
-#include "noelle/core/LoopContent.hpp"
+#include "arcana/noelle/core/LoopContent.hpp"
 #include "arcana/noelle/core/PDG.hpp"
-#include "noelle/core/SCCDAG.hpp"
+#include "arcana/noelle/core/SCCDAG.hpp"
 
 // GNU Readline
 #include <readline/history.h>

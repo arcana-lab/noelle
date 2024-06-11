@@ -24,7 +24,7 @@
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/LoopStructure.hpp"
-#include "noelle/core/SCC.hpp"
+#include "arcana/noelle/core/SCC.hpp"
 
 namespace arcana::noelle {
 

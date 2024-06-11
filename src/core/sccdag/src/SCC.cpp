@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "llvm/Support/raw_ostream.h"
-#include "noelle/core/SCC.hpp"
+#include "arcana/noelle/core/SCC.hpp"
 
 namespace arcana::noelle {
 

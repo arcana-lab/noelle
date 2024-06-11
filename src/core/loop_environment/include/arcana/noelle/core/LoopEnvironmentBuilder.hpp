@@ -24,8 +24,8 @@
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/BinaryReductionSCC.hpp"
-#include "noelle/core/LoopEnvironment.hpp"
-#include "noelle/core/LoopEnvironmentUser.hpp"
+#include "arcana/noelle/core/LoopEnvironment.hpp"
+#include "arcana/noelle/core/LoopEnvironmentUser.hpp"
 
 namespace arcana::noelle {
 

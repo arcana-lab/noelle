@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_SCCDAG_SCCDAGGRAPHTRAITS_H_
 
 #include "noelle/core/DGGraphTraits.hpp"
-#include "noelle/core/SCCDAG.hpp"
+#include "arcana/noelle/core/SCCDAG.hpp"
 
 namespace arcana::noelle {
 

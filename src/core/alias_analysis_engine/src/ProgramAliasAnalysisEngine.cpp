@@ -1,4 +1,4 @@
-#include "noelle/core/ProgramAliasAnalysisEngine.hpp"
+#include "arcana/noelle/core/ProgramAliasAnalysisEngine.hpp"
 
 namespace arcana::noelle {
 

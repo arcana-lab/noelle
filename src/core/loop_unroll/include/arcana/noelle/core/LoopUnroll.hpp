@@ -23,8 +23,8 @@
 #define NOELLE_SRC_CORE_LOOP_UNROLL_LOOPUNROLL_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/SCC.hpp"
-#include "noelle/core/LoopContent.hpp"
+#include "arcana/noelle/core/SCC.hpp"
+#include "arcana/noelle/core/LoopContent.hpp"
 
 namespace arcana::noelle {
 

@@ -22,7 +22,7 @@
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "noelle/core/DGGraphTraits.hpp"
 #include "arcana/noelle/core/PDGTraits.hpp"
-#include "noelle/core/SCCDAG.hpp"
+#include "arcana/noelle/core/SCCDAG.hpp"
 #include "llvm/InitializePasses.h"
 
 namespace arcana::noelle {

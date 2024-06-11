@@ -23,7 +23,7 @@
 #define NOELLE_SRC_CORE_LOOP_INVARIANTS_INVARIANTS_H_
 
 #include "arcana/noelle/core/PDG.hpp"
-#include "noelle/core/SCC.hpp"
+#include "arcana/noelle/core/SCC.hpp"
 #include "arcana/noelle/core/LoopForest.hpp"
 
 namespace arcana::noelle {

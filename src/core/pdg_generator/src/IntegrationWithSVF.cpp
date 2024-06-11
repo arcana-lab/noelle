@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "noelle/core/ProgramAliasAnalysisEngine.hpp"
+#include "arcana/noelle/core/ProgramAliasAnalysisEngine.hpp"
 #include "arcana/noelle/core/PDGGenerator.hpp"
 #include "IntegrationWithSVF.hpp"
 
