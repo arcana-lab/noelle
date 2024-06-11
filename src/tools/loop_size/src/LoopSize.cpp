@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/Noelle.hpp"
-#include "noelle/tools/LoopSize.hpp"
+#include "arcana/noelle/tools/LoopSize.hpp"
 
 namespace arcana::noelle {
 

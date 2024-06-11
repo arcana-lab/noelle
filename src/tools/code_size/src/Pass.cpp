@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/tools/CodeSize.hpp"
+#include "arcana/noelle/tools/CodeSize.hpp"
 
 namespace arcana::noelle {
 

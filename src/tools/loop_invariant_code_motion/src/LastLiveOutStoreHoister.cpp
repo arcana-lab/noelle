@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/tools/LoopInvariantCodeMotion.hpp"
+#include "arcana/noelle/tools/LoopInvariantCodeMotion.hpp"
 #include "noelle/core/LoopIterationSCC.hpp"
 
 namespace arcana::noelle {
@@ -68,8 +68,8 @@ bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut(
       }
       stores.insert(cast<StoreInst>(value));
     }
-    if (!onlyStores){
-      continue ;
+    if (!onlyStores) {
+      continue;
     }
 
     /*

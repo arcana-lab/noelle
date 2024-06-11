@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "noelle/tools/LoopStats.hpp"
+#include "arcana/noelle/tools/LoopStats.hpp"
 #include "noelle/core/LoopCarriedUnknownSCC.hpp"
 
 namespace arcana::noelle {
