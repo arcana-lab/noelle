@@ -29,13 +29,13 @@
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 
-#include "noelle/core/PDG.hpp"
-#include "noelle/core/SCC.hpp"
-#include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/PDGGenerator.hpp"
-#include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/LoopIterationSpaceAnalysis.hpp"
-#include "noelle/tools/SCEVSimplification.hpp"
+#include "arcana/noelle/core/PDG.hpp"
+#include "arcana/noelle/core/SCC.hpp"
+#include "arcana/noelle/core/SCCDAG.hpp"
+#include "arcana/noelle/core/PDGGenerator.hpp"
+#include "arcana/noelle/core/PDGPrinter.hpp"
+#include "arcana/noelle/core/LoopIterationSpaceAnalysis.hpp"
+#include "arcana/noelle/tools/SCEVSimplification.hpp"
 
 #include "TestSuite.hpp"
 

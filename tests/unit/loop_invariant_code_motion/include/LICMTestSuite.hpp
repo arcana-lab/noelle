@@ -27,14 +27,14 @@
 #include "llvm/IR/Instructions.h"
 
 #include "TestSuite.hpp"
-#include "noelle/core/PDGPrinter.hpp"
-#include "noelle/core/PDG.hpp"
-#include "noelle/core/SCC.hpp"
-#include "noelle/core/SCCDAG.hpp"
-#include "noelle/core/PDGGenerator.hpp"
-#include "noelle/core/LoopContent.hpp"
-#include "noelle/core/Noelle.hpp"
-#include "noelle/tools/LoopInvariantCodeMotion.hpp"
+#include "arcana/noelle/core/PDGPrinter.hpp"
+#include "arcana/noelle/core/PDG.hpp"
+#include "arcana/noelle/core/SCC.hpp"
+#include "arcana/noelle/core/SCCDAG.hpp"
+#include "arcana/noelle/core/PDGGenerator.hpp"
+#include "arcana/noelle/core/LoopContent.hpp"
+#include "arcana/noelle/core/Noelle.hpp"
+#include "arcana/noelle/tools/LoopInvariantCodeMotion.hpp"
 
 #include <sstream>
 #include <vector>

@@ -30,7 +30,7 @@
 #include "llvm/Support/GenericDomTree.h"
 
 #include "TestSuite.hpp"
-#include "noelle/core/Dominators.hpp"
+#include "arcana/noelle/core/Dominators.hpp"
 
 #include <sstream>
 #include <vector>

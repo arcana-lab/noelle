@@ -33,8 +33,8 @@
 #include "llvm/Support/GenericDomTree.h"
 
 #include "TestSuite.hpp"
-#include "noelle/core/Dominators.hpp"
-#include "noelle/core/ControlFlowEquivalence.hpp"
+#include "arcana/noelle/core/Dominators.hpp"
+#include "arcana/noelle/core/ControlFlowEquivalence.hpp"
 
 #include <sstream>
 #include <vector>
