@@ -112,10 +112,22 @@ LoopGoverningIVUtility::LoopGoverningIVUtility(
       }
       break;
 
+    case CmpInst::Predicate::ICMP_ULT:
+      assert(!isStepValuePositive
+             && "IV step value is not compatible with exit condition!");
+      this->nonStrictPredicate = CmpInst::Predicate::ICMP_SLT;
+      this->strictPredicate = CmpInst::Predicate::ICMP_SLT;
+      break;
+
+    case CmpInst::Predicate::ICMP_ULE:
+      assert(!isStepValuePositive
+             && "IV step value is not compatible with exit condition!");
+      this->nonStrictPredicate = CmpInst::Predicate::ICMP_SLE;
+      this->strictPredicate = CmpInst::Predicate::ICMP_SLE;
+      break;
+
     case CmpInst::Predicate::ICMP_SLE:
     case CmpInst::Predicate::ICMP_SLT:
-    case CmpInst::Predicate::ICMP_ULT:
-    case CmpInst::Predicate::ICMP_ULE:
     case CmpInst::Predicate::FCMP_ULT:
     case CmpInst::Predicate::FCMP_ULE:
       // This predicate is non-strict. We simply assert that the step value has
@@ -389,56 +401,6 @@ Value *LoopGoverningIVUtility::generateCodeToDetermineLastIterationValue(
                                                   currentIterationValue,
                                                   prevIterationValue);
   return lastIterationSelect;
-}
-
-void LoopGoverningIVUtility::
-    updateConditionToCheckIfTheLastLoopIterationWasExecuted(
-        bool ivInLeftOperand,
-        CmpInst *condition) {
-  assert(condition != nullptr);
-
-  /*
-   * Fetch the loop governing IV.
-   */
-  auto IV = this->attribution.getInductionVariable();
-  assert(IV->isStepValueLoopInvariant());
-
-  /*
-   * Adjust the predicate.
-   *
-   * For example, assume the loop exit condition is i >= 100.
-   * If the loop is exited, the previous iteration was the last loop iteration
-   * iff on the previous iteration, i < 100.
-   */
-  auto newPredicate = condition->getPredicate();
-  switch (condition->getPredicate()) {
-    case CmpInst::Predicate::ICMP_SGE:
-    case CmpInst::Predicate::ICMP_UGE:
-    case CmpInst::Predicate::ICMP_SLE:
-    case CmpInst::Predicate::ICMP_ULE:
-      newPredicate = ivInLeftOperand ? condition->getInversePredicate()
-                                     : this->strictPredicate;
-      break;
-
-    case CmpInst::Predicate::ICMP_SGT:
-    case CmpInst::Predicate::ICMP_UGT:
-    case CmpInst::Predicate::ICMP_SLT:
-    case CmpInst::Predicate::ICMP_ULT:
-      newPredicate = ivInLeftOperand ? this->nonStrictPredicate
-                                     : condition->getInversePredicate();
-      break;
-
-    case CmpInst::Predicate::ICMP_EQ:
-    case CmpInst::Predicate::ICMP_NE:
-      newPredicate = condition->getInversePredicate();
-      break;
-
-    default:
-      break;
-  }
-  condition->setPredicate(newPredicate);
-
-  return;
 }
 
 } // namespace arcana::noelle

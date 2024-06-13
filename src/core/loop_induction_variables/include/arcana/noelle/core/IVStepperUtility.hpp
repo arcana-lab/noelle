@@ -126,10 +126,6 @@ public:
                                                    PHINode *lastIterationFlag,
                                                    Value *stepValue);
 
-  void updateConditionToCheckIfTheLastLoopIterationWasExecuted(
-      bool ivInLeftOperand,
-      CmpInst *condition);
-
 private:
   LoopStructure *loop;
   LoopGoverningInductionVariable &attribution;
