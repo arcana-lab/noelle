@@ -58,6 +58,13 @@ private:
      */
     Instruction *memoryAccessor;
     const SCEV *memoryAccessorSCEV;
+    const SCEV *memoryAccessorBasePointerSCEV;
+    const SCEV *memoryMinusSCEV;
+
+    /*
+     * Were we able to determine the boundaries of this memory space?
+     */
+    bool isAnalyzed;
 
     /*
      * For linear spaces, track each dimension's access SCEVs
@@ -97,6 +104,8 @@ private:
   std::unordered_set<std::unique_ptr<MemoryAccessSpace>> accessSpaces;
   std::unordered_map<Instruction *, MemoryAccessSpace *>
       accessSpaceByInstruction;
+  std::unordered_map<MemoryAccessSpace *, std::set<MemoryAccessSpace *>>
+      spacesThatCannotOverlap;
 
   /*
    * Cache memory access spaces with certain properties
@@ -126,6 +135,14 @@ private:
 
   bool isInnerDimensionSubscriptsBounded(ScalarEvolution &SE,
                                          MemoryAccessSpace *space);
+
+  bool analyzeToCheckIfMemoryAccessSpaceNotOverlappingOrExactlyTheSame(
+      MemoryAccessSpace *accessSpaceI,
+      MemoryAccessSpace *accessSpaceJ) const;
+
+  bool areMemoryAccessSpaceNotOverlappingOrExactlyTheSame(
+      MemoryAccessSpace *accessSpaceI,
+      MemoryAccessSpace *accessSpaceJ) const;
 };
 
 } // namespace arcana::noelle

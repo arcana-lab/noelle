@@ -53,6 +53,10 @@ bool LoopIterationSpaceAnalysis::
     areInstructionsAccessingDisjointMemoryLocationsBetweenIterations(
         Instruction *I,
         Instruction *J) const {
+
+  /*
+   * Fetch the memory access spaces of the two instructions.
+   */
   if ((!I) || (!J)
       || (this->accessSpaceByInstruction.find(I)
           == this->accessSpaceByInstruction.end())
@@ -60,9 +64,65 @@ bool LoopIterationSpaceAnalysis::
           == this->accessSpaceByInstruction.end())) {
     return false;
   }
-
   auto accessSpaceI = this->accessSpaceByInstruction.at(I);
   auto accessSpaceJ = this->accessSpaceByInstruction.at(J);
+
+  /*
+   * Check if the two spaces can overlap.
+   */
+  auto areDisjoint =
+      this->areMemoryAccessSpaceNotOverlappingOrExactlyTheSame(accessSpaceI,
+                                                               accessSpaceJ);
+
+  return areDisjoint;
+}
+
+bool LoopIterationSpaceAnalysis::
+    areMemoryAccessSpaceNotOverlappingOrExactlyTheSame(
+        MemoryAccessSpace *accessSpaceI,
+        MemoryAccessSpace *accessSpaceJ) const {
+
+  /*
+   * Check we were able to determine the boundaries and strides of both memory
+   * access spaces.
+   */
+  if (!accessSpaceI->isAnalyzed) {
+    return false;
+  }
+  if (!accessSpaceJ->isAnalyzed) {
+    return false;
+  }
+  if (this->spacesThatCannotOverlap.find(accessSpaceI)
+      == this->spacesThatCannotOverlap.end()) {
+    return false;
+  }
+  if (this->spacesThatCannotOverlap.find(accessSpaceJ)
+      == this->spacesThatCannotOverlap.end()) {
+    return false;
+  }
+
+  /*
+   * We were able to determine the boundaries and strides of both memory access
+   * spaces.
+   *
+   * Check if they can overlap.
+   */
+  auto &notOverlapSetForI = this->spacesThatCannotOverlap.at(accessSpaceI);
+  auto &notOverlapSetForJ = this->spacesThatCannotOverlap.at(accessSpaceJ);
+  if (notOverlapSetForI.count(accessSpaceJ)) {
+    return true;
+  }
+  if (notOverlapSetForJ.count(accessSpaceI)) {
+    return true;
+  }
+
+  return false;
+}
+
+bool LoopIterationSpaceAnalysis::
+    analyzeToCheckIfMemoryAccessSpaceNotOverlappingOrExactlyTheSame(
+        MemoryAccessSpace *accessSpaceI,
+        MemoryAccessSpace *accessSpaceJ) const {
 
   // accessSpaceI->memoryAccessor->print(errs() << "Space I accessor: "); errs()
   // << "\n"; accessSpaceJ->memoryAccessor->print(errs() << "Space J accessor:
@@ -75,18 +135,34 @@ bool LoopIterationSpaceAnalysis::
   // }
 
   if (this->nonOverlappingAccessesBetweenIterations.find(accessSpaceI)
-      == this->nonOverlappingAccessesBetweenIterations.end())
+      == this->nonOverlappingAccessesBetweenIterations.end()) {
     return false;
+  }
   // errs() << "Space I is fine\n";
   if (this->nonOverlappingAccessesBetweenIterations.find(accessSpaceJ)
-      == this->nonOverlappingAccessesBetweenIterations.end())
+      == this->nonOverlappingAccessesBetweenIterations.end()) {
     return false;
+  }
   // errs() << "Space J is fine\n";
 
   /*
    * @I accesses different memory location at different iterations.
    *
    * @J accesses different memory location at different iterations.
+   *
+   * Check if the two memory access spaces are guaranteed to be within the same
+   * memory object.
+   */
+  if (accessSpaceI->memoryAccessorBasePointerSCEV
+      != accessSpaceJ->memoryAccessorBasePointerSCEV) {
+    return false;
+  }
+
+  /*
+   * @I and @J are guaranteed to:
+   * - access different locations at different iterations of the same loop
+   * invocation
+   * - access the same memory object
    *
    * Now we need to make sure that @I and @J do not overlap.
    * Case 1: @I and @J have the same exact access space.
@@ -114,14 +190,20 @@ bool LoopIterationSpaceAnalysis::
   assert(space1 != nullptr);
   assert(space2 != nullptr);
 
-  if (space1->subscriptIVs.size() == 0)
+  if (space1->subscriptIVs.size() == 0) {
     return false;
-  if (space1->subscriptIVs.size() != space2->subscriptIVs.size())
+  }
+  if (space1->subscriptIVs.size() != space2->subscriptIVs.size()) {
     return false;
+  }
+  if (space1->memoryMinusSCEV != space2->memoryMinusSCEV) {
+    return false;
+  }
 
-  // space1->memoryAccessor->print(errs() << "Space 1 accessor: "); errs() <<
-  // "\t"; space2->memoryAccessor->print(errs() << "Space 2 accessor: "); errs()
-  // << "\n";
+  /*space1->memoryAccessor->print(errs() << "Space 1 accessor: "); errs() <<
+   "\t"; space2->memoryAccessor->print(errs() << "Space 2 accessor: "); errs()
+   << "\n";
+   */
 
   auto getLoopsForIV =
       [&](InductionVariable *iv) -> std::unordered_set<LoopStructure *> {
@@ -331,14 +413,17 @@ void LoopIterationSpaceAnalysis::computeMemoryAccessSpace(ScalarEvolution &SE) {
      * De-linearize: collect parametric SCEV terms, dimension sizes, and
      * computed access SCEVs per dimension
      */
-    auto basePointer = dyn_cast<SCEVUnknown>(
+    memAccessSpace->memoryAccessorBasePointerSCEV = dyn_cast<SCEVUnknown>(
         SE.getPointerBase(memAccessSpace->memoryAccessorSCEV));
-    if (!basePointer) {
+    if (!memAccessSpace->memoryAccessorBasePointerSCEV) {
       continue;
     }
 
+    auto basePointer = memAccessSpace->memoryAccessorBasePointerSCEV;
+
     auto accessFunction =
         SE.getMinusSCEV(memAccessSpace->memoryAccessorSCEV, basePointer);
+    memAccessSpace->memoryMinusSCEV = accessFunction;
     ScalarEvolutionDelinearization::delinearize(SE,
                                                 accessFunction,
                                                 memAccessSpace->subscripts,
@@ -385,7 +470,10 @@ void LoopIterationSpaceAnalysis::computeMemoryAccessSpace(ScalarEvolution &SE) {
         }
       }
     }
-    if (!isFullyDelinearized) {
+    if (isFullyDelinearized) {
+      memAccessSpace->isAnalyzed = true;
+
+    } else {
       memAccessSpace->subscripts.clear();
       memAccessSpace->sizes.clear();
     }
@@ -589,6 +677,24 @@ void LoopIterationSpaceAnalysis::
   //   << "\n";
   // }
 
+  for (auto accessSpacePair0 : this->accessSpaceByInstruction) {
+    auto accessSpace0 = accessSpacePair0.second;
+    for (auto accessSpacePair1 : this->accessSpaceByInstruction) {
+      auto accessSpace1 = accessSpacePair1.second;
+      if (accessSpace0 == accessSpace1) {
+        continue;
+      }
+      auto areDisjoint =
+          this->analyzeToCheckIfMemoryAccessSpaceNotOverlappingOrExactlyTheSame(
+              accessSpace0,
+              accessSpace1);
+      auto &notOverlappingSet = this->spacesThatCannotOverlap[accessSpace0];
+      if (areDisjoint) {
+        notOverlappingSet.insert(accessSpace1);
+      }
+    }
+  }
+
   return;
 }
 
@@ -714,7 +820,14 @@ void LoopIterationSpaceAnalysis::identifyIVForMemoryAccessSubscripts(
 
 LoopIterationSpaceAnalysis::MemoryAccessSpace::MemoryAccessSpace(
     Instruction *memoryAccessor)
-  : memoryAccessor{ memoryAccessor } {}
+  : memoryAccessor{ memoryAccessor },
+    memoryAccessorSCEV{ nullptr },
+    memoryAccessorBasePointerSCEV{ nullptr },
+    memoryMinusSCEV{ nullptr },
+    isAnalyzed{ false },
+    elementSize{ nullptr } {
+  return;
+}
 
 LoopIterationSpaceAnalysis::~LoopIterationSpaceAnalysis() {
   accessSpaces.clear();
