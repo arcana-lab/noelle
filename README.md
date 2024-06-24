@@ -39,7 +39,7 @@ The following material compose the documentation currently available:
 - Comments in the source code
 
 ## Version
-The latest stable version is 9.15.0 (tag = `v9.15.0`).
+The latest stable version is 9.16.0 (tag = `v9.16.0`).
 
 #### Version Numbering Scheme
 The version number is in the form of \[v _Major.Minor.Revision_ \]
@@ -126,7 +126,7 @@ include(ExternalProject)
 ExternalProject_Add(
     noelle
     GIT_REPOSITORY  "https://github.com/arcana-lab/noelle.git"
-    GIT_TAG         v9.15.0
+    GIT_TAG         v9.16.0
     BUILD_COMMAND   ${CMAKE_COMMAND} --build . -j16
     INSTALL_COMMAND ${CMAKE_COMMAND} --install .
     CMAKE_ARGS
@@ -145,7 +145,7 @@ include(FetchContent)
 FetchContent_Declare(
     noelle
     GIT_REPOSITORY  "https://github.com/arcana-lab/noelle.git"
-    GIT_TAG         v9.15.0
+    GIT_TAG         v9.16.0
 )
 set(NOELLE_SVF OFF)
 set(NOELLE_SCAF OFF)
