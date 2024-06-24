@@ -17,6 +17,7 @@ n-eval opt \
   -loop-simplify \
   -lcssa \
   -licm \
+  -loop-unswitch \
   -globalopt \
   -instcombine \
   -ipsccp \
