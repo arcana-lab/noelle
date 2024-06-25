@@ -38,6 +38,7 @@ The following material compose the documentation currently available:
 - The [Github Wiki](https://github.com/arcana-lab/noelle/wiki) of the project
 - Comments in the source code
 
+
 ## Version
 The latest stable version is 14.0.1 (tag = `v14.0.1`).
 
