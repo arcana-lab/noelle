@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "arcana/noelle/core/OutlinerPass.hpp"
+#include "arcana/noelle/core/Outliner.hpp"
 
 namespace arcana::noelle {
 

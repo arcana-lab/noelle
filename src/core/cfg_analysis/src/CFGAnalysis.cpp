@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 - 2022  Simone Campanoni
+ * Copyright 2021 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@
 
 namespace arcana::noelle {
 
-CFGAnalysis::CFGAnalysis() : ModulePass{ ID } {
+CFGAnalysis::CFGAnalysis() {
   return;
 }
 
