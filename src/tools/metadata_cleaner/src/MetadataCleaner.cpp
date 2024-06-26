@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Yian Su, Simone Campanoni
+ * Copyright 2016 - 2024  Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,10 @@
 
 namespace arcana::noelle {
 
-MetadataCleaner::MetadataCleaner() : ModulePass{ ID }, cleanPDG{ false } {
+MetadataCleaner::MetadataCleaner() 
+  : ModulePass{ ID }
+  , cleanPDG{ false } {
+
   return;
 }
 
