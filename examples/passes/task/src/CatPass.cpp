@@ -4,8 +4,8 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
-#include "noelle/core/Noelle.hpp"
-#include "noelle/core/Task.hpp"
+#include "arcana/noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/Task.hpp"
 
 using namespace arcana::noelle;
 
