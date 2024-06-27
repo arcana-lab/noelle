@@ -5,7 +5,7 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include <algorithm>
 
-#include "noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/Noelle.hpp"
 
 using namespace arcana::noelle;
 
