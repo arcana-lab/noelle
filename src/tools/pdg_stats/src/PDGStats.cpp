@@ -30,7 +30,7 @@ bool PDGStats::runOnModule(Module &M) {
   /*
    * Fetch the NOELLE framework.
    */
-  auto &noelle = getAnalysis<Noelle>();
+  auto &noelle = getAnalysis<NoellePass>().getNoelle();
 
   /*
    * Compute the loops for all functions.

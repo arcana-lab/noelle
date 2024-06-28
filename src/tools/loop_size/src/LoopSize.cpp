@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 - 2022  Simone Campanoni
+ * Copyright 2021 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,19 +19,21 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "arcana/noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/NoellePass.hpp"
 #include "arcana/noelle/tools/LoopSize.hpp"
 
 namespace arcana::noelle {
 
-LoopSize::LoopSize() : ModulePass{ ID } {}
+LoopSize::LoopSize() : ModulePass{ ID } {
+  return;
+}
 
 bool LoopSize::runOnModule(Module &M) {
 
   /*
    * Fetch NOELLE
    */
-  auto &noelle = getAnalysis<Noelle>();
+  auto &noelle = getAnalysis<NoellePass>().getNoelle();
 
   /*
    * Fetch the forest of loops of the program being compiled.

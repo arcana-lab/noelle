@@ -74,7 +74,7 @@ bool SCCPrinter::doInitialization(Module &M) {
 }
 
 void SCCPrinter::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<Noelle>();
+  AU.addRequired<NoellePass>();
   return;
 }
 

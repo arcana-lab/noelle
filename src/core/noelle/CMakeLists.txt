@@ -6,5 +6,5 @@ target_sources(
   src/Noelle_function.cpp
   src/Noelle_loops.cpp
   src/Noelle_transformations.cpp
-  src/Pass.cpp
+  src/NoellePass.cpp
 )

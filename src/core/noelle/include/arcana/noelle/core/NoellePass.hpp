@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2023 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,40 +19,37 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "arcana/noelle/core/SystemHeaders.hpp"
+#ifndef NOELLEPASS_H_
+#define NOELLEPASS_H_
+
 #include "arcana/noelle/core/Noelle.hpp"
 
 namespace arcana::noelle {
 
-DominatorSummary *Noelle::getDominators(Function *f) {
+class NoellePass : public ModulePass {
+public:
+  /*
+   * Methods.
+   */
+  NoellePass();
+
+  bool doInitialization(Module &M) override;
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override;
+
+  bool runOnModule(Module &M) override;
+
+  Noelle &getNoelle(void) const;
 
   /*
-   * Fetch the dominators from LLVM.
+   * Fields.
    */
-  auto &DT = this->getDT(*f);
-  auto &PDT = this->getPDT(*f);
+  static char ID;
 
-  /*
-   * Combine them.
-   */
-  auto ds = new DominatorSummary(DT, PDT);
-
-  return ds;
-}
-
-FunctionsManager *Noelle::getFunctionsManager(void) {
-  if (!this->fm) {
-    this->fm = new FunctionsManager(this->program,
-                                    this->pdgAnalysis,
-                                    this->getProfiles());
-  }
-  return this->fm;
-}
-
-void Noelle::addAnalysis(CallGraphAnalysis *a) {
-  this->pdgAnalysis.addAnalysis(a);
-
-  return;
-}
+private:
+  Noelle *n;
+};
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_H_

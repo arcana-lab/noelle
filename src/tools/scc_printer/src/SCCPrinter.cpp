@@ -37,7 +37,7 @@ SCCPrinter::SCCPrinter() : ModulePass{ ID }, prefix{ "SCCPrinter: " } {
 }
 
 bool SCCPrinter::runOnModule(Module &M) {
-  auto &noelle = getAnalysis<Noelle>();
+  auto &noelle = getAnalysis<NoellePass>().getNoelle();
 
   /*
    * Finding the pointer of the given function name

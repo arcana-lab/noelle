@@ -33,7 +33,7 @@ void LoopStats::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
-  AU.addRequired<Noelle>();
+  AU.addRequired<NoellePass>();
   return;
 }
 
@@ -42,7 +42,7 @@ bool LoopStats::runOnModule(Module &M) {
   /*
    * Fetch noelle.
    */
-  auto &noelle = getAnalysis<Noelle>();
+  auto &noelle = getAnalysis<NoellePass>().getNoelle();
   if (noelle.getVerbosity() > Verbosity::Disabled) {
     errs() << "LoopStats: Start\n";
   }

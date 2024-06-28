@@ -35,7 +35,7 @@ bool RemoveFunction::doInitialization(Module &M) {
 }
 
 void RemoveFunction::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<Noelle>();
+  AU.addRequired<NoellePass>();
   return;
 }
 

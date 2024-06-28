@@ -42,7 +42,7 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(Function *function,
    * Check if the function has loops.
    */
   auto allLoops = new std::vector<LoopStructure *>();
-  auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+  auto &LI = this->getLoopInfo(*function);
   if (std::distance(LI.begin(), LI.end()) == 0) {
     return allLoops;
   }
@@ -229,7 +229,7 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
     /*
      * Check if the function has loops.
      */
-    auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+    auto &LI = this->getLoopInfo(*function);
     if (std::distance(LI.begin(), LI.end()) == 0) {
       continue;
     }
@@ -504,7 +504,7 @@ std::vector<LoopContent *> *Noelle::getLoopContents(Function *function,
   /*
    * Fetch the loop analysis.
    */
-  auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+  auto &LI = this->getLoopInfo(*function);
 
   /*
    * Check if the function has loops.
@@ -574,8 +574,8 @@ std::vector<LoopContent *> *Noelle::getLoopContents(Function *function,
        * Forest generation invalids the previous generated LoopInfo, we need to
        * recompute them
        */
-      auto &newLI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
-      auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
+      auto &newLI = this->getLoopInfo(*function);
+      auto &SE = this->getSCEV(*function);
       auto llvmLoop = newLI.getLoopFor(ls->getHeader());
       auto ldi = new LoopContent(this->ldgAnalysis,
                                  this->getCompilationOptionsManager(),
@@ -652,7 +652,7 @@ std::vector<LoopContent *> *Noelle::getLoopContents(double minimumHotness) {
     /*
      * Fetch the loop analysis.
      */
-    auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+    auto &LI = this->getLoopInfo(*function);
 
     /*
      * Check if the function has loops.
@@ -670,7 +670,7 @@ std::vector<LoopContent *> *Noelle::getLoopContents(double minimumHotness) {
      * Fetch the post dominators and scalar evolutions
      */
     auto DS = this->getDominators(function);
-    auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
+    auto &SE = this->getSCEV(*function);
 
     /*
      * Fetch all loops of the current function.
@@ -773,8 +773,7 @@ std::vector<LoopContent *> *Noelle::getLoopContents(double minimumHotness) {
         /*
          * Fetch the LLVM loop
          */
-        auto &LI =
-            getAnalysis<LoopInfoWrapperPass>(*ls->getFunction()).getLoopInfo();
+        auto &LI = this->getLoopInfo(*ls->getFunction());
         auto LLVMLoop = LI.getLoopFor(ls->getHeader());
 
         /*
@@ -846,7 +845,7 @@ uint32_t Noelle::getNumberOfProgramLoops(double minimumHotness) {
     /*
      * Fetch the loop analysis.
      */
-    auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
+    auto &LI = this->getLoopInfo(*function);
 
     /*
      * Check if the function has loops.
@@ -1207,8 +1206,8 @@ LoopContent *Noelle::getLoopContentForLoop(
   /*
    * Fetch the llvm loop corresponding to the loop structure
    */
-  auto &LI = getAnalysis<LoopInfoWrapperPass>(*function).getLoopInfo();
-  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*function).getSE();
+  auto &LI = this->getLoopInfo(*function);
+  auto &SE = this->getSCEV(*function);
   auto llvmLoop = LI.getLoopFor(header);
 
   /*

@@ -25,27 +25,48 @@
 
 namespace arcana::noelle {
 
-Noelle::Noelle()
-  : ModulePass{ ID },
-    verbose{ Verbosity::Disabled },
-    minHot{ 0.0 },
-    program{ nullptr },
+Noelle::Noelle(Module &m,
+               PDGGenerator &pdgGen,
+               LoopTransformer &lt,
+               std::function<llvm::ScalarEvolution &(Function &F)> getSCEV,
+               std::function<llvm::LoopInfo &(Function &F)> getLoopInfo,
+               std::function<llvm::PostDominatorTree &(Function &F)> getPDT,
+               std::function<llvm::DominatorTree &(Function &F)> getDT,
+               std::function<Hot &(void)> getProfiler,
+               std::unordered_set<Transformation> enabledTransformations,
+               Verbosity v,
+               double minHot,
+               LDGGenerator ldgAnalysis,
+               CompilationOptionsManager *om)
+  : verbose{ v },
+    minHot{ minHot },
+    program{ m },
     profiles{ nullptr },
     programDependenceGraph{ nullptr },
-    pdgAnalysis{ nullptr },
-    ldgAnalysis{},
+    enabledTransformations{ enabledTransformations },
+    pdgAnalysis{ pdgGen },
+    ldgAnalysis{ ldgAnalysis },
     fm{ nullptr },
     tm{ nullptr },
     cm{ nullptr },
-    om{ nullptr },
+    om{ om },
     mm{ nullptr },
-    linker{ nullptr } {
+    linker{ nullptr },
+    lt{ lt },
+    getSCEV{ getSCEV },
+    getLoopInfo{ getLoopInfo },
+    getPDT{ getPDT },
+    getDT{ getDT },
+    getProfiler{ getProfiler } {
+
+  this->filterFileName = getenv("INDEX_FILE");
+  this->hasReadFilterFile = false;
 
   return;
 }
 
 Module *Noelle::getProgram(void) const {
-  return this->program;
+  return &(this->program);
 }
 
 LLVMContext &Noelle::getProgramContext(void) const {
@@ -101,7 +122,7 @@ double Noelle::getMinimumHotness(void) const {
 
 Hot *Noelle::getProfiles(void) {
   if (this->profiles == nullptr) {
-    this->profiles = &getAnalysis<HotProfiler>().getHot();
+    this->profiles = &(this->getProfiler());
   }
 
   return this->profiles;
@@ -132,15 +153,15 @@ MayPointsToAnalysis Noelle::getMayPointsToAnalysis(void) const {
 }
 
 LoopTransformer &Noelle::getLoopTransformer(void) {
-  auto &lt = getAnalysis<LoopTransformer>();
   auto pdg = this->getProgramDependenceGraph();
-  lt.setPDG(pdg);
+  this->lt.setPDG(pdg);
+
   return lt;
 }
 
 uint64_t Noelle::numberOfProgramInstructions(void) const {
   uint64_t t = 0;
-  for (auto &F : *this->program) {
+  for (auto &F : this->program) {
     if (F.empty()) {
       continue;
     }
@@ -159,7 +180,7 @@ Noelle::~Noelle() {
 
 TypesManager *Noelle::getTypesManager(void) {
   if (!this->tm) {
-    this->tm = new TypesManager(*this->program);
+    this->tm = new TypesManager(this->program);
   }
 
   return this->tm;
@@ -168,7 +189,7 @@ TypesManager *Noelle::getTypesManager(void) {
 ConstantsManager *Noelle::getConstantsManager(void) {
   if (!this->cm) {
     auto typesManager = this->getTypesManager();
-    this->cm = new ConstantsManager(*this->program, typesManager);
+    this->cm = new ConstantsManager(this->program, typesManager);
   }
 
   return this->cm;
@@ -177,7 +198,7 @@ ConstantsManager *Noelle::getConstantsManager(void) {
 Linker *Noelle::getLinker(void) {
   if (!this->linker) {
     auto tm = this->getTypesManager();
-    this->linker = new Linker(*this->program, tm);
+    this->linker = new Linker(this->program, tm);
   }
 
   return this->linker;
@@ -196,12 +217,11 @@ MetadataManager *Noelle::getMetadataManager(void) {
 }
 
 bool Noelle::verifyCode(void) const {
-  assert(this->program != nullptr);
 
   /*
    * Check the entire program.
    */
-  auto incorrect = llvm::verifyModule(*this->program, &errs());
+  auto incorrect = llvm::verifyModule(this->program, &errs());
 
   return !incorrect;
 }
@@ -227,7 +247,7 @@ std::set<AliasAnalysisEngine *> Noelle::getAliasAnalysisEngines(void) {
 
 GlobalsManager *Noelle::getGlobalsManager(void) {
   if (!this->gm) {
-    this->gm = new GlobalsManager(*this->program);
+    this->gm = new GlobalsManager(this->program);
   }
 
   return this->gm;

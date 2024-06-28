@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_TOOLS_LOOP_STATS_LOOPSTATS_H_
 #define NOELLE_SRC_TOOLS_LOOP_STATS_LOOPSTATS_H_
 
-#include "arcana/noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/NoellePass.hpp"
 
 using namespace llvm;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2023 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "arcana/noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/NoellePass.hpp"
 #include "arcana/noelle/core/HotProfiler.hpp"
 #include "arcana/noelle/core/PDGGenerator.hpp"
 #include "arcana/noelle/core/Architecture.hpp"
@@ -96,78 +96,15 @@ static cl::opt<bool> InlinerDisableHoistToMain(
     cl::Hidden,
     cl::desc("Disable the function inliner"));
 
-bool Noelle::doInitialization(Module &M) {
+NoellePass::NoellePass() : ModulePass{ ID }, n{ nullptr } {
+  return;
+}
 
-  /*
-   * Default configuration
-   */
-  for (auto i = (uint32_t)Transformation::First;
-       i <= (uint32_t)Transformation::Last;
-       i++) {
-    auto transformationID = static_cast<Transformation>(i);
-    this->enabledTransformations.insert(transformationID);
-  }
-
-  /*
-   * Fetch the command line options.
-   */
-  this->filterFileName = getenv("INDEX_FILE");
-  this->hasReadFilterFile = false;
-  this->verbose = static_cast<Verbosity>(Verbose.getValue());
-  this->minHot = ((double)(MinimumHotness.getValue())) / 1000;
-  auto optMaxCores = MaximumCores.getValue();
-  if (optMaxCores == 0) {
-    optMaxCores = Architecture::getNumberOfPhysicalCores();
-  }
-  if (DisableDOALL.getNumOccurrences() > 0) {
-    this->enabledTransformations.erase(DOALL_ID);
-  }
-  if (DisableDSWP.getNumOccurrences() > 0) {
-    this->enabledTransformations.erase(DSWP_ID);
-  }
-  if (DisableHELIX.getNumOccurrences() > 0) {
-    this->enabledTransformations.erase(HELIX_ID);
-  }
-  if (DisableDistribution.getNumOccurrences() > 0) {
-    this->enabledTransformations.erase(LOOP_DISTRIBUTION_ID);
-  }
-  if (DisableInvCM.getNumOccurrences() > 0) {
-    this->enabledTransformations.erase(LOOP_INVARIANT_CODE_MOTION_ID);
-  }
-  if (DisableWhilifier.getNumOccurrences() > 0) {
-    this->enabledTransformations.erase(LOOP_WHILIFIER_ID);
-  }
-  if (DisableSCEVSimplification.getNumOccurrences() > 0) {
-    this->enabledTransformations.erase(SCEV_SIMPLIFICATION_ID);
-  }
-  if (DisableInliner.getNumOccurrences() > 0) {
-    this->enabledTransformations.erase(INLINER_ID);
-  }
-  if (DisableLoopAwareDependenceAnalyses.getNumOccurrences() == 0) {
-    this->ldgAnalysis.enableLoopDependenceAnalyses(true);
-  } else {
-    this->ldgAnalysis.enableLoopDependenceAnalyses(false);
-  }
-
-  /*
-   * Allocate the managers.
-   */
-  this->om = new CompilationOptionsManager(
-      M,
-      optMaxCores,
-      (ND_PRVGs.getNumOccurrences() > 0),
-      (DisableFloatAsReal.getNumOccurrences() == 0),
-      (InlinerDisableHoistToMain.getNumOccurrences() > 0));
-
-  /*
-   * Store the module.
-   */
-  this->program = &M;
-
+bool NoellePass::doInitialization(Module &M) {
   return false;
 }
 
-void Noelle::getAnalysisUsage(AnalysisUsage &AU) const {
+void NoellePass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<AssumptionCacheTracker>();
   AU.addRequired<TargetLibraryInfoWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
@@ -181,14 +118,124 @@ void Noelle::getAnalysisUsage(AnalysisUsage &AU) const {
   return;
 }
 
-bool Noelle::runOnModule(Module &M) {
-  this->pdgAnalysis = &getAnalysis<PDGGenerator>();
+bool NoellePass::runOnModule(Module &M) {
+  std::unordered_set<Transformation> enabledTransformations;
+  Verbosity verbose = Verbosity::Disabled;
+  double minHot = 0.0;
+  LDGGenerator ldgAnalysis;
+  CompilationOptionsManager *om;
+
+  /*
+   * Default configuration
+   */
+  for (auto i = (uint32_t)Transformation::First;
+       i <= (uint32_t)Transformation::Last;
+       i++) {
+    auto transformationID = static_cast<Transformation>(i);
+    enabledTransformations.insert(transformationID);
+  }
+
+  /*
+   * Fetch the command line options.
+   */
+  verbose = static_cast<Verbosity>(Verbose.getValue());
+  minHot = ((double)(MinimumHotness.getValue())) / 1000;
+  auto optMaxCores = MaximumCores.getValue();
+  if (optMaxCores == 0) {
+    optMaxCores = Architecture::getNumberOfPhysicalCores();
+  }
+  if (DisableDOALL.getNumOccurrences() > 0) {
+    enabledTransformations.erase(DOALL_ID);
+  }
+  if (DisableDSWP.getNumOccurrences() > 0) {
+    enabledTransformations.erase(DSWP_ID);
+  }
+  if (DisableHELIX.getNumOccurrences() > 0) {
+    enabledTransformations.erase(HELIX_ID);
+  }
+  if (DisableDistribution.getNumOccurrences() > 0) {
+    enabledTransformations.erase(LOOP_DISTRIBUTION_ID);
+  }
+  if (DisableInvCM.getNumOccurrences() > 0) {
+    enabledTransformations.erase(LOOP_INVARIANT_CODE_MOTION_ID);
+  }
+  if (DisableWhilifier.getNumOccurrences() > 0) {
+    enabledTransformations.erase(LOOP_WHILIFIER_ID);
+  }
+  if (DisableSCEVSimplification.getNumOccurrences() > 0) {
+    enabledTransformations.erase(SCEV_SIMPLIFICATION_ID);
+  }
+  if (DisableInliner.getNumOccurrences() > 0) {
+    enabledTransformations.erase(INLINER_ID);
+  }
+  if (DisableLoopAwareDependenceAnalyses.getNumOccurrences() == 0) {
+    ldgAnalysis.enableLoopDependenceAnalyses(true);
+  } else {
+    ldgAnalysis.enableLoopDependenceAnalyses(false);
+  }
+
+  /*
+   * Allocate the managers.
+   */
+  om = new CompilationOptionsManager(
+      M,
+      optMaxCores,
+      (ND_PRVGs.getNumOccurrences() > 0),
+      (DisableFloatAsReal.getNumOccurrences() == 0),
+      (InlinerDisableHoistToMain.getNumOccurrences() > 0));
+
+  /*
+   * Fetch the other passes.
+   */
+  auto &pdgGen = getAnalysis<PDGGenerator>();
+  auto &lt = getAnalysis<LoopTransformer>();
+  auto getSCEV = [this](Function &F) -> llvm::ScalarEvolution & {
+    auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(F).getSE();
+    return SE;
+  };
+  auto getLoopInfo = [this](Function &F) -> llvm::LoopInfo & {
+    auto &LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
+    return LI;
+  };
+  auto getPDT = [this](Function &F) -> llvm::PostDominatorTree & {
+    auto &PDT = getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
+    return PDT;
+  };
+  auto getDT = [this](Function &F) -> llvm::DominatorTree & {
+    auto &DT = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
+    return DT;
+  };
+  auto getProfiler = [this](void) -> Hot & {
+    auto &h = getAnalysis<HotProfiler>().getHot();
+    return h;
+  };
+
+  /*
+   * Allocate NOELLE.
+   */
+  this->n = new Noelle(M,
+                       pdgGen,
+                       lt,
+                       getSCEV,
+                       getLoopInfo,
+                       getPDT,
+                       getDT,
+                       getProfiler,
+                       enabledTransformations,
+                       verbose,
+                       minHot,
+                       ldgAnalysis,
+                       om);
 
   return false;
 }
 
+Noelle &NoellePass::getNoelle(void) const {
+  return *(this->n);
+}
+
 // Next there is code to register your pass to "opt"
-char Noelle::ID = 0;
-static RegisterPass<Noelle> X("noelle", "The NOELLE framework");
+char NoellePass::ID = 0;
+static RegisterPass<NoellePass> X("noelle", "The NOELLE framework");
 
 } // namespace arcana::noelle

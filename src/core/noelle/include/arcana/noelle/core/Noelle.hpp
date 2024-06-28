@@ -22,9 +22,9 @@
 #ifndef NOELLE_H_
 #define NOELLE_H_
 
+#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/Dominators.hpp"
 #include "arcana/noelle/core/LoopNestingGraph.hpp"
-#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/Queue.hpp"
 #include "arcana/noelle/core/LoopForest.hpp"
 #include "arcana/noelle/core/PDGGenerator.hpp"
@@ -52,18 +52,24 @@ namespace arcana::noelle {
 
 enum class Verbosity { Disabled, Minimal, Maximal };
 
-class Noelle : public ModulePass {
+class Noelle {
 public:
   /*
    * Methods.
    */
-  Noelle();
-
-  bool doInitialization(Module &M) override;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-
-  bool runOnModule(Module &M) override;
+  Noelle(Module &m,
+         PDGGenerator &pdgGen,
+         LoopTransformer &lt,
+         std::function<llvm::ScalarEvolution &(Function &F)> getSCEV,
+         std::function<llvm::LoopInfo &(Function &F)> getLoopInfo,
+         std::function<llvm::PostDominatorTree &(Function &F)> getPDT,
+         std::function<llvm::DominatorTree &(Function &F)> getDT,
+         std::function<Hot &(void)> getProfiler,
+         std::unordered_set<Transformation> enabledTransformations,
+         Verbosity v,
+         double minHot,
+         LDGGenerator ldgAnalysis,
+         CompilationOptionsManager *om);
 
   FunctionsManager *getFunctionsManager(void);
 
@@ -230,19 +236,18 @@ public:
   /*
    * Fields.
    */
-  static char ID;
   Queue queues;
 
 private:
-  Verbosity verbose;
   double minHot;
-  Module *program;
+  Module &program;
   Hot *profiles;
   PDG *programDependenceGraph;
   std::unordered_set<Transformation> enabledTransformations;
+  Verbosity verbose;
   bool hoistLoopsToMain;
   bool loopAwareDependenceAnalysis;
-  PDGGenerator *pdgAnalysis;
+  PDGGenerator &pdgAnalysis;
   LDGGenerator ldgAnalysis;
   char *filterFileName;
   bool hasReadFilterFile;
@@ -256,6 +261,12 @@ private:
   CompilationOptionsManager *om;
   MetadataManager *mm;
   Linker *linker;
+  LoopTransformer &lt;
+  std::function<llvm::ScalarEvolution &(Function &F)> getSCEV;
+  std::function<llvm::LoopInfo &(Function &F)> getLoopInfo;
+  std::function<llvm::PostDominatorTree &(Function &F)> getPDT;
+  std::function<llvm::DominatorTree &(Function &F)> getDT;
+  std::function<Hot &(void)> getProfiler;
   std::set<AliasAnalysisEngine *> aaEngines;
 
   PDG *getFunctionDependenceGraph(Function *f);

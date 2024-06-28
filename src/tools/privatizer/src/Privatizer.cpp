@@ -80,7 +80,7 @@ bool Privatizer::runOnModule(Module &M) {
   /*
    * Fetch NOELLE.
    */
-  auto &noelle = getAnalysis<Noelle>();
+  auto &noelle = getAnalysis<NoellePass>().getNoelle();
   mpa = noelle.getMayPointsToAnalysis();
 
   auto modified = false;

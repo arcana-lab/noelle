@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Simone Campanoni
+ * Copyright 2021 - 2024 Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "arcana/noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/NoellePass.hpp"
 #include "arcana/noelle/tools/LoopSize.hpp"
 
 namespace arcana::noelle {
@@ -29,7 +29,7 @@ bool LoopSize::doInitialization(Module &M) {
 }
 
 void LoopSize::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<Noelle>();
+  AU.addRequired<NoellePass>();
   return;
 }
 
