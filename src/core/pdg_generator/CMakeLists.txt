@@ -1,9 +1,7 @@
 target_sources(
   Noelle # component name
   PRIVATE
-  src/AnalysisPass.cpp
   src/IntegrationWithSVF.cpp
-  src/Pass.cpp
   src/PDGGenerator_callGraph.cpp
   src/PDGGenerator_compare.cpp
   src/PDGGenerator_controlDependences.cpp

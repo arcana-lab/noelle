@@ -29,13 +29,13 @@ namespace arcana::noelle {
 void PDGGenerator::embedPDGAsMetadata(PDG *pdg) {
   errs() << "Embed PDG as metadata\n";
 
-  auto &C = this->M->getContext();
+  auto &C = this->M.getContext();
   std::unordered_map<Value *, MDNode *> nodeIDMap;
 
   embedNodesAsMetadata(pdg, C, nodeIDMap);
   embedEdgesAsMetadata(pdg, C, nodeIDMap);
 
-  auto n = this->M->getOrInsertNamedMetadata("noelle.module.pdg");
+  auto n = this->M.getOrInsertNamedMetadata("noelle.module.pdg");
   n->addOperand(MDNode::get(C, MDString::get(C, "true")));
 
   return;

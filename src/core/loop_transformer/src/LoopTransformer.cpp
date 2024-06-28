@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Simone Campanoni
+ * Copyright 2021 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,17 @@
 
 namespace arcana::noelle {
 
-LoopTransformer::LoopTransformer() : ModulePass{ ID } {
+LoopTransformer::LoopTransformer(
+    std::function<llvm::ScalarEvolution &(Function &F)> getSCEV,
+    std::function<llvm::LoopInfo &(Function &F)> getLoopInfo,
+    std::function<llvm::PostDominatorTree &(Function &F)> getPDT,
+    std::function<llvm::DominatorTree &(Function &F)> getDT,
+    std::function<llvm::AssumptionCache &(Function &F)> getAssumptionCache)
+  : getSCEV{ getSCEV },
+    getLoopInfo{ getLoopInfo },
+    getPDT{ getPDT },
+    getDT{ getDT },
+    getAssumptionCache{ getAssumptionCache } {
   return;
 }
 
@@ -55,11 +65,10 @@ LoopUnrollResult LoopTransformer::unrollLoop(LoopContent *loop,
   /*
    * Fetch the LLVM loop abstractions.
    */
-  auto &LLVMLoops = getAnalysis<LoopInfoWrapperPass>(*lsFunction).getLoopInfo();
-  auto &DT = getAnalysis<DominatorTreeWrapperPass>(*lsFunction).getDomTree();
-  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*lsFunction).getSE();
-  auto &AC =
-      getAnalysis<AssumptionCacheTracker>().getAssumptionCache(*lsFunction);
+  auto &LLVMLoops = this->getLoopInfo(*lsFunction);
+  auto &DT = this->getDT(*lsFunction);
+  auto &SE = this->getSCEV(*lsFunction);
+  auto &AC = this->getAssumptionCache(*lsFunction);
 
   /*
    * Fetch the LLVM loop.
@@ -101,11 +110,10 @@ bool LoopTransformer::fullyUnrollLoop(LoopContent *loop) {
    */
   auto ls = loop->getLoopStructure();
   auto &loopFunction = *ls->getFunction();
-  auto &LS = getAnalysis<LoopInfoWrapperPass>(loopFunction).getLoopInfo();
-  auto &DT = getAnalysis<DominatorTreeWrapperPass>(loopFunction).getDomTree();
-  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(loopFunction).getSE();
-  auto &AC =
-      getAnalysis<AssumptionCacheTracker>().getAssumptionCache(loopFunction);
+  auto &LS = this->getLoopInfo(loopFunction);
+  auto &DT = this->getDT(loopFunction);
+  auto &SE = this->getSCEV(loopFunction);
+  auto &AC = this->getAssumptionCache(loopFunction);
   auto modified = loopUnroll.fullyUnrollLoop(*loop, LS, DT, SE, AC);
 
   return modified;
@@ -125,8 +133,8 @@ bool LoopTransformer::whilifyLoop(LoopContent *loop) {
   auto scheduler = Scheduler();
   auto loopStructure = loop->getLoopStructure();
   auto func = loopStructure->getFunction();
-  auto &DT = getAnalysis<DominatorTreeWrapperPass>(*func).getDomTree();
-  auto &PDT = getAnalysis<PostDominatorTreeWrapperPass>(*func).getPostDomTree();
+  auto &DT = this->getDT(*func);
+  auto &PDT = this->getPDT(*func);
   auto DS = new DominatorSummary(DT, PDT);
   auto FDG = this->pdg->createFunctionSubgraph(*func);
 

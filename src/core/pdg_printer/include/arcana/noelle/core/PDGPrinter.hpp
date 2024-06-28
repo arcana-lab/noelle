@@ -108,7 +108,7 @@ public:
   void printPDG(Module &module,
                 CallGraph &callGraph,
                 PDG *graph,
-                std::function<LoopInfo &(Function *f)> getLoopInfo);
+                std::function<LoopInfo &(Function &f)> getLoopInfo);
 
   void printGraphsForFunction(Function &F, PDG *graph, LoopInfo &LI);
 

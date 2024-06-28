@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2023  Angelo Matni, Yian Su, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -38,19 +38,22 @@ namespace arcana::noelle {
 
 enum class PDGVerbosity { Disabled, Minimal, Maximal, MaximalAndPDG };
 
-class PDGGenerator : public ModulePass {
+class PDGGenerator {
 public:
-  static char ID;
-
-  PDGGenerator();
-
-  bool doInitialization(Module &M) override;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-
-  void releaseMemory() override;
-
-  bool runOnModule(Module &M) override;
+  PDGGenerator(Module &M,
+               std::function<llvm::ScalarEvolution &(Function &F)> getSCEV,
+               std::function<llvm::LoopInfo &(Function &F)> getLoopInfo,
+               std::function<llvm::PostDominatorTree &(Function &F)> getPDT,
+               std::function<llvm::CallGraph &(void)> getCallGraph,
+               std::function<llvm::AAResults &(Function &F)> getAA,
+               bool embedPDG,
+               bool dumpPDG,
+               bool performThePDGComparison,
+               bool disableSVF,
+               bool disableSVFCallGraph,
+               bool disableAllocAA,
+               bool disableRA,
+               PDGVerbosity verbose);
 
   void addAnalysis(DependenceAnalysis *a);
 
@@ -59,6 +62,8 @@ public:
   PDG *getPDG(void);
 
   noelle::CallGraph *getProgramCallGraph(void);
+
+  void cleanAndEmbedPDGAsMetadata(PDG *pdg);
 
   virtual ~PDGGenerator();
 
@@ -77,10 +82,13 @@ public:
       std::set<const Function *> functions,
       FunctionType *signature);
 
-  void cleanAndEmbedPDGAsMetadata(PDG *pdg);
-
 private:
-  Module *M;
+  Module &M;
+  std::function<llvm::ScalarEvolution &(Function &F)> getSCEV;
+  std::function<llvm::LoopInfo &(Function &F)> getLoopInfo;
+  std::function<llvm::PostDominatorTree &(Function &F)> getPDT;
+  std::function<llvm::CallGraph &(void)> getCallGraph;
+  std::function<llvm::AAResults &(Function &F)> getAA;
   PDG *programDependenceGraph;
   AllocAA *allocAA;
   MayPointsToAnalysis mpa;

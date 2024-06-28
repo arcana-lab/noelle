@@ -52,17 +52,17 @@ noelle::CallGraph *PDGGenerator::getProgramCallGraph(void) {
         /*
          * @call is an indirect call.
          */
-        auto callees = PDGGenerator::getFunctionsThatMightEscape(*M);
+        auto callees = PDGGenerator::getFunctionsThatMightEscape(M);
         auto targetSignature = call->getFunctionType();
         auto compatibleCallees =
             PDGGenerator::getFunctionsWithSignature(callees, targetSignature);
 
         return compatibleCallees;
       };
-      this->noelleCG = new noelle::CallGraph(*M, hasF, getCallees);
+      this->noelleCG = new noelle::CallGraph(M, hasF, getCallees);
 
     } else {
-      this->noelleCG = NoelleSVFIntegration::getProgramCallGraph(*M);
+      this->noelleCG = NoelleSVFIntegration::getProgramCallGraph(M);
     }
   }
 

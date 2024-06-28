@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -26,19 +26,12 @@
 
 namespace arcana::noelle {
 
-enum class AllocAAVerbosity { Disabled, Minimal, Maximal };
-
-class AllocAA : public ModulePass {
+class AllocAA {
 public:
-  static char ID;
-
-  AllocAA() : ModulePass{ ID } {}
-
-  bool doInitialization(Module &M) override;
-
-  bool runOnModule(Module &M) override;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
+  AllocAA(Module &M,
+          std::function<llvm::ScalarEvolution &(Function &F)> getSCEV,
+          std::function<llvm::LoopInfo &(Function &F)> getLoopInfo,
+          std::function<llvm::CallGraph &(void)> getCallGraph);
 
   std::pair<Value *, GetElementPtrInst *> getPrimitiveArrayAccess(Value *V);
 
@@ -52,6 +45,10 @@ public:
   bool isMemoryless(StringRef functionName);
 
 private:
+  Module &M;
+  std::function<llvm::ScalarEvolution &(Function &F)> getSCEV;
+  std::function<llvm::LoopInfo &(Function &F)> getLoopInfo;
+  std::function<llvm::CallGraph &(void)> getCallGraph;
   std::set<Function *> CGUnderMain;
   // TODO: These should become objects representing the full usage of these
   // allocated arrays
@@ -60,7 +57,6 @@ private:
       memorylessFunctionNames;
   std::set<GlobalValue *> primitiveArrayGlobals;
   std::set<Instruction *> primitiveArrayLocals;
-  AllocAAVerbosity verbose;
 
   // TODO: Find a way to extract this into a helper module for all passes in the
   // PDG project

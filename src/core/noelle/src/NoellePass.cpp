@@ -21,7 +21,6 @@
  */
 #include "arcana/noelle/core/NoellePass.hpp"
 #include "arcana/noelle/core/HotProfiler.hpp"
-#include "arcana/noelle/core/PDGGenerator.hpp"
 #include "arcana/noelle/core/Architecture.hpp"
 
 namespace arcana::noelle {
@@ -96,6 +95,55 @@ static cl::opt<bool> InlinerDisableHoistToMain(
     cl::Hidden,
     cl::desc("Disable the function inliner"));
 
+static cl::opt<int> PDGVerbose(
+    "noelle-pdg-verbose",
+    cl::ZeroOrMore,
+    cl::Hidden,
+    cl::desc(
+        "Verbose output (0: disabled, 1: minimal, 2: maximal, 3:maximal plus dumping PDG"));
+
+static cl::opt<bool> PDGEmbed("noelle-pdg-embed",
+                              cl::ZeroOrMore,
+                              cl::Hidden,
+                              cl::desc("Embed the PDG"));
+
+static cl::opt<bool> SCCEmbed("noelle-pdg-scc-embed",
+                              cl::ZeroOrMore,
+                              cl::Hidden,
+                              cl::desc("Embed the SCCs"));
+
+static cl::opt<bool> PDGDump("noelle-pdg-dump",
+                             cl::ZeroOrMore,
+                             cl::Hidden,
+                             cl::desc("Dump the PDG"));
+
+static cl::opt<bool> PDGCheck("noelle-pdg-check",
+                              cl::ZeroOrMore,
+                              cl::Hidden,
+                              cl::desc("Check the PDG"));
+
+static cl::opt<bool> PDGSVFDisable("noelle-disable-pdg-svf",
+                                   cl::ZeroOrMore,
+                                   cl::Hidden,
+                                   cl::desc("Disable SVF"));
+
+static cl::opt<bool> PDGSVFCallGraphDisable("noelle-disable-pdg-svf-callgraph",
+                                            cl::ZeroOrMore,
+                                            cl::Hidden,
+                                            cl::desc("Disable SVF call graph"));
+
+static cl::opt<bool> PDGAllocAADisable(
+    "noelle-disable-pdg-allocaa",
+    cl::ZeroOrMore,
+    cl::Hidden,
+    cl::desc("Disable our custom alias analysis"));
+
+static cl::opt<bool> PDGRADisable(
+    "noelle-disable-pdg-reaching-analysis",
+    cl::ZeroOrMore,
+    cl::Hidden,
+    cl::desc("Disable the use of reaching analysis to compute the PDG"));
+
 NoellePass::NoellePass() : ModulePass{ ID }, n{ nullptr } {
   return;
 }
@@ -106,14 +154,15 @@ bool NoellePass::doInitialization(Module &M) {
 
 void NoellePass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<AssumptionCacheTracker>();
+  AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<TargetLibraryInfoWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
+  AU.addRequired<AAResultsWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
-  AU.addRequired<LoopTransformer>();
-  AU.addRequired<PDGGenerator>();
   AU.addRequired<HotProfiler>();
+  AU.addRequired<TalkDown>();
 
   return;
 }
@@ -173,6 +222,18 @@ bool NoellePass::runOnModule(Module &M) {
   } else {
     ldgAnalysis.enableLoopDependenceAnalyses(false);
   }
+  auto pdgVerbose = static_cast<PDGVerbosity>(PDGVerbose.getValue());
+  auto embedPDG = (PDGEmbed.getNumOccurrences() > 0) ? true : false;
+  auto embedSCC = (SCCEmbed.getNumOccurrences() > 0) ? true : false;
+  auto dumpPDG = (PDGDump.getNumOccurrences() > 0) ? true : false;
+  auto performThePDGComparison =
+      (PDGCheck.getNumOccurrences() > 0) ? true : false;
+  auto disableSVF = (PDGSVFDisable.getNumOccurrences() > 0) ? true : false;
+  auto disableSVFCallGraph =
+      (PDGSVFCallGraphDisable.getNumOccurrences() > 0) ? true : false;
+  auto disableAllocAA =
+      (PDGAllocAADisable.getNumOccurrences() > 0) ? true : false;
+  auto disableRA = (PDGRADisable.getNumOccurrences() > 0) ? true : false;
 
   /*
    * Allocate the managers.
@@ -187,8 +248,6 @@ bool NoellePass::runOnModule(Module &M) {
   /*
    * Fetch the other passes.
    */
-  auto &pdgGen = getAnalysis<PDGGenerator>();
-  auto &lt = getAnalysis<LoopTransformer>();
   auto getSCEV = [this](Function &F) -> llvm::ScalarEvolution & {
     auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(F).getSE();
     return SE;
@@ -209,23 +268,44 @@ bool NoellePass::runOnModule(Module &M) {
     auto &h = getAnalysis<HotProfiler>().getHot();
     return h;
   };
+  auto getAssumptionCache = [this](Function &F) -> llvm::AssumptionCache & {
+    auto &c = getAnalysis<AssumptionCacheTracker>().getAssumptionCache(F);
+    return c;
+  };
+  auto getCallGraph = [this](void) -> llvm::CallGraph & {
+    auto &cg = getAnalysis<CallGraphWrapperPass>().getCallGraph();
+    return cg;
+  };
+  auto getAA = [this](Function &F) -> llvm::AAResults & {
+    auto &aa = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
+    return aa;
+  };
 
   /*
    * Allocate NOELLE.
    */
   this->n = new Noelle(M,
-                       pdgGen,
-                       lt,
                        getSCEV,
                        getLoopInfo,
                        getPDT,
                        getDT,
+                       getAssumptionCache,
                        getProfiler,
+                       getCallGraph,
+                       getAA,
                        enabledTransformations,
                        verbose,
+                       pdgVerbose,
                        minHot,
                        ldgAnalysis,
-                       om);
+                       om,
+                       embedPDG,
+                       dumpPDG,
+                       performThePDGComparison,
+                       disableSVF,
+                       disableSVFCallGraph,
+                       disableAllocAA,
+                       disableRA);
 
   return false;
 }

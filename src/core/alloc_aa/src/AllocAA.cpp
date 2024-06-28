@@ -23,64 +23,48 @@
 
 namespace arcana::noelle {
 
-/*
- * Options of the custom allocation function based alias analysis pass.
- */
-static cl::opt<int> Verbose(
-    "alloc-aa-verbose",
-    cl::ZeroOrMore,
-    cl::Hidden,
-    cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal"));
+AllocAA::AllocAA(Module &M,
+                 std::function<llvm::ScalarEvolution &(Function &F)> getSCEV,
+                 std::function<llvm::LoopInfo &(Function &F)> getLoopInfo,
+                 std::function<llvm::CallGraph &(void)> getCallGraph)
+  : M{ M },
+    getSCEV{ getSCEV },
+    getLoopInfo{ getLoopInfo },
+    getCallGraph{ getCallGraph },
+    CGUnderMain{},
+    allocatorCalls{},
+    readOnlyFunctionNames{},
+    allocatorFunctionNames{ "malloc", "calloc" },
+    memorylessFunctionNames{
+      "sqrt",
+      "sqrtf",
+      "ceil",
+      "floor",
+      "log",
+      "log10",
+      "pow",
+      "exp",
+      "cos",
+      "acos",
+      "sin",
+      "tanh",
+      "atoll",
+      "atoi",
+      "atol"
 
-bool AllocAA::doInitialization(Module &M) {
-  this->readOnlyFunctionNames = {};
-  this->allocatorFunctionNames = { "malloc", "calloc" };
-  this->memorylessFunctionNames = {
-    "sqrt",
-    "sqrtf",
-    "ceil",
-    "floor",
-    "log",
-    "log10",
-    "pow",
-    "exp",
-    "cos",
-    "acos",
-    "sin",
-    "tanh",
-    "atoll",
-    "atoi",
-    "atol"
+      // C++
+      ,
+      "_ZSt4fmaxIiiEN9__gnu_cxx11__promote_2IT_T0_NS0_9__promoteIS2_Xsr3std12__is_integerIS2_EE7__valueEE6__typeENS4_IS3_Xsr3std12__is_integerIS3_EE7__valueEE6__typeEE6__typeES2_S3_"
+    },
+    primitiveArrayGlobals{},
+    primitiveArrayLocals{} {
 
-    // C++
-    ,
-    "_ZSt4fmaxIiiEN9__gnu_cxx11__promote_2IT_T0_NS0_9__promoteIS2_Xsr3std12__is_integerIS2_EE7__valueEE6__typeENS4_IS3_Xsr3std12__is_integerIS3_EE7__valueEE6__typeEE6__typeES2_S3_"
-  };
-
-  this->verbose = static_cast<AllocAAVerbosity>(Verbose.getValue());
-
-  return false;
-}
-
-bool AllocAA::runOnModule(Module &M) {
-  if (this->verbose != AllocAAVerbosity::Disabled) {
-    errs() << "AllocAA at \"runOnModule\"\n";
-  }
-
-  auto &callGraph = getAnalysis<CallGraphWrapperPass>().getCallGraph();
+  auto &callGraph = this->getCallGraph();
   collectCGUnderFunctionMain(M, callGraph);
   collectAllocations(M, callGraph);
   collectPrimitiveArrayValues(M);
   collectMemorylessFunctions(M);
 
-  return false;
-}
-
-void AllocAA::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<LoopInfoWrapperPass>();
-  AU.addRequired<CallGraphWrapperPass>();
-  AU.addRequired<ScalarEvolutionWrapperPass>();
-  AU.setPreservesAll();
   return;
 }
 
@@ -138,7 +122,7 @@ std::pair<Value *, GetElementPtrInst *> AllocAA::getPrimitiveArrayAccess(
  */
 bool AllocAA::areGEPIndicesConstantOrIV(GetElementPtrInst *gep) {
   Function *gepFunc = gep->getFunction();
-  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*gepFunc).getSE();
+  auto &SE = this->getSCEV(*gepFunc);
 
   for (auto &indexV : gep->indices()) {
     if (isa<ConstantInt>(indexV))
@@ -160,8 +144,7 @@ bool AllocAA::areIdenticalGEPAccessesInSameLoop(GetElementPtrInst *gep1,
 
   if (gep1->getFunction() != gep2->getFunction())
     return false;
-  auto &LI =
-      getAnalysis<LoopInfoWrapperPass>(*gep1->getFunction()).getLoopInfo();
+  auto &LI = this->getLoopInfo(*gep1->getFunction());
   if (LI.getLoopFor(gep1->getParent()) != LI.getLoopFor(gep2->getParent()))
     return false;
 
@@ -359,20 +342,10 @@ bool AllocAA::isPrimitiveArrayPointer(
       }
     }
 
-    if (verbose >= AllocAAVerbosity::Maximal) {
-      I->print(errs() << "AllocAA:  GV related instruction not understood: ");
-      errs() << "\n";
-    }
     isPrimitive = false;
     break;
   }
 
-  if (verbose >= AllocAAVerbosity::Minimal) {
-    errs() << "AllocAA:  GV value is a primitive integer array: " << isPrimitive
-           << ", ";
-    V->print(errs());
-    errs() << "\n";
-  }
   return isPrimitive;
 }
 
@@ -399,20 +372,10 @@ bool AllocAA::isPrimitiveArray(Value *V,
       }
     }
 
-    if (verbose >= AllocAAVerbosity::Maximal) {
-      I->print(errs() << "AllocAA:  related instruction not understood: ");
-      errs() << "\n";
-    }
     isPrimitive = false;
     break;
   }
 
-  if (verbose >= AllocAAVerbosity::Minimal) {
-    errs() << "AllocAA:  value is a primitive integer array: " << isPrimitive
-           << ", ";
-    V->print(errs());
-    errs() << "\n";
-  }
   return isPrimitive;
 }
 
@@ -496,12 +459,6 @@ bool AllocAA::doesValueNotEscape(std::set<Instruction *> checked,
   }
 
   if (unkUser) {
-    if (verbose >= AllocAAVerbosity::Maximal) {
-      unkUser->print(errs() << "AllocAA:  GV related user not understood: ");
-      errs() << "\n";
-      unkUser->getType()->print(errs() << "AllocAA:  \tWith type");
-      errs() << "\n";
-    }
     return false;
   }
   return true;
@@ -536,10 +493,6 @@ void AllocAA::collectMemorylessFunctions(Module &M) {
     // in case they are then found to be memoryless
     if (isMemoryless) {
       memorylessFunctionNames.insert(F->getName());
-      if (verbose >= AllocAAVerbosity::Minimal) {
-        errs()
-            << "AllocAA:  Memoryless function found: " << F->getName() << "\n";
-      }
     }
   }
 }
@@ -685,9 +638,5 @@ bool AllocAA::canPointToTheSameObject_ArgumentAttributes(Value *p1, Value *p2) {
 
   return true;
 }
-
-// Next there is code to register your pass to "opt"
-char AllocAA::ID = 0;
-static RegisterPass<AllocAA> X("AllocAA", "AllocAA");
 
 } // namespace arcana::noelle

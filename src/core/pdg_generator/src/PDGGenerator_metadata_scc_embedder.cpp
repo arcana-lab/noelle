@@ -30,9 +30,9 @@ namespace arcana::noelle {
 void PDGGenerator::embedSCCAsMetadata(PDG *pdg) {
   errs() << "Embed SCCs as metadata\n";
 
-  auto &C = this->M->getContext();
+  auto &C = this->M.getContext();
 
-  auto n = this->M->getOrInsertNamedMetadata("noelle.module.pdg.scc");
+  auto n = this->M.getOrInsertNamedMetadata("noelle.module.pdg.scc");
   n->addOperand(MDNode::get(C, MDString::get(C, "true")));
 
   auto DAG = SCCDAG(pdg);
