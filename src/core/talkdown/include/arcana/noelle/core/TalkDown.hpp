@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -26,17 +26,9 @@
 
 namespace arcana::noelle {
 
-class TalkDown : public ModulePass {
+class TalkDown {
 public:
-  static char ID;
-
-  TalkDown() : ModulePass{ ID } {}
-
-  bool doInitialization(Module &M) override;
-
-  bool runOnModule(Module &M) override;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
+  TalkDown();
 
 private:
   bool enabled;

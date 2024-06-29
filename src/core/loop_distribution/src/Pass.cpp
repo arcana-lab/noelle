@@ -21,7 +21,7 @@
  */
 #include "arcana/noelle/core/LoopDistribution.hpp"
 #include "arcana/noelle/core/PDGGenerator.hpp"
-#include "arcana/noelle/core/HotProfiler.hpp"
+#include "arcana/noelle/core/Hot.hpp"
 
 namespace arcana::noelle {
 

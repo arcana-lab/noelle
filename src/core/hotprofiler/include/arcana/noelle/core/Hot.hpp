@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,8 @@
 #ifndef NOELLE_SRC_CORE_HOTPROFILER_HOT_H_
 #define NOELLE_SRC_CORE_HOTPROFILER_HOT_H_
 
+#include "llvm/Analysis/BlockFrequencyInfo.h"
+#include "llvm/Analysis/BranchProbabilityInfo.h"
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/LoopStructure.hpp"
 #include "arcana/noelle/core/SCC.hpp"
@@ -30,7 +32,9 @@ namespace arcana::noelle {
 
 class Hot {
 public:
-  Hot();
+  Hot(Module &M,
+      std::function<llvm::BlockFrequencyInfo &(Function &F)> getBFI,
+      std::function<llvm::BranchProbabilityInfo &(Function &F)> getBPI);
 
   bool isAvailable(void) const;
 
@@ -171,6 +175,8 @@ private:
   std::unordered_map<Function *, uint64_t> functionTotalInstructions;
   std::unordered_map<Instruction *, uint64_t> instructionTotalInstructions;
   uint64_t moduleNumberOfInstructionsExecuted;
+  std::function<llvm::BlockFrequencyInfo &(Function &F)> getBFI;
+  std::function<llvm::BranchProbabilityInfo &(Function &F)> getBPI;
 
   void computeTotalInstructions(Module &M);
 
@@ -190,7 +196,7 @@ private:
 
   void computeProgramInvocations(Module &M);
 
-  friend class HotProfiler;
+  void analyzeProfiles(Module &M);
 };
 
 } // namespace arcana::noelle

@@ -31,7 +31,7 @@
 #include "arcana/noelle/core/LDGGenerator.hpp"
 #include "arcana/noelle/core/DataFlow.hpp"
 #include "arcana/noelle/core/LoopContent.hpp"
-#include "arcana/noelle/core/HotProfiler.hpp"
+#include "arcana/noelle/core/Hot.hpp"
 #include "arcana/noelle/core/Scheduler.hpp"
 #include "arcana/noelle/core/MetadataManager.hpp"
 #include "arcana/noelle/core/LoopTransformer.hpp"
@@ -63,9 +63,10 @@ public:
          std::function<llvm::PostDominatorTree &(Function &F)> getPDT,
          std::function<llvm::DominatorTree &(Function &F)> getDT,
          std::function<llvm::AssumptionCache &(Function &F)> getAssumptionCache,
-         std::function<Hot &(void)> getProfiler,
          std::function<llvm::CallGraph &(void)> getCallGraph,
          std::function<llvm::AAResults &(Function &F)> getAA,
+         std::function<llvm::BlockFrequencyInfo &(Function &F)> getBFI,
+         std::function<llvm::BranchProbabilityInfo &(Function &F)> getBPI,
          std::unordered_set<Transformation> enabledTransformations,
          Verbosity v,
          PDGVerbosity pdgVerbose,
@@ -277,6 +278,8 @@ private:
   std::function<llvm::DominatorTree &(Function &F)> getDT;
   std::function<Hot &(void)> getProfiler;
   std::function<llvm::CallGraph &(void)> getCallGraph;
+  std::function<llvm::BlockFrequencyInfo &(Function &F)> getBFI;
+  std::function<llvm::BranchProbabilityInfo &(Function &F)> getBPI;
   std::set<AliasAnalysisEngine *> aaEngines;
 
   PDG *getFunctionDependenceGraph(Function *f);

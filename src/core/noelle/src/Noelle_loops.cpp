@@ -27,7 +27,6 @@
 #include "arcana/noelle/core/PDGGenerator.hpp"
 #include "arcana/noelle/core/Architecture.hpp"
 #include "arcana/noelle/core/LoopForest.hpp"
-#include "arcana/noelle/core/HotProfiler.hpp"
 
 namespace arcana::noelle {
 

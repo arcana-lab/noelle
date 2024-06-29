@@ -7,7 +7,5 @@ target_sources(
   src/Hot_Instruction.cpp
   src/Hot_Loop.cpp
   src/Hot_Module.cpp
-  src/HotProfiler.cpp
   src/Hot_SCC.cpp
-  src/Pass.cpp
 )

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2021  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -23,35 +23,9 @@
 
 namespace arcana::noelle {
 
-/*
- * Options for talkdown
- */
-static llvm::cl::opt<bool> TalkDownDisable("noelle-talkdown-disable",
-                                           cl::ZeroOrMore,
-                                           cl::Hidden,
-                                           cl::desc("Disable Talkdown"));
+TalkDown::TalkDown() : enabled{ true } {
 
-bool TalkDown::doInitialization(Module &M) {
-  this->enabled = (TalkDownDisable.getNumOccurrences() == 0);
-
-  return false;
-}
-
-bool TalkDown::runOnModule(Module &M) {
-  if (!this->enabled) {
-    return false;
-  }
-
-  return false;
-}
-
-void TalkDown::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.setPreservesAll();
   return;
 }
-
-// Next there is code to register your pass to "opt"
-char TalkDown::ID = 0;
-static RegisterPass<TalkDown> X("TalkDown", "The TalkDown pass");
 
 } // namespace arcana::noelle

@@ -20,7 +20,6 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/NoellePass.hpp"
-#include "arcana/noelle/core/HotProfiler.hpp"
 #include "arcana/noelle/core/Architecture.hpp"
 
 namespace arcana::noelle {
@@ -153,6 +152,8 @@ bool NoellePass::doInitialization(Module &M) {
 }
 
 void NoellePass::getAnalysisUsage(AnalysisUsage &AU) const {
+  AU.addRequired<BlockFrequencyInfoWrapperPass>();
+  AU.addRequired<BranchProbabilityInfoWrapperPass>();
   AU.addRequired<AssumptionCacheTracker>();
   AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<TargetLibraryInfoWrapperPass>();
@@ -161,8 +162,6 @@ void NoellePass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<AAResultsWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
-  AU.addRequired<HotProfiler>();
-  AU.addRequired<TalkDown>();
 
   return;
 }
@@ -264,10 +263,6 @@ bool NoellePass::runOnModule(Module &M) {
     auto &DT = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
     return DT;
   };
-  auto getProfiler = [this](void) -> Hot & {
-    auto &h = getAnalysis<HotProfiler>().getHot();
-    return h;
-  };
   auto getAssumptionCache = [this](Function &F) -> llvm::AssumptionCache & {
     auto &c = getAnalysis<AssumptionCacheTracker>().getAssumptionCache(F);
     return c;
@@ -280,6 +275,14 @@ bool NoellePass::runOnModule(Module &M) {
     auto &aa = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
     return aa;
   };
+  auto getBFI = [this](Function &F) -> llvm::BlockFrequencyInfo & {
+    auto &b = getAnalysis<BlockFrequencyInfoWrapperPass>(F).getBFI();
+    return b;
+  };
+  auto getBPI = [this](Function &F) -> llvm::BranchProbabilityInfo & {
+    auto &b = getAnalysis<BranchProbabilityInfoWrapperPass>(F).getBPI();
+    return b;
+  };
 
   /*
    * Allocate NOELLE.
@@ -290,9 +293,10 @@ bool NoellePass::runOnModule(Module &M) {
                        getPDT,
                        getDT,
                        getAssumptionCache,
-                       getProfiler,
                        getCallGraph,
                        getAA,
+                       getBFI,
+                       getBPI,
                        enabledTransformations,
                        verbose,
                        pdgVerbose,

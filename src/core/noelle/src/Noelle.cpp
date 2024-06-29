@@ -21,7 +21,6 @@
  */
 #include "arcana/noelle/core/Architecture.hpp"
 #include "arcana/noelle/core/Noelle.hpp"
-#include "arcana/noelle/core/HotProfiler.hpp"
 
 namespace arcana::noelle {
 
@@ -32,9 +31,10 @@ Noelle::Noelle(
     std::function<llvm::PostDominatorTree &(Function &F)> getPDT,
     std::function<llvm::DominatorTree &(Function &F)> getDT,
     std::function<llvm::AssumptionCache &(Function &F)> getAssumptionCache,
-    std::function<Hot &(void)> getProfiler,
     std::function<llvm::CallGraph &(void)> getCallGraph,
     std::function<llvm::AAResults &(Function &F)> getAA,
+    std::function<llvm::BlockFrequencyInfo &(Function &F)> getBFI,
+    std::function<llvm::BranchProbabilityInfo &(Function &F)> getBPI,
     std::unordered_set<Transformation> enabledTransformations,
     Verbosity v,
     PDGVerbosity pdgVerbose,
@@ -80,8 +80,9 @@ Noelle::Noelle(
     getLoopInfo{ getLoopInfo },
     getPDT{ getPDT },
     getDT{ getDT },
-    getProfiler{ getProfiler },
-    getCallGraph{ getCallGraph } {
+    getCallGraph{ getCallGraph },
+    getBFI{ getBFI },
+    getBPI{ getBPI } {
 
   this->filterFileName = getenv("INDEX_FILE");
   this->hasReadFilterFile = false;
@@ -146,7 +147,7 @@ double Noelle::getMinimumHotness(void) const {
 
 Hot *Noelle::getProfiles(void) {
   if (this->profiles == nullptr) {
-    this->profiles = &(this->getProfiler());
+    this->profiles = new Hot(this->program, this->getBFI, this->getBPI);
   }
 
   return this->profiles;
