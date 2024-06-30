@@ -78,7 +78,7 @@ PDGGenerator::PDGGenerator(
   /*
    * Check if we should compute the PDG.
    */
-  if ((this->dumpPDG) || (this->embedSCC)) {
+  if (this->dumpPDG) {
 
     /*
      * Construct PDG because this will trigger code that is needed by the
@@ -176,16 +176,8 @@ PDG *PDGGenerator::getPDG(void) {
   }
 
   /*
-   * Check if we should embed the PDG.
-   */
-  if (this->embedSCC) {
-    embedSCCAsMetadata(this->programDependenceGraph);
-  }
-
-  /*
    * Print the PDG
    */
-
   if (this->dumpPDG) {
     llvm::CallGraph llvmCG = llvm::CallGraph(this->M);
     this->printer.printPDG(this->M,

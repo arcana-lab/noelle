@@ -64,6 +64,8 @@ public:
 
   void cleanAndEmbedPDGAsMetadata(PDG *pdg);
 
+  void embedSCCAsMetadata(PDG *dg);
+
   virtual ~PDGGenerator();
 
   static bool isTheLibraryFunctionPure(Function *libraryFunction);
@@ -94,7 +96,6 @@ private:
   TalkDown *talkdown;
   DataFlowAnalysis dfa;
   PDGVerbosity verbose;
-  bool embedSCC;
   bool dumpPDG;
   bool performThePDGComparison;
   bool disableSVF;
@@ -150,7 +151,6 @@ private:
   void embedEdgesAsMetadata(PDG *,
                             LLVMContext &,
                             std::unordered_map<Value *, MDNode *> &);
-  void embedSCCAsMetadata(PDG *);
   MDNode *getEdgeMetadata(DGEdge<Value, Value> *,
                           LLVMContext &,
                           std::unordered_map<Value *, MDNode *> &);

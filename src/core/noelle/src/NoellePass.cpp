@@ -101,11 +101,6 @@ static cl::opt<int> PDGVerbose(
     cl::desc(
         "Verbose output (0: disabled, 1: minimal, 2: maximal, 3:maximal plus dumping PDG"));
 
-static cl::opt<bool> SCCEmbed("noelle-pdg-scc-embed",
-                              cl::ZeroOrMore,
-                              cl::Hidden,
-                              cl::desc("Embed the SCCs"));
-
 static cl::opt<bool> PDGDump("noelle-pdg-dump",
                              cl::ZeroOrMore,
                              cl::Hidden,
@@ -218,7 +213,6 @@ bool NoellePass::runOnModule(Module &M) {
     ldgAnalysis.enableLoopDependenceAnalyses(false);
   }
   auto pdgVerbose = static_cast<PDGVerbosity>(PDGVerbose.getValue());
-  auto embedSCC = (SCCEmbed.getNumOccurrences() > 0) ? true : false;
   auto dumpPDG = (PDGDump.getNumOccurrences() > 0) ? true : false;
   auto performThePDGComparison =
       (PDGCheck.getNumOccurrences() > 0) ? true : false;

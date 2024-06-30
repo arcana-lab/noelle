@@ -20,7 +20,6 @@ install(
     noelle-meta-prof-clean
     noelle-meta-prof-embed
     noelle-meta-scc-clean
-    noelle-meta-scc-embed
     noelle-pdg
     noelle-prof-coverage
     ${CMAKE_CURRENT_BINARY_DIR}/noelle-load
