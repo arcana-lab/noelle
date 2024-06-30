@@ -41,7 +41,6 @@ Noelle::Noelle(
     double minHot,
     LDGGenerator ldgAnalysis,
     CompilationOptionsManager *om,
-    bool embedPDG,
     bool dumpPDG,
     bool performThePDGComparison,
     bool disableSVF,
@@ -60,7 +59,6 @@ Noelle::Noelle(
                  getPDT,
                  getCallGraph,
                  getAA,
-                 embedPDG,
                  dumpPDG,
                  performThePDGComparison,
                  disableSVF,
@@ -276,6 +274,10 @@ GlobalsManager *Noelle::getGlobalsManager(void) {
   }
 
   return this->gm;
+}
+
+PDGGenerator &Noelle::getPDGGenerator(void) {
+  return this->pdgAnalysis;
 }
 
 } // namespace arcana::noelle

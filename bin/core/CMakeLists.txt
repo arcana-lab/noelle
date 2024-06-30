@@ -17,7 +17,6 @@ install(
     noelle-meta-loop-clean
     noelle-meta-loop-embed
     noelle-meta-pdg-clean
-    noelle-meta-pdg-embed
     noelle-meta-prof-clean
     noelle-meta-prof-embed
     noelle-meta-scc-clean

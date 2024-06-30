@@ -1,5 +1,0 @@
-#!/bin/bash -e
-
-trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
-
-noelle-load -noelle -noelle-pdg-verbose=3 -noelle-pdg-embed $@

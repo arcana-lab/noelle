@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2024  Angelo Matni, Yian Su, Simone Campanoni
+ * Copyright 2023 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,18 +19,26 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#ifndef NOELLE_SRC_CORE_PDG_EMBEDDER_H_
+#define NOELLE_SRC_CORE_PDG_EMBEDDER_H_
+
 #include "arcana/noelle/core/SystemHeaders.hpp"
-#include "arcana/noelle/core/TalkDown.hpp"
-#include "arcana/noelle/core/PDGPrinter.hpp"
-#include "arcana/noelle/core/PDGGenerator.hpp"
 
 namespace arcana::noelle {
 
-void PDGGenerator::cleanAndEmbedPDGAsMetadata(PDG *pdg) {
-  errs() << "XAN: EMBED\n";
-  this->cleanPDGMetadata();
-  this->embedPDGAsMetadata(pdg);
-  return;
-}
+class PDGEmbedder : public ModulePass {
+public:
+  static char ID;
+
+  PDGEmbedder();
+
+  bool doInitialization(Module &M) override;
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override;
+
+  bool runOnModule(Module &M) override;
+};
 
 } // namespace arcana::noelle
+
+#endif

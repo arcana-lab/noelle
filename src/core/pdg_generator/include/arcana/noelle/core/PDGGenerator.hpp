@@ -46,7 +46,6 @@ public:
                std::function<llvm::PostDominatorTree &(Function &F)> getPDT,
                std::function<llvm::CallGraph &(void)> getCallGraph,
                std::function<llvm::AAResults &(Function &F)> getAA,
-               bool embedPDG,
                bool dumpPDG,
                bool performThePDGComparison,
                bool disableSVF,
@@ -95,7 +94,6 @@ private:
   TalkDown *talkdown;
   DataFlowAnalysis dfa;
   PDGVerbosity verbose;
-  bool embedPDG;
   bool embedSCC;
   bool dumpPDG;
   bool performThePDGComparison;

@@ -10,6 +10,7 @@ install(
     noelle-privatizer
     noelle-rm-function
     noelle-scc-print
+    noelle-meta-pdg-embed
   DESTINATION
     bin
 )

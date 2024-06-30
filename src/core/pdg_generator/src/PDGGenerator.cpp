@@ -34,7 +34,6 @@ PDGGenerator::PDGGenerator(
     std::function<llvm::PostDominatorTree &(Function &F)> getPDT,
     std::function<llvm::CallGraph &(void)> getCallGraph,
     std::function<llvm::AAResults &(Function &F)> getAA,
-    bool embedPDG,
     bool dumpPDG,
     bool performThePDGComparison,
     bool disableSVF,
@@ -52,7 +51,6 @@ PDGGenerator::PDGGenerator(
     mpa{},
     dfa{},
     verbose{ verbose },
-    embedPDG{ embedPDG },
     dumpPDG{ dumpPDG },
     performThePDGComparison{ performThePDGComparison },
     disableSVF{ disableSVF },
@@ -80,7 +78,7 @@ PDGGenerator::PDGGenerator(
   /*
    * Check if we should compute the PDG.
    */
-  if ((this->dumpPDG) || (this->embedPDG) || (this->embedSCC)) {
+  if ((this->dumpPDG) || (this->embedSCC)) {
 
     /*
      * Construct PDG because this will trigger code that is needed by the
@@ -165,18 +163,15 @@ PDG *PDGGenerator::getPDG(void) {
     /*
      * Check if we should embed the PDG.
      */
-    if (this->embedPDG) {
-      embedPDGAsMetadata(this->programDependenceGraph);
-      if (this->performThePDGComparison) {
-        auto PDGFromMetadata = this->constructPDGFromMetadata(this->M);
-        auto arePDGsEquivalen =
-            this->comparePDGs(this->programDependenceGraph, PDGFromMetadata);
-        if (!arePDGsEquivalen) {
-          errs() << "PDGGenerator: Error = PDGs constructed are not the same";
-          abort();
-        }
-        delete PDGFromMetadata;
+    if (this->performThePDGComparison) {
+      auto PDGFromMetadata = this->constructPDGFromMetadata(this->M);
+      auto arePDGsEquivalen =
+          this->comparePDGs(this->programDependenceGraph, PDGFromMetadata);
+      if (!arePDGsEquivalen) {
+        errs() << "PDGGenerator: Error = PDGs constructed are not the same";
+        abort();
       }
+      delete PDGFromMetadata;
     }
   }
 

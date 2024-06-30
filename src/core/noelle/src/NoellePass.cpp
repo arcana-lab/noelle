@@ -101,11 +101,6 @@ static cl::opt<int> PDGVerbose(
     cl::desc(
         "Verbose output (0: disabled, 1: minimal, 2: maximal, 3:maximal plus dumping PDG"));
 
-static cl::opt<bool> PDGEmbed("noelle-pdg-embed",
-                              cl::ZeroOrMore,
-                              cl::Hidden,
-                              cl::desc("Embed the PDG"));
-
 static cl::opt<bool> SCCEmbed("noelle-pdg-scc-embed",
                               cl::ZeroOrMore,
                               cl::Hidden,
@@ -144,6 +139,7 @@ static cl::opt<bool> PDGRADisable(
     cl::desc("Disable the use of reaching analysis to compute the PDG"));
 
 NoellePass::NoellePass() : ModulePass{ ID }, n{ nullptr } {
+
   return;
 }
 
@@ -222,7 +218,6 @@ bool NoellePass::runOnModule(Module &M) {
     ldgAnalysis.enableLoopDependenceAnalyses(false);
   }
   auto pdgVerbose = static_cast<PDGVerbosity>(PDGVerbose.getValue());
-  auto embedPDG = (PDGEmbed.getNumOccurrences() > 0) ? true : false;
   auto embedSCC = (SCCEmbed.getNumOccurrences() > 0) ? true : false;
   auto dumpPDG = (PDGDump.getNumOccurrences() > 0) ? true : false;
   auto performThePDGComparison =
@@ -303,7 +298,6 @@ bool NoellePass::runOnModule(Module &M) {
                        minHot,
                        ldgAnalysis,
                        om,
-                       embedPDG,
                        dumpPDG,
                        performThePDGComparison,
                        disableSVF,

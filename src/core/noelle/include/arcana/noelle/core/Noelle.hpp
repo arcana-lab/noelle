@@ -73,7 +73,6 @@ public:
          double minHot,
          LDGGenerator ldgAnalysis,
          CompilationOptionsManager *om,
-         bool embedPDG,
          bool dumpPDG,
          bool performThePDGComparison,
          bool disableSVF,
@@ -238,6 +237,8 @@ public:
    * \return true if the transformation is enabled. False otherwise.
    */
   bool isTransformationEnabled(Transformation transformation);
+
+  PDGGenerator &getPDGGenerator(void);
 
   bool verifyCode(void) const;
 
