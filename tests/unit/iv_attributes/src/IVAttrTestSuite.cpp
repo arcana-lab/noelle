@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "IVAttrTestSuite.hpp"
-#include "arcana/noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/NoellePass.hpp"
 
 namespace arcana::noelle {
 
@@ -66,25 +66,24 @@ bool IVAttrTestSuite::doInitialization(Module &M) {
 }
 
 void IVAttrTestSuite::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<PDGGenerator>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<CallGraphWrapperPass>();
-  AU.addRequired<Noelle>();
+  AU.addRequired<NoellePass>();
 }
 
 bool IVAttrTestSuite::runOnModule(Module &M) {
   errs() << "IVAttrTestSuite: Start\n";
-  auto &noelle = getAnalysis<Noelle>();
+  auto &noelle = getAnalysis<NoellePass>().getNoelle();
 
   auto mainFunction = M.getFunction("main");
 
   this->LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
   this->SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
 
-  auto pdg = getAnalysis<PDGGenerator>().getPDG();
+  auto pdg = getAnalysis<NoellePass>().getNoelle().getProgramDependenceGraph();
   this->fdg = pdg->createFunctionSubgraph(*mainFunction);
   auto topLoop = LI->getLoopsInPreorder()[0];
   auto loopDG = fdg->createLoopsSubgraph(topLoop);

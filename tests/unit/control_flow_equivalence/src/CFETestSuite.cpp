@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "CFETestSuite.hpp"
-#include "arcana/noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/NoellePass.hpp"
 
 namespace arcana::noelle {
 
@@ -63,12 +63,12 @@ void CFETestSuite::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
-  AU.addRequired<Noelle>();
+  AU.addRequired<NoellePass>();
 }
 
 bool CFETestSuite::runOnModule(Module &M) {
   errs() << "CFETestSuite: Start\n";
-  auto &noelle = getAnalysis<Noelle>();
+  auto &noelle = getAnalysis<NoellePass>().getNoelle();
   auto mainFunction = M.getFunction("main");
 
   /*

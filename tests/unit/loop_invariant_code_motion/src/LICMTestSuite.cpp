@@ -62,8 +62,7 @@ bool LICMTestSuite::doInitialization(Module &M) {
 }
 
 void LICMTestSuite::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<Noelle>();
-  AU.addRequired<PDGGenerator>();
+  AU.addRequired<NoellePass>();
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
@@ -74,7 +73,7 @@ bool LICMTestSuite::runOnModule(Module &M) {
   errs() << "LICMTestSuite: Start\n";
 
   this->mainF = M.getFunction("main");
-  auto &noelle = getAnalysis<Noelle>();
+  auto &noelle = getAnalysis<NoellePass>().getNoelle();
   auto pdg = noelle.getProgramDependenceGraph();
   this->fdg = pdg->createFunctionSubgraph(*mainF);
   auto &LI = getAnalysis<LoopInfoWrapperPass>(*mainF).getLoopInfo();
