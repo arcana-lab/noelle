@@ -78,7 +78,7 @@ bool DGTestSuite::doInitialization(Module &M) {
 }
 
 void DGTestSuite::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<PDGGenerator>();
+  AU.addRequired<NoellePass>();
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<CallGraphWrapperPass>();
 }
@@ -87,7 +87,7 @@ bool DGTestSuite::runOnModule(Module &M) {
   errs() << "DGTestSuite: Start\n";
 
   this->mainF = M.getFunction("main");
-  auto pdg = getAnalysis<PDGGenerator>().getPDG();
+  auto pdg = getAnalysis<NoellePass>().getNoelle().getProgramDependenceGraph();
   this->fdg = pdg->createFunctionSubgraph(*mainF);
   auto &LI = getAnalysis<LoopInfoWrapperPass>(*mainF).getLoopInfo();
   auto loopDG = fdg->createLoopsSubgraph(LI.getLoopsInPreorder()[0]);

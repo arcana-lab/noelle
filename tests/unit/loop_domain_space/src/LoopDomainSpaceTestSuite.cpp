@@ -72,8 +72,7 @@ bool LoopDomainSpaceTestSuite::doInitialization(Module &M) {
 }
 
 void LoopDomainSpaceTestSuite::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<Noelle>();
-  AU.addRequired<PDGGenerator>();
+  AU.addRequired<NoellePass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
 }
@@ -173,11 +172,11 @@ void LoopDomainSpaceTestSuite::computeAnalysisWithoutSCEVSimplification(void) {
     this->domainSpaceAnalysis = nullptr;
   }
 
+  auto &noelle = getAnalysis<NoellePass>().getNoelle();
   auto mainFunction = M->getFunction("main");
   auto LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
   auto SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
-  getAnalysis<PDGGenerator>().releaseMemory();
-  auto pdg = getAnalysis<PDGGenerator>().getPDG();
+  auto pdg = noelle.getProgramDependenceGraph();
   auto fdg = pdg->createFunctionSubgraph(*mainFunction);
   auto topLoop = LI->getLoopsInPreorder()[0];
   auto loopDG = fdg->createLoopsSubgraph(topLoop);
@@ -187,7 +186,6 @@ void LoopDomainSpaceTestSuite::computeAnalysisWithoutSCEVSimplification(void) {
    * Fetch the forest node of the loop
    */
   errs() << "Constructing Loops summary\n";
-  auto &noelle = getAnalysis<Noelle>();
   auto allLoopsOfFunction = noelle.getLoopStructures(mainFunction, 0);
   auto forest = noelle.organizeLoopsInTheirNestingForest(*allLoopsOfFunction);
   this->loopNode =
@@ -213,7 +211,7 @@ void LoopDomainSpaceTestSuite::computeAnalysisWithoutSCEVSimplification(void) {
 
 void LoopDomainSpaceTestSuite::computeAnalysisWithSCEVSimplification(void) {
   assert(!modifiedCodeWithSCEVSimplification && "Can only simplify once!");
-  auto &noelle = getAnalysis<Noelle>();
+  auto &noelle = getAnalysis<NoellePass>().getNoelle();
 
   if (this->loopNode) {
     delete this->loopNode;
@@ -231,8 +229,7 @@ void LoopDomainSpaceTestSuite::computeAnalysisWithSCEVSimplification(void) {
   auto mainFunction = M->getFunction("main");
   auto LI = &getAnalysis<LoopInfoWrapperPass>(*mainFunction).getLoopInfo();
   auto SE = &getAnalysis<ScalarEvolutionWrapperPass>(*mainFunction).getSE();
-  getAnalysis<PDGGenerator>().releaseMemory();
-  auto pdg = getAnalysis<PDGGenerator>().getPDG();
+  auto pdg = noelle.getProgramDependenceGraph();
   auto fdg = pdg->createFunctionSubgraph(*mainFunction);
   Loop *topLoop = LI->getLoopsInPreorder()[0];
   auto loopDG = fdg->createLoopsSubgraph(topLoop);

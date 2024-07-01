@@ -19,7 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "arcana/noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/NoellePass.hpp"
 #include "arcana/noelle/core/ReductionSCC.hpp"
 #include "arcana/noelle/core/LoopIterationSCC.hpp"
 #include "arcana/noelle/core/InductionVariableSCC.hpp"
@@ -80,18 +80,17 @@ bool SCCDAGAttrTestSuite::doInitialization(Module &M) {
 }
 
 void SCCDAGAttrTestSuite::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<PDGGenerator>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
   AU.addRequired<CallGraphWrapperPass>();
-  AU.addRequired<Noelle>();
+  AU.addRequired<NoellePass>();
 }
 
 bool SCCDAGAttrTestSuite::runOnModule(Module &M) {
   errs() << "SCCDAGAttrTestSuite: Start\n";
-  this->noelle = &getAnalysis<Noelle>();
+  this->noelle = &getAnalysis<NoellePass>().getNoelle();
 
   auto mainFunction = M.getFunction("main");
 
@@ -115,7 +114,7 @@ bool SCCDAGAttrTestSuite::runOnModule(Module &M) {
   auto loopNode =
       forest->getInnermostLoopThatContains(&*topLoop->getHeader()->begin());
 
-  auto pdg = getAnalysis<PDGGenerator>().getPDG();
+  auto pdg = this->noelle->getProgramDependenceGraph();
   this->fdg = pdg->createFunctionSubgraph(*mainFunction);
   LDGGenerator ldg{};
   this->ldi = new LoopContent(ldg,
