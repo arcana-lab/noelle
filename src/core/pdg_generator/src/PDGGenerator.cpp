@@ -163,7 +163,7 @@ PDG *PDGGenerator::getPDG(void) {
     /*
      * Check if we should embed the PDG.
      */
-    if (this->performThePDGComparison) {
+    if ((this->performThePDGComparison) && (this->hasPDGAsMetadata(this->M))) {
       auto PDGFromMetadata = this->constructPDGFromMetadata(this->M);
       auto arePDGsEquivalen =
           this->comparePDGs(this->programDependenceGraph, PDGFromMetadata);
