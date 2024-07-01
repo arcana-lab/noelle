@@ -147,7 +147,6 @@ void NoellePass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<BranchProbabilityInfoWrapperPass>();
   AU.addRequired<AssumptionCacheTracker>();
   AU.addRequired<CallGraphWrapperPass>();
-  AU.addRequired<TargetLibraryInfoWrapperPass>();
   AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<DominatorTreeWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();

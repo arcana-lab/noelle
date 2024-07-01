@@ -61,11 +61,6 @@ PDGGenerator::PDGGenerator(
     noelleCG{ nullptr } {
 
   /*
-   * Initialize SVF.
-   */
-  initializeSVF(M);
-
-  /*
    * Function reachability analysis.
    */
   identifyFunctionsThatInvokeUnhandledLibrary(M);
