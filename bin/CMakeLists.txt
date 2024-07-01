@@ -28,7 +28,7 @@ if(NOELLE_SCAF STREQUAL "ON")
     -intrinsic-aa
     -global-malloc-aa
     -pure-fun-aa
-    -semi-local-fun-aa
+    # -semi-local-fun-aa
 
     -phi-maze-aa
     -no-capture-global-aa
