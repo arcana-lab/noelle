@@ -27,29 +27,65 @@
 
 namespace arcana::noelle {
 
-PDGGenerator::PDGGenerator()
-  : ModulePass{ ID },
-    M{ nullptr },
+PDGGenerator::PDGGenerator(
+    Module &M,
+    std::function<llvm::ScalarEvolution &(Function &F)> getSCEV,
+    std::function<llvm::LoopInfo &(Function &F)> getLoopInfo,
+    std::function<llvm::PostDominatorTree &(Function &F)> getPDT,
+    std::function<llvm::CallGraph &(void)> getCallGraph,
+    std::function<llvm::AAResults &(Function &F)> getAA,
+    bool dumpPDG,
+    bool performThePDGComparison,
+    bool disableSVF,
+    bool disableSVFCallGraph,
+    bool disableAllocAA,
+    bool disableRA,
+    PDGVerbosity verbose)
+  : M{ M },
+    getSCEV{ getSCEV },
+    getLoopInfo{ getLoopInfo },
+    getPDT{ getPDT },
+    getCallGraph{ getCallGraph },
+    getAA{ getAA },
     programDependenceGraph{ nullptr },
     mpa{},
     dfa{},
-    embedPDG{ false },
-    dumpPDG{ false },
-    performThePDGComparison{ false },
-    disableSVF{ false },
-    disableSVFCallGraph{ false },
-    disableAllocAA{ false },
-    disableRA{ false },
+    verbose{ verbose },
+    dumpPDG{ dumpPDG },
+    performThePDGComparison{ performThePDGComparison },
+    disableSVF{ disableSVF },
+    disableSVFCallGraph{ disableSVFCallGraph },
+    disableAllocAA{ disableAllocAA },
+    disableRA{ disableRA },
     printer{},
     noelleCG{ nullptr } {
 
-  return;
-}
+  /*
+   * Initialize SVF.
+   */
+  initializeSVF(M);
 
-void PDGGenerator::releaseMemory() {
-  if (this->programDependenceGraph)
-    delete this->programDependenceGraph;
-  this->programDependenceGraph = nullptr;
+  /*
+   * Function reachability analysis.
+   */
+  identifyFunctionsThatInvokeUnhandledLibrary(M);
+
+  /*
+   * Fetch AllocAA
+   */
+  this->allocAA = new AllocAA(M, getSCEV, getLoopInfo, getCallGraph);
+
+  /*
+   * Check if we should compute the PDG.
+   */
+  if (this->dumpPDG) {
+
+    /*
+     * Construct PDG because this will trigger code that is needed by the
+     * options specified.
+     */
+    this->getPDG();
+  }
 
   return;
 }
@@ -96,16 +132,16 @@ PDG *PDGGenerator::getPDG(void) {
    *
    * Check if we have already done it and the PDG has been embedded in the IR.
    */
-  if (this->hasPDGAsMetadata(*this->M)) {
+  if (this->hasPDGAsMetadata(this->M)) {
 
     /*
      * The PDG has been embedded in the IR.
      *
      * Load the embedded PDG.
      */
-    this->programDependenceGraph = constructPDGFromMetadata(*this->M);
+    this->programDependenceGraph = constructPDGFromMetadata(this->M);
     if (this->performThePDGComparison) {
-      auto PDGFromAnalysis = this->constructPDGFromAnalysis(*this->M);
+      auto PDGFromAnalysis = this->constructPDGFromAnalysis(this->M);
       auto arePDGsEquivalent =
           this->comparePDGs(PDGFromAnalysis, this->programDependenceGraph);
       if (!arePDGsEquivalent) {
@@ -122,46 +158,32 @@ PDG *PDGGenerator::getPDG(void) {
      *
      * Compute the PDG using the dependence analyses.
      */
-    this->programDependenceGraph = constructPDGFromAnalysis(*this->M);
+    this->programDependenceGraph = constructPDGFromAnalysis(this->M);
 
     /*
      * Check if we should embed the PDG.
      */
-    if (this->embedPDG) {
-      embedPDGAsMetadata(this->programDependenceGraph);
-      if (this->performThePDGComparison) {
-        auto PDGFromMetadata = this->constructPDGFromMetadata(*this->M);
-        auto arePDGsEquivalen =
-            this->comparePDGs(this->programDependenceGraph, PDGFromMetadata);
-        if (!arePDGsEquivalen) {
-          errs() << "PDGGenerator: Error = PDGs constructed are not the same";
-          abort();
-        }
-        delete PDGFromMetadata;
+    if ((this->performThePDGComparison) && (this->hasPDGAsMetadata(this->M))) {
+      auto PDGFromMetadata = this->constructPDGFromMetadata(this->M);
+      auto arePDGsEquivalen =
+          this->comparePDGs(this->programDependenceGraph, PDGFromMetadata);
+      if (!arePDGsEquivalen) {
+        errs() << "PDGGenerator: Error = PDGs constructed are not the same";
+        abort();
       }
+      delete PDGFromMetadata;
     }
-  }
-
-  /*
-   * Check if we should embed the PDG.
-   */
-  if (this->embedSCC) {
-    embedSCCAsMetadata(this->programDependenceGraph);
   }
 
   /*
    * Print the PDG
    */
-
   if (this->dumpPDG) {
-    llvm::CallGraph llvmCG = llvm::CallGraph(*(this->M));
-    this->printer.printPDG(
-        *(this->M),
-        llvmCG,
-        this->programDependenceGraph,
-        [this](llvm::Function *F) -> llvm::LoopInfo & {
-          return llvm::Pass::getAnalysis<LoopInfoWrapperPass>(*F).getLoopInfo();
-        });
+    llvm::CallGraph llvmCG = llvm::CallGraph(this->M);
+    this->printer.printPDG(this->M,
+                           llvmCG,
+                           this->programDependenceGraph,
+                           this->getLoopInfo);
   }
 
   return this->programDependenceGraph;
@@ -186,9 +208,8 @@ PDG *PDGGenerator::constructPDGFromAnalysis(Module &M) {
 void PDGGenerator::trimDGUsingCustomAliasAnalysis(PDG *pdg) {
 
   /*
-   * Fetch AllocAA
+   * Check if AllocAA is enabled
    */
-  this->allocAA = &getAnalysis<AllocAA>();
   if (this->disableAllocAA) {
     return;
   }
@@ -203,7 +224,6 @@ void PDGGenerator::trimDGUsingCustomAliasAnalysis(PDG *pdg) {
   /*
    * Invoke the TalkDown
    */
-  // auto &talkDown = getAnalysis<TalkDown>();
   // TODO
 
   return;
@@ -269,7 +289,7 @@ void PDGGenerator::constructEdgesFromAliasesForFunction(PDG *pdg, Function &F) {
   /*
    * Fetch the alias analysis.
    */
-  auto &AA = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
+  auto &AA = this->getAA(F);
 
   /*
    * Run the reachable analysis.
@@ -631,8 +651,7 @@ bool PDGGenerator::isMemoryAccessIntoDifferentArrays(
 
 bool PDGGenerator::canPrecedeInCurrentIteration(Instruction *from,
                                                 Instruction *to) {
-  auto &LI =
-      getAnalysis<LoopInfoWrapperPass>(*from->getFunction()).getLoopInfo();
+  auto &LI = this->getLoopInfo(*from->getFunction());
   BasicBlock *fromBB = from->getParent();
   BasicBlock *toBB = to->getParent();
   auto loop = LI.getLoopFor(fromBB);

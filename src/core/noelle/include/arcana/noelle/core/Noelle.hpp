@@ -22,16 +22,16 @@
 #ifndef NOELLE_H_
 #define NOELLE_H_
 
+#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/Dominators.hpp"
 #include "arcana/noelle/core/LoopNestingGraph.hpp"
-#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/Queue.hpp"
 #include "arcana/noelle/core/LoopForest.hpp"
 #include "arcana/noelle/core/PDGGenerator.hpp"
 #include "arcana/noelle/core/LDGGenerator.hpp"
 #include "arcana/noelle/core/DataFlow.hpp"
 #include "arcana/noelle/core/LoopContent.hpp"
-#include "arcana/noelle/core/HotProfiler.hpp"
+#include "arcana/noelle/core/Hot.hpp"
 #include "arcana/noelle/core/Scheduler.hpp"
 #include "arcana/noelle/core/MetadataManager.hpp"
 #include "arcana/noelle/core/LoopTransformer.hpp"
@@ -52,18 +52,33 @@ namespace arcana::noelle {
 
 enum class Verbosity { Disabled, Minimal, Maximal };
 
-class Noelle : public ModulePass {
+class Noelle {
 public:
   /*
    * Methods.
    */
-  Noelle();
-
-  bool doInitialization(Module &M) override;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-
-  bool runOnModule(Module &M) override;
+  Noelle(Module &m,
+         std::function<llvm::ScalarEvolution &(Function &F)> getSCEV,
+         std::function<llvm::LoopInfo &(Function &F)> getLoopInfo,
+         std::function<llvm::PostDominatorTree &(Function &F)> getPDT,
+         std::function<llvm::DominatorTree &(Function &F)> getDT,
+         std::function<llvm::AssumptionCache &(Function &F)> getAssumptionCache,
+         std::function<llvm::CallGraph &(void)> getCallGraph,
+         std::function<llvm::AAResults &(Function &F)> getAA,
+         std::function<llvm::BlockFrequencyInfo &(Function &F)> getBFI,
+         std::function<llvm::BranchProbabilityInfo &(Function &F)> getBPI,
+         std::unordered_set<Transformation> enabledTransformations,
+         Verbosity v,
+         PDGVerbosity pdgVerbose,
+         double minHot,
+         LDGGenerator ldgAnalysis,
+         CompilationOptionsManager *om,
+         bool dumpPDG,
+         bool performThePDGComparison,
+         bool disableSVF,
+         bool disableSVFCallGraph,
+         bool disableAllocAA,
+         bool disableRA);
 
   FunctionsManager *getFunctionsManager(void);
 
@@ -223,6 +238,8 @@ public:
    */
   bool isTransformationEnabled(Transformation transformation);
 
+  PDGGenerator &getPDGGenerator(void);
+
   bool verifyCode(void) const;
 
   ~Noelle();
@@ -230,19 +247,18 @@ public:
   /*
    * Fields.
    */
-  static char ID;
   Queue queues;
 
 private:
-  Verbosity verbose;
   double minHot;
-  Module *program;
+  Module &program;
   Hot *profiles;
   PDG *programDependenceGraph;
   std::unordered_set<Transformation> enabledTransformations;
+  Verbosity verbose;
   bool hoistLoopsToMain;
   bool loopAwareDependenceAnalysis;
-  PDGGenerator *pdgAnalysis;
+  PDGGenerator pdgAnalysis;
   LDGGenerator ldgAnalysis;
   char *filterFileName;
   bool hasReadFilterFile;
@@ -256,6 +272,15 @@ private:
   CompilationOptionsManager *om;
   MetadataManager *mm;
   Linker *linker;
+  LoopTransformer lt;
+  std::function<llvm::ScalarEvolution &(Function &F)> getSCEV;
+  std::function<llvm::LoopInfo &(Function &F)> getLoopInfo;
+  std::function<llvm::PostDominatorTree &(Function &F)> getPDT;
+  std::function<llvm::DominatorTree &(Function &F)> getDT;
+  std::function<Hot &(void)> getProfiler;
+  std::function<llvm::CallGraph &(void)> getCallGraph;
+  std::function<llvm::BlockFrequencyInfo &(Function &F)> getBFI;
+  std::function<llvm::BranchProbabilityInfo &(Function &F)> getBPI;
   std::set<AliasAnalysisEngine *> aaEngines;
 
   PDG *getFunctionDependenceGraph(Function *f);

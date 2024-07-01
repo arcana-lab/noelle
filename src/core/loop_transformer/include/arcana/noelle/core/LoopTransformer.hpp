@@ -30,11 +30,14 @@
 
 namespace arcana::noelle {
 
-class LoopTransformer : public ModulePass {
+class LoopTransformer {
 public:
-  static char ID;
-
-  LoopTransformer();
+  LoopTransformer(
+      std::function<llvm::ScalarEvolution &(Function &F)> getSCEV,
+      std::function<llvm::LoopInfo &(Function &F)> getLoopInfo,
+      std::function<llvm::PostDominatorTree &(Function &F)> getPDT,
+      std::function<llvm::DominatorTree &(Function &F)> getDT,
+      std::function<llvm::AssumptionCache &(Function &F)> getAssumptionCache);
 
   void setPDG(PDG *programDependenceGraph);
 
@@ -51,14 +54,13 @@ public:
 
   virtual ~LoopTransformer();
 
-  bool doInitialization(Module &M) override;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-
-  bool runOnModule(Module &M) override;
-
 private:
   PDG *pdg;
+  std::function<llvm::ScalarEvolution &(Function &F)> getSCEV;
+  std::function<llvm::LoopInfo &(Function &F)> getLoopInfo;
+  std::function<llvm::PostDominatorTree &(Function &F)> getPDT;
+  std::function<llvm::DominatorTree &(Function &F)> getDT;
+  std::function<llvm::AssumptionCache &(Function &F)> getAssumptionCache;
 };
 
 } // namespace arcana::noelle

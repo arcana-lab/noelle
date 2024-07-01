@@ -36,7 +36,7 @@ bool DeadFunctionEliminator::doInitialization(Module &M) {
 }
 
 void DeadFunctionEliminator::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<Noelle>();
+  AU.addRequired<NoellePass>();
   return;
 }
 

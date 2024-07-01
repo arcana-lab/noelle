@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
+ * Copyright 2023 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,25 +19,37 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "llvm/Pass.h"
-#include "llvm/IR/Function.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
-#include "llvm/Analysis/AliasAnalysis.h"
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Analysis/PostDominators.h"
-#include "llvm/ADT/iterator_range.h"
+#ifndef NOELLEPASS_H_
+#define NOELLEPASS_H_
 
-#include "arcana/noelle/core/PDGGenerator.hpp"
+#include "arcana/noelle/core/Noelle.hpp"
 
 namespace arcana::noelle {
 
-// Next there is code to register your pass to "opt"
-char PDGGenerator::ID = 0;
-static RegisterPass<PDGGenerator> X("PDGGenerator",
-                                    "Computing the Program Dependence Graph");
+class NoellePass : public ModulePass {
+public:
+  /*
+   * Methods.
+   */
+  NoellePass();
+
+  bool doInitialization(Module &M) override;
+
+  void getAnalysisUsage(AnalysisUsage &AU) const override;
+
+  bool runOnModule(Module &M) override;
+
+  Noelle &getNoelle(void) const;
+
+  /*
+   * Fields.
+   */
+  static char ID;
+
+private:
+  Noelle *n;
+};
 
 } // namespace arcana::noelle
+
+#endif // NOELLE_H_

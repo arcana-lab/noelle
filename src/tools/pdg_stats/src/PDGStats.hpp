@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_TOOLS_PDG_STATS_PDGSTATS_H_
 #define NOELLE_SRC_TOOLS_PDG_STATS_PDGSTATS_H_
 
-#include "arcana/noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/NoellePass.hpp"
 
 namespace arcana::noelle {
 

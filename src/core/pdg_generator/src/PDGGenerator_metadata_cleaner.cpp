@@ -29,7 +29,7 @@ namespace arcana::noelle {
 void PDGGenerator::cleanPDGMetadata() {
   errs() << "Clean PDG Metadata\n";
 
-  for (auto &F : this->M->functions()) {
+  for (auto &F : this->M.functions()) {
     if (F.hasMetadata("noelle.pdg.args.id")) {
       F.setMetadata("noelle.pdg.args.id", nullptr);
     }
@@ -46,8 +46,8 @@ void PDGGenerator::cleanPDGMetadata() {
     }
   }
 
-  if (auto n = this->M->getNamedMetadata("noelle.module.pdg")) {
-    this->M->eraseNamedMetadata(n);
+  if (auto n = this->M.getNamedMetadata("noelle.module.pdg")) {
+    this->M.eraseNamedMetadata(n);
   }
 
   return;

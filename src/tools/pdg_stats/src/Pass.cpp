@@ -36,7 +36,7 @@ bool PDGStats::doInitialization(Module &M) {
 }
 
 void PDGStats::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<Noelle>();
+  AU.addRequired<NoellePass>();
   AU.setPreservesAll();
   return;
 }

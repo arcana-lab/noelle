@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 - 2024 Simone Campanoni
+ * Copyright 2023 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,41 +19,64 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "PDGEmbedder.hpp"
 #include "arcana/noelle/core/NoellePass.hpp"
-#include "arcana/noelle/tools/LoopSize.hpp"
 
 namespace arcana::noelle {
 
-bool LoopSize::doInitialization(Module &M) {
+PDGEmbedder::PDGEmbedder() : ModulePass(ID) {
+  return;
+}
+
+bool PDGEmbedder::doInitialization(Module &M) {
   return false;
 }
 
-void LoopSize::getAnalysisUsage(AnalysisUsage &AU) const {
+void PDGEmbedder::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.addRequired<NoellePass>();
   return;
 }
 
+bool PDGEmbedder::runOnModule(Module &M) {
+
+  /*
+   * Fetch the NOELLE framework.
+   */
+  auto &noelle = getAnalysis<NoellePass>().getNoelle();
+
+  /*
+   * Get the PDG.
+   */
+  auto pdg = noelle.getProgramDependenceGraph();
+
+  /*
+   * Embed the PDG.
+   */
+  auto pdgGen = noelle.getPDGGenerator();
+  pdgGen.cleanAndEmbedPDGAsMetadata(pdg);
+
+  return true;
+}
+
 // Next there is code to register your pass to "opt"
-char LoopSize::ID = 0;
-static RegisterPass<LoopSize> X("LoopSize",
-                                "Print the code size of loops",
-                                false,
-                                false);
+char PDGEmbedder::ID = 0;
+static RegisterPass<PDGEmbedder> X("PDGEmbedder", "Embed the PDG into the IR");
 
 // Next there is code to register your pass to "clang"
-static LoopSize *_PassMaker = NULL;
+static PDGEmbedder *_PassMaker = NULL;
 static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
                                         [](const PassManagerBuilder &,
                                            legacy::PassManagerBase &PM) {
                                           if (!_PassMaker) {
-                                            PM.add(_PassMaker = new LoopSize());
+                                            PM.add(_PassMaker =
+                                                       new PDGEmbedder());
                                           }
                                         }); // ** for -Ox
 static RegisterStandardPasses _RegPass2(
     PassManagerBuilder::EP_EnabledOnOptLevel0,
     [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
       if (!_PassMaker) {
-        PM.add(_PassMaker = new LoopSize());
+        PM.add(_PassMaker = new PDGEmbedder());
       }
     }); // ** for -O0
 

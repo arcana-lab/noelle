@@ -62,8 +62,7 @@ void PDGGenerator::constructEdgesFromControlForFunction(PDG *pdg, Function &F) {
   /*
    * Fetch the post-dominator tree of the function.
    */
-  auto &postDomTree =
-      getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
+  auto &postDomTree = this->getPDT(F);
 
   for (auto &B : F) {
 

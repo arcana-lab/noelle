@@ -48,7 +48,7 @@ PDGPrinter::PDGPrinter() {
 void PDGPrinter::printPDG(Module &module,
                           llvm::CallGraph &callGraph,
                           PDG *graph,
-                          std::function<LoopInfo &(Function *f)> getLoopInfo) {
+                          std::function<LoopInfo &(Function &f)> getLoopInfo) {
 
   /*
    * Collect functions through call graph starting at function "main"
@@ -61,7 +61,7 @@ void PDGPrinter::printPDG(Module &module,
    */
   DGPrinter::writeClusteredGraph<PDG, Value>("pdg-full.dot", graph);
   for (auto F : funcToGraph) {
-    auto &LI = getLoopInfo(F);
+    auto &LI = getLoopInfo(*F);
     printGraphsForFunction(*F, graph, LI);
   }
 

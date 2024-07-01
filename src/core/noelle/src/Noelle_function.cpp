@@ -29,8 +29,8 @@ DominatorSummary *Noelle::getDominators(Function *f) {
   /*
    * Fetch the dominators from LLVM.
    */
-  auto &DT = getAnalysis<DominatorTreeWrapperPass>(*f).getDomTree();
-  auto &PDT = getAnalysis<PostDominatorTreeWrapperPass>(*f).getPostDomTree();
+  auto &DT = this->getDT(*f);
+  auto &PDT = this->getPDT(*f);
 
   /*
    * Combine them.
@@ -42,15 +42,15 @@ DominatorSummary *Noelle::getDominators(Function *f) {
 
 FunctionsManager *Noelle::getFunctionsManager(void) {
   if (!this->fm) {
-    this->fm = new FunctionsManager(*this->program,
-                                    *this->pdgAnalysis,
+    this->fm = new FunctionsManager(this->program,
+                                    this->pdgAnalysis,
                                     this->getProfiles());
   }
   return this->fm;
 }
 
 void Noelle::addAnalysis(CallGraphAnalysis *a) {
-  this->pdgAnalysis->addAnalysis(a);
+  this->pdgAnalysis.addAnalysis(a);
 
   return;
 }

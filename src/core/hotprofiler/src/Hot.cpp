@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,85 @@
 
 namespace arcana::noelle {
 
-Hot::Hot() : moduleNumberOfInstructionsExecuted{ 0 } {
+Hot::Hot(Module &M,
+         std::function<llvm::BlockFrequencyInfo &(Function &F)> getBFI,
+         std::function<llvm::BranchProbabilityInfo &(Function &F)> getBPI)
+  : moduleNumberOfInstructionsExecuted{ 0 },
+    getBFI{ getBFI },
+    getBPI{ getBPI } {
+
+  /*
+   * Analyze the profiles.
+   */
+  this->analyzeProfiles(M);
+
+  return;
+}
+
+void Hot::analyzeProfiles(Module &M) {
+
+  /*
+   * Fetch the invocations of each basic block of each function.
+   */
+  for (auto &F : M) {
+    if (F.empty()) {
+      continue;
+    }
+    auto &bfi = this->getBFI(F);
+    auto &bpi = this->getBPI(F);
+
+    /*
+     * Set the invocations of basic blocks.
+     */
+    for (auto &bb : F) {
+
+      /*
+       * Check if the basic block has been executed at least once.
+       */
+      if (!bfi.getBlockProfileCount(&bb).hasValue()) {
+
+        /*
+         * The basic block hasn't been executed.
+         */
+        this->setBasicBlockInvocations(&bb, 0);
+        continue;
+      }
+
+      /*
+       * Fetch the basic block counter.
+       */
+      auto v = bfi.getBlockProfileCount(&bb).getValue();
+
+      /*
+       * Set the invocations.
+       */
+      this->setBasicBlockInvocations(&bb, v);
+
+      /*
+       * Compute the frequency of jumping to the successors of bb.
+       */
+      for (auto succBB : successors(&bb)) {
+        auto prob = bpi.getEdgeProbability(&bb, succBB);
+        if (prob.isUnknown()) {
+          continue;
+        }
+        auto probNum = double(prob.getNumerator());
+        auto probDen = double(prob.getDenominator());
+        auto probValue = probNum / probDen;
+
+        /*
+         * Set the frequency.
+         */
+        this->setBranchFrequency(&bb, succBB, probValue);
+      }
+    }
+  }
+
+  /*
+   * Compute the global counters.
+   */
+  this->computeProgramInvocations(M);
+
   return;
 }
 

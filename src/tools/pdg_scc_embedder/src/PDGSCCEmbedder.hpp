@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 - 2024  Simone Campanoni
+ * Copyright 2023 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,32 +19,26 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include "arcana/noelle/core/LoopTransformer.hpp"
+#ifndef NOELLE_SRC_CORE_PDG_EMBEDDER_H_
+#define NOELLE_SRC_CORE_PDG_EMBEDDER_H_
+
+#include "arcana/noelle/core/SystemHeaders.hpp"
 
 namespace arcana::noelle {
 
-bool LoopTransformer::doInitialization(Module &M) {
+class PDGSCCEmbedder : public ModulePass {
+public:
+  static char ID;
 
-  return false;
-}
+  PDGSCCEmbedder();
 
-void LoopTransformer::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<LoopInfoWrapperPass>();
-  AU.addRequired<AssumptionCacheTracker>();
-  AU.addRequired<DominatorTreeWrapperPass>();
-  AU.addRequired<PostDominatorTreeWrapperPass>();
-  AU.addRequired<ScalarEvolutionWrapperPass>();
-  AU.setPreservesAll();
+  bool doInitialization(Module &M) override;
 
-  return;
-}
+  void getAnalysisUsage(AnalysisUsage &AU) const override;
 
-bool LoopTransformer::runOnModule(Module &M) {
-  return false;
-}
-
-// Next there is code to register your pass to "opt"
-char LoopTransformer::ID = 0;
-static RegisterPass<LoopTransformer> X("LoopTransformer", "Transform loops");
+  bool runOnModule(Module &M) override;
+};
 
 } // namespace arcana::noelle
+
+#endif

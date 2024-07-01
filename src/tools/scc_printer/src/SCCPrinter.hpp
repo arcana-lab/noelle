@@ -22,7 +22,7 @@
 #ifndef NOELLE_SRC_TOOLS_SCCPRINTER_H
 #define NOELLE_SRC_TOOLS_SCCPRINTER_H
 
-#include "arcana/noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/NoellePass.hpp"
 
 namespace arcana::noelle {
 

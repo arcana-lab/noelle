@@ -38,7 +38,7 @@ bool Privatizer::doInitialization(Module &M) {
 }
 
 void Privatizer::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<Noelle>();
+  AU.addRequired<NoellePass>();
   return;
 }
 

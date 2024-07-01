@@ -25,7 +25,7 @@ namespace arcana::noelle {
 
 PDG *Noelle::getProgramDependenceGraph(void) {
   if (this->programDependenceGraph == nullptr) {
-    this->programDependenceGraph = this->pdgAnalysis->getPDG();
+    this->programDependenceGraph = this->pdgAnalysis.getPDG();
   }
 
   return this->programDependenceGraph;
@@ -94,7 +94,7 @@ std::vector<SCC *> Noelle::sortByHotness(const std::set<SCC *> &SCCs) {
 }
 
 void Noelle::addAnalysis(DependenceAnalysis *a) {
-  this->pdgAnalysis->addAnalysis(a);
+  this->pdgAnalysis.addAnalysis(a);
   this->ldgAnalysis.addAnalysis(a);
 
   return;
