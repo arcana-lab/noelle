@@ -5,7 +5,7 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include <algorithm>
 
-#include "arcana/noelle/core/Noelle.hpp"
+#include "arcana/noelle/core/NoellePass.hpp"
 
 using namespace arcana::noelle;
 
@@ -80,7 +80,7 @@ struct CAT : public ModulePass {
      * Fetch NOELLE
      */
     errs() << "Example:   Fetch NOELLE\n";
-    auto &noelle = getAnalysis<Noelle>();
+    auto &noelle = getAnalysis<NoellePass>().getNoelle();
 
     /*
      * Register my data dependence analysis.
@@ -119,7 +119,7 @@ struct CAT : public ModulePass {
   }
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.addRequired<Noelle>();
+    AU.addRequired<NoellePass>();
   }
 };
 } // namespace
