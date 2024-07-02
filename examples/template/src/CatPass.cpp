@@ -4,7 +4,7 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
-#include "Noelle.hpp"
+#include "NoellePass.hpp"
 
 using namespace arcana::noelle;
 
@@ -25,13 +25,13 @@ struct CAT : public ModulePass {
     /*
      * Fetch NOELLE
      */
-    auto &noelle = getAnalysis<Noelle>();
+    auto &noelle = getAnalysis<NoellePass>().getNoelle();
 
     return modified;
   }
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.addRequired<Noelle>();
+    AU.addRequired<NoellePass>();
   }
 };
 
