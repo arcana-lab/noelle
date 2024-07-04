@@ -19,6 +19,14 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "llvm/Analysis/GlobalsModRef.h"
+#include "llvm/Analysis/TypeBasedAliasAnalysis.h"
+#include "llvm/Analysis/ScopedNoAliasAA.h"
+#include "llvm/Analysis/ScalarEvolutionAliasAnalysis.h"
+#include "llvm/Analysis/CFLSteensAliasAnalysis.h"
+#include "llvm/Analysis/CFLAndersAliasAnalysis.h"
+#include "llvm/Analysis/ObjCARCAliasAnalysis.h"
+
 #include "arcana/noelle/core/NoellePass.hpp"
 #include "arcana/noelle/core/Architecture.hpp"
 
@@ -308,6 +316,39 @@ Noelle NoellePass::run(llvm::Module &M, llvm::ModuleAnalysisManager &AM) {
                   disableRA);
 
   return n;
+}
+
+AAManager NoellePass::createAliasAnalysesPipeline(void) {
+  AAManager AA;
+
+  AA.registerFunctionAnalysis<TypeBasedAA>();
+  AA.registerModuleAnalysis<GlobalsAA>();
+  AA.registerFunctionAnalysis<ScopedNoAliasAA>();
+  AA.registerFunctionAnalysis<SCEVAA>();
+  AA.registerFunctionAnalysis<CFLSteensAA>();
+  AA.registerFunctionAnalysis<CFLAndersAA>();
+  AA.registerFunctionAnalysis<llvm::objcarc::ObjCARCAA>();
+
+  return AA;
+}
+
+void NoellePass::registerNoellePass(PassBuilder &PB) {
+
+  /*
+   * Register alias analyses.
+   */
+  PB.registerAnalysisRegistrationCallback([](FunctionAnalysisManager &AM) {
+    AM.registerPass([&] { return NoellePass::createAliasAnalysesPipeline(); });
+  });
+
+  /*
+   * Register Noelle analyses.
+   */
+  PB.registerAnalysisRegistrationCallback([](ModuleAnalysisManager &AM) {
+    AM.registerPass([&] { return NoellePass(); });
+  });
+
+  return;
 }
 
 llvm::AnalysisKey NoellePass::Key;

@@ -38,6 +38,10 @@ public:
 
   Result run(llvm::Module &M, llvm::ModuleAnalysisManager &AM);
 
+  static void registerNoellePass(PassBuilder &PB);
+
+  static AAManager createAliasAnalysesPipeline(void);
+
 private:
   friend llvm::AnalysisInfoMixin<NoellePass>;
   static llvm::AnalysisKey Key;
