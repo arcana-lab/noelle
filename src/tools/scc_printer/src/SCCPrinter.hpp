@@ -28,19 +28,11 @@ namespace arcana::noelle {
 
 std::string getSCCTypeName(GenericSCC::SCCKind type);
 
-class SCCPrinter : public ModulePass {
+class SCCPrinter : public PassInfoMixin<SCCPrinter> {
 public:
-  static char ID;
-
   SCCPrinter();
 
-  ~SCCPrinter() = default;
-
-  bool doInitialization(Module &M) override;
-
-  bool runOnModule(Module &M) override;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
+  PreservedAnalyses run(Module &M, llvm::ModuleAnalysisManager &AM);
 
   void printLoopIDs(std::vector<LoopStructure *> *LSs);
 

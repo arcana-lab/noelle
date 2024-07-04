@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Xiao Chen
+ * Copyright 2023 - 2024  Xiao Chen, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -53,20 +53,14 @@ private:
   uint64_t stackMemoryUsage = 0;
 };
 
-class Privatizer : public ModulePass {
+class Privatizer : public PassInfoMixin<Privatizer> {
 public:
-  static char ID;
+  Privatizer();
 
   /*
    * Privatizer.cpp
    */
-  Privatizer();
-
-  bool doInitialization(Module &M) override;
-
-  bool runOnModule(Module &M) override;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
+  PreservedAnalyses run(Module &M, llvm::ModuleAnalysisManager &AM);
 
 private:
   Module *M;

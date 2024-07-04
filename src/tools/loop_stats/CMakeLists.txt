@@ -8,6 +8,5 @@ target_sources(
   src/LoopStats_Invariants.cpp
   src/LoopStats_Loops.cpp
   src/LoopStats_Printer.cpp
-  src/Pass.cpp
 )
 

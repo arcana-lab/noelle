@@ -12,7 +12,7 @@ get_target_property(NOELLE_LIBRARIES noelle_libraries NAMES)
 set(noelle_load_CORE_LIBS "")
 foreach(lib IN LISTS NOELLE_LIBRARIES)
   list(APPEND noelle_load_CORE_LIBS
-    "-load ${CMAKE_INSTALL_PREFIX}/lib/${lib}.so"
+    "-load-pass-plugin ${CMAKE_INSTALL_PREFIX}/lib/${lib}.so"
   )
 endforeach()
 

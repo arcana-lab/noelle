@@ -24,25 +24,13 @@
 
 namespace arcana::noelle {
 
-PDGSCCEmbedder::PDGSCCEmbedder() : ModulePass(ID) {
-  return;
-}
-
-bool PDGSCCEmbedder::doInitialization(Module &M) {
-  return false;
-}
-
-void PDGSCCEmbedder::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<NoellePass>();
-  return;
-}
-
-bool PDGSCCEmbedder::runOnModule(Module &M) {
+PreservedAnalyses PDGSCCEmbedder::run(Module &M,
+                                      llvm::ModuleAnalysisManager &AM) {
 
   /*
    * Fetch the NOELLE framework.
    */
-  auto &noelle = getAnalysis<NoellePass>().getNoelle();
+  auto &noelle = AM.getResult<NoellePass>(M);
 
   /*
    * Get the PDG.
@@ -55,30 +43,43 @@ bool PDGSCCEmbedder::runOnModule(Module &M) {
   auto pdgGen = noelle.getPDGGenerator();
   pdgGen.embedSCCAsMetadata(pdg);
 
-  return true;
+  return PreservedAnalyses::none();
 }
 
 // Next there is code to register your pass to "opt"
-char PDGSCCEmbedder::ID = 0;
-static RegisterPass<PDGSCCEmbedder> X("PDGSCCEmbedder",
-                                      "Embed the SCCs into the IR");
+llvm::PassPluginLibraryInfo getPluginInfo() {
+  return { LLVM_PLUGIN_API_VERSION,
+           "PDGSCCEmbedder",
+           LLVM_VERSION_STRING,
+           [](PassBuilder &PB) {
+             /*
+              * REGISTRATION FOR "opt -passes='PDGSCCEmbedder'"
+              *
+              */
+             PB.registerPipelineParsingCallback(
+                 [](StringRef Name,
+                    llvm::ModulePassManager &PM,
+                    ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                   if (Name == "PDGSCCEmbedder") {
+                     PM.addPass(PDGSCCEmbedder());
+                     return true;
+                   }
+                   return false;
+                 });
 
-// Next there is code to register your pass to "clang"
-static PDGSCCEmbedder *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-                                        [](const PassManagerBuilder &,
-                                           legacy::PassManagerBase &PM) {
-                                          if (!_PassMaker) {
-                                            PM.add(_PassMaker =
-                                                       new PDGSCCEmbedder());
-                                          }
-                                        }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new PDGSCCEmbedder());
-      }
-    }); // ** for -O0
+             /*
+              * REGISTRATION FOR "AM.getResult<NoellePass>()"
+              */
+             PB.registerAnalysisRegistrationCallback(
+                 [](ModuleAnalysisManager &AM) {
+                   AM.registerPass([&] { return NoellePass(); });
+                 });
+           } };
+}
+
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return getPluginInfo();
+}
 
 } // namespace arcana::noelle

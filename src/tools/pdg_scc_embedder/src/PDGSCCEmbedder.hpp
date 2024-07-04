@@ -26,17 +26,9 @@
 
 namespace arcana::noelle {
 
-class PDGSCCEmbedder : public ModulePass {
+class PDGSCCEmbedder : public PassInfoMixin<PDGSCCEmbedder> {
 public:
-  static char ID;
-
-  PDGSCCEmbedder();
-
-  bool doInitialization(Module &M) override;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-
-  bool runOnModule(Module &M) override;
+  PreservedAnalyses run(Module &M, llvm::ModuleAnalysisManager &AM);
 };
 
 } // namespace arcana::noelle

@@ -3,5 +3,4 @@ target_sources(
   LoopSize
   PRIVATE
   src/LoopSize.cpp
-  src/Pass.cpp
 )

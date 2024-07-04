@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Simone Campanoni
+ * Copyright 2021 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -20,39 +20,36 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/tools/CodeSize.hpp"
+#include "arcana/noelle/core/NoellePass.hpp"
 
 namespace arcana::noelle {
 
-bool CodeSize::doInitialization(Module &M) {
-  return false;
-}
-
-void CodeSize::getAnalysisUsage(AnalysisUsage &AU) const {
-  return;
-}
-
 // Next there is code to register your pass to "opt"
-char CodeSize::ID = 0;
-static RegisterPass<CodeSize> X("CodeSize",
-                                "Print the code size",
-                                false,
-                                false);
+llvm::PassPluginLibraryInfo getPluginInfo() {
+  return { LLVM_PLUGIN_API_VERSION,
+           "CodeSize",
+           LLVM_VERSION_STRING,
+           [](PassBuilder &PB) {
+             /*
+              * REGISTRATION FOR "opt -passes='CodeSize'"
+              *
+              */
+             PB.registerPipelineParsingCallback(
+                 [](StringRef Name,
+                    llvm::ModulePassManager &PM,
+                    ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                   if (Name == "CodeSize") {
+                     PM.addPass(CodeSize());
+                     return true;
+                   }
+                   return false;
+                 });
+           } };
+}
 
-// Next there is code to register your pass to "clang"
-static CodeSize *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-                                        [](const PassManagerBuilder &,
-                                           legacy::PassManagerBase &PM) {
-                                          if (!_PassMaker) {
-                                            PM.add(_PassMaker = new CodeSize());
-                                          }
-                                        }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new CodeSize());
-      }
-    }); // ** for -O0
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return getPluginInfo();
+}
 
 } // namespace arcana::noelle

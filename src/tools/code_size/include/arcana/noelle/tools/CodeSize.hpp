@@ -26,22 +26,12 @@
 
 namespace arcana::noelle {
 
-class CodeSize : public ModulePass {
+class CodeSize : public PassInfoMixin<CodeSize> {
 public:
-  /*
-   * Class fields
-   */
-  static char ID;
-
   /*
    * Methods
    */
-  CodeSize();
-  bool doInitialization(Module &M) override;
-  bool runOnModule(Module &M) override;
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-
-private:
+  PreservedAnalyses run(Module &M, llvm::ModuleAnalysisManager &AM);
 };
 
 } // namespace arcana::noelle
