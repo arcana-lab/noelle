@@ -27,7 +27,6 @@
 namespace arcana::noelle {
 
 void PDGGenerator::cleanAndEmbedPDGAsMetadata(PDG *pdg) {
-  errs() << "XAN: EMBED\n";
   this->cleanPDGMetadata();
   this->embedPDGAsMetadata(pdg);
   return;
