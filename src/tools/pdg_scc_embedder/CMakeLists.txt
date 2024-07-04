@@ -1,4 +1,4 @@
-noelle_component_declare(PDGSCCEmbedder)
+noelle_tool_declare(PDGSCCEmbedder)
 target_sources(
   PDGSCCEmbedder # component name
   PRIVATE

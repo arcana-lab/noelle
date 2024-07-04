@@ -196,7 +196,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(LoopContent const &LDI) {
        * PHI. If none exist, do not hoist the PHI
        */
       Value *valueToReplacePHI = nullptr;
-      for (auto i = 0; i < phi->getNumIncomingValues(); ++i) {
+      for (auto i = 0u; i < phi->getNumIncomingValues(); ++i) {
         auto incomingBlock = phi->getIncomingBlock(i);
         if (!DS->DT.dominates(incomingBlock, B)) {
           continue;
@@ -391,8 +391,8 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(LoopContent const &LDI) {
     auto converged = false;
     do {
       converged = true;
-      for (auto i = 0; i < (instructionsToHoistToPreheader.size() - 1); i++) {
-        for (auto j = i + 1; j < instructionsToHoistToPreheader.size(); j++) {
+      for (auto i = 0u; i < (instructionsToHoistToPreheader.size() - 1); i++) {
+        for (auto j = i + 1u; j < instructionsToHoistToPreheader.size(); j++) {
           auto I = instructionsToHoistToPreheader[i];
           auto J = instructionsToHoistToPreheader[j];
           assert(I != J);

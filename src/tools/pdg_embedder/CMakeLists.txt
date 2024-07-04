@@ -1,4 +1,4 @@
-noelle_component_declare(PDGEmbedder)
+noelle_tool_declare(PDGEmbedder)
 target_sources(
   PDGEmbedder # component name
   PRIVATE

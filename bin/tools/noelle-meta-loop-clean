@@ -7,4 +7,8 @@ if test $# -lt 2 ; then
   exit 1
 fi
 
-noelle-load -MetadataCleaner -clean-pdg-metadata=true $@
+noelle-load \
+  -load $(noelle-config --prefix)/lib/MetadataCleaner.so  \
+  -MetadataCleaner  \
+  -clean-loop-metadata=true \
+  $@

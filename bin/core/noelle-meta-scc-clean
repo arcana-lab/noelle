@@ -1,6 +1,0 @@
-#!/bin/bash -e
-
-trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
-
-# remove the PDG from the bitcode
-noelle-load -MetadataCleaner -clean-pdg-scc-metadata $@
