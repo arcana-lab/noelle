@@ -26,10 +26,8 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/FileSystem.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/CallGraph.h"
 

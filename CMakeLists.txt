@@ -21,7 +21,7 @@ set(NOELLE_CXX_FLAGS
   -Wall
 )
 
-find_package(LLVM 14 REQUIRED CONFIG)
+find_package(LLVM 18.1.6 REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 link_directories(${LLVM_LIBRARY_DIRS})
@@ -36,12 +36,12 @@ execute_process(
 FetchContent_Declare(
   svf
   GIT_REPOSITORY  "https://github.com/arcana-lab/SVF.git"
-  GIT_TAG         noelle-14
+  GIT_TAG         noelle-18
 )
 FetchContent_Declare(
   scaf
   GIT_REPOSITORY  "https://github.com/PrincetonUniversity/SCAF.git"
-  GIT_TAG         llvm14
+  GIT_TAG         llvm18
 )
 
 set(NOELLE_CMAKE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
