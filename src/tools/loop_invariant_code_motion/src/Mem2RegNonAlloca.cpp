@@ -291,7 +291,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC(SCC *scc,
    */
   IRBuilder<> preHeaderBuilder(loopPreHeader->getTerminator());
   auto initialLoad = preHeaderBuilder.CreateLoad(
-      memoryLocation->getType()->getPointerElementType(),
+      memoryLocation->getType()->getStructElementType(0),
       memoryLocation);
   lastRegisterValueByBlock.insert(std::make_pair(loopPreHeader, initialLoad));
 
