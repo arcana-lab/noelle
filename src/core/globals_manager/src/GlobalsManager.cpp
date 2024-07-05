@@ -33,7 +33,9 @@ std::set<GlobalVariable *> GlobalsManager::getGlobals(void) const {
   /*
    * Find all globals.
    */
-  for (auto &g : this->program.getGlobalList()) {
+  auto &M = this->program;
+  for (llvm::Module::global_iterator GI = M.global_begin(), GE = M.global_end(); GI != GE; ++GI) {
+    auto &g = *GI;
     gs.insert(&g);
   }
 

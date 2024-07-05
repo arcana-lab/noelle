@@ -23,8 +23,6 @@
 #include "llvm/Analysis/TypeBasedAliasAnalysis.h"
 #include "llvm/Analysis/ScopedNoAliasAA.h"
 #include "llvm/Analysis/ScalarEvolutionAliasAnalysis.h"
-#include "llvm/Analysis/CFLSteensAliasAnalysis.h"
-#include "llvm/Analysis/CFLAndersAliasAnalysis.h"
 #include "llvm/Analysis/ObjCARCAliasAnalysis.h"
 
 #include "arcana/noelle/core/NoellePass.hpp"
@@ -327,8 +325,6 @@ void NoellePass::registerAliasAnalyses(AAManager &AAM) {
   AAM.registerModuleAnalysis<GlobalsAA>();
   AAM.registerFunctionAnalysis<ScopedNoAliasAA>();
   AAM.registerFunctionAnalysis<SCEVAA>();
-  AAM.registerFunctionAnalysis<CFLSteensAA>();
-  AAM.registerFunctionAnalysis<CFLAndersAA>();
   AAM.registerFunctionAnalysis<llvm::objcarc::ObjCARCAA>();
 
   return;

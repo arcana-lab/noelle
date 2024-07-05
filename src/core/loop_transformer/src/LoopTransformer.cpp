@@ -82,7 +82,7 @@ LoopUnrollResult LoopTransformer::unrollLoop(LoopContent *loop,
   opts.AllowExpensiveTripCount = true;
   opts.UnrollRemainder = false;
   opts.ForgetAllSCEV = true;
-  OptimizationRemarkEmitter ORE(lsFunction);
+  OptimizationRemarkEmitter ORE{lsFunction};
   TargetTransformInfo TTI(lsFunction->getParent()->getDataLayout());
   auto unrolled =
       UnrollLoop(llvmLoop, opts, &LLVMLoops, &SE, &DT, &AC, &TTI, &ORE, true);
