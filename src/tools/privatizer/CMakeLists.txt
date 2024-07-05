@@ -4,7 +4,6 @@ target_sources(
   PRIVATE
   src/GlobalToStack.cpp
   src/HeapToStack.cpp
-  src/Pass.cpp
   src/Privatizer.cpp
   src/Utils.cpp
 )

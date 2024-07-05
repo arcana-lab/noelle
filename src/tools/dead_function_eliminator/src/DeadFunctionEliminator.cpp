@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2021  Simone Campanoni
+ * Copyright 2019 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -23,21 +23,30 @@
 
 namespace arcana::noelle {
 
+static cl::opt<bool> DisableDead("noelle-disable-dead",
+                                 cl::ZeroOrMore,
+                                 cl::Hidden,
+                                 cl::desc("Disable the dead code eliminator"));
+
 DeadFunctionEliminator::DeadFunctionEliminator()
-  : ModulePass{ ID },
-    enableTransformation{ true },
+  : enableTransformation{ true },
     prefix{ "DeadFunctionEliminator: " } {
+
+  if (DisableDead.getNumOccurrences() > 0) {
+    this->enableTransformation = false;
+  }
 
   return;
 }
 
-bool DeadFunctionEliminator::runOnModule(Module &M) {
+PreservedAnalyses DeadFunctionEliminator::run(Module &M,
+                                              llvm::ModuleAnalysisManager &AM) {
 
   /*
    * Check if the transformation is enabled.
    */
   if (!this->enableTransformation) {
-    return false;
+    return PreservedAnalyses::all();
   }
   auto modified = false;
   errs() << this->prefix << "Start\n";
@@ -45,7 +54,7 @@ bool DeadFunctionEliminator::runOnModule(Module &M) {
   /*
    * Fetch the outputs of the passes we rely on.
    */
-  auto &noelle = getAnalysis<NoellePass>().getNoelle();
+  auto &noelle = AM.getResult<NoellePass>(M);
 
   /*
    * Fetch the call graph.
@@ -155,7 +164,7 @@ bool DeadFunctionEliminator::runOnModule(Module &M) {
   }
   if (modified) {
     errs() << this->prefix << "Exit\n";
-    return true;
+    return PreservedAnalyses::none();
   }
 
   /*
@@ -237,7 +246,46 @@ bool DeadFunctionEliminator::runOnModule(Module &M) {
   }
 
   errs() << this->prefix << "Exit\n";
-  return modified;
+  if (modified) {
+    return PreservedAnalyses::none();
+  }
+  return PreservedAnalyses::all();
+}
+
+// Next there is code to register your pass to "opt"
+llvm::PassPluginLibraryInfo getPluginInfo() {
+  return { LLVM_PLUGIN_API_VERSION,
+           "DeadFunctionEliminator",
+           LLVM_VERSION_STRING,
+           [](PassBuilder &PB) {
+             /*
+              * REGISTRATION FOR "opt -passes='PDGEmbedder'"
+              *
+              */
+             PB.registerPipelineParsingCallback(
+                 [](StringRef Name,
+                    llvm::ModulePassManager &PM,
+                    ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                   if (Name == "DeadFunctionEliminator") {
+                     PM.addPass(DeadFunctionEliminator());
+                     return true;
+                   }
+                   return false;
+                 });
+
+             /*
+              * REGISTRATION FOR "AM.getResult<NoellePass>()"
+              */
+             PB.registerAnalysisRegistrationCallback(
+                 [](ModuleAnalysisManager &AM) {
+                   AM.registerPass([&] { return NoellePass(); });
+                 });
+           } };
+}
+
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return getPluginInfo();
 }
 
 } // namespace arcana::noelle

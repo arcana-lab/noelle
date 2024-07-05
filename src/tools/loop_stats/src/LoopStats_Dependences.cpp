@@ -47,6 +47,8 @@ void LoopStats::collectStatsOnLLVMSCCs(Hot *profiles,
 }
 
 void LoopStats::collectStatsOnNoelleSCCs(Hot *profiles,
+                                         Module &M,
+                                         llvm::ModuleAnalysisManager &AM,
                                          LoopContent &loopContent,
                                          Stats *statsForLoop,
                                          Loop &llvmLoop) {
@@ -76,7 +78,8 @@ void LoopStats::collectStatsOnNoelleSCCs(Hot *profiles,
   auto loopExitBlocks = loopStructure->getLoopExitBasicBlocks();
   auto environment = LoopEnvironment(loopDG, loopExitBlocks, {});
   auto invariantManager = loopContent.getInvariantManager();
-  auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(*loopFunction).getSE();
+  auto &fam = AM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
+  auto &SE = fam.getResult<ScalarEvolutionAnalysis>(*loopFunction);
   auto inductionVariables = InductionVariableManager(loopHierarchy,
                                                      *invariantManager,
                                                      SE,

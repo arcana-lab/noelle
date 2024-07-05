@@ -85,7 +85,7 @@ Instruction *LoopEnvironmentUser::createEnvironmentVariablePointer(
    * Compute the address of the environment variable
    */
   auto envGEP =
-      builder.CreateGEP(this->envArray->getType()->getPointerElementType(),
+      builder.CreateGEP(this->envArray->getType()->getStructElementType(0),
                         this->envArray,
                         ArrayRef<Value *>({ zeroV, envIndV }));
   auto envPtr = builder.CreateBitCast(envGEP, PointerType::getUnqual(type));
@@ -128,7 +128,7 @@ void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> &builder,
       cast<Value>(ConstantInt::get(int64, envIndex * valuesInCacheLine));
 
   auto envReduceGEP =
-      builder.CreateGEP(this->envArray->getType()->getPointerElementType(),
+      builder.CreateGEP(this->envArray->getType()->getStructElementType(0),
                         this->envArray,
                         ArrayRef<Value *>({ zeroV, envIndV }));
   auto arrPtr = PointerType::getUnqual(
@@ -140,10 +140,10 @@ void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> &builder,
       builder.CreateMul(reducerIndV,
                         ConstantInt::get(int64, valuesInCacheLine));
   auto newLoad =
-      builder.CreateLoad(envReducePtr->getType()->getPointerElementType(),
+      builder.CreateLoad(envReducePtr->getType()->getStructElementType(0),
                          envReducePtr);
   auto envGEP =
-      builder.CreateGEP(newLoad->getType()->getPointerElementType(),
+      builder.CreateGEP(newLoad->getType()->getStructElementType(0),
                         newLoad,
                         ArrayRef<Value *>({ zeroV, reduceIndAlignedV }));
   auto envPtr = builder.CreateBitCast(envGEP, PointerType::getUnqual(type));

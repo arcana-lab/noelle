@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022 Simone Campanoni
+ * Copyright 2016 - 2024 Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,25 +19,68 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#include <string>
-#include <unordered_map>
-#include <vector>
-
+#include "SCCPrinter.hpp"
 #include "arcana/noelle/core/SCCDAGAttrs.hpp"
 #include "arcana/noelle/core/LoopCarriedUnknownSCC.hpp"
 
-#include "SCCPrinter.hpp"
-
-using namespace std;
-
 namespace arcana::noelle {
 
-SCCPrinter::SCCPrinter() : ModulePass{ ID }, prefix{ "SCCPrinter: " } {
+static cl::list<int> SCCTypeWhiteList(
+    "noelle-scc-printer-white-list",
+    cl::ZeroOrMore,
+    cl::CommaSeparated,
+    cl::desc("Print only a subset of the SCC hierarchy"));
+static cl::list<int> SCCTypeBlackList(
+    "noelle-scc-printer-black-list",
+    cl::ZeroOrMore,
+    cl::CommaSeparated,
+    cl::desc("Print all but a subset of the SCC hierarchy"));
+static cl::opt<bool> PrintSCCInstructions(
+    "noelle-scc-printer-insts",
+    cl::ZeroOrMore,
+    cl::Hidden,
+    cl::desc("Print all instructions that compose the selected SCCs"));
+static cl::opt<bool> PrintLoopIDs(
+    "noelle-scc-printer-loops",
+    cl::ZeroOrMore,
+    cl::Hidden,
+    cl::desc("Assign and print an incremental ID to loops"));
+static cl::opt<int> TargetLoopID("noelle-scc-printer-loop",
+                                 cl::ZeroOrMore,
+                                 cl::init(-1),
+                                 cl::Hidden,
+                                 cl::desc("Restrict pass to a single loop"));
+static cl::opt<bool> PrintDetails(
+    "noelle-scc-printer-details",
+    cl::ZeroOrMore,
+    cl::Hidden,
+    cl::desc("Print detailed info about each SCC"));
+static cl::opt<std::string> TargetFunctionName(
+    "noelle-scc-printer-func",
+    cl::init("main"),
+    cl::ZeroOrMore,
+    cl::Hidden,
+    cl::desc("Restrict pass to a single function"));
+
+SCCPrinter::SCCPrinter() : prefix{ "SCCPrinter: " } {
+
+  this->sccTypeWhiteList = SCCTypeWhiteList;
+  this->sccTypeBlackList = SCCTypeBlackList;
+  this->printSCCInstructions = PrintSCCInstructions;
+  this->targetLoopID = TargetLoopID;
+  this->targetFunctionName = TargetFunctionName;
+  this->loopIDs = PrintLoopIDs;
+  this->printDetails = PrintDetails;
+
   return;
 }
 
-bool SCCPrinter::runOnModule(Module &M) {
-  auto &noelle = getAnalysis<NoellePass>().getNoelle();
+PreservedAnalyses SCCPrinter::run(Module &M, llvm::ModuleAnalysisManager &AM) {
+
+  /*
+   * Fetch the NOELLE framework.
+   */
+  auto &noelle = AM.getResult<NoellePass>(M);
 
   /*
    * Finding the pointer of the given function name
@@ -46,12 +89,12 @@ bool SCCPrinter::runOnModule(Module &M) {
 
   if (F == nullptr) {
     errs() << this->prefix << "can't find the target function\n";
-    return false;
+    return PreservedAnalyses::all();
   }
 
   if (this->loopIDs) {
     printLoopIDs(noelle.getLoopStructures(F));
-    return false;
+    return PreservedAnalyses::all();
   }
 
   const auto isSelected = [&](GenericSCC::SCCKind t) {
@@ -93,7 +136,7 @@ bool SCCPrinter::runOnModule(Module &M) {
     id++;
   }
 
-  return false;
+  return PreservedAnalyses::all();
 }
 
 void SCCPrinter::printSCC(GenericSCC *scc) {
@@ -172,6 +215,42 @@ std::string getSCCTypeName(GenericSCC::SCCKind type) {
     default:
       assert(false);
   }
+}
+
+// Next there is code to register your pass to "opt"
+llvm::PassPluginLibraryInfo getPluginInfo() {
+  return { LLVM_PLUGIN_API_VERSION,
+           "scc-printer",
+           LLVM_VERSION_STRING,
+           [](PassBuilder &PB) {
+             /*
+              * REGISTRATION FOR "opt -passes='scc-printer'"
+              *
+              */
+             PB.registerPipelineParsingCallback(
+                 [](StringRef Name,
+                    llvm::ModulePassManager &PM,
+                    ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                   if (Name == "scc-printer") {
+                     PM.addPass(SCCPrinter());
+                     return true;
+                   }
+                   return false;
+                 });
+
+             /*
+              * REGISTRATION FOR "AM.getResult<NoellePass>()"
+              */
+             PB.registerAnalysisRegistrationCallback(
+                 [](ModuleAnalysisManager &AM) {
+                   AM.registerPass([&] { return NoellePass(); });
+                 });
+           } };
+}
+
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return getPluginInfo();
 }
 
 } // namespace arcana::noelle

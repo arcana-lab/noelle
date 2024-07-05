@@ -52,6 +52,10 @@ Value *ReferenceTreeExpander::visitConstant(const SCEVConstant *S) {
   return currentNode->getValue();
 }
 
+Value *ReferenceTreeExpander::visitVScale(const SCEVVScale *S){
+  return nullptr;
+}
+
 Value *ReferenceTreeExpander::visitTruncateExpr(const SCEVTruncateExpr *S) {
   // assert(false && "Truncate SCEV expander not implemented");
   return nullptr;

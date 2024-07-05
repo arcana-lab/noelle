@@ -315,12 +315,13 @@ PDG *LDGGenerator::generateLoopDependenceGraph(PDG *functionDG,
   /*
    * Check if loop-centric dependence analyses are enabled.
    */
+  auto M = loopStructure->getFunction()->getParent();
   if (this->areLoopDependenceAnalysesEnabled()) {
 
     /*
      * Run SCAF.
      */
-    refinePDGWithSCAF(loopDG, loopNode);
+    refinePDGWithSCAF(*M, loopDG, loopNode);
 
     /*
      * Run the iteration space analysis.

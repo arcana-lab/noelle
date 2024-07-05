@@ -22,32 +22,29 @@
 #ifndef NOELLEPASS_H_
 #define NOELLEPASS_H_
 
+#include "llvm/Analysis/CallGraph.h"
 #include "arcana/noelle/core/Noelle.hpp"
 
 namespace arcana::noelle {
 
-class NoellePass : public ModulePass {
+class NoellePass : public llvm::AnalysisInfoMixin<NoellePass> {
 public:
+  using Result = Noelle;
+
   /*
    * Methods.
    */
   NoellePass();
 
-  bool doInitialization(Module &M) override;
+  Result run(llvm::Module &M, llvm::ModuleAnalysisManager &AM);
 
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
+  static void registerNoellePass(PassBuilder &PB);
 
-  bool runOnModule(Module &M) override;
-
-  Noelle &getNoelle(void) const;
-
-  /*
-   * Fields.
-   */
-  static char ID;
+  static void registerAliasAnalyses(AAManager &AAM);
 
 private:
-  Noelle *n;
+  friend llvm::AnalysisInfoMixin<NoellePass>;
+  static llvm::AnalysisKey Key;
 };
 
 } // namespace arcana::noelle

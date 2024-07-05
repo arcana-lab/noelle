@@ -24,8 +24,10 @@
 namespace arcana::noelle {
 
 std::vector<LoopStructure *> LoopMetadataPass::getLoopStructuresWithoutNoelle(
-    Module &M) {
+    Module &M,
+    llvm::ModuleAnalysisManager &AM) {
   std::vector<LoopStructure *> loopStructures;
+  auto &fam = AM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
   for (auto &F : M) {
     /*
      * Check if this is application code.
@@ -37,7 +39,7 @@ std::vector<LoopStructure *> LoopMetadataPass::getLoopStructuresWithoutNoelle(
     /*
      * Check if the function has loops.
      */
-    auto &LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
+    auto &LI = fam.getResult<LoopAnalysis>(F);
     if (std::distance(LI.begin(), LI.end()) == 0) {
       continue;
     }

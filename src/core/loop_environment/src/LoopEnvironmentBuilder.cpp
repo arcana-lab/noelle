@@ -304,7 +304,7 @@ void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> &builder) {
     /*
      * Compute the address of the variable with index "envIndex".
      */
-    auto envPtr = builder.CreateGEP(arr->getType()->getPointerElementType(),
+    auto envPtr = builder.CreateGEP(arr->getType()->getStructElementType(0),
                                     arr,
                                     ArrayRef<Value *>({ zeroV, indValue }));
 
@@ -506,7 +506,7 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
     auto varType = envTypes[envIndex];
     auto ptrType = PointerType::getUnqual(varType);
     auto effectiveAddressOfReducedVar = loopBodyBuilder.CreateGEP(
-        baseAddressOfReducedVar->getType()->getPointerElementType(),
+        baseAddressOfReducedVar->getType()->getStructElementType(0),
         baseAddressOfReducedVar,
         ArrayRef<Value *>({ zeroV, offsetValue }));
 
@@ -521,7 +521,7 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
      */
     auto envVar = loopBodyBuilder.CreateLoad(
         effectiveAddressOfReducedVarProperlyCasted->getType()
-            ->getPointerElementType(),
+            ->getStructElementType(0),
         effectiveAddressOfReducedVarProperlyCasted);
     loadedValues.push_back(envVar);
   }

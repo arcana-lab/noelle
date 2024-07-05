@@ -141,7 +141,7 @@ bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut(
     }
 
     auto initialValue = preHeaderBuilder.CreateLoad(
-        pointerOperand->getType()->getPointerElementType(),
+        pointerOperand->getType()->getStructElementType(0),
         pointerOperand);
 
     /*

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2023  Yian Su, Simone Campanoni
+ * Copyright 2016 - 2024  Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -20,17 +20,27 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/PDGPrinter.hpp"
-#include "arcana/noelle/core/SystemHeaders.hpp"
 #include "PDGStats.hpp"
 
 namespace arcana::noelle {
 
-bool PDGStats::runOnModule(Module &M) {
+static cl::opt<bool> LoopDGDump("noelle-refined-loopdg-dump",
+                                cl::ZeroOrMore,
+                                cl::Hidden,
+                                cl::desc("Dump the refined Loop DG"));
+
+PDGStats::PDGStats() {
+  this->dumpLoopDG = LoopDGDump;
+
+  return;
+}
+
+PreservedAnalyses PDGStats::run(Module &M, llvm::ModuleAnalysisManager &AM) {
 
   /*
    * Fetch the NOELLE framework.
    */
-  auto &noelle = getAnalysis<NoellePass>().getNoelle();
+  auto &noelle = AM.getResult<NoellePass>(M);
 
   /*
    * Compute the loops for all functions.
@@ -100,7 +110,7 @@ bool PDGStats::runOnModule(Module &M) {
    */
   printStats();
 
-  return false;
+  return PreservedAnalyses::all();
 }
 
 void PDGStats::collectStatsForNodes(Function &F) {
@@ -300,10 +310,6 @@ void PDGStats::printStats() {
   return;
 }
 
-PDGStats::PDGStats() : ModulePass{ ID } {
-  return;
-}
-
 uint64_t PDGStats::computePotentialEdges(uint64_t totLoads,
                                          uint64_t totStores,
                                          uint64_t totCalls) {
@@ -365,8 +371,40 @@ void PDGStats::analyzeDependence(DGEdge<Value, Value> *edge) {
   return;
 }
 
-PDGStats::~PDGStats() {
-  return;
+// Next there is code to register your pass to "opt"
+llvm::PassPluginLibraryInfo getPluginInfo() {
+  return { LLVM_PLUGIN_API_VERSION,
+           "PDGStats",
+           LLVM_VERSION_STRING,
+           [](PassBuilder &PB) {
+             /*
+              * REGISTRATION FOR "opt -passes='PDGStats'"
+              *
+              */
+             PB.registerPipelineParsingCallback(
+                 [](StringRef Name,
+                    llvm::ModulePassManager &PM,
+                    ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                   if (Name == "PDGStats") {
+                     PM.addPass(PDGStats());
+                     return true;
+                   }
+                   return false;
+                 });
+
+             /*
+              * REGISTRATION FOR "AM.getResult<NoellePass>()"
+              */
+             PB.registerAnalysisRegistrationCallback(
+                 [](ModuleAnalysisManager &AM) {
+                   AM.registerPass([&] { return NoellePass(); });
+                 });
+           } };
+}
+
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return getPluginInfo();
 }
 
 } // namespace arcana::noelle

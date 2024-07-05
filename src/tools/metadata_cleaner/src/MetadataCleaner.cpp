@@ -23,11 +23,6 @@
 
 namespace arcana::noelle {
 
-MetadataCleaner::MetadataCleaner() : ModulePass{ ID }, cleanPDG{ false } {
-
-  return;
-}
-
 void MetadataCleaner::cleanLoopMetadata(Module &M) {
   errs() << "noelle/core/Clean Loop Metadata\n";
 
@@ -107,10 +102,6 @@ void MetadataCleaner::cleanProfMetadata(Module &M) {
     }
   }
 
-  return;
-}
-
-MetadataCleaner::~MetadataCleaner() {
   return;
 }
 

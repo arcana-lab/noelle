@@ -259,7 +259,7 @@ bool AllocAA::collectUserInstructions(
     Instruction *I = nullptr;
     if (isa<Instruction>(user)) {
       I = (Instruction *)user;
-    } else if (isa<BitCastOperator>(user) || isa<ZExtOperator>(user)) {
+    } else if (isa<BitCastOperator>(user)) {
       if (user->hasOneUse()) {
         auto operUser = *user->user_begin();
         if (isa<Instruction>(operUser)) {

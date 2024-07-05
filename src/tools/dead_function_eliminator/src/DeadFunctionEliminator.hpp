@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020  Simone Campanoni
+ * Copyright 2019 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -26,20 +26,11 @@
 
 namespace arcana::noelle {
 
-class DeadFunctionEliminator : public ModulePass {
+class DeadFunctionEliminator : public PassInfoMixin<DeadFunctionEliminator> {
 public:
   DeadFunctionEliminator();
 
-  bool doInitialization(Module &M) override;
-
-  bool runOnModule(Module &M) override;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-
-  /*
-   * Class fields
-   */
-  static char ID;
+  PreservedAnalyses run(Module &M, llvm::ModuleAnalysisManager &AM);
 
 private:
   /*

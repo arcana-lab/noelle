@@ -59,7 +59,8 @@ void Hot::analyzeProfiles(Module &M) {
       /*
        * Check if the basic block has been executed at least once.
        */
-      if (!bfi.getBlockProfileCount(&bb).hasValue()) {
+      auto count = bfi.getBlockProfileCount(&bb);
+      if (!count){
 
         /*
          * The basic block hasn't been executed.
@@ -71,7 +72,7 @@ void Hot::analyzeProfiles(Module &M) {
       /*
        * Fetch the basic block counter.
        */
-      auto v = bfi.getBlockProfileCount(&bb).getValue();
+      auto v = *count;
 
       /*
        * Set the invocations.

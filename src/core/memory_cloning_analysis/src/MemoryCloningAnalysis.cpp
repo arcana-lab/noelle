@@ -62,14 +62,14 @@ MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
      * Check if we know the size in bits of the stack object.
      */
     auto sizeInBitsOptional = allocation->getAllocationSizeInBits(DL);
-    if (!sizeInBitsOptional.hasValue()) {
+    if (!sizeInBitsOptional){
       continue;
     }
 
     /*
      * Fetch the size of the stack object.
      */
-    auto sizeInBits = sizeInBitsOptional.getValue();
+    auto sizeInBits = *sizeInBitsOptional;
 
     /*
      * Check if the stack object is clonable.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 - 2022  Simone Campanoni
+ * Copyright 2021 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -23,21 +23,29 @@
 
 namespace arcana::noelle {
 
+static cl::opt<std::string> NameOfFunctionToDelete(
+    "function-name",
+    cl::ZeroOrMore,
+    cl::Hidden,
+    cl::desc("Disable the dead code eliminator"));
+
 RemoveFunction::RemoveFunction()
-  : ModulePass{ ID },
-    functionName{ "" },
+  : functionName{ "" },
     prefix{ "RemoveFunction: " } {
+
+  this->functionName = NameOfFunctionToDelete;
 
   return;
 }
 
-bool RemoveFunction::runOnModule(Module &M) {
+PreservedAnalyses RemoveFunction::run(Module &M,
+                                      llvm::ModuleAnalysisManager &AM) {
   errs() << this->prefix << "Start\n";
 
   /*
    * Fetch the outputs of the passes we rely on.
    */
-  auto &noelle = getAnalysis<NoellePass>().getNoelle();
+  auto &noelle = AM.getResult<NoellePass>(M);
 
   /*
    * Fetch the function manager.
@@ -52,7 +60,7 @@ bool RemoveFunction::runOnModule(Module &M) {
   auto f = fm->getFunction(this->functionName);
   if (f == nullptr) {
     errs() << this->prefix << "    The function does not exist\n";
-    return false;
+    return PreservedAnalyses::all();
   }
 
   /*
@@ -63,7 +71,43 @@ bool RemoveFunction::runOnModule(Module &M) {
   fm->removeFunction(*f);
 
   errs() << this->prefix << "Exit\n";
-  return true;
+  return PreservedAnalyses::none();
+}
+
+// Next there is code to register your pass to "opt"
+llvm::PassPluginLibraryInfo getPluginInfo() {
+  return { LLVM_PLUGIN_API_VERSION,
+           "noelle-rm-function",
+           LLVM_VERSION_STRING,
+           [](PassBuilder &PB) {
+             /*
+              * REGISTRATION FOR "opt -passes='noelle-rm-function'"
+              *
+              */
+             PB.registerPipelineParsingCallback(
+                 [](StringRef Name,
+                    llvm::ModulePassManager &PM,
+                    ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                   if (Name == "noelle-rm-function") {
+                     PM.addPass(RemoveFunction());
+                     return true;
+                   }
+                   return false;
+                 });
+
+             /*
+              * REGISTRATION FOR "AM.getResult<NoellePass>()"
+              */
+             PB.registerAnalysisRegistrationCallback(
+                 [](ModuleAnalysisManager &AM) {
+                   AM.registerPass([&] { return NoellePass(); });
+                 });
+           } };
+}
+
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return getPluginInfo();
 }
 
 } // namespace arcana::noelle

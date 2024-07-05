@@ -23,6 +23,7 @@
 #define NOELLE_H_
 
 #include "arcana/noelle/core/SystemHeaders.hpp"
+#include "arcana/noelle/core/Architecture.hpp"
 #include "arcana/noelle/core/Dominators.hpp"
 #include "arcana/noelle/core/LoopNestingGraph.hpp"
 #include "arcana/noelle/core/Queue.hpp"

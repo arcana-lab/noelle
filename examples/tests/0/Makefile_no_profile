@@ -19,7 +19,7 @@ test_with_metadata.bc: test_norm.bc
 	llvm-dis $@
 
 test_opt.bc: test_with_metadata.bc
-	noelle-load -load ~/CAT/lib/CAT.so -CAT $< -o $@
+	noelle-load -load-pass-plugin ~/CAT/lib/CAT.so -passes='CAT' $< -o $@
 	llvm-dis $@
 
 test_opt: test_opt.bc

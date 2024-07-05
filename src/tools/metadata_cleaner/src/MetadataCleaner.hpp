@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Yian Su, Simone Campanoni
+ * Copyright 2016 - 2024  Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -26,19 +26,11 @@
 
 namespace arcana::noelle {
 
-class MetadataCleaner : public ModulePass {
+class MetadataCleaner : public PassInfoMixin<MetadataCleaner> {
 public:
-  static char ID;
-
   MetadataCleaner();
 
-  bool doInitialization(Module &M) override;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-
-  bool runOnModule(Module &M) override;
-
-  virtual ~MetadataCleaner();
+  PreservedAnalyses run(Module &M, llvm::ModuleAnalysisManager &AM);
 
 private:
   bool cleanLoop;

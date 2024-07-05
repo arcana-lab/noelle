@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2021  Simone Campanoni
+ * Copyright 2019 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -26,22 +26,12 @@
 
 namespace arcana::noelle {
 
-class LoopSize : public ModulePass {
+class LoopSize : public PassInfoMixin<LoopSize> {
 public:
-  /*
-   * Class fields
-   */
-  static char ID;
-
   /*
    * Methods
    */
-  LoopSize();
-  bool doInitialization(Module &M) override;
-  bool runOnModule(Module &M) override;
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-
-private:
+  PreservedAnalyses run(Module &M, llvm::ModuleAnalysisManager &AM);
 };
 
 } // namespace arcana::noelle

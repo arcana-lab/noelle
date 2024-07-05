@@ -130,6 +130,10 @@ SCEVReference *ReferenceTreeBuilder::visitUnknown(const SCEVUnknown *S) {
              ? nullptr
              : new SCEVReference(value, S);
 }
+  
+SCEVReference *ReferenceTreeBuilder::visitVScale(const SCEVVScale *S){
+  return nullptr;
+}
 
 SCEVReference *ReferenceTreeBuilder::visitTruncateExpr(
     const SCEVTruncateExpr *S) {
