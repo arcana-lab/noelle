@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 - 2021  Simone Campanoni
+ * Copyright 2020 - 2024  Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -49,24 +49,7 @@ static SVF::ICFG *icfg = nullptr;
 static SVF::MemSSA *mssa = nullptr;
 #endif
 
-// Next there is code to register your pass to "opt"
-char NoelleSVFIntegration::ID = 0;
-static RegisterPass<NoelleSVFIntegration> X("noelle-svf",
-                                            "Integration with SVF");
-
-NoelleSVFIntegration::NoelleSVFIntegration() : ModulePass{ ID } {
-  return;
-}
-
-bool NoelleSVFIntegration::doInitialization(Module &M) {
-  return false;
-}
-
-void NoelleSVFIntegration::getAnalysisUsage(AnalysisUsage &AU) const {
-  return;
-}
-
-bool NoelleSVFIntegration::runOnModule(Module &M) {
+void NoelleSVFIntegration::run(Module &M) {
 #ifdef NOELLE_ENABLE_SVF
 
   /*
@@ -110,7 +93,7 @@ bool NoelleSVFIntegration::runOnModule(Module &M) {
   mssa = new SVF::MemSSA((SVF::BVDataPTAImpl *)ander, false);
 #endif
 
-  return false;
+  return;
 }
 
 noelle::CallGraph *NoelleSVFIntegration::getProgramCallGraph(Module &M) {
