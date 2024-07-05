@@ -24,6 +24,18 @@
 
 namespace arcana::noelle {
 
+static cl::opt<bool> DisablePrivatizer("noelle-disable-privatizer",
+                                       cl::ZeroOrMore,
+                                       cl::Hidden,
+                                       cl::desc("Disable all privatizers"));
+
+Privatizer::Privatizer() {
+  this->enablePrivatizer =
+      (DisablePrivatizer.getNumOccurrences() == 0) ? true : false;
+
+  return;
+}
+
 FunctionSummary::FunctionSummary(Function *currentF) : currentF(currentF) {
   for (auto &bb : *currentF) {
     for (auto &inst : bb) {
@@ -64,23 +76,20 @@ bool FunctionSummary::isDestOfMemcpy(Value *ptr) {
   return destsOfMemcpy.find(ptr) != destsOfMemcpy.end();
 }
 
-Privatizer::Privatizer() : ModulePass{ ID } {
-  return;
-}
-
-bool Privatizer::runOnModule(Module &M) {
+PreservedAnalyses Privatizer::run(Module &M, llvm::ModuleAnalysisManager &AM) {
+  this->M = &M;
 
   /*
    * Check if enablers have been enabled.
    */
   if (!this->enablePrivatizer) {
-    return false;
+    return PreservedAnalyses::all();
   }
 
   /*
    * Fetch NOELLE.
    */
-  auto &noelle = getAnalysis<NoellePass>().getNoelle();
+  auto &noelle = AM.getResult<NoellePass>(M);
   mpa = noelle.getMayPointsToAnalysis();
 
   auto modified = false;
@@ -95,7 +104,10 @@ bool Privatizer::runOnModule(Module &M) {
     modified |= transformG2S(noelle, globalVar, privariableFunctions);
   }
 
-  return modified;
+  if (modified) {
+    return PreservedAnalyses::none();
+  }
+  return PreservedAnalyses::all();
 }
 
 FunctionSummary *Privatizer::getFunctionSummary(Function *f) {
@@ -110,6 +122,42 @@ void Privatizer::clearFunctionSummaries() {
     delete summary;
   }
   functionSummaries.clear();
+}
+
+// Next there is code to register your pass to "opt"
+llvm::PassPluginLibraryInfo getPluginInfo() {
+  return { LLVM_PLUGIN_API_VERSION,
+           "Privatizer",
+           LLVM_VERSION_STRING,
+           [](PassBuilder &PB) {
+             /*
+              * REGISTRATION FOR "opt -passes='PDGEmbedder'"
+              *
+              */
+             PB.registerPipelineParsingCallback(
+                 [](StringRef Name,
+                    llvm::ModulePassManager &PM,
+                    ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                   if (Name == "Privatizer") {
+                     PM.addPass(Privatizer());
+                     return true;
+                   }
+                   return false;
+                 });
+
+             /*
+              * REGISTRATION FOR "AM.getResult<NoellePass>()"
+              */
+             PB.registerAnalysisRegistrationCallback(
+                 [](ModuleAnalysisManager &AM) {
+                   AM.registerPass([&] { return NoellePass(); });
+                 });
+           } };
+}
+
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return getPluginInfo();
 }
 
 } // namespace arcana::noelle

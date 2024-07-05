@@ -24,16 +24,12 @@
 
 namespace arcana::noelle {
 
-LoopSize::LoopSize() : ModulePass{ ID } {
-  return;
-}
-
-bool LoopSize::runOnModule(Module &M) {
+PreservedAnalyses LoopSize::run(Module &M, llvm::ModuleAnalysisManager &AM) {
 
   /*
    * Fetch NOELLE
    */
-  auto &noelle = getAnalysis<NoellePass>().getNoelle();
+  auto &noelle = AM.getResult<NoellePass>(M);
 
   /*
    * Fetch the forest of loops of the program being compiled.
@@ -96,7 +92,43 @@ bool LoopSize::runOnModule(Module &M) {
   }
   outs() << s << "\n";
 
-  return false;
+  return PreservedAnalyses::all();
+}
+
+// Next there is code to register your pass to "opt"
+llvm::PassPluginLibraryInfo getPluginInfo() {
+  return { LLVM_PLUGIN_API_VERSION,
+           "LoopSize",
+           LLVM_VERSION_STRING,
+           [](PassBuilder &PB) {
+             /*
+              * REGISTRATION FOR "opt -passes='LoopSize'"
+              *
+              */
+             PB.registerPipelineParsingCallback(
+                 [](StringRef Name,
+                    llvm::ModulePassManager &PM,
+                    ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                   if (Name == "LoopSize") {
+                     PM.addPass(LoopSize());
+                     return true;
+                   }
+                   return false;
+                 });
+
+             /*
+              * REGISTRATION FOR "AM.getResult<NoellePass>()"
+              */
+             PB.registerAnalysisRegistrationCallback(
+                 [](ModuleAnalysisManager &AM) {
+                   AM.registerPass([&] { return NoellePass(); });
+                 });
+           } };
+}
+
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return getPluginInfo();
 }
 
 } // namespace arcana::noelle

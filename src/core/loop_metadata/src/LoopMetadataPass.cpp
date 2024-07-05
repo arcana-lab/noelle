@@ -24,44 +24,60 @@
 
 namespace arcana::noelle {
 
-LoopMetadataPass::LoopMetadataPass() : ModulePass(ID) {
-
-  return;
-}
-
-bool LoopMetadataPass::doInitialization(Module &M) {
-  return false;
-}
-
-bool LoopMetadataPass::runOnModule(Module &M) {
-  bool modified = false;
+PreservedAnalyses LoopMetadataPass::run(Module &M,
+                                        llvm::ModuleAnalysisManager &AM) {
+  auto modified = false;
 
   /*
    * Fetch all the loops of the program.
    */
-  auto loopStructures = this->getLoopStructuresWithoutNoelle(M);
+  auto loopStructures = this->getLoopStructuresWithoutNoelle(M, AM);
 
   /*
    * Set loop ID metadata
    */
   modified |= this->setIDs(loopStructures);
 
-  return modified;
-}
-
-void LoopMetadataPass::getAnalysisUsage(AnalysisUsage &AU) const {
-
-  /*
-   * Analyses.
-   */
-  AU.addRequired<LoopInfoWrapperPass>();
-
-  return;
+  if (modified) {
+    return PreservedAnalyses::none();
+  }
+  return PreservedAnalyses::all();
 }
 
 // Next there is code to register your pass to "opt"
-char LoopMetadataPass::ID = 0;
-static RegisterPass<LoopMetadataPass> X("LoopMetadata",
-                                        "Adding metadata to loops");
+llvm::PassPluginLibraryInfo getLoopMetadataPluginInfo() {
+  return { LLVM_PLUGIN_API_VERSION,
+           "LoopMetadata",
+           LLVM_VERSION_STRING,
+           [](PassBuilder &PB) {
+             /*
+              * REGISTRATION FOR "opt -passes='LoopMetadata'"
+              *
+              */
+             PB.registerPipelineParsingCallback(
+                 [](StringRef Name,
+                    llvm::ModulePassManager &PM,
+                    ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                   if (Name == "LoopMetadata") {
+                     PM.addPass(LoopMetadataPass());
+                     return true;
+                   }
+                   return false;
+                 });
+
+             /*
+              * REGISTRATION FOR "AM.getResult<...>()"
+              */
+             PB.registerAnalysisRegistrationCallback(
+                 [](FunctionAnalysisManager &AM) {
+                   AM.registerPass([&] { return LoopAnalysis(); });
+                 });
+           } };
+}
+
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return getLoopMetadataPluginInfo();
+}
 
 } // namespace arcana::noelle

@@ -19,75 +19,109 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "llvm/Analysis/GlobalsModRef.h"
+#include "llvm/Analysis/TypeBasedAliasAnalysis.h"
+#include "llvm/Analysis/ScopedNoAliasAA.h"
+#include "llvm/Analysis/ScalarEvolutionAliasAnalysis.h"
+#include "llvm/Analysis/CFLSteensAliasAnalysis.h"
+#include "llvm/Analysis/CFLAndersAliasAnalysis.h"
+#include "llvm/Analysis/ObjCARCAliasAnalysis.h"
+
 #include "arcana/noelle/core/NoellePass.hpp"
 #include "arcana/noelle/core/Architecture.hpp"
 
 namespace arcana::noelle {
+
+/*
+  AU.addRequired<BlockFrequencyInfoWrapperPass>();
+  AU.addRequired<BranchProbabilityInfoWrapperPass>();
+  AU.addRequired<AssumptionCacheTracker>();
+  AU.addRequired<CallGraphWrapperPass>();
+  AU.addRequired<PostDominatorTreeWrapperPass>();
+  AU.addRequired<DominatorTreeWrapperPass>();
+  AU.addRequired<LoopInfoWrapperPass>();
+  AU.addRequired<AAResultsWrapperPass>();
+  AU.addRequired<ScalarEvolutionWrapperPass>();
+*/
 
 static cl::opt<int> Verbose(
     "noelle-verbose",
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Verbose output (0: disabled, 1: minimal, 2: maximal)"));
+
 static cl::opt<int> MinimumHotness(
     "noelle-min-hot",
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Minimum hotness of code to be parallelized"));
+
 static cl::opt<int> MaximumCores(
     "noelle-max-cores",
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Maximum number of logical cores that Noelle can use"));
+
 static cl::opt<bool> ND_PRVGs("noelle-nondeterministic-prvgs",
                               cl::ZeroOrMore,
                               cl::Hidden,
                               cl::desc("Consider PRVGs nondeterministic"));
+
 static cl::opt<bool> DisableFloatAsReal(
     "noelle-disable-float-as-real",
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Do not consider floating point variables as real numbers"));
+
 static cl::opt<bool> DisableDSWP("noelle-disable-dswp",
                                  cl::ZeroOrMore,
                                  cl::Hidden,
                                  cl::desc("Disable DSWP"));
+
 static cl::opt<bool> DisableHELIX("noelle-disable-helix",
                                   cl::ZeroOrMore,
                                   cl::Hidden,
                                   cl::desc("Disable HELIX"));
+
 static cl::opt<bool> DisableDOALL("noelle-disable-doall",
                                   cl::ZeroOrMore,
                                   cl::Hidden,
                                   cl::desc("Disable DOALL"));
+
 static cl::opt<bool> DisableDistribution(
     "noelle-disable-loop-distribution",
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Disable the loop distribution"));
+
 static cl::opt<bool> DisableInvCM(
     "noelle-disable-loop-invariant-code-motion",
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Disable the loop invariant code motion"));
+
 static cl::opt<bool> DisableWhilifier("noelle-disable-whilifier",
                                       cl::ZeroOrMore,
                                       cl::Hidden,
                                       cl::desc("Disable the loop whilifier"));
+
 static cl::opt<bool> DisableSCEVSimplification(
     "noelle-disable-scev-simplification",
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Disable IV related SCEV simplification"));
+
 static cl::opt<bool> DisableLoopAwareDependenceAnalyses(
     "noelle-disable-loop-aware-dependence-analyses",
     cl::ZeroOrMore,
     cl::Hidden,
     cl::desc("Disable loop aware dependence analyses"));
+
 static cl::opt<bool> DisableInliner("noelle-disable-inliner",
                                     cl::ZeroOrMore,
                                     cl::Hidden,
                                     cl::desc("Disable the function inliner"));
+
 static cl::opt<bool> InlinerDisableHoistToMain(
     "noelle-inliner-avoid-hoist-to-main",
     cl::ZeroOrMore,
@@ -133,30 +167,11 @@ static cl::opt<bool> PDGRADisable(
     cl::Hidden,
     cl::desc("Disable the use of reaching analysis to compute the PDG"));
 
-NoellePass::NoellePass() : ModulePass{ ID }, n{ nullptr } {
-
+NoellePass::NoellePass() {
   return;
 }
 
-bool NoellePass::doInitialization(Module &M) {
-  return false;
-}
-
-void NoellePass::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<BlockFrequencyInfoWrapperPass>();
-  AU.addRequired<BranchProbabilityInfoWrapperPass>();
-  AU.addRequired<AssumptionCacheTracker>();
-  AU.addRequired<CallGraphWrapperPass>();
-  AU.addRequired<PostDominatorTreeWrapperPass>();
-  AU.addRequired<DominatorTreeWrapperPass>();
-  AU.addRequired<LoopInfoWrapperPass>();
-  AU.addRequired<AAResultsWrapperPass>();
-  AU.addRequired<ScalarEvolutionWrapperPass>();
-
-  return;
-}
-
-bool NoellePass::runOnModule(Module &M) {
+Noelle NoellePass::run(llvm::Module &M, llvm::ModuleAnalysisManager &AM) {
   std::unordered_set<Transformation> enabledTransformations;
   Verbosity verbose = Verbosity::Disabled;
   double minHot = 0.0;
@@ -235,78 +250,102 @@ bool NoellePass::runOnModule(Module &M) {
   /*
    * Fetch the other passes.
    */
-  auto getSCEV = [this](Function &F) -> llvm::ScalarEvolution & {
-    auto &SE = getAnalysis<ScalarEvolutionWrapperPass>(F).getSE();
+  auto &fam = AM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
+  auto getSCEV = [this, &fam](Function &F) -> llvm::ScalarEvolution & {
+    auto &SE = fam.getResult<ScalarEvolutionAnalysis>(F);
     return SE;
   };
-  auto getLoopInfo = [this](Function &F) -> llvm::LoopInfo & {
-    auto &LI = getAnalysis<LoopInfoWrapperPass>(F).getLoopInfo();
+  auto getLoopInfo = [this, &fam](Function &F) -> llvm::LoopInfo & {
+    auto &LI = fam.getResult<LoopAnalysis>(F);
     return LI;
   };
-  auto getPDT = [this](Function &F) -> llvm::PostDominatorTree & {
-    auto &PDT = getAnalysis<PostDominatorTreeWrapperPass>(F).getPostDomTree();
+  auto getPDT = [this, &fam](Function &F) -> llvm::PostDominatorTree & {
+    auto &PDT = fam.getResult<PostDominatorTreeAnalysis>(F);
     return PDT;
   };
-  auto getDT = [this](Function &F) -> llvm::DominatorTree & {
-    auto &DT = getAnalysis<DominatorTreeWrapperPass>(F).getDomTree();
+  auto getDT = [this, &fam](Function &F) -> llvm::DominatorTree & {
+    auto &DT = fam.getResult<DominatorTreeAnalysis>(F);
     return DT;
   };
-  auto getAssumptionCache = [this](Function &F) -> llvm::AssumptionCache & {
-    auto &c = getAnalysis<AssumptionCacheTracker>().getAssumptionCache(F);
+  auto getAssumptionCache = [this,
+                             &fam](Function &F) -> llvm::AssumptionCache & {
+    auto &c = fam.getResult<AssumptionAnalysis>(F);
     return c;
   };
-  auto getCallGraph = [this](void) -> llvm::CallGraph & {
-    auto &cg = getAnalysis<CallGraphWrapperPass>().getCallGraph();
-    return cg;
-  };
-  auto getAA = [this](Function &F) -> llvm::AAResults & {
-    auto &aa = getAnalysis<AAResultsWrapperPass>(F).getAAResults();
+  auto getAA = [this, &fam](Function &F) -> llvm::AAResults & {
+    auto &aa = fam.getResult<AAManager>(F);
     return aa;
   };
-  auto getBFI = [this](Function &F) -> llvm::BlockFrequencyInfo & {
-    auto &b = getAnalysis<BlockFrequencyInfoWrapperPass>(F).getBFI();
+  auto getBFI = [this, &fam](Function &F) -> llvm::BlockFrequencyInfo & {
+    auto &b = fam.getResult<BlockFrequencyAnalysis>(F);
     return b;
   };
-  auto getBPI = [this](Function &F) -> llvm::BranchProbabilityInfo & {
-    auto &b = getAnalysis<BranchProbabilityInfoWrapperPass>(F).getBPI();
+  auto getBPI = [this, &fam](Function &F) -> llvm::BranchProbabilityInfo & {
+    auto &b = fam.getResult<BranchProbabilityAnalysis>(F);
     return b;
+  };
+  auto getCallGraph = [this, &AM, &M](void) -> llvm::CallGraph & {
+    auto &cg = AM.getResult<llvm::CallGraphAnalysis>(M);
+    return cg;
   };
 
   /*
    * Allocate NOELLE.
    */
-  this->n = new Noelle(M,
-                       getSCEV,
-                       getLoopInfo,
-                       getPDT,
-                       getDT,
-                       getAssumptionCache,
-                       getCallGraph,
-                       getAA,
-                       getBFI,
-                       getBPI,
-                       enabledTransformations,
-                       verbose,
-                       pdgVerbose,
-                       minHot,
-                       ldgAnalysis,
-                       om,
-                       dumpPDG,
-                       performThePDGComparison,
-                       disableSVF,
-                       disableSVFCallGraph,
-                       disableAllocAA,
-                       disableRA);
+  auto n = Noelle(M,
+                  getSCEV,
+                  getLoopInfo,
+                  getPDT,
+                  getDT,
+                  getAssumptionCache,
+                  getCallGraph,
+                  getAA,
+                  getBFI,
+                  getBPI,
+                  enabledTransformations,
+                  verbose,
+                  pdgVerbose,
+                  minHot,
+                  ldgAnalysis,
+                  om,
+                  dumpPDG,
+                  performThePDGComparison,
+                  disableSVF,
+                  disableSVFCallGraph,
+                  disableAllocAA,
+                  disableRA);
 
-  return false;
+  return n;
 }
 
-Noelle &NoellePass::getNoelle(void) const {
-  return *(this->n);
+void NoellePass::registerAliasAnalyses(AAManager &AAM) {
+
+  /*
+   * Register the alias analyses included in LLVM that we can use.
+   */
+  AAM.registerFunctionAnalysis<TypeBasedAA>();
+  AAM.registerModuleAnalysis<GlobalsAA>();
+  AAM.registerFunctionAnalysis<ScopedNoAliasAA>();
+  AAM.registerFunctionAnalysis<SCEVAA>();
+  AAM.registerFunctionAnalysis<CFLSteensAA>();
+  AAM.registerFunctionAnalysis<CFLAndersAA>();
+  AAM.registerFunctionAnalysis<llvm::objcarc::ObjCARCAA>();
+
+  return;
 }
 
-// Next there is code to register your pass to "opt"
-char NoellePass::ID = 0;
-static RegisterPass<NoellePass> X("noelle", "The NOELLE framework");
+void NoellePass::registerNoellePass(PassBuilder &PB) {
+
+  /*
+   * Register alias analyses.
+   */
+  PB.registerAnalysisRegistrationCallback([](ModuleAnalysisManager &AM) {
+    AM.registerPass([&] { return NoellePass(); });
+  });
+
+  return;
+}
+
+llvm::AnalysisKey NoellePass::Key;
 
 } // namespace arcana::noelle

@@ -25,24 +25,16 @@
 #include "arcana/noelle/core/SystemHeaders.hpp"
 #include "arcana/noelle/core/LoopStructure.hpp"
 
-using namespace llvm;
-
 namespace arcana::noelle {
 
-class LoopMetadataPass : public ModulePass {
+class LoopMetadataPass : public PassInfoMixin<LoopMetadataPass> {
 public:
-  static char ID;
-
-  LoopMetadataPass();
-
-  bool doInitialization(Module &M) override;
-
-  bool runOnModule(Module &M) override;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
+  PreservedAnalyses run(Module &M, llvm::ModuleAnalysisManager &AM);
 
 private:
-  std::vector<LoopStructure *> getLoopStructuresWithoutNoelle(Module &M);
+  std::vector<LoopStructure *> getLoopStructuresWithoutNoelle(
+      Module &M,
+      llvm::ModuleAnalysisManager &AM);
 
   bool setIDs(std::vector<LoopStructure *> &loopStructures);
 };

@@ -20,12 +20,11 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/tools/CodeSize.hpp"
+#include "arcana/noelle/core/NoellePass.hpp"
 
 namespace arcana::noelle {
 
-CodeSize::CodeSize() : ModulePass{ ID } {}
-
-bool CodeSize::runOnModule(Module &M) {
+PreservedAnalyses CodeSize::run(Module &M, llvm::ModuleAnalysisManager &AM) {
 
   /*
    * Compute the code size.
@@ -53,7 +52,7 @@ bool CodeSize::runOnModule(Module &M) {
   }
   outs() << s << "\n";
 
-  return false;
+  return PreservedAnalyses::all();
 }
 
 } // namespace arcana::noelle

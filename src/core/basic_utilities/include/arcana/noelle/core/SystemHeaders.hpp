@@ -57,6 +57,9 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/DerivedUser.h"
 #include "llvm/IR/LegacyPassManager.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/PassPlugin.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/DataLayout.h"
 #include <llvm/IR/InstVisitor.h>

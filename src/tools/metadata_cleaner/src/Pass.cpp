@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Yian Su, Simone Campanoni
+ * Copyright 2016 - 2024  Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "MetadataCleaner.hpp"
+#include "arcana/noelle/core/NoellePass.hpp"
 
 namespace arcana::noelle {
 
@@ -40,20 +41,18 @@ static cl::opt<bool> CleanProfileMetadata(
     cl::init(false),
     cl::desc("noelle/core/Clean metadata of profiles"));
 
-bool MetadataCleaner::doInitialization(Module &M) {
+MetadataCleaner::MetadataCleaner() : cleanPDG{ false } {
+
   this->cleanLoop = CleanLoopMetadata.getNumOccurrences() > 0 ? true : false;
   this->cleanPDG = CleanPDGMetadata.getNumOccurrences() > 0 ? true : false;
   this->cleanSCC = CleanSCCMetadata.getNumOccurrences() > 0 ? true : false;
   this->cleanProf = CleanProfileMetadata.getNumOccurrences() > 0 ? true : false;
 
-  return false;
-}
-
-void MetadataCleaner::getAnalysisUsage(AnalysisUsage &AU) const {
   return;
 }
 
-bool MetadataCleaner::runOnModule(Module &M) {
+PreservedAnalyses MetadataCleaner::run(Module &M,
+                                       llvm::ModuleAnalysisManager &AM) {
   if (this->cleanLoop) {
     this->cleanLoopMetadata(M);
   }
@@ -70,31 +69,43 @@ bool MetadataCleaner::runOnModule(Module &M) {
     this->cleanProfMetadata(M);
   }
 
-  return false;
+  return PreservedAnalyses::none();
 }
 
 // Next there is code to register your pass to "opt"
-char MetadataCleaner::ID = 0;
-static RegisterPass<MetadataCleaner> X(
-    "MetadataCleaner",
-    "Clean the metadata embeded to the bitcode");
+llvm::PassPluginLibraryInfo getPluginInfo() {
+  return { LLVM_PLUGIN_API_VERSION,
+           "MetadataCleaner",
+           LLVM_VERSION_STRING,
+           [](PassBuilder &PB) {
+             /*
+              * REGISTRATION FOR "opt -passes='MetadataCleaner'"
+              *
+              */
+             PB.registerPipelineParsingCallback(
+                 [](StringRef Name,
+                    llvm::ModulePassManager &PM,
+                    ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                   if (Name == "MetadataCleaner") {
+                     PM.addPass(MetadataCleaner());
+                     return true;
+                   }
+                   return false;
+                 });
 
-// Next there is code to register your pass to "clang"
-static MetadataCleaner *_PassMaker = NULL;
-static RegisterStandardPasses _RegPass1(PassManagerBuilder::EP_OptimizerLast,
-                                        [](const PassManagerBuilder &,
-                                           legacy::PassManagerBase &PM) {
-                                          if (!_PassMaker) {
-                                            PM.add(_PassMaker =
-                                                       new MetadataCleaner());
-                                          }
-                                        }); // ** for -Ox
-static RegisterStandardPasses _RegPass2(
-    PassManagerBuilder::EP_EnabledOnOptLevel0,
-    [](const PassManagerBuilder &, legacy::PassManagerBase &PM) {
-      if (!_PassMaker) {
-        PM.add(_PassMaker = new MetadataCleaner());
-      }
-    }); // ** for -O0
+             /*
+              * REGISTRATION FOR "AM.getResult<NoellePass>()"
+              */
+             PB.registerAnalysisRegistrationCallback(
+                 [](ModuleAnalysisManager &AM) {
+                   AM.registerPass([&] { return NoellePass(); });
+                 });
+           } };
+}
+
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return getPluginInfo();
+}
 
 } // namespace arcana::noelle

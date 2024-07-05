@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2020  Yian Su, Simone Campanoni
+ * Copyright 2016 - 2024  Yian Su, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@
 
 namespace arcana::noelle {
 
-class PDGStats : public ModulePass {
+class PDGStats : public PassInfoMixin<PDGStats> {
 public:
   enum EDGE_ATTRIBUTE {
     IS_MEMORY_DEPENDENCE = 2,
@@ -36,13 +36,10 @@ public:
     IS_LOOP_CARRIED_DEPENDENCE,
     IS_REMOVABLE_DEPENDENCE
   };
-  static char ID;
 
   PDGStats();
-  virtual ~PDGStats();
-  bool doInitialization(Module &M) override;
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-  bool runOnModule(Module &M) override;
+
+  PreservedAnalyses run(Module &M, llvm::ModuleAnalysisManager &AM);
 
 private:
   bool dumpLoopDG = false;

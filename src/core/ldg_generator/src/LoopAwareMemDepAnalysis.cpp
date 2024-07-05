@@ -58,8 +58,11 @@ char NoelleSCAFIntegration::ID = 0;
 static RegisterPass<NoelleSCAFIntegration> X("noelle-scaf",
                                              "Integration with SCAF");
 
-void refinePDGWithSCAF(PDG *loopDG, LoopTree &loopNode) {
+void refinePDGWithSCAF(Module &M, PDG *loopDG, LoopTree &loopNode) {
 #ifdef NOELLE_ENABLE_SCAF
+  if (NoelleSCAFAA == nullptr) {
+    NoelleSCAFIntegration().runOnModule(M);
+  }
   assert(NoelleSCAFAA != nullptr);
 
   /*

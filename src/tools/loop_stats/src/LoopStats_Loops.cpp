@@ -47,6 +47,8 @@ void LoopStats::collectStatsForLoop(Hot *profiles,
 }
 
 void LoopStats::collectStatsForLoop(Hot *profiles,
+                                    Module &M,
+                                    llvm::ModuleAnalysisManager &AM,
                                     LoopContent &loopContent,
                                     Loop &llvmLoop) {
   auto loopStructure = loopContent.getLoopStructure();
@@ -60,7 +62,12 @@ void LoopStats::collectStatsForLoop(Hot *profiles,
   statsForLoop->loopID = loopID;
 
   collectStatsOnNoelleIVs(profiles, loopContent, statsForLoop);
-  collectStatsOnNoelleSCCs(profiles, loopContent, statsForLoop, llvmLoop);
+  collectStatsOnNoelleSCCs(profiles,
+                           M,
+                           AM,
+                           loopContent,
+                           statsForLoop,
+                           llvmLoop);
   collectStatsOnNoelleInvariants(profiles, loopContent, statsForLoop);
 
   /*

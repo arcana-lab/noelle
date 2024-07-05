@@ -27,15 +27,9 @@
 
 namespace arcana::noelle {
 
-class NoelleSVFIntegration : public ModulePass {
+class NoelleSVFIntegration {
 public:
-  static char ID;
-
-  NoelleSVFIntegration();
-  bool doInitialization(Module &M) override;
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-  bool runOnModule(Module &M) override;
-
+  static void run(Module &M);
   static noelle::CallGraph *getProgramCallGraph(Module &M);
   static bool hasIndCSCallees(CallBase *call);
   static const std::set<const Function *> getIndCSCallees(CallBase *call);

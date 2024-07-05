@@ -3,5 +3,4 @@ target_sources(
   DeadFunctionEliminator
   PRIVATE
   src/DeadFunctionEliminator.cpp
-  src/Pass.cpp
 )

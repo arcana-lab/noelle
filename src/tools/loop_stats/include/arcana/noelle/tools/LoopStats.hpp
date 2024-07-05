@@ -24,20 +24,13 @@
 
 #include "arcana/noelle/core/NoellePass.hpp"
 
-using namespace llvm;
-
 namespace arcana::noelle {
 
-class LoopStats : public ModulePass {
+class LoopStats : public PassInfoMixin<LoopStats> {
 public:
-  static char ID;
+  PreservedAnalyses run(Module &M, llvm::ModuleAnalysisManager &AM);
 
-  LoopStats();
   virtual ~LoopStats();
-
-  bool doInitialization(Module &M) override;
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-  bool runOnModule(Module &M) override;
 
 private:
   struct Stats {
@@ -84,7 +77,9 @@ private:
   std::unordered_map<int, Stats *> statsByLoopAccordingToNoelle;
 
   void collectStatsForLoops(Noelle &noelle,
-                            std::vector<LoopContent *> const &loops);
+                            Module &M,
+                            std::vector<LoopContent *> const &loops,
+                            llvm::ModuleAnalysisManager &AM);
 
   void collectStatsForLoop(Hot *profiles,
                            uint32_t id,
@@ -92,6 +87,8 @@ private:
                            PDG *loopDG,
                            Loop &llvmLoop);
   void collectStatsForLoop(Hot *profiles,
+                           Module &M,
+                           llvm::ModuleAnalysisManager &AM,
                            LoopContent &loopContent,
                            Loop &llvmLoop);
 
@@ -108,6 +105,8 @@ private:
                                LoopContent &loopContent,
                                Stats *stats);
   void collectStatsOnNoelleSCCs(Hot *profiles,
+                                Module &M,
+                                llvm::ModuleAnalysisManager &AM,
                                 LoopContent &loopContent,
                                 Stats *stats,
                                 Loop &llvmLoop);

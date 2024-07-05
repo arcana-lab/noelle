@@ -30,7 +30,7 @@
 namespace arcana::noelle {
 
 // Refine the loop PDG with SCAF
-void refinePDGWithSCAF(PDG *loopDG, LoopTree &loopNode);
+void refinePDGWithSCAF(Module &M, PDG *loopDG, LoopTree &loopNode);
 
 } // namespace arcana::noelle
 

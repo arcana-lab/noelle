@@ -12,7 +12,7 @@ get_target_property(NOELLE_LIBRARIES noelle_libraries NAMES)
 set(noelle_load_CORE_LIBS "")
 foreach(lib IN LISTS NOELLE_LIBRARIES)
   list(APPEND noelle_load_CORE_LIBS
-    "-load ${CMAKE_INSTALL_PREFIX}/lib/${lib}.so"
+    "-load-pass-plugin ${CMAKE_INSTALL_PREFIX}/lib/${lib}.so"
   )
 endforeach()
 
@@ -57,17 +57,10 @@ if(NOELLE_SVF STREQUAL "ON")
     "-load ${CMAKE_INSTALL_PREFIX}/lib/libz3.so"
     "-load ${CMAKE_INSTALL_PREFIX}/lib/SvfLLVM.so"
   )
-  list(APPEND noelle_load_SVF_PASS -noelle-svf)
 endif()
 
 set(noelle_load_LLVM_ANALYSES
-  --disable-basic-aa
-  -globals-aa
-  -cfl-steens-aa
-  -tbaa
-  -scev-aa
-  -cfl-anders-aa
-  --objc-arc-aa
+  --aa-pipeline='globals-aa,cfl-steens-aa,tbaa,scev-aa,cfl-anders-aa,objc-arc-aa'
 )
 
 # noelle-norm

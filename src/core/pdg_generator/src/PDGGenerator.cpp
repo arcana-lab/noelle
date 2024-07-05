@@ -24,6 +24,7 @@
 #include "arcana/noelle/core/PDGPrinter.hpp"
 #include "arcana/noelle/core/PDGGenerator.hpp"
 #include "arcana/noelle/core/Utils.hpp"
+#include "IntegrationWithSVF.hpp"
 
 namespace arcana::noelle {
 
@@ -59,6 +60,11 @@ PDGGenerator::PDGGenerator(
     disableRA{ disableRA },
     printer{},
     noelleCG{ nullptr } {
+
+  /*
+   * Run SVF.
+   */
+  NoelleSVFIntegration::run(M);
 
   /*
    * Function reachability analysis.
