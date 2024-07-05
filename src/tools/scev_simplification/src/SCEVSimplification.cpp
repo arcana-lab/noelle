@@ -866,7 +866,7 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP(
   };
 
   for (auto gepDerivation : gepDerivations) {
-    for (auto i = 1; i < gepDerivation->gep->getNumOperands(); ++i) {
+    for (auto i = 1u; i < gepDerivation->gep->getNumOperands(); ++i) {
       auto oldIndexValue = gepDerivation->gep->getOperand(i);
       auto newIndexValue = tryAndMapOldOpToNewOp(oldIndexValue);
       gepDerivation->gep->setOperand(i, newIndexValue);
@@ -879,7 +879,7 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP(
     auto newPHI = dyn_cast<PHINode>(newValue);
     assert(newPHI && "Mapping was from non-phi to phi");
 
-    for (auto i = 0; i < oldPHI->getNumIncomingValues(); ++i) {
+    for (auto i = 0u; i < oldPHI->getNumIncomingValues(); ++i) {
       auto incomingBlock = oldPHI->getIncomingBlock(i);
       auto oldIncomingValue = oldPHI->getIncomingValue(i);
       auto newIncomingValue = tryAndMapOldOpToNewOp(oldIncomingValue);
@@ -1247,7 +1247,7 @@ bool SCEVSimplification::simplifyConstantPHIs(LoopContent const &LDI) {
       if (removedPHIs.find(phi) != removedPHIs.end()) {
         continue;
       }
-      for (auto i = 0; i < phi->getNumIncomingValues(); i++) {
+      for (auto i = 0u; i < phi->getNumIncomingValues(); i++) {
         phi->setIncomingValue(i, UndefValue::get(phi->getType()));
       }
     }
