@@ -69,10 +69,7 @@ llvm::PassPluginLibraryInfo getPluginInfo() {
              /*
               * REGISTRATION FOR "AM.getResult<NoellePass>()"
               */
-             PB.registerAnalysisRegistrationCallback(
-                 [](ModuleAnalysisManager &AM) {
-                   AM.registerPass([&] { return NoellePass(); });
-                 });
+             NoellePass::registerNoellePass(PB);
            } };
 }
 

@@ -66,7 +66,7 @@ llvm::PassPluginLibraryInfo getLoopMetadataPluginInfo() {
                  });
 
              /*
-              * REGISTRATION FOR "AM.getResult<NoellePass>()"
+              * REGISTRATION FOR "AM.getResult<...>()"
               */
              PB.registerAnalysisRegistrationCallback(
                  [](FunctionAnalysisManager &AM) {

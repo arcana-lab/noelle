@@ -318,31 +318,26 @@ Noelle NoellePass::run(llvm::Module &M, llvm::ModuleAnalysisManager &AM) {
   return n;
 }
 
-AAManager NoellePass::createAliasAnalysesPipeline(void) {
-  AAManager AA;
+void NoellePass::registerAliasAnalyses(AAManager &AAM) {
 
-  AA.registerFunctionAnalysis<TypeBasedAA>();
-  AA.registerModuleAnalysis<GlobalsAA>();
-  AA.registerFunctionAnalysis<ScopedNoAliasAA>();
-  AA.registerFunctionAnalysis<SCEVAA>();
-  AA.registerFunctionAnalysis<CFLSteensAA>();
-  AA.registerFunctionAnalysis<CFLAndersAA>();
-  AA.registerFunctionAnalysis<llvm::objcarc::ObjCARCAA>();
+  /*
+   * Register the alias analyses included in LLVM that we can use.
+   */
+  AAM.registerFunctionAnalysis<TypeBasedAA>();
+  AAM.registerModuleAnalysis<GlobalsAA>();
+  AAM.registerFunctionAnalysis<ScopedNoAliasAA>();
+  AAM.registerFunctionAnalysis<SCEVAA>();
+  AAM.registerFunctionAnalysis<CFLSteensAA>();
+  AAM.registerFunctionAnalysis<CFLAndersAA>();
+  AAM.registerFunctionAnalysis<llvm::objcarc::ObjCARCAA>();
 
-  return AA;
+  return;
 }
 
 void NoellePass::registerNoellePass(PassBuilder &PB) {
 
   /*
    * Register alias analyses.
-   */
-  PB.registerAnalysisRegistrationCallback([](FunctionAnalysisManager &AM) {
-    AM.registerPass([&] { return NoellePass::createAliasAnalysesPipeline(); });
-  });
-
-  /*
-   * Register Noelle analyses.
    */
   PB.registerAnalysisRegistrationCallback([](ModuleAnalysisManager &AM) {
     AM.registerPass([&] { return NoellePass(); });

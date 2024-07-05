@@ -40,7 +40,7 @@ public:
 
   static void registerNoellePass(PassBuilder &PB);
 
-  static AAManager createAliasAnalysesPipeline(void);
+  static void registerAliasAnalyses(AAManager &AAM);
 
 private:
   friend llvm::AnalysisInfoMixin<NoellePass>;
