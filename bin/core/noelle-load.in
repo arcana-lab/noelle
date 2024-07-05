@@ -6,6 +6,7 @@ n-eval opt \
   @noelle_load_SVF_LIBS@ \
   @noelle_load_SCAF_LIBS@ \
   @noelle_load_CORE_LIBS@ \
+  @noelle_load_LLVM_ANALYSES@ \
   @noelle_load_SCAF_ANALYSES@ \
   @noelle_load_SVF_ANALYSES@ \
   @noelle_load_SCAF_PASS@ \

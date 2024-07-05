@@ -61,13 +61,7 @@ if(NOELLE_SVF STREQUAL "ON")
 endif()
 
 set(noelle_load_LLVM_ANALYSES
-  --disable-basic-aa
-  -globals-aa
-  -cfl-steens-aa
-  -tbaa
-  -scev-aa
-  -cfl-anders-aa
-  --objc-arc-aa
+  --aa-pipeline='globals-aa,cfl-steens-aa,tbaa,scev-aa,cfl-anders-aa,objc-arc-aa'
 )
 
 # noelle-norm
