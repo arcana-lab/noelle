@@ -159,6 +159,7 @@ public:
   void visitCouldNotCompute(const SCEVCouldNotCompute *Numerator) {}
   void visitPtrToIntExpr(const SCEVPtrToIntExpr *Numerator) {}
   void visitSequentialUMinExpr(const SCEVSequentialUMinExpr *Numerator) {}
+  void visitVScale(const SCEVVScale *Numerator) {}
 
   // CUSTOM ADDITION: Divide operand of cast, ignoring cast
   void visitTruncateExpr(const SCEVTruncateExpr *Numerator) {

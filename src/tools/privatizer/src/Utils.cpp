@@ -91,12 +91,15 @@ uint64_t getAllocationSize(Value *allocationSource) {
   if (isa<AllocaInst>(allocationSource)) {
     auto allocaInst = dyn_cast<AllocaInst>(allocationSource);
     auto dl = allocaInst->getModule()->getDataLayout();
-    return allocaInst->getAllocationSizeInBits(dl).getValue() / 8;
+    auto numberOfBits = allocaInst->getAllocationSizeInBits(dl);
+    return (*numberOfBits) / 8;
+
   } else if (isa<GlobalVariable>(allocationSource)) {
     auto globalVar = dyn_cast<GlobalVariable>(allocationSource);
     auto globalVarType = globalVar->getValueType();
     auto dl = globalVar->getParent()->getDataLayout();
     return dl.getTypeAllocSize(globalVarType);
+
   } else if (isa<CallBase>(allocationSource)) {
     auto heapAllocInst = dyn_cast<CallBase>(allocationSource);
     if (isFixedSizedHeapAllocation(heapAllocInst)) {

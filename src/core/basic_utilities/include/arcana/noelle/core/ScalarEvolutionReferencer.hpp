@@ -73,6 +73,7 @@ private:
   Value *visitCouldNotCompute(const SCEVCouldNotCompute *S);
   Value *visitSequentialUMinExpr(const SCEVSequentialUMinExpr *S);
   Value *visitPtrToIntExpr(const SCEVPtrToIntExpr *S);
+  Value *visitVScale(const SCEVVScale *S);
 
   std::pair<Value *, Value *> visitTwoOperands(const SCEVNAryExpr *S);
 
@@ -107,6 +108,7 @@ private:
   SCEVReference *visitSMinExpr(const SCEVSMinExpr *S);
   SCEVReference *visitUMinExpr(const SCEVUMinExpr *S);
   SCEVReference *visitUnknown(const SCEVUnknown *S);
+  SCEVReference *visitVScale(const SCEVVScale *S);
   SCEVReference *visitCouldNotCompute(const SCEVCouldNotCompute *S);
   SCEVReference *visitSequentialUMinExpr(const SCEVSequentialUMinExpr *S);
   SCEVReference *visitPtrToIntExpr(const SCEVPtrToIntExpr *S);
