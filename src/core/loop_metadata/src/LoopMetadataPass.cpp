@@ -75,9 +75,9 @@ llvm::PassPluginLibraryInfo getLoopMetadataPluginInfo() {
            } };
 }
 
-extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
-llvmGetPassPluginInfo() {
-  return getLoopMetadataPluginInfo();
-}
+// extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+// llvmGetPassPluginInfo() {
+// return getLoopMetadataPluginInfo();
+// }
 
 } // namespace arcana::noelle
