@@ -119,10 +119,10 @@ bool LoopWhilifier::whilifyLoopDriver(LoopStructure *const LS,
    */
   WC.TopAnchor = WC.BottomAnchor; /* For block placement */
   Function *F = WC.F;
-  F->getBasicBlockList().splice(WC.TopAnchor->getIterator(),
-                                F->getBasicBlockList(),
-                                (WC.NewBlocks)[0]->getIterator(),
-                                F->end());
+  F->splice(WC.TopAnchor->getIterator(),
+            F,
+            (WC.NewBlocks)[0]->getIterator(),
+            F->end());
 
   errs() << outputPrefix << "     Whilified\n";
 
@@ -248,7 +248,7 @@ bool LoopWhilifier::isSemanticLatch(WhilifierContext const &WC,
   /*
    * Check if the latch is empty (apart from the terminator)
    */
-  if (!(CurrentLatch->getInstList().size() == 1)) {
+  if (!(CurrentLatch->size() == 1)) {
     return KeepLatch;
   }
 
@@ -581,9 +581,15 @@ void LoopWhilifier::cloneLoopBlocksForWhilifying(WhilifierContext &WC) {
     PHINode *PeelPHI = cast<PHINode>((WC.BodyToPeelMap)[&PHI]);
     (WC.BodyToPeelMap)[&PHI] =
         PeelPHI->getIncomingValueForBlock(OriginalPreHeader);
-    cast<BasicBlock>((WC.BodyToPeelMap)[OriginalHeader])
-        ->getInstList()
-        .erase(PeelPHI);
+    auto *bb = cast<BasicBlock>((WC.BodyToPeelMap)[OriginalHeader]);
+    for (auto it = bb->begin(); it != bb->end();) {
+      auto *inst = &*it;
+      if (inst == PeelPHI) {
+        auto delete_it = it++;
+        bb->erase(delete_it, it);
+        break;
+      }
+    }
   }
 
   /*
