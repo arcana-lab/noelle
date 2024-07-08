@@ -344,4 +344,12 @@ void NoellePass::registerNoellePass(PassBuilder &PB) {
 
 llvm::AnalysisKey NoellePass::Key;
 
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return { LLVM_PLUGIN_API_VERSION,
+           "Noelle",
+           LLVM_VERSION_STRING,
+           [](llvm::PassBuilder &PB) { NoellePass::registerNoellePass(PB); } };
+}
+
 } // namespace arcana::noelle
