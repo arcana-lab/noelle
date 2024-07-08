@@ -24,6 +24,7 @@
 #include "arcana/noelle/core/LoopWhilify.hpp"
 #include "arcana/noelle/core/LoopUnroll.hpp"
 #include "arcana/noelle/core/LoopDistribution.hpp"
+#include "llvm/Analysis/OptimizationRemarkEmitter.h"
 
 namespace arcana::noelle {
 
@@ -82,7 +83,7 @@ LoopUnrollResult LoopTransformer::unrollLoop(LoopContent *loop,
   opts.AllowExpensiveTripCount = true;
   opts.UnrollRemainder = false;
   opts.ForgetAllSCEV = true;
-  OptimizationRemarkEmitter ORE{lsFunction};
+  OptimizationRemarkEmitter ORE{ lsFunction };
   TargetTransformInfo TTI(lsFunction->getParent()->getDataLayout());
   auto unrolled =
       UnrollLoop(llvmLoop, opts, &LLVMLoops, &SE, &DT, &AC, &TTI, &ORE, true);
