@@ -310,8 +310,8 @@ bool PDGGenerator::hasNoMemoryOperations(CallBase *call) {
    * SVF is enabled.
    * We can use it.
    */
-  auto svfResult = NoelleSVFIntegration::getModRefInfo(call);
-  if ((svfResult == ModRefInfo::NoModRef) || (svfResult == ModRefInfo::Must)) {
+  llvm::ModRefInfo svfResult = NoelleSVFIntegration::getModRefInfo(call);
+  if (svfResult == llvm::ModRefInfo::NoModRef) {
     return true;
   }
 
@@ -339,19 +339,15 @@ void PDGGenerator::addEdgeFromFunctionModRef(PDG *pdg,
    * Query the LLVM alias analyses.
    */
   switch (AA.getModRefInfo(call, MemoryLocation::get(store))) {
-    case ModRefInfo::NoModRef:
-    case ModRefInfo::Must:
+    case llvm::ModRefInfo::NoModRef:
       return;
-    case ModRefInfo::Ref:
-    case ModRefInfo::MustRef:
+    case llvm::ModRefInfo::Ref:
       bv[0] = true;
       break;
-    case ModRefInfo::Mod:
-    case ModRefInfo::MustMod:
+    case llvm::ModRefInfo::Mod:
       bv[1] = true;
       break;
-    case ModRefInfo::ModRef:
-    case ModRefInfo::MustModRef:
+    case llvm::ModRefInfo::ModRef:
       bv[2] = true;
       break;
   }
@@ -385,19 +381,15 @@ void PDGGenerator::addEdgeFromFunctionModRef(PDG *pdg,
     if (this->isSafeToQueryModRefOfSVF(call, bv)) {
       auto const &loc = MemoryLocation::get(store);
       switch (NoelleSVFIntegration::getModRefInfo(call, loc)) {
-        case ModRefInfo::NoModRef:
-        case ModRefInfo::Must:
+        case llvm::ModRefInfo::NoModRef:
           return;
-        case ModRefInfo::Ref:
-        case ModRefInfo::MustRef:
+        case llvm::ModRefInfo::Ref:
           bv[0] = true;
           break;
-        case ModRefInfo::Mod:
-        case ModRefInfo::MustMod:
+        case llvm::ModRefInfo::Mod:
           bv[1] = true;
           break;
-        case ModRefInfo::ModRef:
-        case ModRefInfo::MustModRef:
+        case llvm::ModRefInfo::ModRef:
           bv[2] = true;
           break;
       }
@@ -531,15 +523,11 @@ void PDGGenerator::addEdgeFromFunctionModRef(PDG *pdg,
    * Query the LLVM alias analyses.
    */
   switch (AA.getModRefInfo(call, MemoryLocation::get(load))) {
-    case ModRefInfo::NoModRef:
-    case ModRefInfo::Must:
-    case ModRefInfo::Ref:
-    case ModRefInfo::MustRef:
+    case llvm::ModRefInfo::NoModRef:
+    case llvm::ModRefInfo::Ref:
       return;
-    case ModRefInfo::Mod:
-    case ModRefInfo::MustMod:
-    case ModRefInfo::ModRef:
-    case ModRefInfo::MustModRef:
+    case llvm::ModRefInfo::Mod:
+    case llvm::ModRefInfo::ModRef:
       break;
   }
 
@@ -572,16 +560,12 @@ void PDGGenerator::addEdgeFromFunctionModRef(PDG *pdg,
     if (isSafeToQueryModRefOfSVF(call, bv)) {
       switch (NoelleSVFIntegration::getModRefInfo(call,
                                                   MemoryLocation::get(load))) {
-        case ModRefInfo::NoModRef:
-        case ModRefInfo::Must:
-        case ModRefInfo::Ref:
-        case ModRefInfo::MustRef:
+        case llvm::ModRefInfo::NoModRef:
+        case llvm::ModRefInfo::Ref:
           return;
 
-        case ModRefInfo::Mod:
-        case ModRefInfo::MustMod:
-        case ModRefInfo::ModRef:
-        case ModRefInfo::MustModRef:
+        case llvm::ModRefInfo::Mod:
+        case llvm::ModRefInfo::ModRef:
           break;
       }
     }
@@ -685,12 +669,10 @@ void PDGGenerator::addEdgeFromFunctionModRef(
    * Query the LLVM alias analyses.
    */
   switch (AA.getModRefInfo(otherCall, call)) {
-    case ModRefInfo::NoModRef:
-    case ModRefInfo::Must:
+    case llvm::ModRefInfo::NoModRef:
       return;
 
-    case ModRefInfo::Ref:
-    case ModRefInfo::MustRef:
+    case llvm::ModRefInfo::Ref:
 
       /*
        * @otherCall may read memory locations written by @call
@@ -700,10 +682,8 @@ void PDGGenerator::addEdgeFromFunctionModRef(
 
       if (isCallReachableFromOtherCall) {
         switch (AA.getModRefInfo(call, otherCall)) {
-          case ModRefInfo::NoModRef:
-          case ModRefInfo::Must:
-          case ModRefInfo::Ref:
-          case ModRefInfo::MustRef:
+          case llvm::ModRefInfo::NoModRef:
+          case llvm::ModRefInfo::Ref:
 
             /*
              * Contradicting
@@ -711,17 +691,14 @@ void PDGGenerator::addEdgeFromFunctionModRef(
              * then @call should at least Mod @otherCall
              */
             return;
-          case ModRefInfo::Mod:
-          case ModRefInfo::MustMod:
-          case ModRefInfo::ModRef:
-          case ModRefInfo::MustModRef:
+          case llvm::ModRefInfo::Mod:
+          case llvm::ModRefInfo::ModRef:
             break;
         }
       }
       break;
 
-    case ModRefInfo::Mod:
-    case ModRefInfo::MustMod:
+    case llvm::ModRefInfo::Mod:
 
       /*
        * @otherCall may write a memory location that can be read or written by
@@ -731,27 +708,22 @@ void PDGGenerator::addEdgeFromFunctionModRef(
 
       if (isCallReachableFromOtherCall) {
         switch (AA.getModRefInfo(call, otherCall)) {
-          case ModRefInfo::NoModRef:
-          case ModRefInfo::Must:
+          case llvm::ModRefInfo::NoModRef:
             return;
-          case ModRefInfo::Ref:
-          case ModRefInfo::MustRef:
+          case llvm::ModRefInfo::Ref:
             rbv[0] = true;
             break;
-          case ModRefInfo::Mod:
-          case ModRefInfo::MustMod:
+          case llvm::ModRefInfo::Mod:
             rbv[1] = true;
             break;
-          case ModRefInfo::ModRef:
-          case ModRefInfo::MustModRef:
+          case llvm::ModRefInfo::ModRef:
             rbv[2] = true;
             break;
         }
       }
       break;
 
-    case ModRefInfo::ModRef:
-    case ModRefInfo::MustModRef:
+    case llvm::ModRefInfo::ModRef:
 
       /*
        * @otherCall may read or write a memory location that can be written by
@@ -761,23 +733,19 @@ void PDGGenerator::addEdgeFromFunctionModRef(
 
       if (isCallReachableFromOtherCall) {
         switch (AA.getModRefInfo(call, otherCall)) {
-          case ModRefInfo::NoModRef:
-          case ModRefInfo::Must:
+          case llvm::ModRefInfo::NoModRef:
             return;
-          case ModRefInfo::Ref:
-          case ModRefInfo::MustRef:
+          case llvm::ModRefInfo::Ref:
             /*
              * Contradicting
              * if @otherCall ModRef @call, and @call is reachable from
              * @otherCall then @call should at least Mod @otherCall
              */
             return;
-          case ModRefInfo::Mod:
-          case ModRefInfo::MustMod:
+          case llvm::ModRefInfo::Mod:
             rbv[1] = true;
             break;
-          case ModRefInfo::ModRef:
-          case ModRefInfo::MustModRef:
+          case llvm::ModRefInfo::ModRef:
             rbv[2] = true;
             break;
         }
@@ -818,70 +786,54 @@ void PDGGenerator::addEdgeFromFunctionModRef(
     if (isSafeToQueryModRefOfSVF(call, bv)
         && isSafeToQueryModRefOfSVF(otherCall, bv)) {
       switch (NoelleSVFIntegration::getModRefInfo(otherCall, call)) {
-        case ModRefInfo::NoModRef:
-        case ModRefInfo::Must:
+        case llvm::ModRefInfo::NoModRef:
           return;
 
-        case ModRefInfo::Ref:
-        case ModRefInfo::MustRef:
+        case llvm::ModRefInfo::Ref:
           bv[0] = true;
           if (isCallReachableFromOtherCall) {
             switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
-              case ModRefInfo::NoModRef:
-              case ModRefInfo::Must:
-              case ModRefInfo::Ref:
-              case ModRefInfo::MustRef:
+              case llvm::ModRefInfo::NoModRef:
+              case llvm::ModRefInfo::Ref:
                 return;
-              case ModRefInfo::Mod:
-              case ModRefInfo::MustMod:
-              case ModRefInfo::ModRef:
-              case ModRefInfo::MustModRef:
+              case llvm::ModRefInfo::Mod:
+              case llvm::ModRefInfo::ModRef:
                 break;
             }
           }
           break;
 
-        case ModRefInfo::Mod:
-        case ModRefInfo::MustMod:
+        case llvm::ModRefInfo::Mod:
           bv[1] = true;
           if (isCallReachableFromOtherCall) {
             switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
-              case ModRefInfo::NoModRef:
-              case ModRefInfo::Must:
+              case llvm::ModRefInfo::NoModRef:
                 return;
-              case ModRefInfo::Ref:
-              case ModRefInfo::MustRef:
+              case llvm::ModRefInfo::Ref:
                 rbv[0] = true;
                 break;
-              case ModRefInfo::Mod:
-              case ModRefInfo::MustMod:
+              case llvm::ModRefInfo::Mod:
                 rbv[1] = true;
                 break;
-              case ModRefInfo::ModRef:
-              case ModRefInfo::MustModRef:
+              case llvm::ModRefInfo::ModRef:
                 rbv[2] = true;
                 break;
             }
           }
           break;
 
-        case ModRefInfo::ModRef:
-        case ModRefInfo::MustModRef:
+        case llvm::ModRefInfo::ModRef:
           bv[2] = true;
           if (isCallReachableFromOtherCall) {
             switch (NoelleSVFIntegration::getModRefInfo(call, otherCall)) {
-              case ModRefInfo::NoModRef:
-              case ModRefInfo::Must:
+              case llvm::ModRefInfo::NoModRef:
                 return;
-              case ModRefInfo::Ref:
-              case ModRefInfo::MustRef:
+              case llvm::ModRefInfo::Ref:
                 return;
-              case ModRefInfo::Mod:
-              case ModRefInfo::MustMod:
+              case llvm::ModRefInfo::Mod:
                 rbv[1] = true;
                 break;
-              case ModRefInfo::ModRef:
-              case ModRefInfo::MustModRef:
+              case llvm::ModRefInfo::ModRef:
                 rbv[2] = true;
                 break;
             }
