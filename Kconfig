@@ -4,11 +4,11 @@ config NOELLE_INSTALL_DIR
 
 config NOELLE_SVF
   bool "Use SVF analyses"
-  default y
+  default n
 
 config NOELLE_SCAF
   bool "Use SCAF analyses"
-  default y
+  default n
 
 config NOELLE_TOOLS
   bool "Install all the tools build on top of Noelle"
