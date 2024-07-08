@@ -22,6 +22,7 @@
 #include "arcana/noelle/core/LoopUnroll.hpp"
 #include "llvm/Transforms/Utils/LoopUtils.h"
 #include "llvm/Transforms/Utils/UnrollLoop.h"
+#include "llvm/Analysis/OptimizationRemarkEmitter.h"
 
 namespace arcana::noelle {
 
@@ -74,25 +75,25 @@ bool LoopUnroll::fullyUnrollLoop(LoopContent const &LDI,
   opts.AllowExpensiveTripCount = true;
   opts.UnrollRemainder = false;
   opts.ForgetAllSCEV = false;
-  OptimizationRemarkEmitter ORE(loopFunction);
-  TargetTransformInfo TTI(loopFunction->getParent()->getDataLayout());
-  auto unrolled =
+  llvm::OptimizationRemarkEmitter ORE(loopFunction);
+  llvm::TargetTransformInfo TTI(loopFunction->getParent()->getDataLayout());
+  llvm::LoopUnrollResult unrolled =
       UnrollLoop(llvmLoop, opts, &LI, &SE, &DT, &AC, &TTI, &ORE, true);
 
   /*
    * Check if the loop unrolled.
    */
   switch (unrolled) {
-    case LoopUnrollResult::FullyUnrolled:
+    case llvm::LoopUnrollResult::FullyUnrolled:
       errs() << "   Fully unrolled\n";
       modified = true;
       break;
 
-    case LoopUnrollResult::PartiallyUnrolled:
+    case llvm::LoopUnrollResult::PartiallyUnrolled:
       errs() << "   Partially unrolled\n";
       abort();
 
-    case LoopUnrollResult::Unmodified:
+    case llvm::LoopUnrollResult::Unmodified:
       errs() << "   Not unrolled\n";
       modified = false;
       break;
