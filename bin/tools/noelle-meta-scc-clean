@@ -4,7 +4,7 @@ trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
 # remove the PDG from the bitcode
 noelle-load \
-  -load $(noelle-config --prefix)/lib/MetadataCleaner.so  \
-  -MetadataCleaner \
+  -load-pass-plugin $installDir/lib/MetadataCleaner.so \
+  -passes='MetadataCleaner' \
   -clean-pdg-scc-metadata \
   $@

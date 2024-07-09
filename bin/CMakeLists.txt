@@ -73,17 +73,17 @@ if(NOELLE_SVF STREQUAL "ON")
 endif()
 
 set(args
-  -basic-aa
+  --basic-aa
   ${noelle_norm_SVF_LIBS}
-  -mem2reg
+  --mem2reg
   -simplifycfg-sink-common=false
   ${noelle_norm_SVF_ANALYSES}
-  -lowerswitch
-  -mergereturn
-  -break-crit-edges
-  -loop-simplify
-  -lcssa
-  -indvars 
+  --lowerswitch
+  --mergereturn
+  --break-crit-edges
+  --loop-simplify
+  --lcssa
+  --indvars 
   --function-attrs 
   --rpo-function-attrs
 )

@@ -8,7 +8,7 @@ if test $# -lt 2 ; then
 fi
 
 noelle-load \
-  -load $(noelle-config --prefix)/lib/MetadataCleaner.so  \
-  -MetadataCleaner \
+  -load-pass-plugin $installDir/lib/MetadataCleaner.so \
+  -passes='MetadataCleaner' \
   -clean-pdg-metadata=true \
   $@

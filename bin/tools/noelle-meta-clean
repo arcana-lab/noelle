@@ -7,14 +7,13 @@ if test $# -lt 2 ; then
   exit 1
 fi
 
-n-eval opt \
-  -enable-new-pm=0 \
+noelle-load \
+  -load-pass-plugin $installDir/lib/MetadataCleaner.so \
+  -passes='MetadataCleaner' \
   --strip-named-metadata \
-  -load $(noelle-config --prefix)/lib/MetadataCleaner.so \
-  -MetadataCleaner \
-  -clean-loop-metadata \
-  -clean-prof-metadata \
-  -clean-pdg-metadata \
-  -clean-pdg-scc-metadata \
+  -clean-loop-metadata=true \
+  -clean-prof-metadata=true \
+  -clean-pdg-metadata=true \
+  -clean-pdg-scc-metadata=true \
   $@
 

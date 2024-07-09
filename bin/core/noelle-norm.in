@@ -3,7 +3,6 @@
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
 n-eval opt \
-  -enable-new-pm=0 \
   @noelle_norm_OPT_ARGS@ \
   $@
 
