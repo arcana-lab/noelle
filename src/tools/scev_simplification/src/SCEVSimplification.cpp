@@ -1164,7 +1164,7 @@ bool SCEVSimplification::simplifyConstantPHIs(LoopContent const &LDI) {
       auto dependentPHI = dependentTraversal.front();
       dependentTraversal.pop();
 
-      for (auto idx = 0; idx < dependentPHI->getNumIncomingValues(); ++idx) {
+      for (auto idx = 0u; idx < dependentPHI->getNumIncomingValues(); ++idx) {
         auto incomingValue = dependentPHI->getIncomingValue(idx);
         if (incomingValue) {
           if (liveInValue == incomingValue)
@@ -1206,7 +1206,7 @@ bool SCEVSimplification::simplifyConstantPHIs(LoopContent const &LDI) {
      */
     auto isConstantPropagation = true;
     for (auto phi : phiCycle) {
-      for (auto idx = 0; idx < phi->getNumIncomingValues(); ++idx) {
+      for (auto idx = 0u; idx < phi->getNumIncomingValues(); ++idx) {
         auto incomingValue = phi->getIncomingValue(idx);
         if (liveInValue == incomingValue)
           continue;

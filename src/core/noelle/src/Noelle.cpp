@@ -47,12 +47,12 @@ Noelle::Noelle(
     bool disableSVFCallGraph,
     bool disableAllocAA,
     bool disableRA)
-  : verbose{ v },
-    minHot{ minHot },
+  : minHot{ minHot },
     program{ m },
     profiles{ nullptr },
     programDependenceGraph{ nullptr },
     enabledTransformations{ enabledTransformations },
+    verbose{ v },
     pdgAnalysis{ m,
                  getSCEV,
                  getLoopInfo,
@@ -67,7 +67,13 @@ Noelle::Noelle(
                  disableRA,
                  pdgVerbose },
     ldgAnalysis{ ldgAnalysis },
+    filterFileName{ nullptr },
+    hasReadFilterFile{ false },
+    loopThreads{},
+    techniquesToDisable{},
+    DOALLChunkSize{},
     fm{ nullptr },
+    gm{ nullptr },
     tm{ nullptr },
     cm{ nullptr },
     om{ om },
@@ -80,10 +86,10 @@ Noelle::Noelle(
     getDT{ getDT },
     getCallGraph{ getCallGraph },
     getBFI{ getBFI },
-    getBPI{ getBPI } {
+    getBPI{ getBPI },
+    aaEngines{} {
 
   this->filterFileName = getenv("INDEX_FILE");
-  this->hasReadFilterFile = false;
 
   return;
 }
