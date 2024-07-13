@@ -256,8 +256,6 @@ private:
   PDG *programDependenceGraph;
   std::unordered_set<Transformation> enabledTransformations;
   Verbosity verbose;
-  bool hoistLoopsToMain;
-  bool loopAwareDependenceAnalysis;
   PDGGenerator pdgAnalysis;
   LDGGenerator ldgAnalysis;
   char *filterFileName;
@@ -277,7 +275,6 @@ private:
   std::function<llvm::LoopInfo &(Function &F)> getLoopInfo;
   std::function<llvm::PostDominatorTree &(Function &F)> getPDT;
   std::function<llvm::DominatorTree &(Function &F)> getDT;
-  std::function<Hot &(void)> getProfiler;
   std::function<llvm::CallGraph &(void)> getCallGraph;
   std::function<llvm::BlockFrequencyInfo &(Function &F)> getBFI;
   std::function<llvm::BranchProbabilityInfo &(Function &F)> getBPI;
