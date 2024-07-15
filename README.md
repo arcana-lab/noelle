@@ -13,6 +13,7 @@
 - [Uninstalling](#uninstalling)
 - [Repository structure](#repository-structure)
 - [NOELLE as an external project](#NOELLE-as-an-external-project)
+- [Projects built upon NOELLE](#Projects-built-upon-NOELLE)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -156,6 +157,25 @@ FetchContent_GetProperties(noelle)
 # at this point noelle is available but NOT installed
 include_directories(${noelle_SOURCE_DIR}/src/core/alloc_aa/include) # for example
 ```
+
+## Projects built upon NOELLE
+Several projects have already been built successfully upon NOELLE.
+These projects are:
+- [Gino](https://github.com/arcana-lab/gino)
+- [HBC](https://github.com/arcana-lab/heartbeatcompiler)
+- [MemOIR](https://github.com/arcana-lab/memoir)
+- [CPF](https://github.com/PrincetonUniversity/cpf)
+- [CARMOT](https://github.com/arcana-lab/carmot)
+- [Alaska](https://github.com/nickwanninger/alaska)
+- [TrackFM](https://github.com/compiler-disagg/TrackFM)
+- [SPLENDID](https://dl.acm.org/doi/10.1145/3582016.3582058)
+- [WARIO](https://github.com/TUDSSL/WARio)
+- [CCK](https://github.com/arcana-lab/cck)
+- [PRV Jeeves](https://dl.acm.org/doi/abs/10.1145/3368826.3377906)
+- [CARAT](https://dl.acm.org/doi/10.1145/3385412.3385987)
+- [STATS](https://dl.acm.org/doi/10.1145/3173162.3173181)
+- [Time Squeezer](https://dl.acm.org/doi/10.1145/3307650.3322268)
+
 
 ## Contributing
 We welcome contributions from the community to improve this framework and evolve it to cater for more users.
