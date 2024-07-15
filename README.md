@@ -160,10 +160,10 @@ include_directories(${noelle_SOURCE_DIR}/src/core/alloc_aa/include) # for exampl
 
 ## Projects built upon NOELLE
 Several projects have already been built successfully upon NOELLE.
-These projects are:
+These projects are (in no particular order):
 - [Gino](https://github.com/arcana-lab/gino)
-- [HBC](https://github.com/arcana-lab/heartbeatcompiler)
 - [MemOIR](https://github.com/arcana-lab/memoir)
+- [HBC](https://github.com/arcana-lab/heartbeatcompiler)
 - [CPF](https://github.com/PrincetonUniversity/cpf)
 - [CARMOT](https://github.com/arcana-lab/carmot)
 - [Alaska](https://github.com/nickwanninger/alaska)
@@ -171,10 +171,11 @@ These projects are:
 - [SPLENDID](https://dl.acm.org/doi/10.1145/3582016.3582058)
 - [WARIO](https://github.com/TUDSSL/WARio)
 - [CCK](https://github.com/arcana-lab/cck)
+- [Compiler-based timing](https://dl.acm.org/doi/10.5555/3433701.3433771)
 - [PRV Jeeves](https://dl.acm.org/doi/abs/10.1145/3368826.3377906)
 - [CARAT](https://dl.acm.org/doi/10.1145/3385412.3385987)
 - [STATS](https://dl.acm.org/doi/10.1145/3173162.3173181)
-- [Time Squeezer](https://dl.acm.org/doi/10.1145/3307650.3322268)
+- [Time squeezer](https://dl.acm.org/doi/10.1145/3307650.3322268)
 
 
 ## Contributing
