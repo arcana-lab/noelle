@@ -7,6 +7,7 @@ set(noelle_load_SCAF_LIBS "")
 set(noelle_load_SCAF_ANALYSES "")
 set(noelle_load_SCAF_PASS "")
 set(noelle_load_CORE_LIBS "")
+set(noelle_SVF_TRANSFORMATIONS "")
 
 get_target_property(NOELLE_LIBRARIES noelle_libraries NAMES)
 set(noelle_load_CORE_LIBS "")
@@ -61,6 +62,16 @@ if(NOELLE_SVF STREQUAL "ON")
   list(APPEND noelle_load_SVF_PASS -noelle-svf)
 endif()
 
+set(noelle_LLVM_ALIAS_ANALYSES
+  -basicaa
+  -globals-aa
+  -cfl-steens-aa
+  -tbaa
+  -scev-aa
+  -cfl-anders-aa
+  --objc-arc-aa
+)
+
 set(noelle_load_LLVM_ANALYSES
   -disable-basicaa
   -globals-aa
@@ -72,42 +83,16 @@ set(noelle_load_LLVM_ANALYSES
 )
 
 # noelle-norm
-
 set(noelle_norm_SVF_LIBS ${noelle_load_SVF_LIBS})
 if(NOELLE_SVF STREQUAL "ON")
-  set(noelle_norm_SVF_ANALYSES
+  set(noelle_SVF_TRANSFORMATIONS
     -stat=false
     -break-constgeps
     -merge-rets
   )
 endif()
 
-set(args
-  -basicaa
-  ${noelle_norm_SVF_LIBS}
-  -mem2reg
-  -simplifycfg-sink-common=false
-  ${noelle_norm_SVF_ANALYSES}
-  -lowerswitch
-  -mergereturn
-  -break-crit-edges
-  -loop-simplify
-  -lcssa
-  -indvars 
-  -functionattrs 
-  -rpo-functionattrs
-)
-
-# generating `opt` arguments for noelle-norm
-set(noelle_norm_OPT_ARGS "")
-foreach(arg IN LISTS args)
-  if (NOT arg STREQUAL "")
-    list(APPEND noelle_norm_OPT_ARGS "${arg}")
-  endif()
-endforeach()
-
 # noelle-simplification
-
 set(noelle_simplification_SVF_LIBS ${noelle_load_SVF_LIBS})
 if(NOELLE_SVF STREQUAL "ON")
   set(noelle_simplification_SVF_ANALYSES
@@ -141,6 +126,9 @@ string(REPLACE ";" " " NOELLE_CONFIG_SCAF_LIBS "${noelle_load_SCAF_LIBS}")
 string(REPLACE ";" " " NOELLE_CONFIG_SVF_ANALYSES "${noelle_load_SVF_ANALYSES}")
 string(REPLACE ";" " " NOELLE_CONFIG_SCAF_ANALYSES "${noelle_load_SCAF_ANALYSES}")
 string(REPLACE ";" " " NOELLE_CONFIG_LLVM_ANALYSES "${noelle_load_LLVM_ANALYSES}")
+
+string(REPLACE ";" " \\\n  " noelle_SVF_TRANSFORMATIONS "${noelle_SVF_TRANSFORMATIONS}")
+string(REPLACE ";" " \\\n  " noelle_LLVM_ALIAS_ANALYSES "${noelle_LLVM_ALIAS_ANALYSES}")
 
 get_target_property(NOELLE_TOOL_LIBRARIES noelle_tool_libraries NAMES)
 set(NOELLE_CONFIG_TOOL_LIBS "")
