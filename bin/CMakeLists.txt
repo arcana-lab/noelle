@@ -62,7 +62,7 @@ if(NOELLE_SVF STREQUAL "ON")
 endif()
 
 set(noelle_LLVM_ALIAS_ANALYSES
-  -basicaa
+  -basic-aa
   -globals-aa
   -cfl-steens-aa
   -tbaa

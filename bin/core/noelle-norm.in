@@ -13,8 +13,8 @@ n-eval opt                        \
   -loop-simplify                  \
   -lcssa                          \
   -indvars                        \
-  -functionattrs                  \
-  -rpo-functionattrs              \
+  --function-attrs                \
+  --rpo-function-attrs            \
   $@
 
 # SVF normalizations
