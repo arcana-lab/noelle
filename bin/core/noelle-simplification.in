@@ -2,12 +2,10 @@
 
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
+# LLVM normalizations
 n-eval opt \
-  -enable-new-pm=0 \
-  --basic-aa \
-  @noelle_simplification_SVF_LIBS@ \
+  @noelle_LLVM_ALIAS_ANALYSES@    \
   -mem2reg \
-  -tbaa \
   -early-cse-memssa \
   -licm \
   -simplifycfg \
@@ -31,13 +29,14 @@ n-eval opt \
   -loop-deletion \
   -instcombine \
   -indvars \
-  @noelle_simplification_SVF_ANALYSES@ \
   -lowerswitch \
   -sroa \
   -mergereturn \
   --break-crit-edges \
   -loop-simplify \
   -lcssa \
-  --function-attrs \
-  --rpo-function-attrs \
   $@
+
+# NOELLE normalizations
+noelle-norm $3 -o $3
+
