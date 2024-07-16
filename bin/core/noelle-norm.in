@@ -19,6 +19,7 @@ n-eval opt                        \
 
 # SVF normalizations
 n-eval opt                        \
+  -enable-new-pm=0                \
   @noelle_LLVM_ALIAS_ANALYSES@    \
   @noelle_load_SVF_LIBS@          \
   @noelle_SVF_TRANSFORMATIONS@    \
