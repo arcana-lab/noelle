@@ -39,12 +39,13 @@ n-eval opt \
   $@
 
 n-eval opt \
-  -functionattrs                  \
-  -rpo-functionattrs              \
+  --function-attrs                  \
+  --rpo-function-attrs              \
   $3 -o $3
 
 # SVF normalizations
 n-eval opt                        \
+  -enable-new-pm=0                \
   @noelle_LLVM_ALIAS_ANALYSES@    \
   @noelle_load_SVF_LIBS@          \
   @noelle_SVF_TRANSFORMATIONS@    \
