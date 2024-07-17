@@ -111,13 +111,24 @@ void PDGGenerator::embedEdgesAsMetadata(
    * Construct edge metadata
    */
   for (auto &edge : pdg->getSortedDependences()) {
-    if (isa<MemoryDependence<Value, Value>>(edge)) {
-      auto edgeM = this->getEdgeMetadata(edge, C, nodeIDMap);
-      if (auto arg = dyn_cast<Argument>(edge->getSrc())) {
-        functionEdgesMap[arg->getParent()].push_back(edgeM);
-      } else if (auto inst = dyn_cast<Instruction>(edge->getSrc())) {
-        functionEdgesMap[inst->getFunction()].push_back(edgeM);
-      }
+
+    /*
+     * Fetch the next memory dependence.
+     */
+    if (!isa<MemoryDependence<Value, Value>>(edge)) {
+      continue;
+    }
+
+    /*
+     * Embed the current memory dependence into the IR.
+     */
+    auto edgeM = this->getEdgeMetadata(edge, C, nodeIDMap);
+    if (auto arg = dyn_cast<Argument>(edge->getSrc())) {
+      functionEdgesMap[arg->getParent()].push_back(edgeM);
+    } else if (auto inst = dyn_cast<Instruction>(edge->getSrc())) {
+      functionEdgesMap[inst->getFunction()].push_back(edgeM);
+    } else {
+      abort();
     }
   }
 
