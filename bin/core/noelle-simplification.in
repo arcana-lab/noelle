@@ -38,6 +38,15 @@ n-eval opt \
   -lcssa \
   $@
 
-# NOELLE normalizations
-noelle-norm $3 -o $3
+n-eval opt \
+  -functionattrs                  \
+  -rpo-functionattrs              \
+  $3 -o $3
+
+# SVF normalizations
+n-eval opt                        \
+  @noelle_LLVM_ALIAS_ANALYSES@    \
+  @noelle_load_SVF_LIBS@          \
+  @noelle_SVF_TRANSFORMATIONS@    \
+  $3 -o $3
 
