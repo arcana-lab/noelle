@@ -39,7 +39,45 @@ public:
   static Value *getAllocatedObject(CallBase *call);
 
   static Value *getFreedObject(CallBase *call);
+
+  template <class T>
+  static std::vector<T *> sort(const std::unordered_set<T *> &s);
+
+  template <class T>
+  static std::vector<T *> sort(const std::set<T *> &s);
 };
+
+template <class T>
+std::vector<T *> Utils::sort(const std::unordered_set<T *> &s) {
+  std::vector<T *> v;
+
+  /*
+   * Sort the instructions.
+   */
+  for (auto i : s) {
+    v.push_back(i);
+  }
+  auto compareInstructions = [](T *i, T *j) { return i < j; };
+  std::sort(v.begin(), v.end(), compareInstructions);
+
+  return v;
+}
+
+template <class T>
+std::vector<T *> Utils::sort(const std::set<T *> &s) {
+  std::vector<T *> v;
+
+  /*
+   * Sort the instructions.
+   */
+  for (auto i : s) {
+    v.push_back(i);
+  }
+  auto compareInstructions = [](T *i, T *j) { return i < j; };
+  std::sort(v.begin(), v.end(), compareInstructions);
+
+  return v;
+}
 
 } // namespace arcana::noelle
 

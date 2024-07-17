@@ -66,6 +66,12 @@ void NoelleSVFIntegration::run(Module &M) {
   SVF::Options::AliasRule.parseAndSetValue("veto");
 
   /*
+   * Enable SVF analysis to treat first field the same as base object.
+   * Github Issue: https://github.com/SVF-tools/SVF/issues/1482
+   */
+  SVF::Options::FirstFieldEqBase.setValue(true);
+
+  /*
    * Disable SVF stats
    */
   SVF::Options::PStat.setValue(false);
