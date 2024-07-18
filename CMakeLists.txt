@@ -32,11 +32,15 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
   ERROR_STRIP_TRAILING_WHITESPACE
 )
-
+# FetchContent_Declare(
+#   z3
+#   URL "https://github.com/Z3Prover/z3/releases/download/z3-4.8.8/z3-4.8.8-x64-ubuntu-16.04.zip"
+#   DOWNLOAD_EXTRACT_TIMESTAMP 1
+# )
 FetchContent_Declare(
   svf
-  GIT_REPOSITORY  "https://github.com/arcana-lab/SVF.git"
-  GIT_TAG         noelle-14
+  URL "https://github.com/arcana-lab/SVF/releases/download/v2.9-noelle-14/svf-v2.9_x86_64.tar.gz"
+  DOWNLOAD_EXTRACT_TIMESTAMP 1
 )
 FetchContent_Declare(
   scaf
@@ -85,13 +89,19 @@ set(LLVM_ENABLE_UNWIND_TABLES ON)
 if(NOELLE_SVF STREQUAL ON)
   set(NOELLE_SVF ON)
   list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SVF")
-  FetchContent_Populate(svf)
-  execute_process(
-    COMMAND ${CMAKE_COMMAND} -E env LLVM_DIR=${LLVM_DIR} bash build.sh ${CMAKE_INSTALL_PREFIX}
-    RESULT_VARIABLE CMD_ERROR
-    WORKING_DIRECTORY ${svf_SOURCE_DIR}
+  # FetchContent_MakeAvailable(z3)
+  # FetchContent_GetProperties(z3)
+  # install(
+  #   PROGRAMS ${z3_SOURCE_DIR}/bin/libz3.so
+  #   DESTINATION lib
+  # )
+  FetchContent_MakeAvailable(svf)
+  FetchContent_GetProperties(svf)
+  install(
+    DIRECTORY ${svf_SOURCE_DIR}/lib
+    DESTINATION .
   )
-  include_directories(${CMAKE_INSTALL_PREFIX}/include/svf)
+  include_directories(${svf_SOURCE_DIR}/include/svf)
 endif()
 
 if(NOELLE_SCAF STREQUAL ON)
