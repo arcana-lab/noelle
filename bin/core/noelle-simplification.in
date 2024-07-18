@@ -5,7 +5,7 @@ trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 # LLVM normalizations
 n-eval opt \
   -enable-new-pm=0                \
-  @noelle_LLVM_ALIAS_ANALYSES@    \
+  @noelle_LLVM_ALIAS_ANALYSES_FOR_LLVM_TRANSFORMATIONS@    \
   -mem2reg \
   -early-cse-memssa \
   -licm \
@@ -46,7 +46,7 @@ n-eval opt \
 # SVF normalizations
 n-eval opt                        \
   -enable-new-pm=0                \
-  @noelle_LLVM_ALIAS_ANALYSES@    \
+  @noelle_LLVM_ALIAS_ANALYSES_FOR_NOELLE_TRANSFORMATIONS@    \
   @noelle_load_SVF_LIBS@          \
   @noelle_SVF_TRANSFORMATIONS@    \
   $3 -o $3
