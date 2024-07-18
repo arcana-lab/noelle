@@ -64,7 +64,6 @@ endif()
 set(noelle_LLVM_ALIAS_ANALYSES_FOR_LLVM_TRANSFORMATIONS
   -basic-aa
   -globals-aa
-  -cfl-steens-aa
   -tbaa
   -scev-aa
   --objc-arc-aa
