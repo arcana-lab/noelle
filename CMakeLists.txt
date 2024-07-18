@@ -32,11 +32,7 @@ execute_process(
   OUTPUT_STRIP_TRAILING_WHITESPACE
   ERROR_STRIP_TRAILING_WHITESPACE
 )
-# FetchContent_Declare(
-#   z3
-#   URL "https://github.com/Z3Prover/z3/releases/download/z3-4.8.8/z3-4.8.8-x64-ubuntu-16.04.zip"
-#   DOWNLOAD_EXTRACT_TIMESTAMP 1
-# )
+
 FetchContent_Declare(
   svf
   URL "https://github.com/arcana-lab/SVF/releases/download/v2.9-noelle-14/svf-v2.9_x86_64.tar.gz"
@@ -89,12 +85,6 @@ set(LLVM_ENABLE_UNWIND_TABLES ON)
 if(NOELLE_SVF STREQUAL ON)
   set(NOELLE_SVF ON)
   list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SVF")
-  # FetchContent_MakeAvailable(z3)
-  # FetchContent_GetProperties(z3)
-  # install(
-  #   PROGRAMS ${z3_SOURCE_DIR}/bin/libz3.so
-  #   DESTINATION lib
-  # )
   FetchContent_MakeAvailable(svf)
   FetchContent_GetProperties(svf)
   install(
