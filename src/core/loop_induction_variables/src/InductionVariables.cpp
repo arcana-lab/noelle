@@ -144,19 +144,33 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
            * the subloop's governing IV to a constant.
            */
           auto subloop = this->loop->getInnermostLoopThatContains(internalPHI);
-          if (subloop->getLoopExitBasicBlocks().size() != 1)
+          if (subloop->getLoopExitBasicBlocks().size() != 1) {
             continue;
+          }
 
           /*
            * Note: a BranchInst is expected to terminate the loop header.
-           * Do-while loops may not be handled.
+           * We don't handle do-while loops at the moment.
            */
-          if (auto subloopExitBr =
-                  dyn_cast<BranchInst>(subloop->getHeader()->getTerminator())) {
-            if (!isa<CmpInst>(subloopExitBr->getCondition()))
-              continue;
+          auto subloopHeader = subloop->getHeader();
+          if (subloopHeader->getUniqueSuccessor() != nullptr) {
 
-            auto subloopExitCond = cast<CmpInst>(subloopExitBr->getCondition());
+            /*
+             * This is a do-while loop.
+             */
+            continue;
+          }
+          if (auto subloopExitBr =
+                  dyn_cast<BranchInst>(subloopHeader->getTerminator())) {
+
+            /*
+             * Fetch the condition.
+             */
+            auto subloopExitBrCondition = subloopExitBr->getCondition();
+            if (!isa<CmpInst>(subloopExitBrCondition)) {
+              continue;
+            }
+            auto subloopExitCond = cast<CmpInst>(subloopExitBrCondition);
             auto subloopExitCondL = subloopExitCond->getOperand(0);
             auto subloopExitCondR = subloopExitCond->getOperand(1);
 

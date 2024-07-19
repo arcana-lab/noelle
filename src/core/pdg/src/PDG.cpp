@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@
 #include <set>
 #include <queue>
 
+#include "arcana/noelle/core/Utils.hpp"
 #include "arcana/noelle/core/PDG.hpp"
 
 namespace arcana::noelle {
@@ -358,7 +359,7 @@ bool PDG::iterateOverDependencesTo(
 }
 
 std::vector<Value *> PDG::getSortedValues(void) {
-  std::vector<Value *> s;
+  std::unordered_set<Value *> s;
 
   /*
    * Fetch all nodes.
@@ -366,14 +367,19 @@ std::vector<Value *> PDG::getSortedValues(void) {
   auto nodes = this->getNodes();
 
   /*
-   * Create a sorted set of values.
+   * Fetch all values stored in nodes.
    */
   for (auto node : nodes) {
     auto v = node->getT();
-    s.push_back(v);
+    s.insert(v);
   }
 
-  return s;
+  /*
+   * Create a sorted set of values.
+   */
+  auto sortedValues = Utils::sort(s);
+
+  return sortedValues;
 }
 
 std::vector<DGEdge<Value, Value> *> PDG::getSortedDependences(void) {

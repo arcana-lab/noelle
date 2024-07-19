@@ -60,13 +60,11 @@ if(NOELLE_SVF STREQUAL "ON")
   )
 endif()
 
-set(noelle_LLVM_ALIAS_ANALYSES
+set(noelle_LLVM_ALIAS_ANALYSES_FOR_LLVM_TRANSFORMATIONS
   -basic-aa
   -globals-aa
-  -cfl-steens-aa
   -tbaa
   -scev-aa
-  -cfl-anders-aa
   --objc-arc-aa
 )
 
@@ -114,10 +112,11 @@ string(REPLACE ";" " " NOELLE_CONFIG_SVF_LIBS "${noelle_load_SVF_LIBS}")
 string(REPLACE ";" " " NOELLE_CONFIG_SCAF_LIBS "${noelle_load_SCAF_LIBS}")
 string(REPLACE ";" " " NOELLE_CONFIG_SVF_ANALYSES "${noelle_load_SVF_ANALYSES}")
 string(REPLACE ";" " " NOELLE_CONFIG_SCAF_ANALYSES "${noelle_load_SCAF_ANALYSES}")
-string(REPLACE ";" " " NOELLE_CONFIG_LLVM_ANALYSES "${noelle_load_LLVM_ANALYSES}")
+string(REPLACE ";" " " NOELLE_CONFIG_LLVM_ANALYSES "${noelle_LLVM_ALIAS_ANALYSES_FOR_NOELLE_TRANSFORMATIONS}")
 
 string(REPLACE ";" " \\\n  " noelle_SVF_TRANSFORMATIONS "${noelle_SVF_TRANSFORMATIONS}")
-string(REPLACE ";" " \\\n  " noelle_LLVM_ALIAS_ANALYSES "${noelle_LLVM_ALIAS_ANALYSES}")
+string(REPLACE ";" " \\\n  " noelle_LLVM_ALIAS_ANALYSES_FOR_LLVM_TRANSFORMATIONS "${noelle_LLVM_ALIAS_ANALYSES_FOR_LLVM_TRANSFORMATIONS}")
+string(REPLACE ";" " \\\n  " noelle_LLVM_ALIAS_ANALYSES_FOR_NOELLE_TRANSFORMATIONS "${noelle_LLVM_ALIAS_ANALYSES_FOR_NOELLE_TRANSFORMATIONS}")
 
 get_target_property(NOELLE_TOOL_LIBRARIES noelle_tool_libraries NAMES)
 set(NOELLE_CONFIG_TOOL_LIBS "")
