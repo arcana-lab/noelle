@@ -971,7 +971,8 @@ bool LoopScheduler::shrinkPrologueBasicBlock(BasicBlock *Block) {
 
   for (auto Move : OrderedInstructionsToMove) {
 
-    errs() << "LoopScheduler:       Next instruction to move: " << Move << "\n";
+    errs()
+        << "LoopScheduler:       Next instruction to move: " << *Move << "\n";
 
     this->moveInstOutOfPrologueBasicBlock(Move, OriginalToClones, Clones);
 

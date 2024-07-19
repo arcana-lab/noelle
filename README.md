@@ -34,8 +34,8 @@ You are kindly asked to acknowledge usage of the tool by citing the following pa
 
 The following material compose the documentation currently available:
 - An introductory [video](https://www.youtube.com/watch?v=whORNUUWIjI)
-- The [CGO 2022 Paper](http://www.cs.northwestern.edu/~simonec/files/Research/papers/HELIX_CGO_2022.pdf)
-- The slides used during [Advanced Topics in Compilers](http://www.cs.northwestern.edu/~simonec/ATC.html) at Northwestern
+- The [CGO 2022 Paper](https://users.cs.northwestern.edu/~simonec/files/Research/papers/HELIX_CGO_2022.pdf)
+- The slides used during [Advanced Topics in Compilers](https://users.cs.northwestern.edu/~simonec/ATC.html) at Northwestern
 - The [Github Wiki](https://github.com/arcana-lab/noelle/wiki) of the project
 - Comments in the source code
 

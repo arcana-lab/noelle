@@ -3,8 +3,6 @@ string(REPLACE ";" " \\\n  " noelle_load_SCAF_ANALYSES "${noelle_load_SCAF_ANALY
 string(REPLACE ";" " \\\n  " noelle_load_SVF_LIBS "${noelle_load_SVF_LIBS}")
 string(REPLACE ";" " \\\n  " noelle_load_SVF_ANALYSES "${noelle_load_SVF_ANALYSES}")
 string(REPLACE ";" " \\\n  " noelle_load_CORE_LIBS "${noelle_load_CORE_LIBS}")
-string(REPLACE ";" " \\\n  " noelle_load_LLVM_ANALYSES "${noelle_load_LLVM_ANALYSES}")
-string(REPLACE ";" " \\\n  " noelle_norm_OPT_ARGS "${noelle_norm_OPT_ARGS}")
 string(REPLACE ";" " \\\n  " noelle_simplification_SVF_LIBS "${noelle_simplification_SVF_LIBS}")
 string(REPLACE ";" " \\\n  " noelle_simplification_SVF_ANALYSES "${noelle_simplification_SVF_ANALYSES}")
 

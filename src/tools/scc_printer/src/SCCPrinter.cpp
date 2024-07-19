@@ -97,6 +97,11 @@ PreservedAnalyses SCCPrinter::run(Module &M, llvm::ModuleAnalysisManager &AM) {
     return PreservedAnalyses::all();
   }
 
+  if (this->targetLoopID < 0) {
+    errs() << this->prefix << "please specify a loop ID\n";
+    return PreservedAnalyses::all();
+  }
+
   const auto isSelected = [&](GenericSCC::SCCKind t) {
     const auto &WL = this->sccTypeWhiteList;
     const auto &BL = this->sccTypeBlackList;

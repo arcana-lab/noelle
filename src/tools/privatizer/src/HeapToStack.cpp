@@ -189,9 +189,10 @@ std::unordered_map<Function *, LiveMemorySummary> Privatizer::collectH2S(
 }
 
 bool Privatizer::transformH2S(Noelle &noelle, LiveMemorySummary liveMemSum) {
-  bool modified = false;
+  auto modified = false;
 
-  for (auto heapAllocInst : liveMemSum.allocable) {
+  auto heapAllocInsts = Utils::sort(liveMemSum.allocable);
+  for (auto heapAllocInst : heapAllocInsts) {
     auto allocationSize = getAllocationSize(heapAllocInst);
     auto currentF = heapAllocInst->getParent()->getParent();
     auto funcSum = getFunctionSummary(currentF);
@@ -215,9 +216,9 @@ bool Privatizer::transformH2S(Noelle &noelle, LiveMemorySummary liveMemSum) {
     auto firstInst = entryBlock->getFirstNonPHI();
     IRBuilder<> entryBuilder(firstInst);
 
-    LLVMContext &context = noelle.getProgramContext();
-    Type *oneByteType = Type::getInt8Ty(context);
-    ConstantInt *arraySize =
+    auto &context = noelle.getProgramContext();
+    auto oneByteType = Type::getInt8Ty(context);
+    auto arraySize =
         ConstantInt::get(Type::getInt64Ty(context), allocationSize);
 
     auto calleeFunc = heapAllocInst->getCalledFunction();
@@ -244,7 +245,7 @@ bool Privatizer::transformH2S(Noelle &noelle, LiveMemorySummary liveMemSum) {
                                                        allocationSize,
                                                        allocaInst->getAlign());
 
-      errs() << prefix << "Replace @malloc: " << *heapAllocInst << "\n";
+      errs() << prefix << "Replace @calloc: " << *heapAllocInst << "\n";
       errs() << emptyPrefix << "with allocaInst: " << *allocaInst << "\n";
       errs() << emptyPrefix << "and memset Inst: " << *memSetInst << "\n";
       errs() << emptyPrefix << suffix;
@@ -254,9 +255,13 @@ bool Privatizer::transformH2S(Noelle &noelle, LiveMemorySummary liveMemSum) {
     }
   }
 
+  /*
+   * Remove dead instructions.
+   */
   for (auto freeInst : liveMemSum.removable) {
     freeInst->eraseFromParent();
   }
+
   return modified;
 }
 

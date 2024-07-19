@@ -2,9 +2,30 @@
 
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
-n-eval opt \
-  @noelle_norm_OPT_ARGS@ \
+# LLVM normalizations
+n-eval opt                        \
+  @noelle_LLVM_ALIAS_ANALYSES_FOR_LLVM_TRANSFORMATIONS@    \
+  -mem2reg                        \
+  -simplifycfg-sink-common=false  \
+  -lowerswitch                    \
+  -mergereturn                    \
+  -break-crit-edges               \
+  -loop-simplify                  \
+  -lcssa                          \
+  -indvars                        \
+  --function-attrs                \
+  --rpo-function-attrs            \
   $@
 
-noelle-meta-loop-embed $3 -o $3
+# SVF normalizations
+n-eval opt                        \
+  -enable-new-pm=0                \
+  @noelle_LLVM_ALIAS_ANALYSES_FOR_LLVM_TRANSFORMATIONS@    \
+  @noelle_load_SVF_LIBS@          \
+  @noelle_SVF_TRANSFORMATIONS@    \
+  $3 -o $3
+
+# NOELLE normalizations
+noelle-meta-loop-embed            \
+  $3 -o $3
 
