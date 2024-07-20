@@ -35,8 +35,8 @@ execute_process(
 
 FetchContent_Declare(
   svf
-  URL "https://github.com/arcana-lab/SVF/releases/download/v2.9-noelle-14/svf-v2.9_x86_64.tar.gz"
-  DOWNLOAD_EXTRACT_TIMESTAMP 1
+  GIT_REPOSITORY  "https://github.com/arcana-lab/SVF.git"
+  GIT_TAG         noelle-14-wip
 )
 FetchContent_Declare(
   scaf
@@ -87,11 +87,13 @@ if(NOELLE_SVF STREQUAL ON)
   list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SVF")
   FetchContent_MakeAvailable(svf)
   FetchContent_GetProperties(svf)
-  install(
-    DIRECTORY ${svf_SOURCE_DIR}/lib
-    DESTINATION .
+  include_directories(${svf_BINARY_DIR}/include)
+  include_directories(${svf_SOURCE_DIR}/svf/include)
+  include_directories(${svf_SOURCE_DIR}/svf-llvm/include)
+  set_property(
+    DIRECTORY ${svf_SOURCE_DIR}
+    PROPERTY CMAKE_BUILD_TYPE RelWithDebInfo
   )
-  include_directories(${svf_SOURCE_DIR}/include/svf)
 endif()
 
 if(NOELLE_SCAF STREQUAL ON)
@@ -100,6 +102,10 @@ if(NOELLE_SCAF STREQUAL ON)
   FetchContent_MakeAvailable(scaf)
   FetchContent_GetProperties(scaf)
   include_directories(${scaf_SOURCE_DIR}/include)
+  set_property(
+    DIRECTORY ${scaf_SOURCE_DIR}
+    PROPERTY CMAKE_BUILD_TYPE RelWithDebInfo
+  )
 endif()
 
 file(READ ${NOELLE_CMAKE_ROOT}/VERSION NOELLE_VERSION)
