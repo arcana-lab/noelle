@@ -26,17 +26,10 @@ include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 link_directories(${LLVM_LIBRARY_DIRS})
 
-execute_process(
-  COMMAND llvm-config --obj-root
-  OUTPUT_VARIABLE LLVM_DIR
-  OUTPUT_STRIP_TRAILING_WHITESPACE
-  ERROR_STRIP_TRAILING_WHITESPACE
-)
-
 FetchContent_Declare(
   svf
   GIT_REPOSITORY  "https://github.com/arcana-lab/SVF.git"
-  GIT_TAG         noelle-14
+  GIT_TAG         noelle-14-wip
 )
 FetchContent_Declare(
   scaf
@@ -85,13 +78,15 @@ set(LLVM_ENABLE_UNWIND_TABLES ON)
 if(NOELLE_SVF STREQUAL ON)
   set(NOELLE_SVF ON)
   list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SVF")
-  FetchContent_Populate(svf)
-  execute_process(
-    COMMAND ${CMAKE_COMMAND} -E env LLVM_DIR=${LLVM_DIR} bash build.sh ${CMAKE_INSTALL_PREFIX}
-    RESULT_VARIABLE CMD_ERROR
-    WORKING_DIRECTORY ${svf_SOURCE_DIR}
+  FetchContent_MakeAvailable(svf)
+  FetchContent_GetProperties(svf)
+  include_directories(${svf_BINARY_DIR}/include)
+  include_directories(${svf_SOURCE_DIR}/svf/include)
+  include_directories(${svf_SOURCE_DIR}/svf-llvm/include)
+  set_property(
+    DIRECTORY ${svf_SOURCE_DIR}
+    PROPERTY CMAKE_BUILD_TYPE RelWithDebInfo
   )
-  include_directories(${CMAKE_INSTALL_PREFIX}/include/svf)
 endif()
 
 if(NOELLE_SCAF STREQUAL ON)
@@ -100,6 +95,10 @@ if(NOELLE_SCAF STREQUAL ON)
   FetchContent_MakeAvailable(scaf)
   FetchContent_GetProperties(scaf)
   include_directories(${scaf_SOURCE_DIR}/include)
+  set_property(
+    DIRECTORY ${scaf_SOURCE_DIR}
+    PROPERTY CMAKE_BUILD_TYPE RelWithDebInfo
+  )
 endif()
 
 file(READ ${NOELLE_CMAKE_ROOT}/VERSION NOELLE_VERSION)
@@ -120,7 +119,7 @@ enable_language(C CXX)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_INSTALL_PREFIX}")
 
 # prepare the pass to be included in the source tree
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
