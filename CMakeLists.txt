@@ -22,9 +22,6 @@ set(NOELLE_CXX_FLAGS
 )
 
 find_package(LLVM 14 REQUIRED CONFIG)
-include_directories(${LLVM_INCLUDE_DIRS})
-add_definitions(${LLVM_DEFINITIONS})
-link_directories(${LLVM_LIBRARY_DIRS})
 
 FetchContent_Declare(
   svf
@@ -83,10 +80,6 @@ if(NOELLE_SVF STREQUAL ON)
   include_directories(${svf_BINARY_DIR}/include)
   include_directories(${svf_SOURCE_DIR}/svf/include)
   include_directories(${svf_SOURCE_DIR}/svf-llvm/include)
-  set_property(
-    DIRECTORY ${svf_SOURCE_DIR}
-    PROPERTY CMAKE_BUILD_TYPE RelWithDebInfo
-  )
 endif()
 
 if(NOELLE_SCAF STREQUAL ON)
@@ -123,19 +116,12 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_INSTALL_PREFIX}")
 
 # prepare the pass to be included in the source tree
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
-include(AddLLVM)
-include(HandleLLVMOptions)
 
 include_directories(
   ${LLVM_INCLUDE_DIRS}
 )
 
 add_compile_options(${NOELLE_CXX_FLAGS})
-
-add_definitions(
-  -D__STDC_LIMIT_MACROS
-  -D__STDC_CONSTANT_MACROS
-)
 
 add_custom_target(
   CompileCommands ALL
