@@ -21,3 +21,15 @@ config NOELLE_AUTOTUNER
 config NOELLE_REPL
   bool "Build the Noelle REPL tool"
   default n
+
+config NOELLE_BUILD_TYPE
+  string "Set build type for NOELLE"
+  default "Debug"
+
+config SVF_BUILD_TYPE
+  string "Set build type for SVF"
+  default "Release"
+
+config SCAF_BUILD_TYPE
+  string "Set build type for SCAF"
+  default "Release"

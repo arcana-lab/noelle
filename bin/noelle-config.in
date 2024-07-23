@@ -4,23 +4,26 @@ function show_help() {
   echo "usage: $(basename $0) <OPTIONS>..."
   echo
   echo "Options"
-  echo "  --help              Print this help message"
-  echo "  --flags             Print the options used during compilation"
-  echo "  --prefix            Print the installation directory path"
-  echo "  --version           Print the library version"
-  echo "  --include           Print the include directory"
-  echo "  --core-libs         Print the shared libraries used by the NOELLE core"
-  echo "  --tool-libs         Print the shared libraries of the NOELLE tools"
-  echo "  --svf-libs          Print the shared libraries used by SVF"
-  echo "  --scaf-libs         Print the shared libraries used by SCAF"
-  echo "  --svf-analyses      Print the default SVF analyses used by default"
-  echo "  --scaf-analyses     Print the default SCAF analyses used by default"
-  echo "  --llvm-analyses     Print the default LLVM analyses used by default"
-  echo "  --git-commit        Print the git commit hash used at compilation time"
-  echo "  --git-origin        Print the git origin used during compilation"
-  echo "  --llvm-build        Print the build type of the specific LLVM used by NOELLE"
-  echo "  --llvm-prefix       Print the installation prefix of the specific LLVM used by NOELLE"
-  echo "  --llvm-version      Print the version of the specific LLVM used by NOELLE"
+  echo "  --help                Print this help message"
+  echo "  --flags               Print the options used during compilation"
+  echo "  --prefix              Print the installation directory path"
+  echo "  --version             Print the library version"
+  echo "  --include             Print the include directory"
+  echo "  --noelle-build-type   Print the build type used for Noelle. E.g. Debug"
+  echo "  --svf-build-type      Print the build type used for SVF. E.g. Release"
+  echo "  --scaf-build-type     Print the build type used for SCAF. E.g. Release"
+  echo "  --core-libs           Print the shared libraries used by the NOELLE core"
+  echo "  --tool-libs           Print the shared libraries of the NOELLE tools"
+  echo "  --svf-libs            Print the shared libraries used by SVF"
+  echo "  --scaf-libs           Print the shared libraries used by SCAF"
+  echo "  --svf-analyses        Print the default SVF analyses used by default"
+  echo "  --scaf-analyses       Print the default SCAF analyses used by default"
+  echo "  --llvm-analyses       Print the default LLVM analyses used by default"
+  echo "  --git-commit          Print the git commit hash used at compilation time"
+  echo "  --git-origin          Print the git origin used during compilation"
+  echo "  --llvm-build          Print the build type of the specific LLVM used by NOELLE"
+  echo "  --llvm-prefix         Print the installation prefix of the specific LLVM used by NOELLE"
+  echo "  --llvm-version        Print the version of the specific LLVM used by NOELLE"
 }
 
 if [[ $# < 1 ]]; then
@@ -42,6 +45,15 @@ for arg in "$@"; do
       ;;
     --version)
       echo "@NOELLE_VERSION@"
+      ;;
+    --noelle-build-type)
+      echo "@NOELLE_BUILD_TYPE@"
+      ;;
+    --svf-build-type)
+      echo "@SVF_BUILD_TYPE@"
+      ;;
+    --scaf-build-type)
+      echo "@SCAF_BUILD_TYPE@"
       ;;
     --include)
       echo "@CMAKE_INSTALL_PREFIX@/include"
