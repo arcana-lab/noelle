@@ -13,13 +13,20 @@ if(DEFINED NOELLE_INSTALL_DIR)
   set(CMAKE_INSTALL_PREFIX ${NOELLE_INSTALL_DIR})
 endif()
 
-set(NOELLE_CXX_FLAGS 
-  -O0
-  -g
-  -fPIC
-  -std=c++17
-  -Wall
-)
+if(NOT DEFINED NOELLE_BUILD_TYPE)
+  set(NOELLE_BUILD_TYPE "Debug")
+endif()
+
+if(NOT DEFINED SVF_BUILD_TYPE)
+  set(SVF_BUILD_TYPE "Release")
+endif()
+
+if(NOT DEFINED SCAF_BUILD_TYPE)
+  set(SCAF_BUILD_TYPE "Release")
+endif()
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(LLVM 14 REQUIRED CONFIG)
 
@@ -63,6 +70,9 @@ function(noelle_acquire_option OPT)
 endfunction()
 
 message(STATUS "${Purple}Install directory${ColorReset} is ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "${Purple}NOELLE build type${ColorReset} is ${NOELLE_BUILD_TYPE}")
+message(STATUS "${Purple}SVF build type${ColorReset} is ${SVF_BUILD_TYPE}")
+message(STATUS "${Purple}SCAF build type${ColorReset} is ${SCAF_BUILD_TYPE}")
 
 noelle_acquire_option(NOELLE_SVF)
 noelle_acquire_option(NOELLE_SCAF)
@@ -70,11 +80,10 @@ noelle_acquire_option(NOELLE_AUTOTUNER)
 noelle_acquire_option(NOELLE_REPL)
 noelle_acquire_option(NOELLE_TOOLS)
 
-set(LLVM_ENABLE_UNWIND_TABLES ON)
-
 if(NOELLE_SVF STREQUAL ON)
   set(NOELLE_SVF ON)
   list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SVF")
+  set(CMAKE_BUILD_TYPE ${SVF_BUILD_TYPE})
   FetchContent_MakeAvailable(svf)
   FetchContent_GetProperties(svf)
   include_directories(${svf_BINARY_DIR}/include)
@@ -85,14 +94,13 @@ endif()
 if(NOELLE_SCAF STREQUAL ON)
   list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SCAF")
   option(ENABLE_SPECULATION "SCAF speculation" OFF)
+  set(CMAKE_BUILD_TYPE ${SCAF_BUILD_TYPE})
   FetchContent_MakeAvailable(scaf)
   FetchContent_GetProperties(scaf)
   include_directories(${scaf_SOURCE_DIR}/include)
-  set_property(
-    DIRECTORY ${scaf_SOURCE_DIR}
-    PROPERTY CMAKE_BUILD_TYPE RelWithDebInfo
-  )
 endif()
+
+set(CMAKE_BUILD_TYPE ${NOELLE_BUILD_TYPE})
 
 file(READ ${NOELLE_CMAKE_ROOT}/VERSION NOELLE_VERSION)
 string(STRIP ${NOELLE_VERSION} NOELLE_VERSION)
