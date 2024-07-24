@@ -98,16 +98,18 @@ Value *ReferenceTreeExpander::visitAddExpr(const SCEVAddExpr *S) {
     return currentNode->getValue();
   }
 
-  if (S->getNumOperands() != 2)
+  if (S->getNumOperands() != 2) {
     return nullptr;
+  }
   if (!S->getOperand(0)->getType()->isIntegerTy()
       || !S->getOperand(1)->getType()->isIntegerTy()) {
     return nullptr;
   }
 
   auto operandPair = visitTwoOperands(S);
-  if (!operandPair.first)
+  if (!operandPair.first) {
     return nullptr;
+  }
   return expansionBuilder.CreateAdd(operandPair.first, operandPair.second);
 }
 
@@ -119,16 +121,18 @@ Value *ReferenceTreeExpander::visitMulExpr(const SCEVMulExpr *S) {
     return currentNode->getValue();
   }
 
-  if (S->getNumOperands() != 2)
+  if (S->getNumOperands() != 2) {
     return nullptr;
+  }
   if (!S->getOperand(0)->getType()->isIntegerTy()
       || !S->getOperand(1)->getType()->isIntegerTy()) {
     return nullptr;
   }
 
   auto operandPair = visitTwoOperands(S);
-  if (!operandPair.first)
+  if (!operandPair.first) {
     return nullptr;
+  }
   return expansionBuilder.CreateMul(operandPair.first, operandPair.second);
 }
 
@@ -138,6 +142,7 @@ Value *ReferenceTreeExpander::visitUDivExpr(const SCEVUDivExpr *S) {
 }
 
 Value *ReferenceTreeExpander::visitAddRecExpr(const SCEVAddRecExpr *S) {
+  // assert(false && "Add recursive expression not implemented");
   return nullptr;
   // assert(valuesToReferenceAndNotExpand.find(currentNode->getValue()) !=
   // valuesToReferenceAndNotExpand.end()
@@ -148,8 +153,22 @@ Value *ReferenceTreeExpander::visitAddRecExpr(const SCEVAddRecExpr *S) {
 }
 
 Value *ReferenceTreeExpander::visitSMaxExpr(const SCEVSMaxExpr *S) {
-  // assert(false && "Signed max SCEV expander not implemented");
-  return nullptr;
+  if (valuesToReferenceAndNotExpand.find(currentNode->getValue())
+      != valuesToReferenceAndNotExpand.end()) {
+    currentNode->getValue()->print(errs() << "Referencing: ");
+    errs() << "\n";
+    return currentNode->getValue();
+  }
+
+  if (S->getNumOperands() != 2) {
+    return nullptr;
+  }
+
+  auto operandPair = visitTwoOperands(S);
+  if (!operandPair.first) {
+    return nullptr;
+  }
+  return expansionBuilder.CreateMaximum(operandPair.first, operandPair.second);
 }
 
 Value *ReferenceTreeExpander::visitUMaxExpr(const SCEVUMaxExpr *S) {
