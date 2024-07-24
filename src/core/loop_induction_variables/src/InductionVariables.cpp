@@ -118,7 +118,7 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
            * 1. In the PHI's SCC, there is one PHI that has an AddRecExpr
            * SCEV and is contained in the subloop of the original loop.
            */
-          bool foundOnePHI = false;
+          auto foundOnePHI = false;
           PHINode *internalPHI = nullptr;
 
           sccContainingIV->iterateOverInstructions([&](Instruction *I) -> bool {
@@ -136,8 +136,9 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
             return false;
           });
 
-          if (!foundOnePHI)
+          if (!foundOnePHI) {
             continue;
+          }
 
           /*
            * 2. The subloop has only one exit condition, which compares
@@ -190,8 +191,9 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
               subloopExitSCEV = SE.getSCEV(subloopExitCondL);
             }
 
-            if (subloopExitSCEV == nullptr || subloopIV == nullptr)
+            if (subloopExitSCEV == nullptr || subloopIV == nullptr) {
               continue;
+            }
 
             /*
              * If all conditions are met, calculate the number of inner loop
@@ -231,14 +233,17 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
                  */
                 auto unhandledCmp = false;
                 switch (subloopExitCond->getPredicate()) {
+
                   case CmpInst::Predicate::ICMP_EQ:
                     if (!exitsOnTrue)
                       unhandledCmp = true;
                     break;
+
                   case CmpInst::Predicate::ICMP_NE:
                     if (exitsOnTrue)
                       unhandledCmp = true;
                     break;
+
                   case CmpInst::Predicate::ICMP_UGT:
                   case CmpInst::Predicate::ICMP_SGT:
                     if (negativeStep == exitsOnTrue)
@@ -246,6 +251,7 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
                     if (!negativeStep)
                       subloopExitConstant += 1;
                     break;
+
                   case CmpInst::Predicate::ICMP_SGE:
                   case CmpInst::Predicate::ICMP_UGE:
                     if (negativeStep == exitsOnTrue)
@@ -253,6 +259,7 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
                     if (negativeStep)
                       subloopExitConstant += 1;
                     break;
+
                   case CmpInst::Predicate::ICMP_SLT:
                   case CmpInst::Predicate::ICMP_ULT:
                     if (negativeStep != exitsOnTrue)
@@ -260,6 +267,7 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
                     if (negativeStep)
                       subloopExitConstant += 1;
                     break;
+
                   case CmpInst::Predicate::ICMP_SLE:
                   case CmpInst::Predicate::ICMP_ULE:
                     if (negativeStep != exitsOnTrue)
@@ -310,6 +318,7 @@ InductionVariableManager::InductionVariableManager(LoopTree *loopNode,
                                    *sccContainingIV,
                                    loopEnv,
                                    referentialExpander);
+
       } else if (llvmDeterminedValidIV) {
         IV = new InductionVariable(loop,
                                    IVM,
