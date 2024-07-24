@@ -186,6 +186,13 @@ bool LoopStructure::isLoopInvariant(Value *value) const {
   }
 
   /*
+   * Constants are loop invariants.
+   */
+  if (isa<Constant>(value)) {
+    return true;
+  }
+
+  /*
    * Check if value is an argument.
    */
   if (isa<Argument>(value)) {
