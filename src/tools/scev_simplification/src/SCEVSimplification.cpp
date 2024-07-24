@@ -727,8 +727,8 @@ bool SCEVSimplification::upCastIVRelatedInstructionsDerivingGEP(
     return oldToNewTypedMap.at(oldTypedOp);
   };
 
-  auto prevValuesLeft = 0;
-  while (prevValuesLeft != valuesLeft.size() && valuesLeft.size() > 0) {
+  auto prevValuesLeft = 0u;
+  while ((prevValuesLeft != valuesLeft.size()) && valuesLeft.size() > 0) {
     prevValuesLeft = valuesLeft.size();
     std::queue<Instruction *> valuesToConvert{};
     for (auto valueLeft : valuesLeft) {
