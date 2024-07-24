@@ -33,7 +33,7 @@ find_package(LLVM 14 REQUIRED CONFIG)
 FetchContent_Declare(
   svf
   GIT_REPOSITORY  "https://github.com/arcana-lab/SVF.git"
-  GIT_TAG         noelle-14-wip
+  GIT_TAG         noelle-14
 )
 FetchContent_Declare(
   scaf
