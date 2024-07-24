@@ -349,6 +349,7 @@ void InductionVariable::deriveStepValue(
    * Fetch the SCEV for the step value.
    */
   if (!this->stepSCEV) {
+
     /*
      * Here, stepSCEV is being defined without using LLVM InductionDescriptor.
      * Note: We currently don't identify IVs that have more than one PHI/SCEV
@@ -363,6 +364,9 @@ void InductionVariable::deriveStepValue(
   }
   assert(this->stepSCEV != nullptr && "stepSCEV is nullptr!\n");
 
+  /*
+   * Analyze the SCEV about the step.
+   */
   switch (stepSCEV->getSCEVType()) {
 
     case SCEVTypes::scConstant:
@@ -407,7 +411,7 @@ void InductionVariable::deriveStepValue(
 void InductionVariable::deriveStepValueFromSCEVConstant(
     const SCEVConstant *scev,
     int64_t multiplier) {
-  if (ConstantInt *CI = dyn_cast<ConstantInt>(scev->getValue())) {
+  if (auto CI = dyn_cast<ConstantInt>(scev->getValue())) {
     this->singleStepValue = ConstantInt::get(scev->getValue()->getType(),
                                              multiplier * CI->getSExtValue());
   } else
@@ -436,25 +440,35 @@ bool InductionVariable::deriveStepValueFromCompositeSCEV(
   auto stepSizeReferenceTree =
       referentialExpander.createReferenceTree(scev,
                                               valuesInScopeOfInductionVariable);
-  if (!stepSizeReferenceTree)
+  if (!stepSizeReferenceTree) {
     return false;
+  }
 
   // stepSizeReferenceTree->getSCEV()->print(errs() << "Expanding: "); errs() <<
   // "\n";
-  auto tempBlock = BasicBlock::Create(loopEntryPHI->getContext());
+  auto tempBlock = BasicBlock::Create(loopEntryPHI->getContext(),
+                                      "temp_basic_block",
+                                      LS->getFunction());
   IRBuilder<> tempBuilder(tempBlock);
   auto finalValue = referentialExpander.expandUsingReferenceValues(
       stepSizeReferenceTree,
       valuesToReferenceInComputingStepValue,
       tempBuilder);
-  if (!finalValue)
+  if (!finalValue) {
+    tempBlock->eraseFromParent();
     return false;
+  }
 
   this->isComputedStepValueLoopInvariant = true;
   auto references = stepSizeReferenceTree->collectAllReferences();
   // TODO: Only check leaf reference values
   for (auto reference : references) {
-    if (reference->getValue() && LS->isLoopInvariant(reference->getValue())) {
+    auto referenceValue = reference->getValue();
+    if (!referenceValue) {
+      this->isComputedStepValueLoopInvariant = false;
+      break;
+    }
+    if (!LS->isLoopInvariant(referenceValue)) {
       this->isComputedStepValueLoopInvariant = false;
       break;
     }
@@ -469,7 +483,7 @@ bool InductionVariable::deriveStepValueFromCompositeSCEV(
    * then save that single value
    */
   if (tempBlock->size() < 2) {
-    singleStepValue = finalValue;
+    this->singleStepValue = finalValue;
   }
 
   /*
@@ -478,6 +492,11 @@ bool InductionVariable::deriveStepValueFromCompositeSCEV(
   for (auto &I : *tempBlock) {
     computationOfStepValue.push_back(&I);
   }
+
+  /*
+   * Free the memory is no longer needed.
+   */
+  tempBlock->eraseFromParent();
 
   return true;
 }

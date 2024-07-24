@@ -485,8 +485,9 @@ std::set<InductionVariable *> SCCDAGAttrs::
       containedInsts.insert(allInsts.begin(), allInsts.end());
     }
   }
-  if (containedIVs.size() == 0)
+  if (containedIVs.size() == 0) {
     return {};
+  }
 
   /*
    * If a contained IV is loop governing, ensure loop governance is well formed
