@@ -1,5 +1,6 @@
 include(AddLLVM)
 include(HandleLLVMOptions)
+set(LLVM_ENABLE_UNWIND_TABLES ON)
 
 add_subdirectory(core)
 
