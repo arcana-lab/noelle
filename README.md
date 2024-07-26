@@ -57,11 +57,11 @@ The version number is in the form of \[v _Major.Minor.Revision_ \]
 ## Status
 Next is the status of NOELLE for different LLVM versions.
 
-| LLVM    | NOELLE's branch |  SVF included      | SCAF included      | Working            | Maintained         | 
-| ------: | --------------: | :----------------: | :----------------: | :----------------: | :----------------: |
-|  18.1.8 | v18             | :x:                | :x:                | :x:                | :heavy_check_mark: |
-|  14.0.6 | v14             | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-|   9.0.0 | master          | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| LLVM    | NOELLE's branch |  SVF included      | SCAF included      | Unit tests failed out of 35 tests | Maintained         | 
+| ------: | --------------: | :----------------: | :----------------: | --------------------------------: | :----------------: |
+|  18.1.8 | v18             | :x:                | :x:                |                                35 | :heavy_check_mark: |
+|  14.0.6 | v14             | :heavy_check_mark: | :heavy_check_mark: |                                13 | :heavy_check_mark: |
+|   9.0.0 | master          | :heavy_check_mark: | :heavy_check_mark: |                                13 | :heavy_check_mark: |
 
 
 ## Prerequisites
