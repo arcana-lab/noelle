@@ -1,7 +1,7 @@
 pdg root values
-%1 = call noalias i8* @malloc(i64 16) #4
+%1 = call noalias i8* @malloc(i64 noundef 16) #4
 br label %4
-%18 = getelementptr [4 x i8], [4 x i8]* @.str, i64 0, i64 0
+%18 = getelementptr inbounds [4 x i8], [4 x i8]* @.str, i64 0, i64 0
 ret i32 0
 
 sccdag internal nodes (of outermost loop)
@@ -16,11 +16,11 @@ br i1 %9, label %10, label %13
 %.02 = phi i32 [ 0, %0 ], [ %14, %13 ] | %14 = add nsw i32 %.02, %.0
 %.0 = phi i32 [ %12, %10 ], [ %8, %6 ]
 br label %13
-br label %4
+br label %4, !llvm.loop !4
 
 sccdag external nodes (of outermost loop)
-%1 = call noalias i8* @malloc(i64 16) #4
+%1 = call noalias i8* @malloc(i64 noundef 16) #4
 %2 = bitcast i8* %1 to %struct._N*
-call void @_Z10appendNodeP2_Nii(%struct._N* %2, i32 42, i32 99)
+call void @_Z10appendNodeP2_Nii(%struct._N* noundef %2, i32 noundef 42, i32 noundef 99)
 store i32 41, i32* %3, align 8
 %.02.lcssa = phi i32 [ %.02, %4 ]
