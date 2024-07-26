@@ -31,7 +31,6 @@ struct CAT : public ModulePass {
      * Fetch the entry point.
      */
     auto fm = noelle.getFunctionsManager();
-    auto mainF = fm->getEntryFunction();
 
     /*
      * New data flow analysis
@@ -75,7 +74,6 @@ struct CAT : public ModulePass {
        * We do this because we are interested in understanding the reachability
        * of instructions within a single iteration.
        */
-      auto succBB = succ->getParent();
       if (succ == &*loopHeader->begin()) {
         return;
       }
