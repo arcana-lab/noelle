@@ -41,7 +41,7 @@ The following material compose the documentation currently available:
 
 
 ## Version
-The latest stable version is 14.0.1 (tag = `v14.0.1`).
+The latest stable version is 14.1.0 (tag = `v14.1.0`).
 
 #### Version Numbering Scheme
 The version number is in the form of \[v _Major.Minor.Revision_ \]
@@ -60,8 +60,8 @@ Next is the status of NOELLE for different LLVM versions.
 | LLVM    | NOELLE's branch |  SVF included      | SCAF included      | Unit tests failed out of 35 tests | Latest version | Maintained         | 
 | ------: | --------------: | :----------------: | :----------------: | --------------------------------: | -------------: | :----------------: |
 |  18.1.8 | v18             | :x:                | :x:                |                                35 |                | :heavy_check_mark: |
-|  14.0.6 | v14             | :heavy_check_mark: | :heavy_check_mark: |                                13 |         14.1.0 | :heavy_check_mark: |
-|   9.0.0 | v9              | :heavy_check_mark: | :heavy_check_mark: |                                13 |         9.17.0 |                    |
+|  14.0.6 | master          | :heavy_check_mark: | :heavy_check_mark: |                                13 |         14.1.0 | :heavy_check_mark: |
+|   9.0.0 | v9              | :heavy_check_mark: | :heavy_check_mark: |                                13 |         9.17.0 | :x:                |
 
 
 ## Prerequisites
@@ -129,7 +129,7 @@ include(ExternalProject)
 ExternalProject_Add(
     noelle
     GIT_REPOSITORY  "https://github.com/arcana-lab/noelle.git"
-    GIT_TAG         v14.0.1
+    GIT_TAG         v14.1.0
     BUILD_COMMAND   ${CMAKE_COMMAND} --build . -j16
     INSTALL_COMMAND ${CMAKE_COMMAND} --install .
     CMAKE_ARGS
@@ -148,7 +148,7 @@ include(FetchContent)
 FetchContent_Declare(
     noelle
     GIT_REPOSITORY  "https://github.com/arcana-lab/noelle.git"
-    GIT_TAG         v14.0.1
+    GIT_TAG         v14.1.0
 )
 set(NOELLE_SVF OFF)
 set(NOELLE_SCAF OFF)
