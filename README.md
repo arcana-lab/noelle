@@ -55,7 +55,7 @@ The version number is in the form of \[v _Major.Minor.Revision_ \]
 - **Revision**: At least once per month, at most twice per week (2/week ~ 1/month)
 
 ## Status
-Next is the status of NOELLE for different LLVM versions.
+This is the status of NOELLE for different LLVM versions.
 
 | LLVM    | NOELLE's branch |  SVF included      | SCAF included      | Unit tests failed out of 35 tests | Latest version | Maintained         | 
 | ------: | --------------: | :----------------: | :----------------: | --------------------------------: | -------------: | :----------------: |
