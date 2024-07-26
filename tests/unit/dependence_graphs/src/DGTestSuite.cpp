@@ -177,7 +177,7 @@ Values DGTestSuite::pdgIdentifiesDisconnectedValueSets(ModulePass &pass,
       valueNames.push_back(suite.valueToString(node->getT()));
     }
     std::string setName = valueNames[0];
-    for (int i = 1; i < valueNames.size(); ++i) {
+    for (auto i = 1u; i < valueNames.size(); ++i) {
       setName += suite.unorderedValueDelimiter + valueNames[i];
     }
     valueSetNames.insert(setName);
@@ -198,7 +198,7 @@ Values DGTestSuite::sccdagInternalNodesOfOutermostLoop(ModulePass &pass,
 
 Values DGTestSuite::sccdagExternalNodesOfOutermostLoop(ModulePass &pass,
                                                        TestSuite &suite) {
-  DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
+  auto &dgPass = static_cast<DGTestSuite &>(pass);
   std::set<SCC *> externalSCCs;
   for (auto nodePair : dgPass.sccdagOutermostLoop->externalNodePairs()) {
     externalSCCs.insert(nodePair.first);
@@ -210,13 +210,13 @@ Values DGTestSuite::getSCCValues(std::set<SCC *> sccs) {
   Values sccStrings;
   for (auto scc : sccs) {
     std::vector<Value *> values(scc->numInternalNodes());
-    auto i = 0;
+    auto i = 0u;
     for (auto nodePair : scc->internalNodePairs()) {
       values[i++] = nodePair.first;
     }
 
-    std::string valuesDelimited = suite->valueToString(values[0]);
-    for (i = 1; i < values.size(); ++i) {
+    auto valuesDelimited = suite->valueToString(values[0]);
+    for (i = 1u; i < values.size(); ++i) {
       valuesDelimited +=
           suite->unorderedValueDelimiter + suite->valueToString(values[i]);
     }
