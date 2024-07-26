@@ -35,7 +35,6 @@ i32 %0 ; %3 = mul nsw i32 %0, 5 ; data
 %.01.lcssa = phi i32 [ %.01, %6 ] ; %18 = call i32 (i8*, ...) @printf(i8* noundef %17, i32 noundef %.02.lcssa, i32 noundef %.01.lcssa) ; data
 %.02.lcssa = phi i32 [ %.02, %6 ] ; %18 = call i32 (i8*, ...) @printf(i8* noundef %17, i32 noundef %.02.lcssa, i32 noundef %.01.lcssa) ; data
 %17 = getelementptr inbounds [8 x i8], [8 x i8]* @.str, i64 0, i64 0 ; %18 = call i32 (i8*, ...) @printf(i8* noundef %17, i32 noundef %.02.lcssa, i32 noundef %.01.lcssa) ; data
-  %18 = call i32 (i8*, ...) @printf(i8* %17, i32 %.02.lcssa, i32 %.01.lcssa) ; data
 %.02 = phi i32 [ %0, %2 ], [ %10, %14 ] ; %9 = add nsw i32 %.02, 1 ; data
 %10 = sub nsw i32 %9, 3 ; %.02 = phi i32 [ %0, %2 ], [ %10, %14 ] ; data
 %10 = sub nsw i32 %9, 3 ; %12 = add nsw i32 %11, %10 ; data
