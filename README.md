@@ -72,7 +72,6 @@ Those who have access to the [Zythos](https://users.cs.northwestern.edu/~simonec
 ```
 source /project/extra/llvm/14.0.6/enable
 ```
-Check out the Zythos cluster guide [here](http://www.cs.northwestern.edu/~simonec/files/Research/manuals/Zythos_guide.pdf) for more information.
 
 
 ## Building and Installing
