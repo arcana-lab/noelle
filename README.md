@@ -59,9 +59,9 @@ Next is the status of NOELLE for different LLVM versions.
 
 | LLVM    | NOELLE's branch |  SVF included      | SCAF included      | Unit tests failed out of 35 tests | Latest version | Maintained         | 
 | ------: | --------------: | :----------------: | :----------------: | --------------------------------: | -------------: | :----------------: |
-|  18.1.8 | v18             | :x:                | :x:                |                                35 |                | :heavy_check_mark: |
-|  14.0.6 | master          | :heavy_check_mark: | :heavy_check_mark: |                                13 |         14.1.0 | :heavy_check_mark: |
-|   9.0.0 | v9              | :heavy_check_mark: | :heavy_check_mark: |                                13 |         9.17.0 | :x:                |
+|  18.1.8 | v18             | :x:                | :x:                |                                35 |                | :white_check_mark: |
+|  14.0.6 | master          | :white_check_mark: | :white_check_mark: |                                13 |         14.1.0 | :white_check_mark: |
+|   9.0.0 | v9              | :white_check_mark: | :white_check_mark: |                                13 |         9.17.0 | :x:                |
 
 
 ## Prerequisites
