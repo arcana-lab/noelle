@@ -80,11 +80,8 @@ bool SCCDAGAttrTestSuite::doInitialization(Module &M) {
 }
 
 void SCCDAGAttrTestSuite::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<DominatorTreeWrapperPass>();
-  AU.addRequired<PostDominatorTreeWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addRequired<LoopInfoWrapperPass>();
-  AU.addRequired<CallGraphWrapperPass>();
   AU.addRequired<NoellePass>();
 }
 
