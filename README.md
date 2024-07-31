@@ -65,12 +65,14 @@ This is the status of NOELLE for different LLVM versions.
 
 
 ## Prerequisites
-LLVM 14.0.6
+- LLVM 14.0.6
+- Z3 4.8.8 or newer
 
 ### Northwestern users
-Those who have access to the [Zythos](https://users.cs.northwestern.edu/~simonec/files/Research/manuals/Zythos_guide.pdf) cluster at Northwestern can source LLVM 14.0.6 from any node of the cluster with:
+Those who have access to the [Zythos](https://users.cs.northwestern.edu/~simonec/files/Research/manuals/Zythos_guide.pdf) cluster at Northwestern can source LLVM 14.0.6 and Z3 4.13.0 from any node of the cluster with:
 ```
 source /project/extra/llvm/14.0.6/enable
+source /project/extra/z3/4.13.0/enable
 ```
 
 
