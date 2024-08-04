@@ -32,12 +32,6 @@ void LoopCarriedDependencies::setLoopCarriedDependencies(
   }
 
   for (auto edge : dgForLoops.getEdges()) {
-    if (!LoopCarriedDependencies::isALoopCarriedDependence(loopNode,
-                                                           DS,
-                                                           edge)) {
-      continue;
-    }
-
     auto loop =
         LoopCarriedDependencies::isALoopCarriedDependence(loopNode, DS, edge);
     if (!loop) {
