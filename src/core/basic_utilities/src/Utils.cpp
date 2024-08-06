@@ -188,4 +188,51 @@ Value *Utils::getFreedObject(CallBase *call) {
   abort();
 }
 
+/*
+ * Builds a printf call at builder's insert point that prints toPrint.
+ */
+Value *injectPrint(Value *toPrint, IRBuilder<> &builder) {
+
+  auto M = builder.GetInsertBlock()->getModule();
+  auto funcType =
+      FunctionType::get(builder.getInt32Ty(),
+                        ArrayRef<Type *>({ builder.getInt8PtrTy() }),
+                        true);
+  auto printfFunc = M->getOrInsertFunction("printf", funcType);
+  auto callToPrintf = builder.CreateCall(printfFunc, toPrint);
+  return callToPrintf;
+}
+
+/*
+ * Builds a printf call at builder's insert point that prints toPrint. Also
+ * injects toPrint as a global.
+ */
+Value *injectPrint(std::string *toPrint, IRBuilder<> &builder) {
+
+  StringRef debugStringRef = StringRef(*toPrint);
+
+  Function *F = builder.GetInsertBlock()->getParent();
+  LLVMContext &stringContext = F->getContext();
+
+  // stringBuilder used in these three lines only
+  IRBuilder<> stringBuilder(stringContext);
+  stringBuilder.SetInsertPoint(&(F->front()));
+  GlobalVariable *printString =
+      stringBuilder.CreateGlobalString(debugStringRef, "debugString");
+
+  auto M = F->getParent();
+  auto funcType =
+      FunctionType::get(builder.getInt32Ty(),
+                        ArrayRef<Type *>({ builder.getInt8PtrTy() }),
+                        true);
+  auto printfFunc = M->getOrInsertFunction("printf", funcType);
+
+  auto stringGEP = builder.CreateGEP(
+      nullptr,
+      printString,
+      ArrayRef<Value *>({ builder.getInt64(0), builder.getInt64(0) }));
+  auto callToPrintf = builder.CreateCall(printfFunc, stringGEP);
+  return callToPrintf;
+}
+
 } // namespace arcana::noelle
