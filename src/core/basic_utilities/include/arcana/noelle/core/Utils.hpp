@@ -46,7 +46,13 @@ public:
   template <class T>
   static std::vector<T *> sort(const std::set<T *> &s);
 
-  static Value *injectPrint(Value *toPrint, IRBuilder<> &builder);
+  static Value *injectPrint(Value *toPrint,
+                            std::string format,
+                            IRBuilder<> &builder);
+
+  static Value *injectPrint(std::vector<Value *> &toPrint,
+                            std::string format,
+                            IRBuilder<> &builder);
 
   static Value *injectPrint(std::string toPrint, IRBuilder<> &builder);
 };

@@ -20,6 +20,8 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/Utils.hpp"
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/IR/DerivedTypes.h"
 
 namespace arcana::noelle {
 
@@ -190,8 +192,14 @@ Value *Utils::getFreedObject(CallBase *call) {
 
 /*
  * Builds a printf call at builder's insert point that prints toPrint.
+ * ARGS: toPrint: value to print. format: A format string as one would pass to
+ * printf: determines the format of the printed value. Side effect: injects
+ * format as a global, builds an alloca and a store because toPrint must be
+ * passed to printf by reference.
  */
-Value *injectPrint(Value *toPrint, IRBuilder<> &builder) {
+Value *Utils::injectPrint(Value *toPrint,
+                          std::string format,
+                          IRBuilder<> &builder) {
 
   auto M = builder.GetInsertBlock()->getModule();
   auto funcType =
@@ -199,17 +207,91 @@ Value *injectPrint(Value *toPrint, IRBuilder<> &builder) {
                         ArrayRef<Type *>({ builder.getInt8PtrTy() }),
                         true);
   auto printfFunc = M->getOrInsertFunction("printf", funcType);
-  auto callToPrintf = builder.CreateCall(printfFunc, toPrint);
+
+  StringRef formatStringRef = StringRef(format);
+
+  Function *F = builder.GetInsertBlock()->getParent();
+  LLVMContext &stringContext = F->getContext();
+
+  // stringBuilder used in these three lines only
+  IRBuilder<> stringBuilder(stringContext);
+  stringBuilder.SetInsertPoint(&(F->front()));
+  GlobalVariable *formatString =
+      stringBuilder.CreateGlobalString(formatStringRef, "printingFormatString");
+
+  auto valuePtr = builder.CreateAlloca(toPrint->getType());
+  auto valueStore = builder.CreateStore(toPrint, valuePtr);
+
+  auto stringGEP = builder.CreateGEP(
+      formatString->getValueType(),
+      formatString,
+      ArrayRef<Value *>({ builder.getInt64(0), builder.getInt64(0) }));
+  /*auto valueGEP = builder.CreateGEP(
+      valuePtr->getType(),
+      valuePtr,
+      ArrayRef<Value *>({ builder.getInt64(0), builder.getInt64(0) }));*/
+  auto callToPrintf =
+      builder.CreateCall(printfFunc,
+                         ArrayRef<Value *>({ stringGEP, valuePtr }));
   return callToPrintf;
 }
 
 /*
- * Builds a printf call at builder's insert point that prints toPrint. Also
- * injects toPrint as a global.
+ * Builds a printf call at builder's insert point that prints all elements of
+ * toPrint in one go. Useful for parallel settings. ARGS: toPrint: value to
+ * print. format: A format string as one would pass to printf: determines the
+ * format of the printed value. Side effect: injects format as a global, builds
+ * allocas and stores because toPrint must be passed to printf by reference.
  */
-Value *injectPrint(std::string *toPrint, IRBuilder<> &builder) {
+Value *Utils::injectPrint(std::vector<Value *> &toPrint,
+                          std::string format,
+                          IRBuilder<> &builder) {
 
-  StringRef debugStringRef = StringRef(*toPrint);
+  auto M = builder.GetInsertBlock()->getModule();
+  auto funcType =
+      FunctionType::get(builder.getInt32Ty(),
+                        ArrayRef<Type *>({ builder.getInt8PtrTy() }),
+                        true);
+  auto printfFunc = M->getOrInsertFunction("printf", funcType);
+
+  StringRef formatStringRef = StringRef(format);
+
+  Function *F = builder.GetInsertBlock()->getParent();
+  LLVMContext &stringContext = F->getContext();
+
+  // stringBuilder used in these three lines only
+  IRBuilder<> stringBuilder(stringContext);
+  stringBuilder.SetInsertPoint(&(F->front()));
+  GlobalVariable *formatString =
+      stringBuilder.CreateGlobalString(formatStringRef, "printingFormatString");
+
+  auto stringGEP = builder.CreateGEP(
+      formatString->getValueType(),
+      formatString,
+      ArrayRef<Value *>({ builder.getInt64(0), builder.getInt64(0) }));
+
+  std::vector<Value *> ptrs;
+  ptrs.push_back(stringGEP);
+  for (auto &x : toPrint) {
+    auto valuePtr = builder.CreateAlloca(x->getType());
+    auto valueStore = builder.CreateStore(x, valuePtr);
+    ptrs.push_back(valuePtr);
+  }
+  /*auto valueGEP = builder.CreateGEP(
+      valuePtr->getType(),
+      valuePtr,
+      ArrayRef<Value *>({ builder.getInt64(0), builder.getInt64(0) }));*/
+  auto callToPrintf = builder.CreateCall(printfFunc, ArrayRef<Value *>(ptrs));
+  return callToPrintf;
+}
+
+/*
+ * Builds a printf call at builder's insert point that prints toPrint.
+ * Side effect: injects toPrint as a global.
+ */
+Value *Utils::injectPrint(std::string toPrint, IRBuilder<> &builder) {
+
+  StringRef debugStringRef = StringRef(toPrint);
 
   Function *F = builder.GetInsertBlock()->getParent();
   LLVMContext &stringContext = F->getContext();
@@ -228,10 +310,11 @@ Value *injectPrint(std::string *toPrint, IRBuilder<> &builder) {
   auto printfFunc = M->getOrInsertFunction("printf", funcType);
 
   auto stringGEP = builder.CreateGEP(
-      nullptr,
+      printString->getValueType(),
       printString,
       ArrayRef<Value *>({ builder.getInt64(0), builder.getInt64(0) }));
-  auto callToPrintf = builder.CreateCall(printfFunc, stringGEP);
+  auto callToPrintf =
+      builder.CreateCall(printfFunc, ArrayRef<Value *>({ stringGEP }));
   return callToPrintf;
 }
 
