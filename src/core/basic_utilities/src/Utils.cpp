@@ -197,7 +197,7 @@ Value *Utils::getFreedObject(CallBase *call) {
  * format as a global.
  */
 Value *Utils::injectPrint(Value *toPrint,
-                          std::string format,
+                          const std::string &format,
                           IRBuilder<> &builder) {
 
   auto M = builder.GetInsertBlock()->getModule();
@@ -207,25 +207,22 @@ Value *Utils::injectPrint(Value *toPrint,
                         true);
   auto printfFunc = M->getOrInsertFunction("printf", funcType);
 
-  StringRef formatStringRef = StringRef(format);
+  auto formatStringRef = StringRef(format);
 
-  Function *F = builder.GetInsertBlock()->getParent();
-  LLVMContext &stringContext = F->getContext();
+  auto *F = builder.GetInsertBlock()->getParent();
+  auto &stringContext = F->getContext();
 
   // stringBuilder used in these three lines only
   IRBuilder<> stringBuilder(stringContext);
   stringBuilder.SetInsertPoint(&(F->front()));
-  GlobalVariable *formatString =
+  auto *formatString =
       stringBuilder.CreateGlobalString(formatStringRef, "printingFormatString");
 
   auto stringGEP = builder.CreateGEP(
       formatString->getValueType(),
       formatString,
       ArrayRef<Value *>({ builder.getInt64(0), builder.getInt64(0) }));
-  /*auto valueGEP = builder.CreateGEP(
-      valuePtr->getType(),
-      valuePtr,
-      ArrayRef<Value *>({ builder.getInt64(0), builder.getInt64(0) }));*/
+
   auto callToPrintf =
       builder.CreateCall(printfFunc, ArrayRef<Value *>({ stringGEP, toPrint }));
   return callToPrintf;
@@ -238,7 +235,7 @@ Value *Utils::injectPrint(Value *toPrint,
  * format of the printed value. Side effect: injects format as a global.
  */
 Value *Utils::injectPrint(std::vector<Value *> &toPrint,
-                          std::string format,
+                          const std::string &format,
                           IRBuilder<> &builder) {
 
   auto M = builder.GetInsertBlock()->getModule();
@@ -248,15 +245,15 @@ Value *Utils::injectPrint(std::vector<Value *> &toPrint,
                         true);
   auto printfFunc = M->getOrInsertFunction("printf", funcType);
 
-  StringRef formatStringRef = StringRef(format);
+  auto formatStringRef = StringRef(format);
 
-  Function *F = builder.GetInsertBlock()->getParent();
-  LLVMContext &stringContext = F->getContext();
+  auto *F = builder.GetInsertBlock()->getParent();
+  auto &stringContext = F->getContext();
 
   // stringBuilder used in these three lines only
   IRBuilder<> stringBuilder(stringContext);
   stringBuilder.SetInsertPoint(&(F->front()));
-  GlobalVariable *formatString =
+  auto *formatString =
       stringBuilder.CreateGlobalString(formatStringRef, "printingFormatString");
 
   auto stringGEP = builder.CreateGEP(
@@ -269,10 +266,7 @@ Value *Utils::injectPrint(std::vector<Value *> &toPrint,
   for (auto &x : toPrint) {
     ptrs.push_back(x);
   }
-  /*auto valueGEP = builder.CreateGEP(
-      valuePtr->getType(),
-      valuePtr,
-      ArrayRef<Value *>({ builder.getInt64(0), builder.getInt64(0) }));*/
+
   auto callToPrintf = builder.CreateCall(printfFunc, ArrayRef<Value *>(ptrs));
   return callToPrintf;
 }
@@ -281,17 +275,17 @@ Value *Utils::injectPrint(std::vector<Value *> &toPrint,
  * Builds a printf call at builder's insert point that prints toPrint.
  * Side effect: injects toPrint as a global.
  */
-Value *Utils::injectPrint(std::string toPrint, IRBuilder<> &builder) {
+Value *Utils::injectPrint(const std::string &toPrint, IRBuilder<> &builder) {
 
   StringRef debugStringRef = StringRef(toPrint);
 
-  Function *F = builder.GetInsertBlock()->getParent();
-  LLVMContext &stringContext = F->getContext();
+  auto *F = builder.GetInsertBlock()->getParent();
+  auto &stringContext = F->getContext();
 
   // stringBuilder used in these three lines only
   IRBuilder<> stringBuilder(stringContext);
   stringBuilder.SetInsertPoint(&(F->front()));
-  GlobalVariable *printString =
+  auto *printString =
       stringBuilder.CreateGlobalString(debugStringRef, "debugString");
 
   auto M = F->getParent();
