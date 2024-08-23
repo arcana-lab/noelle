@@ -23,6 +23,7 @@
 #ifndef __MUTLI_EXIT_REGION_TREE__HPP__
 #define __MUTLI_EXIT_REGION_TREE__HPP__
 
+#include <functional>
 #include <vector>
 #include <unordered_set>
 
@@ -34,8 +35,8 @@ namespace arcana::noelle {
 class MultiExitRegionTree {
 public:
   MultiExitRegionTree(llvm::Function &F,
-                      const std::unordered_set<llvm::Instruction *> &Begins,
-                      const std::unordered_set<llvm::Instruction *> &Ends);
+                      std::function<bool(const llvm::Instruction *)> isBegin,
+                      std::function<bool(const llvm::Instruction *)> isEnd);
 
   ~MultiExitRegionTree();
 

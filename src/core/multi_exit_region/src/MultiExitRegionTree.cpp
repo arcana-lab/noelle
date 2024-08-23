@@ -20,6 +20,8 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <functional>
+#include <queue>
 #include <vector>
 #include <unordered_set>
 
@@ -33,7 +35,7 @@ using namespace llvm;
 
 namespace arcana::noelle {
 
-MultiExitRegionTree::MultiExitRegionTree(llvm::DominatorTree *DT,
+MultiExitRegionTree::MultiExitRegionTree(DominatorTree *DT,
                                          Instruction *Begin,
                                          Instruction *End)
   : DT(DT),
@@ -43,11 +45,11 @@ MultiExitRegionTree::MultiExitRegionTree(llvm::DominatorTree *DT,
 
 MultiExitRegionTree::MultiExitRegionTree(
     Function &F,
-    const std::unordered_set<Instruction *> &Begins,
-    const std::unordered_set<Instruction *> &Ends)
+    function<bool(const Instruction *)> isBegin,
+    function<bool(const Instruction *)> isEnd)
   : parent(nullptr),
     isRoot(true) {
-  this->DT = new llvm::DominatorTree(F);
+  this->DT = new DominatorTree(F);
 }
 
 MultiExitRegionTree::~MultiExitRegionTree() {
