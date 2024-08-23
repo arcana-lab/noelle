@@ -23,8 +23,66 @@
 #include <vector>
 #include <unordered_set>
 
+#include "llvm/IR/Dominators.h"
 #include "llvm/IR/Instructions.h"
 
 #include "arcana/noelle/core/MultiExitRegionTree.hpp"
 
-namespace arcana::noelle {}
+using namespace std;
+using namespace llvm;
+
+namespace arcana::noelle {
+
+MultiExitRegionTree::MultiExitRegionTree(llvm::DominatorTree *DT,
+                                         Instruction *Begin,
+                                         Instruction *End)
+  : DT(DT),
+    Begin(Begin),
+    End(End),
+    isRoot(false) {}
+
+MultiExitRegionTree::MultiExitRegionTree(
+    Function &F,
+    const std::unordered_set<Instruction *> &Begins,
+    const std::unordered_set<Instruction *> &Ends)
+  : parent(nullptr),
+    isRoot(true) {
+  this->DT = new llvm::DominatorTree(F);
+}
+
+MultiExitRegionTree::~MultiExitRegionTree() {
+  if (this->isRoot) {
+    assert(this->parent == nullptr);
+    free(this->DT);
+  }
+}
+
+bool MultiExitRegionTree::contains(const Instruction *I) const {
+  return false;
+}
+
+bool MultiExitRegionTree::strictlyContains(const Instruction *I) const {
+  return false;
+}
+
+MultiExitRegionTree *MultiExitRegionTree::findSubregionFor(
+    const Instruction *I) {
+  return nullptr;
+}
+
+MultiExitRegionTree *MultiExitRegionTree::getRoot() {
+  auto current = this->parent;
+
+  if (current == nullptr) {
+    return this;
+  }
+
+  while (current->parent) {
+    current = current->parent;
+  }
+
+  assert(current->isRoot);
+  return current;
+}
+
+} // namespace arcana::noelle

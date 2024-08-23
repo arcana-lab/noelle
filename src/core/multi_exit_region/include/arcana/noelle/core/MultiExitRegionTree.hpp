@@ -26,26 +26,38 @@
 #include <vector>
 #include <unordered_set>
 
+#include "llvm/IR/Dominators.h"
 #include "llvm/IR/Instructions.h"
 
 namespace arcana::noelle {
 
 class MultiExitRegionTree {
 public:
-  MultiExitRegionTree(const std::unordered_set<llvm::Instruction *> &Begins,
+  MultiExitRegionTree(llvm::Function &F,
+                      const std::unordered_set<llvm::Instruction *> &Begins,
                       const std::unordered_set<llvm::Instruction *> &Ends);
+
+  ~MultiExitRegionTree();
 
   bool contains(const llvm::Instruction *I) const;
 
   bool strictlyContains(const llvm::Instruction *I) const;
 
-  MultiExitRegionTree *findSubregionFor(const llvm::Instruction *I) const;
+  MultiExitRegionTree *findSubregionFor(const llvm::Instruction *I);
 
-  MultiExitRegionTree *getRoot() const;
+  MultiExitRegionTree *getRoot();
 
 private:
+  MultiExitRegionTree(llvm::DominatorTree *DT,
+                      llvm::Instruction *Begin,
+                      llvm::Instruction *End);
+
+  llvm::DominatorTree *DT;
   MultiExitRegionTree *parent;
+  llvm::Instruction *Begin;
+  llvm::Instruction *End;
   std::vector<MultiExitRegionTree *> children;
+  bool isRoot;
 };
 
 } // namespace arcana::noelle
