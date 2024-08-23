@@ -16,6 +16,7 @@ install(
     noelle-scc-print
     noelle-meta-pdg-embed
     noelle-meta-scc-embed
+    noelle-pragma
   DESTINATION
     bin
 )
