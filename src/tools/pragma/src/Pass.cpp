@@ -60,7 +60,31 @@ bool Pragma::runOnModule(Module &M) {
   // auto &noelle = getAnalysis<NoellePass>().getNoelle();
   auto &MainF = *M.getFunction("main");
 
-  MultiExitRegionTree MERT(MainF, {}, {});
+  auto isBegin = [](const Instruction *I) -> bool {
+    if (auto *CI = dyn_cast<CallInst>(I)) {
+      auto callee = CI->getCalledFunction();
+      if (callee) {
+        if (callee->getName().startswith("noelle_pragma_begin")) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  auto isEnd = [](const Instruction *I) -> bool {
+    if (auto *CI = dyn_cast<CallInst>(I)) {
+      auto callee = CI->getCalledFunction();
+      if (callee) {
+        if (callee->getName().startswith("noelle_pragma_end")) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  MultiExitRegionTree MERT(MainF, isBegin, isEnd);
 
   errs() << prefix << "End\n";
   return false;

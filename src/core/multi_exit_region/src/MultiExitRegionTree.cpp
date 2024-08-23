@@ -22,6 +22,7 @@
 
 #include <functional>
 #include <queue>
+#include <stack>
 #include <vector>
 #include <unordered_set>
 
@@ -48,8 +49,66 @@ MultiExitRegionTree::MultiExitRegionTree(
     function<bool(const Instruction *)> isBegin,
     function<bool(const Instruction *)> isEnd)
   : parent(nullptr),
+    Begin(nullptr),
+    End(nullptr),
     isRoot(true) {
+
   this->DT = new DominatorTree(F);
+
+  queue<BasicBlock *> worklist;
+  unordered_set<BasicBlock *> enqueued;
+  vector<Instruction *> Begins;
+  vector<Instruction *> Ends;
+
+  // Breadth-first search on the CFG
+
+  auto root = &F.getEntryBlock();
+  worklist.push(root);
+  enqueued.insert(root);
+
+  while (!worklist.empty()) {
+    auto BB = worklist.front();
+    worklist.pop();
+
+    for (auto &I : *BB) {
+      if (isBegin(&I)) {
+        Begins.push_back(&I);
+      } else if (isEnd(&I)) {
+        auto End = &I;
+        // Find a dominator for End among the Begins
+        int i;
+        for (i = Begins.size() - 1; i >= 0; i--) {
+          if (DT->dominates(Begins[i], End)) {
+            break;
+          }
+        }
+        if (i < 0) {
+          Ends.push_back(End);
+        } else {
+          auto MERT = new MultiExitRegionTree(this->DT, Begins[i], End);
+          MERT->parent = this;
+          this->children.push_back(MERT);
+          Begins.erase(Begins.begin() + i);
+        }
+      }
+    }
+
+    for (auto succBB : successors(BB)) {
+      bool notEnqueued = enqueued.find(succBB) == enqueued.end();
+      if (notEnqueued) {
+        enqueued.insert(succBB);
+        worklist.push(succBB);
+      }
+    }
+  }
+
+  errs() << "Unmatched Begins = " << Begins.size() << "\n";
+
+  for (auto T : this->children) {
+    errs() << "B: " << *T->Begin << "\n";
+    errs() << "E: " << *T->End << "\n";
+    errs() << "\n";
+  }
 }
 
 MultiExitRegionTree::~MultiExitRegionTree() {
