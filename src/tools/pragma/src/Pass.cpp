@@ -103,19 +103,59 @@ bool Pragma::runOnModule(Module &M) {
   errs() << "R5 = " << R5 << "\n";
   errs() << "R6 = " << R6 << "\n";
 
-  errs() << "R0 R1 " << MERT.findOutermostRegionFor(R1->getBegin()) << "\n";
-  errs() << "R0 R2 " << MERT.findOutermostRegionFor(R2->getBegin()) << "\n";
-  errs() << "R0 R3 " << MERT.findOutermostRegionFor(R3->getBegin()) << "\n";
-  errs() << "R0 R4 " << MERT.findOutermostRegionFor(R4->getBegin()) << "\n";
-  errs() << "R0 R5 " << MERT.findOutermostRegionFor(R5->getBegin()) << "\n";
-  errs() << "R0 R6 " << MERT.findOutermostRegionFor(R6->getBegin()) << "\n";
-  errs() << "R1 R1 " << R1->findOutermostRegionFor(R1->getBegin()) << "\n";
-  errs() << "R1 R2 " << R1->findOutermostRegionFor(R2->getBegin()) << "\n";
-  errs() << "R1 R3 " << R1->findOutermostRegionFor(R3->getBegin()) << "\n";
-  errs() << "R1 R4 " << R1->findOutermostRegionFor(R4->getBegin()) << "\n";
-  errs() << "R2 R3 " << R2->findOutermostRegionFor(R3->getBegin()) << "\n";
-  errs() << "R3 R4 " << R3->findOutermostRegionFor(R4->getBegin()) << "\n";
-  errs() << "R4 R3 " << R4->findOutermostRegionFor(R3->getBegin()) << "\n";
+  errs() << "outermost R0 R1 " << MERT.findOutermostRegionFor(R1->getBegin())
+         << "\n";
+  errs() << "outermost R0 R2 " << MERT.findOutermostRegionFor(R2->getBegin())
+         << "\n";
+  errs() << "outermost R0 R3 " << MERT.findOutermostRegionFor(R3->getBegin())
+         << "\n";
+  errs() << "outermost R0 R4 " << MERT.findOutermostRegionFor(R4->getBegin())
+         << "\n";
+  errs() << "outermost R0 R5 " << MERT.findOutermostRegionFor(R5->getBegin())
+         << "\n";
+  errs() << "outermost R0 R6 " << MERT.findOutermostRegionFor(R6->getBegin())
+         << "\n";
+  errs() << "outermost R1 R1 " << R1->findOutermostRegionFor(R1->getBegin())
+         << "\n";
+  errs() << "outermost R1 R2 " << R1->findOutermostRegionFor(R2->getBegin())
+         << "\n";
+  errs() << "outermost R1 R3 " << R1->findOutermostRegionFor(R3->getBegin())
+         << "\n";
+  errs() << "outermost R1 R4 " << R1->findOutermostRegionFor(R4->getBegin())
+         << "\n";
+  errs() << "outermost R2 R3 " << R2->findOutermostRegionFor(R3->getBegin())
+         << "\n";
+  errs() << "outermost R3 R4 " << R3->findOutermostRegionFor(R4->getBegin())
+         << "\n";
+  errs() << "outermost R4 R3 " << R4->findOutermostRegionFor(R3->getBegin())
+         << "\n";
+  errs() << "\n";
+  errs() << "innermost R0 R1 " << MERT.findInnermostRegionFor(R1->getBegin())
+         << "\n";
+  errs() << "innermost R0 R2 " << MERT.findInnermostRegionFor(R2->getBegin())
+         << "\n";
+  errs() << "innermost R0 R3 " << MERT.findInnermostRegionFor(R3->getBegin())
+         << "\n";
+  errs() << "innermost R0 R4 " << MERT.findInnermostRegionFor(R4->getBegin())
+         << "\n";
+  errs() << "innermost R0 R5 " << MERT.findInnermostRegionFor(R5->getBegin())
+         << "\n";
+  errs() << "innermost R0 R6 " << MERT.findInnermostRegionFor(R6->getBegin())
+         << "\n";
+  errs() << "innermost R2 R2 " << R2->findInnermostRegionFor(R2->getBegin())
+         << "\n";
+  errs() << "innermost R3 R3 " << R3->findInnermostRegionFor(R3->getBegin())
+         << "\n";
+  errs() << "innermost R3 R4 " << R3->findInnermostRegionFor(R4->getBegin())
+         << "\n";
+  errs() << "innermost R4 R3 " << R4->findInnermostRegionFor(R3->getBegin())
+         << "\n";
+  errs() << "innermost R4 R4 " << R4->findInnermostRegionFor(R4->getBegin())
+         << "\n";
+  errs() << "innermost R5 R1 " << R5->findInnermostRegionFor(R1->getBegin())
+         << "\n";
+  errs() << "innermost R1 R5 " << R1->findInnermostRegionFor(R5->getBegin())
+         << "\n";
 
   errs() << prefix << "End\n";
   return false;

@@ -24,8 +24,10 @@
 #include <functional>
 #include <queue>
 #include <stack>
-#include <vector>
+#include <tuple>
+#include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Instructions.h"
@@ -262,6 +264,74 @@ MultiExitRegionTree *MultiExitRegionTree::findOutermostRegionFor(
 
 MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
     const Instruction *I) {
+  queue<MultiExitRegionTree *> worklist1;
+  unordered_map<const BasicBlock *, MultiExitRegionTree *> TargetBBs;
+
+  if (this->isRoot) {
+    for (auto T : this->children) {
+      worklist1.push(T);
+    }
+  } else {
+    worklist1.push(this);
+  }
+
+  // The goal is to find the deepest set of sub trees whose associate `Begin`
+  // dominates `I`. It can be thought as a "dominance frontier" of instruction
+  // `I` with respect to this region tree
+  while (!worklist1.empty()) {
+    auto T = worklist1.front();
+    worklist1.pop();
+
+    // We could be lucky. This check is needed in any case because instruction
+    // `I` wouldn't dominate itself
+    if (I == T->Begin || I == T->End) {
+      return T;
+    }
+
+    // If this sub tree doesn't dominate `I` then we consider its parent to be a
+    // candidate and we stop searching in the other subtrees because if the
+    // `Begin` of region doesn't dominate an instruction, neither will any
+    // nested region as consequence of the single-entry property
+    if (!this->DT->dominates(T->Begin, I)) {
+      auto ParentT = T->parent;
+      if (T != this && !ParentT->isRoot) {
+        auto ParentBeginBB = ParentT->Begin->getParent();
+        TargetBBs[ParentBeginBB] = ParentT;
+      }
+      continue;
+    }
+
+    for (auto C : T->children) {
+      worklist1.push(C);
+    }
+  }
+
+  // Reverse BFS on the CFG starting from the block that contains `I`.
+  // We search the first basic block contained in the set of targets is
+  // associated (through `TargetBBs`) to the region we are looking for.
+
+  queue<const BasicBlock *> worklist2;
+  unordered_set<const BasicBlock *> enqueued;
+  worklist2.push(I->getParent());
+
+  while (!worklist2.empty()) {
+    auto BB = worklist2.front();
+    worklist2.pop();
+
+    auto TargetBB = TargetBBs.find(BB);
+    auto foundTarget = TargetBB != TargetBBs.end();
+    if (foundTarget) {
+      return get<MultiExitRegionTree *>(*TargetBB);
+    }
+
+    for (const auto pBB : predecessors(BB)) {
+      bool notEnqueued = enqueued.find(pBB) == enqueued.end();
+      if (notEnqueued) {
+        enqueued.insert(pBB);
+        worklist2.push(pBB);
+      }
+    }
+  }
   return nullptr;
 }
 
