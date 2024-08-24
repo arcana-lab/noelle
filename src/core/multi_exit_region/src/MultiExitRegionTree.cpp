@@ -79,6 +79,7 @@ MultiExitRegionTree::MultiExitRegionTree(
         // Found a new Begin. Let's instantiate an incomplete MERT
         // that will be completed (i.e. has an End) later on
         auto MERT = new MultiExitRegionTree(this->DT, Begin, /*End=*/nullptr);
+
         // For now we assume that it's not nested in any other tree.
         // Keep in mind that in this ctor, `this` is the artificial node that
         // contains ANY other subtree
@@ -107,6 +108,7 @@ MultiExitRegionTree::MultiExitRegionTree(
           MERT->Begin = MatchingBegin;
           MERT->End = End;
           UnmatchedBegins.erase(UnmatchedBegins.begin() + i);
+
           // Use dominance info to determine nesting relations between this new
           // region we just found. The parent, if any, must be a tree for which
           // we haven't found an End yet (i.e. in `UnmatchedBegins`)
@@ -172,7 +174,7 @@ bool MultiExitRegionTree::contains(const Instruction *I) {
     // not met
     return false;
   }
-  return this->findOutermostRegionFor(I) == this;
+  return this->findInnermostRegionFor(I) != nullptr;
 }
 
 bool MultiExitRegionTree::strictlyContains(const Instruction *I) {
@@ -181,84 +183,16 @@ bool MultiExitRegionTree::strictlyContains(const Instruction *I) {
 
 MultiExitRegionTree *MultiExitRegionTree::findOutermostRegionFor(
     const Instruction *I) {
-
-  if (isRoot) {
+  if (this->isRoot) {
     for (auto T : this->children) {
-      auto R = T->findOutermostRegionFor(I);
-      if (R != nullptr) {
-        return R;
+      if (T->findInnermostRegionFor(I) != nullptr) {
+        return T;
       }
     }
-    return nullptr;
   }
-
-  // Case 1:
-  // Instructions `Begin` and `End` are considered part of the region that they
-  // define. This check is necessary as an instructino doesn't dominate itself,
-  // therfore case 2 and 3 will fail
-  if (I == this->Begin || I == this->End) {
+  if (this->findInnermostRegionFor(I) != nullptr) {
     return this;
   }
-
-  auto BeginBB = this->Begin->getParent();
-  auto EndBB = this->End->getParent();
-  auto TargetBB = I->getParent();
-
-  // Case 2:
-  // I and Begin are in the same basic block
-  if (TargetBB == BeginBB) {
-    if (this->DT->dominates(this->Begin, I)) {
-      return this;
-    } else {
-      return nullptr;
-    }
-  }
-
-  // Case 3:
-  // I and End are in the same basic block
-  if (TargetBB == EndBB) {
-    if (this->DT->dominates(I, this->End)) {
-      return this;
-    } else {
-      return nullptr;
-    }
-  }
-
-  // Case 4:
-  // I, Begin and End are in different basic blocks.
-  // Perform a reverse BFS on dominated basic blocks starting from End's BB
-  // We start from EndBB instead of I's BB because the BFS might have to explore
-  // the entire CFG before returning no if that's the case. Starting from EndBB
-  // we explore the entire region in the worst case.
-
-  queue<BasicBlock *> worklist;
-  unordered_set<BasicBlock *> enqueued;
-  worklist.push(EndBB);
-
-  while (!worklist.empty()) {
-    auto BB = worklist.front();
-    worklist.pop();
-
-    if (BB == TargetBB) {
-      return this;
-    }
-
-    if (BB == BeginBB) {
-      // The search backwards ends with `BeginBB`
-      continue;
-    }
-
-    for (auto pBB : predecessors(BB)) {
-      if (this->DT->dominates(this->Begin, pBB)) {
-        bool notEnqueued = enqueued.find(pBB) == enqueued.end();
-        if (notEnqueued) {
-          enqueued.insert(pBB);
-          worklist.push(pBB);
-        }
-      }
-    }
-  }
-
   return nullptr;
 }
 
