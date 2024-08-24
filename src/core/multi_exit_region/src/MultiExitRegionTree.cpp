@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <algorithm>
 #include <functional>
 #include <queue>
 #include <stack>
@@ -55,12 +56,12 @@ MultiExitRegionTree::MultiExitRegionTree(
 
   this->DT = new DominatorTree(F);
 
+  // Breadth-first search on the CFG
+
   queue<BasicBlock *> worklist;
   unordered_set<BasicBlock *> enqueued;
-  vector<Instruction *> Begins;
-  vector<Instruction *> Ends;
-
-  // Breadth-first search on the CFG
+  vector<Instruction *> UnmatchedBegins;
+  unordered_map<Instruction *, MultiExitRegionTree *> BeginToMERT;
 
   auto root = &F.getEntryBlock();
   worklist.push(root);
@@ -72,23 +73,56 @@ MultiExitRegionTree::MultiExitRegionTree(
 
     for (auto &I : *BB) {
       if (isBegin(&I)) {
-        Begins.push_back(&I);
+        auto Begin = &I;
+        // Found a new Begin. Let's instantiate an incomplete MERT
+        // that will be completed (i.e. has an End) later on
+        auto MERT = new MultiExitRegionTree(this->DT, Begin, /*End=*/nullptr);
+        // For now we assume that it's not nested in any other tree.
+        // Keep in mind that in this ctor, `this` is the artificial node that
+        // contains ANY other subtree
+        MERT->parent = this;
+        BeginToMERT[Begin] = MERT;
+        UnmatchedBegins.push_back(Begin);
       } else if (isEnd(&I)) {
         auto End = &I;
         // Find a dominator for End among the Begins
         int i;
-        for (i = Begins.size() - 1; i >= 0; i--) {
-          if (DT->dominates(Begins[i], End)) {
+        for (i = UnmatchedBegins.size() - 1; i >= 0; i--) {
+          if (DT->dominates(UnmatchedBegins[i], End)) {
             break;
           }
         }
         if (i < 0) {
-          Ends.push_back(End);
+          // If we are here means no Begin dominates the End. This is impossible
+          // if the regions are well-formed. We call this Malformed input.
+          // We could go ahead and ignore this End but it is more instructive to
+          // report the problem.
+          assert(false && "Malformed MultiExitRegionTree\n");
         } else {
-          auto MERT = new MultiExitRegionTree(this->DT, Begins[i], End);
-          MERT->parent = this;
-          this->children.push_back(MERT);
-          Begins.erase(Begins.begin() + i);
+          // Found a match! <3
+          auto MatchingBegin = UnmatchedBegins[i];
+          auto MERT = BeginToMERT.at(MatchingBegin);
+          MERT->Begin = MatchingBegin;
+          MERT->End = End;
+          UnmatchedBegins.erase(UnmatchedBegins.begin() + i);
+          // Use dominance info to determine nesting relations between this new
+          // region we just found. The parent, if any, must be a tree for which
+          // we haven't found an End yet (i.e. in `UnmatchedBegins`)
+          for (i = UnmatchedBegins.size() - 1; i >= 0; i--) {
+            if (DT->dominates(UnmatchedBegins[i], End)) {
+              break;
+            }
+          }
+          if (i < 0) {
+            // Couldn't find another Region that dominates `MERT`.
+            // We deduce that `MERT` is not nested
+            this->addChild(MERT);
+          } else {
+            // `MERT` is nested in the i-th tree
+            auto ParentMERT = BeginToMERT.at(UnmatchedBegins[i]);
+            MERT->parent = ParentMERT;
+            ParentMERT->addChild(MERT);
+          }
         }
       }
     }
@@ -102,19 +136,27 @@ MultiExitRegionTree::MultiExitRegionTree(
     }
   }
 
-  errs() << "Unmatched Begins = " << Begins.size() << "\n";
-
-  for (auto T : this->children) {
-    errs() << "B: " << *T->Begin << "\n";
-    errs() << "E: " << *T->End << "\n";
-    errs() << "\n";
+  if (UnmatchedBegins.size() > 0) {
+    errs() << "Malformed Multi-exit region: " << UnmatchedBegins.size()
+           << " unmatched Begins\n";
   }
+  assert(UnmatchedBegins.size() == 0);
 }
 
 MultiExitRegionTree::~MultiExitRegionTree() {
   if (this->isRoot) {
     assert(this->parent == nullptr);
     free(this->DT);
+  }
+}
+
+void MultiExitRegionTree::addChild(MultiExitRegionTree *T) {
+  // This function hides the container used to store children
+  if (find(this->children, T) == end(this->children)) {
+    this->children.push_back(T);
+  } else {
+    // We don't expect to insert the same child twice
+    assert(false);
   }
 }
 
@@ -144,6 +186,44 @@ MultiExitRegionTree *MultiExitRegionTree::getRoot() {
 
   assert(current->isRoot);
   return current;
+}
+
+raw_ostream &MultiExitRegionTree::print(raw_ostream &stream,
+                                        string prefixToUse) {
+  return this->print(stream, prefixToUse, 0);
+}
+
+raw_ostream &MultiExitRegionTree::print(raw_ostream &stream,
+                                        string prefixToUse,
+                                        int level) {
+  bool printBeginAndEnd = true;
+  if (this->Begin == nullptr || this->End == nullptr) {
+    // `this` is the artificial node that collects all trees
+    assert(this->Begin == nullptr && this->End == nullptr);
+    printBeginAndEnd = false;
+  }
+
+  string instPrefix = "|>";
+
+  string levelPrefix = "";
+  for (int i = 0; i < level; i++) {
+    levelPrefix += "|  ";
+  }
+
+  if (printBeginAndEnd) {
+    stream << prefixToUse << levelPrefix << instPrefix << *Begin << "\n";
+  }
+
+  for (auto T : this->children) {
+    assert(T != nullptr);
+    T->print(stream, prefixToUse, level + 1);
+  }
+
+  if (printBeginAndEnd) {
+    stream << prefixToUse << levelPrefix << instPrefix << *End << "\n";
+  }
+
+  return stream;
 }
 
 } // namespace arcana::noelle

@@ -86,6 +86,8 @@ bool Pragma::runOnModule(Module &M) {
 
   MultiExitRegionTree MERT(MainF, isBegin, isEnd);
 
+  MERT.print(errs(), prefix);
+
   errs() << prefix << "End\n";
   return false;
 }

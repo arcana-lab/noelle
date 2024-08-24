@@ -24,8 +24,9 @@
 #define __MUTLI_EXIT_REGION_TREE__HPP__
 
 #include <functional>
-#include <vector>
+#include <string>
 #include <unordered_set>
+#include <vector>
 
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Instructions.h"
@@ -48,16 +49,30 @@ public:
 
   MultiExitRegionTree *getRoot();
 
+  llvm::raw_ostream &print(llvm::raw_ostream &stream,
+                           std::string prefixToUse = "");
+
 private:
   MultiExitRegionTree(llvm::DominatorTree *DT,
                       llvm::Instruction *Begin,
                       llvm::Instruction *End);
 
+  void addChild(MultiExitRegionTree *T);
+
+  llvm::raw_ostream &print(llvm::raw_ostream &stream,
+                           std::string prefixToUse,
+                           int level);
+
   llvm::DominatorTree *DT;
   MultiExitRegionTree *parent;
   llvm::Instruction *Begin;
   llvm::Instruction *End;
+
+  // `children` is logically an unordered_set. But because of how the tree is
+  // contructed we want to preserve the insertion order as it is likely to
+  // reflect the control flow order
   std::vector<MultiExitRegionTree *> children;
+
   bool isRoot;
 };
 
