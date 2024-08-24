@@ -162,7 +162,13 @@ void MultiExitRegionTree::addChild(MultiExitRegionTree *T) {
 
 bool MultiExitRegionTree::contains(const Instruction *I) {
   if (this->isRoot) {
+    // The root contains everything by definition
     return true;
+  }
+  if (!this->DT->dominates(this->Begin, I)) {
+    // Dominance is a necessary condition therefore we can immediately return if
+    // not met
+    return false;
   }
   return this->findOutermostRegionFor(I) == this;
 }
@@ -224,7 +230,7 @@ MultiExitRegionTree *MultiExitRegionTree::findOutermostRegionFor(
   // we explore the entire region in the worst case.
 
   queue<BasicBlock *> worklist;
-  set<BasicBlock *> enqueued;
+  unordered_set<BasicBlock *> enqueued;
   worklist.push(EndBB);
 
   while (!worklist.empty()) {
@@ -251,6 +257,11 @@ MultiExitRegionTree *MultiExitRegionTree::findOutermostRegionFor(
     }
   }
 
+  return nullptr;
+}
+
+MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
+    const Instruction *I) {
   return nullptr;
 }
 
