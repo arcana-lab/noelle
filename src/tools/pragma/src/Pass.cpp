@@ -88,6 +88,35 @@ bool Pragma::runOnModule(Module &M) {
 
   MERT.print(errs(), prefix);
 
+  auto R1 = MERT.getChildren()[0];
+  auto R2 = R1->getChildren()[0];
+  auto R3 = R2->getChildren()[0];
+  auto R4 = R2->getChildren()[1];
+  auto R5 = MERT.getChildren()[1];
+  auto R6 = R5->getChildren()[0];
+
+  errs() << "R0 = " << &MERT << "\n";
+  errs() << "R1 = " << R1 << "\n";
+  errs() << "R2 = " << R2 << "\n";
+  errs() << "R3 = " << R3 << "\n";
+  errs() << "R4 = " << R4 << "\n";
+  errs() << "R5 = " << R5 << "\n";
+  errs() << "R6 = " << R6 << "\n";
+
+  errs() << "R0 R1 " << MERT.findOutermostRegionFor(R1->getBegin()) << "\n";
+  errs() << "R0 R2 " << MERT.findOutermostRegionFor(R2->getBegin()) << "\n";
+  errs() << "R0 R3 " << MERT.findOutermostRegionFor(R3->getBegin()) << "\n";
+  errs() << "R0 R4 " << MERT.findOutermostRegionFor(R4->getBegin()) << "\n";
+  errs() << "R0 R5 " << MERT.findOutermostRegionFor(R5->getBegin()) << "\n";
+  errs() << "R0 R6 " << MERT.findOutermostRegionFor(R6->getBegin()) << "\n";
+  errs() << "R1 R1 " << R1->findOutermostRegionFor(R1->getBegin()) << "\n";
+  errs() << "R1 R2 " << R1->findOutermostRegionFor(R2->getBegin()) << "\n";
+  errs() << "R1 R3 " << R1->findOutermostRegionFor(R3->getBegin()) << "\n";
+  errs() << "R1 R4 " << R1->findOutermostRegionFor(R4->getBegin()) << "\n";
+  errs() << "R2 R3 " << R2->findOutermostRegionFor(R3->getBegin()) << "\n";
+  errs() << "R3 R4 " << R3->findOutermostRegionFor(R4->getBegin()) << "\n";
+  errs() << "R4 R3 " << R4->findOutermostRegionFor(R3->getBegin()) << "\n";
+
   errs() << prefix << "End\n";
   return false;
 }

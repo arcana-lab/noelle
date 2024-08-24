@@ -160,16 +160,97 @@ void MultiExitRegionTree::addChild(MultiExitRegionTree *T) {
   }
 }
 
-bool MultiExitRegionTree::contains(const Instruction *I) const {
+bool MultiExitRegionTree::contains(const Instruction *I) {
+  if (this->isRoot) {
+    return true;
+  }
+  return this->findOutermostRegionFor(I) == this;
+}
+
+bool MultiExitRegionTree::strictlyContains(const Instruction *I) {
   return false;
 }
 
-bool MultiExitRegionTree::strictlyContains(const Instruction *I) const {
-  return false;
-}
-
-MultiExitRegionTree *MultiExitRegionTree::findSubregionFor(
+MultiExitRegionTree *MultiExitRegionTree::findOutermostRegionFor(
     const Instruction *I) {
+
+  if (isRoot) {
+    for (auto T : this->children) {
+      auto R = T->findOutermostRegionFor(I);
+      if (R != nullptr) {
+        return R;
+      }
+    }
+    return nullptr;
+  }
+
+  // Case 1:
+  // Instructions `Begin` and `End` are considered part of the region that they
+  // define. This check is necessary as an instructino doesn't dominate itself,
+  // therfore case 2 and 3 will fail
+  if (I == this->Begin || I == this->End) {
+    return this;
+  }
+
+  auto BeginBB = this->Begin->getParent();
+  auto EndBB = this->End->getParent();
+  auto TargetBB = I->getParent();
+
+  // Case 2:
+  // I and Begin are in the same basic block
+  if (TargetBB == BeginBB) {
+    if (this->DT->dominates(this->Begin, I)) {
+      return this;
+    } else {
+      return nullptr;
+    }
+  }
+
+  // Case 3:
+  // I and End are in the same basic block
+  if (TargetBB == EndBB) {
+    if (this->DT->dominates(I, this->End)) {
+      return this;
+    } else {
+      return nullptr;
+    }
+  }
+
+  // Case 4:
+  // I, Begin and End are in different basic blocks.
+  // Perform a reverse BFS on dominated basic blocks starting from End's BB
+  // We start from EndBB instead of I's BB because the BFS might have to explore
+  // the entire CFG before returning no if that's the case. Starting from EndBB
+  // we explore the entire region in the worst case.
+
+  queue<BasicBlock *> worklist;
+  set<BasicBlock *> enqueued;
+  worklist.push(EndBB);
+
+  while (!worklist.empty()) {
+    auto BB = worklist.front();
+    worklist.pop();
+
+    if (BB == TargetBB) {
+      return this;
+    }
+
+    if (BB == BeginBB) {
+      // The search backwards ends with `BeginBB`
+      continue;
+    }
+
+    for (auto pBB : predecessors(BB)) {
+      if (this->DT->dominates(this->Begin, pBB)) {
+        bool notEnqueued = enqueued.find(pBB) == enqueued.end();
+        if (notEnqueued) {
+          enqueued.insert(pBB);
+          worklist.push(pBB);
+        }
+      }
+    }
+  }
+
   return nullptr;
 }
 
@@ -188,6 +269,22 @@ MultiExitRegionTree *MultiExitRegionTree::getRoot() {
   return current;
 }
 
+MultiExitRegionTree::ChildrenTy MultiExitRegionTree::getChildren() const {
+  return this->children;
+}
+
+Instruction *MultiExitRegionTree::getBegin() const {
+  return this->Begin;
+}
+
+Instruction *MultiExitRegionTree::getEnd() const {
+  return this->End;
+}
+
+MultiExitRegionTree *MultiExitRegionTree::getParent() {
+  return this->parent;
+}
+
 raw_ostream &MultiExitRegionTree::print(raw_ostream &stream,
                                         string prefixToUse) {
   return this->print(stream, prefixToUse, 0);
@@ -196,22 +293,16 @@ raw_ostream &MultiExitRegionTree::print(raw_ostream &stream,
 raw_ostream &MultiExitRegionTree::print(raw_ostream &stream,
                                         string prefixToUse,
                                         int level) {
-  bool printBeginAndEnd = true;
-  if (this->Begin == nullptr || this->End == nullptr) {
-    // `this` is the artificial node that collects all trees
-    assert(this->Begin == nullptr && this->End == nullptr);
-    printBeginAndEnd = false;
-  }
-
-  string instPrefix = "|>";
-
+  string instBeginPrefix = "\u250F";
+  string instEndPrefix = "\u2517";
   string levelPrefix = "";
+
   for (int i = 0; i < level; i++) {
-    levelPrefix += "|  ";
+    levelPrefix += "\u2503  ";
   }
 
-  if (printBeginAndEnd) {
-    stream << prefixToUse << levelPrefix << instPrefix << *Begin << "\n";
+  if (!isRoot) {
+    stream << prefixToUse << levelPrefix << instBeginPrefix << *Begin << "\n";
   }
 
   for (auto T : this->children) {
@@ -219,8 +310,8 @@ raw_ostream &MultiExitRegionTree::print(raw_ostream &stream,
     T->print(stream, prefixToUse, level + 1);
   }
 
-  if (printBeginAndEnd) {
-    stream << prefixToUse << levelPrefix << instPrefix << *End << "\n";
+  if (!isRoot) {
+    stream << prefixToUse << levelPrefix << instEndPrefix << *End << "\n";
   }
 
   return stream;

@@ -35,19 +35,31 @@ namespace arcana::noelle {
 
 class MultiExitRegionTree {
 public:
+  using ChildrenTy = std::vector<MultiExitRegionTree *>;
+
   MultiExitRegionTree(llvm::Function &F,
                       std::function<bool(const llvm::Instruction *)> isBegin,
                       std::function<bool(const llvm::Instruction *)> isEnd);
 
   ~MultiExitRegionTree();
 
-  bool contains(const llvm::Instruction *I) const;
+  bool contains(const llvm::Instruction *I);
 
-  bool strictlyContains(const llvm::Instruction *I) const;
+  bool strictlyContains(const llvm::Instruction *I);
 
-  MultiExitRegionTree *findSubregionFor(const llvm::Instruction *I);
+  MultiExitRegionTree *findOutermostRegionFor(const llvm::Instruction *I);
+
+  MultiExitRegionTree *findInnermostRegionFor(const llvm::Instruction *I);
 
   MultiExitRegionTree *getRoot();
+
+  ChildrenTy getChildren() const;
+
+  llvm::Instruction *getBegin() const;
+
+  llvm::Instruction *getEnd() const;
+
+  MultiExitRegionTree *getParent();
 
   llvm::raw_ostream &print(llvm::raw_ostream &stream,
                            std::string prefixToUse = "");
@@ -71,7 +83,7 @@ private:
   // `children` is logically an unordered_set. But because of how the tree is
   // contructed we want to preserve the insertion order as it is likely to
   // reflect the control flow order
-  std::vector<MultiExitRegionTree *> children;
+  ChildrenTy children;
 
   bool isRoot;
 };
