@@ -45,7 +45,7 @@ MultiExitRegionTree::MultiExitRegionTree(DominatorTree *DT,
   : DT(DT),
     Begin(Begin),
     End(End),
-    isRoot(false) {}
+    isArtificialRoot(false) {}
 
 MultiExitRegionTree::MultiExitRegionTree(
     Function &F,
@@ -54,7 +54,7 @@ MultiExitRegionTree::MultiExitRegionTree(
   : parent(nullptr),
     Begin(nullptr),
     End(nullptr),
-    isRoot(true) {
+    isArtificialRoot(true) {
 
   this->DT = new DominatorTree(F);
 
@@ -148,7 +148,7 @@ MultiExitRegionTree::MultiExitRegionTree(
 }
 
 MultiExitRegionTree::~MultiExitRegionTree() {
-  if (this->isRoot) {
+  if (this->isArtificialRoot) {
     assert(this->parent == nullptr);
     free(this->DT);
   }
@@ -165,7 +165,7 @@ void MultiExitRegionTree::addChild(MultiExitRegionTree *T) {
 }
 
 bool MultiExitRegionTree::contains(const Instruction *I) {
-  if (this->isRoot) {
+  if (this->isArtificialRoot) {
     // The root contains everything by definition
     return true;
   }
@@ -183,7 +183,7 @@ bool MultiExitRegionTree::strictlyContains(const Instruction *I) {
 
 MultiExitRegionTree *MultiExitRegionTree::findOutermostRegionFor(
     const Instruction *I) {
-  if (this->isRoot) {
+  if (this->isArtificialRoot) {
     for (auto T : this->children) {
       if (T->findInnermostRegionFor(I) != nullptr) {
         return T;
@@ -201,7 +201,7 @@ MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
   queue<MultiExitRegionTree *> worklist1;
   unordered_map<const BasicBlock *, MultiExitRegionTree *> TargetBBs;
 
-  if (this->isRoot) {
+  if (this->isArtificialRoot) {
     for (auto T : this->children) {
       worklist1.push(T);
     }
@@ -228,7 +228,7 @@ MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
     // nested region as consequence of the single-entry property
     if (!this->DT->dominates(T->Begin, I)) {
       auto ParentT = T->parent;
-      if (T != this && !ParentT->isRoot) {
+      if (T != this && !ParentT->isArtificialRoot) {
         auto ParentBeginBB = ParentT->Begin->getParent();
         TargetBBs[ParentBeginBB] = ParentT;
       }
@@ -283,7 +283,7 @@ vector<MultiExitRegionTree *> MultiExitRegionTree::getPathTo(
     ancestors.push(current);
     current = current->parent;
   }
-  if (!this->isRoot) {
+  if (!this->isArtificialRoot) {
     ancestors.push(this);
   }
 
@@ -293,21 +293,6 @@ vector<MultiExitRegionTree *> MultiExitRegionTree::getPathTo(
     ancestors.pop();
   }
   return path;
-}
-
-MultiExitRegionTree *MultiExitRegionTree::getRoot() {
-  auto current = this->parent;
-
-  if (current == nullptr) {
-    return this;
-  }
-
-  while (current->parent) {
-    current = current->parent;
-  }
-
-  assert(current->isRoot);
-  return current;
 }
 
 MultiExitRegionTree::ChildrenTy MultiExitRegionTree::getChildren() const {
@@ -342,7 +327,7 @@ raw_ostream &MultiExitRegionTree::print(raw_ostream &stream,
     levelPrefix += "\u2503  ";
   }
 
-  if (!isRoot) {
+  if (!this->isArtificialRoot) {
     stream << prefixToUse << levelPrefix << instBeginPrefix << *Begin << "\n";
   }
 
@@ -351,7 +336,7 @@ raw_ostream &MultiExitRegionTree::print(raw_ostream &stream,
     T->print(stream, prefixToUse, level + 1);
   }
 
-  if (!isRoot) {
+  if (!this->isArtificialRoot) {
     stream << prefixToUse << levelPrefix << instEndPrefix << *End << "\n";
   }
 

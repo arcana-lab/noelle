@@ -53,8 +53,6 @@ public:
 
   std::vector<MultiExitRegionTree *> getPathTo(const llvm::Instruction *I);
 
-  MultiExitRegionTree *getRoot();
-
   ChildrenTy getChildren() const;
 
   llvm::Instruction *getBegin() const;
@@ -87,7 +85,7 @@ private:
   // reflect the control flow order
   ChildrenTy children;
 
-  bool isRoot;
+  bool isArtificialRoot;
 };
 
 } // namespace arcana::noelle
