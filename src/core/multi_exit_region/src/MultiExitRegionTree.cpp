@@ -269,7 +269,7 @@ MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
   return nullptr;
 }
 
-vector<MultiExitRegionTree *> MultiExitRegionTree::buildPathTo(
+vector<MultiExitRegionTree *> MultiExitRegionTree::getPathTo(
     const llvm::Instruction *I) {
   auto destination = findInnermostRegionFor(I);
   if (destination == nullptr) {

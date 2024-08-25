@@ -164,26 +164,26 @@ bool Pragma::runOnModule(Module &M) {
   };
 
   errs() << "path to R1 ";
-  showPath(MERT.buildPathTo(R1->getBegin()));
+  showPath(MERT.getPathTo(R1->getBegin()));
   errs() << "path to R2 ";
-  showPath(MERT.buildPathTo(R2->getBegin()));
+  showPath(MERT.getPathTo(R2->getBegin()));
   errs() << "path to R3 ";
-  showPath(MERT.buildPathTo(R3->getBegin()));
+  showPath(MERT.getPathTo(R3->getBegin()));
   errs() << "path to R4 ";
-  showPath(MERT.buildPathTo(R4->getBegin()));
+  showPath(MERT.getPathTo(R4->getBegin()));
   errs() << "path to R5 ";
-  showPath(MERT.buildPathTo(R5->getBegin()));
+  showPath(MERT.getPathTo(R5->getBegin()));
   errs() << "path to R6 ";
-  showPath(MERT.buildPathTo(R6->getBegin()));
+  showPath(MERT.getPathTo(R6->getBegin()));
 
   errs() << "path R2 to R2 ";
-  showPath(R2->buildPathTo(R2->getBegin()));
+  showPath(R2->getPathTo(R2->getBegin()));
   errs() << "path R2 to R3 ";
-  showPath(R2->buildPathTo(R3->getBegin()));
+  showPath(R2->getPathTo(R3->getBegin()));
   errs() << "path R2 to R5 ";
-  showPath(R2->buildPathTo(R5->getBegin()));
+  showPath(R2->getPathTo(R5->getBegin()));
   errs() << "path R3 to R2 ";
-  showPath(R3->buildPathTo(R2->getBegin()));
+  showPath(R3->getPathTo(R2->getBegin()));
 
   errs() << prefix << "End\n";
   return false;
