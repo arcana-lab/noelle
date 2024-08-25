@@ -93,14 +93,25 @@ MultiExitRegionTree *PragmaManager::getPragmaTree() {
   return this->MERT;
 }
 
-string PragmaManager::getPragmaTreeName(MultiExitRegionTree *tree) const {
-  auto Begin = tree->getBegin();
-  auto CI = cast<CallInst>(Begin);
+string PragmaManager::getPragmaTreeName(MultiExitRegionTree *T) const {
+  auto CI = cast<CallInst>(T->getBegin());
   auto GEP = cast<GetElementPtrInst>(CI->getArgOperand(0));
   auto Ptr = GEP->getPointerOperand();
   auto GV = cast<GlobalVariable>(Ptr);
   auto CDA = cast<ConstantDataArray>(GV->getInitializer());
   return CDA->getAsCString().str();
+}
+
+vector<Value *> PragmaManager::getPragmaTreeArguments(
+    MultiExitRegionTree *T) const {
+  auto CI = cast<CallInst>(T->getBegin());
+
+  vector<Value *> args;
+  for (size_t i = 1; i < CI->arg_size(); i++) {
+    args.push_back(CI->getArgOperand(i));
+  }
+
+  return args;
 }
 
 } // namespace arcana::noelle

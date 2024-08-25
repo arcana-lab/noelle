@@ -93,6 +93,11 @@ bool Pragma::runOnModule(Module &M) {
   auto T2 = T->findInnermostRegionFor(T->getChildren()[0]->getBegin());
   errs() << PM.getPragmaTreeName(T2) << "\n";
 
+  errs() << "Arguments:\n";
+  for (auto arg : PM.getPragmaTreeArguments(T2)) {
+    errs() << *arg << "\n";
+  }
+
   return false;
 
   MultiExitRegionTree MERT(MainF, isBegin, isEnd);
