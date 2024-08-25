@@ -51,6 +51,8 @@ public:
 
   MultiExitRegionTree *findInnermostRegionFor(const llvm::Instruction *I);
 
+  std::vector<MultiExitRegionTree *> buildPathTo(const llvm::Instruction *I);
+
   MultiExitRegionTree *getRoot();
 
   ChildrenTy getChildren() const;

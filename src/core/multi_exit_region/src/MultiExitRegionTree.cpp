@@ -269,6 +269,32 @@ MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
   return nullptr;
 }
 
+vector<MultiExitRegionTree *> MultiExitRegionTree::buildPathTo(
+    const llvm::Instruction *I) {
+  auto destination = findInnermostRegionFor(I);
+  if (destination == nullptr) {
+    return {};
+  }
+
+  // Upward tree traversal
+  stack<MultiExitRegionTree *> ancestors;
+  auto current = destination;
+  while (current != this) {
+    ancestors.push(current);
+    current = current->parent;
+  }
+  if (!this->isRoot) {
+    ancestors.push(this);
+  }
+
+  vector<MultiExitRegionTree *> path;
+  while (!ancestors.empty()) {
+    path.push_back(ancestors.top());
+    ancestors.pop();
+  }
+  return path;
+}
+
 MultiExitRegionTree *MultiExitRegionTree::getRoot() {
   auto current = this->parent;
 
