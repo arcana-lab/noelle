@@ -23,6 +23,7 @@
 
 #include "arcana/noelle/core/NoellePass.hpp"
 #include "arcana/noelle/core/MultiExitRegionTree.hpp"
+#include "arcana/noelle/core/PragmaManager.hpp"
 
 using namespace std;
 using namespace llvm;
@@ -83,6 +84,16 @@ bool Pragma::runOnModule(Module &M) {
     }
     return false;
   };
+
+  PragmaManager PM(MainF, "test");
+
+  auto T = PM.getPragmaTree();
+  T->print(errs());
+
+  auto T2 = T->findInnermostRegionFor(T->getChildren()[0]->getBegin());
+  errs() << PM.getPragmaTreeName(T2) << "\n";
+
+  return false;
 
   MultiExitRegionTree MERT(MainF, isBegin, isEnd);
 
@@ -184,6 +195,10 @@ bool Pragma::runOnModule(Module &M) {
   showPath(R2->getPathTo(R5->getBegin()));
   errs() << "path R3 to R2 ";
   showPath(R3->getPathTo(R2->getBegin()));
+
+  errs() << "\n";
+
+  // PragmaManager PM(MainF, "hello");
 
   errs() << prefix << "End\n";
   return false;
