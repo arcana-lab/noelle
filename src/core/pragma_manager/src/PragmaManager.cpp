@@ -20,11 +20,14 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <algorithm>
+#include <cmath>
 #include <functional>
+#include <stack>
 #include <string>
 
-#include "llvm/IR/Instructions.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/IR/Instructions.h"
 
 #include "arcana/noelle/core/MultiExitRegionTree.hpp"
 #include "arcana/noelle/core/PragmaManager.hpp"
@@ -34,9 +37,9 @@ using namespace llvm;
 
 namespace arcana::noelle {
 
-PragmaManager::PragmaManager(Function &F, string descriptor)
+PragmaManager::PragmaManager(Function &F, string directive)
   : F(F),
-    descriptor(descriptor) {
+    directive(directive) {
   auto matcher = [&](const Instruction *I, string funcName) -> bool {
     auto CI = dyn_cast<CallInst>(I);
     if (CI == nullptr) {
@@ -73,7 +76,7 @@ PragmaManager::PragmaManager(Function &F, string descriptor)
       return false;
     }
     auto CString = CDA->getAsCString().str();
-    if (!CDA->getAsCString().startswith(descriptor)) {
+    if (!CDA->getAsCString().startswith(directive)) {
       return false;
     }
     return true;
@@ -112,6 +115,49 @@ vector<Value *> PragmaManager::getPragmaTreeArguments(
   }
 
   return args;
+}
+
+raw_ostream &PragmaManager::print(raw_ostream &stream,
+                                  string prefixToUse,
+                                  bool printArguments) {
+  stack<MultiExitRegionTree *> worklist;
+  stack<int> levels;
+  string symbol = "\u2500";
+
+  auto getLevelPrefix = [&](int level) { return string(3 * level, ' '); };
+
+  auto CC = this->MERT->getChildren();
+  for (auto it = CC.rbegin(); it != CC.rend(); ++it) {
+    worklist.push(*it);
+    levels.push(0);
+  }
+
+  while (!worklist.empty()) {
+    auto T = worklist.top();
+    auto level = levels.top();
+    worklist.pop();
+    levels.pop();
+    auto directive = this->getPragmaTreeName(T);
+    auto levelPrefix = getLevelPrefix(level);
+
+    stream << prefixToUse << levelPrefix << directive;
+    if (printArguments) {
+      stream << " ( ";
+      for (auto A : this->getPragmaTreeArguments(T)) {
+        stream << *A << "; ";
+      }
+      stream << ")";
+    }
+    stream << "\n";
+
+    auto CC = T->getChildren();
+    for (auto it = CC.rbegin(); it != CC.rend(); ++it) {
+      worklist.push(*it);
+      levels.push(level + 1);
+    }
+  }
+
+  return stream;
 }
 
 } // namespace arcana::noelle

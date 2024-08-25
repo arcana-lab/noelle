@@ -25,13 +25,14 @@
 #include <string>
 
 #include "llvm/IR/Instruction.h"
+#include "llvm/Support/raw_ostream.h"
 #include "arcana/noelle/core/MultiExitRegionTree.hpp"
 
 namespace arcana::noelle {
 
 class PragmaManager {
 public:
-  PragmaManager(llvm::Function &F, std::string descriptor = "");
+  PragmaManager(llvm::Function &F, std::string directive = "");
 
   ~PragmaManager();
 
@@ -42,9 +43,13 @@ public:
   std::vector<llvm::Value *> getPragmaTreeArguments(
       MultiExitRegionTree *T) const;
 
+  llvm::raw_ostream &print(llvm::raw_ostream &stream,
+                           std::string prefixToUse,
+                           bool printArguments = false);
+
 private:
   llvm::Function &F;
-  std::string descriptor;
+  std::string directive;
   MultiExitRegionTree *MERT;
 };
 
