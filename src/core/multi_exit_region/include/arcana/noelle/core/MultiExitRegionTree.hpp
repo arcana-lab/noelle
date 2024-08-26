@@ -71,6 +71,10 @@ public:
 
   MultiExitRegionTree *findInnermostRegionFor(const LoopStructure *LS);
 
+  std::unordered_set<llvm::Instruction *> getInstructionsWithin();
+
+  std::unordered_set<llvm::BasicBlock *> getBasicBlocksWithin();
+
   std::vector<MultiExitRegionTree *> getPathTo(const llvm::Instruction *I);
 
   ChildrenTy getChildren() const;

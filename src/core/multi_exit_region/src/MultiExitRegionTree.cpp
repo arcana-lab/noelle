@@ -29,6 +29,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "llvm/IR/CFG.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Instructions.h"
 
@@ -375,6 +376,87 @@ MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
     return nullptr;
   }
   return this->findInnermostRegionFor(LS->getHeader());
+}
+
+unordered_set<Instruction *> MultiExitRegionTree::getInstructionsWithin() {
+  unordered_set<Instruction *> Is;
+
+  if (!this->isArtificialRoot) {
+    auto BeginBB = this->Begin->getParent();
+    auto EndBB = this->End->getParent();
+    if (BeginBB == EndBB) {
+      // Adding instructions in between `Begin` and `End`
+      auto itB = this->Begin->getIterator();
+      auto itE = this->End->getIterator();
+      while (itB != itE) {
+        Is.insert(&*itB);
+        ++itB;
+      }
+      Is.insert(&*itE);
+    }
+  }
+
+  for (auto BB : this->getBasicBlocksWithin()) {
+    for (auto &I : *BB) {
+      Is.insert(&I);
+    }
+  }
+
+  return Is;
+}
+
+unordered_set<BasicBlock *> MultiExitRegionTree::getBasicBlocksWithin() {
+  if (this->isArtificialRoot) {
+    unordered_set<BasicBlock *> BBs;
+    for (auto &BB : *this->F) {
+      BBs.insert(&BB);
+    }
+    return BBs;
+  }
+
+  auto BeginBB = this->Begin->getParent();
+  auto EndBB = this->End->getParent();
+
+  if (BeginBB == EndBB) {
+    auto FirstI = &*BeginBB->begin();
+    auto LastI = BeginBB->getTerminator();
+    if (FirstI == this->Begin && LastI == this->End) {
+      return { BeginBB };
+    }
+    return {};
+  }
+
+  // Upward breadth-first search on the CFG starting from the predecessors of
+  // `EndBB`.
+
+  queue<BasicBlock *> worklist;
+  unordered_set<BasicBlock *> enqueued;
+  unordered_set<BasicBlock *> BBs;
+
+  for (auto predBB : predecessors(EndBB)) {
+    worklist.push(predBB);
+    enqueued.insert(predBB);
+  }
+
+  while (!worklist.empty()) {
+    auto BB = worklist.front();
+    worklist.pop();
+
+    if (!this->DT->dominates(this->Begin, BB)) {
+      continue;
+    }
+    BBs.insert(BB);
+
+    for (auto predBB : predecessors(BB)) {
+      bool notEnqueued = enqueued.find(predBB) == enqueued.end();
+      if (notEnqueued) {
+        worklist.push(predBB);
+        enqueued.insert(predBB);
+      }
+    }
+  }
+
+  return BBs;
 }
 
 vector<MultiExitRegionTree *> MultiExitRegionTree::getPathTo(
