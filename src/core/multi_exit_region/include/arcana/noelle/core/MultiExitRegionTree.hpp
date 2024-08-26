@@ -45,6 +45,8 @@ public:
 
   ~MultiExitRegionTree();
 
+  bool isEmpty() const;
+
   bool contains(const llvm::Instruction *I);
 
   bool contains(const llvm::BasicBlock *BB);

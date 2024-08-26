@@ -168,6 +168,10 @@ void MultiExitRegionTree::addChild(MultiExitRegionTree *T) {
   }
 }
 
+bool MultiExitRegionTree::isEmpty() const {
+  return this->children.size() == 0;
+}
+
 bool MultiExitRegionTree::contains(const Instruction *I) {
   if (this->isArtificialRoot) {
     // The root contains everything by definition, as long as `I` is in `F`

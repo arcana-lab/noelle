@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 - 2024 Federico Sossai, Simone Campanoni
+ * Copyright 2024 - Federico Sossai, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,40 +19,29 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef __PRAGMA_MANAGER_HPP__
-#define __PRAGMA_MANAGER_HPP__
 
 #include <string>
 
-#include "llvm/IR/Instruction.h"
-#include "llvm/Support/raw_ostream.h"
-#include "arcana/noelle/core/MultiExitRegionTree.hpp"
+#include "llvm/Pass.h"
+#include "llvm/IR/Instructions.h"
 
 namespace arcana::noelle {
-
-class PragmaManager {
+class Pragma : public llvm::ModulePass {
 public:
-  PragmaManager(llvm::Function &F, std::string directive = "");
+  static char ID;
 
-  ~PragmaManager();
+  Pragma();
 
-  MultiExitRegionTree *getPragmaTree();
+  ~Pragma() = default;
 
-  std::string getRegionDirective(MultiExitRegionTree *T) const;
+  bool doInitialization(llvm::Module &M) override;
 
-  std::vector<llvm::Value *> getPragmaTreeArguments(
-      MultiExitRegionTree *T) const;
+  void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
 
-  llvm::raw_ostream &print(llvm::raw_ostream &stream,
-                           std::string prefixToUse = "",
-                           bool printArguments = false);
+  bool runOnModule(llvm::Module &M) override;
 
 private:
-  llvm::Function &F;
-  std::string directive;
-  MultiExitRegionTree *MERT;
+  std::string prefix;
 };
 
 } // namespace arcana::noelle
-
-#endif
