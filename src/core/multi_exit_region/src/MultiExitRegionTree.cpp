@@ -62,13 +62,29 @@ MultiExitRegionTree::MultiExitRegionTree(
 
   this->DT = new DominatorTree(F);
 
-  // Breadth-first search on the CFG
+  vector<Instruction *> UnmatchedBegins;
+  unordered_map<Instruction *, MultiExitRegionTree *> BeginToIncompleteRegion;
+
+  auto indexOfLastUnmatchedBeginThatDominates = [&](const Instruction *End) {
+    int i = UnmatchedBegins.size() - 1;
+    for (; i >= 0; i--) {
+      if (this->DT->dominates(UnmatchedBegins[i], End)) {
+        break;
+      }
+    }
+    return i;
+  };
+
+  // We do a Breadth-first search on the CFG:
+  // -  When a Begin is found it is marked as unmatched and a new region is
+  //    instantiated (this will be called "incomplete region").
+  // -  When an End is found it is matched against an unmatched Begin using
+  //    dominance.
+  // -  When a match is found, the new complete region is nested inside an
+  //    incomplete one using dominance.
 
   queue<BasicBlock *> worklist;
   unordered_set<BasicBlock *> enqueued;
-  vector<Instruction *> UnmatchedBegins;
-  unordered_map<Instruction *, MultiExitRegionTree *> BeginToMERT;
-
   auto root = &F.getEntryBlock();
   worklist.push(root);
   enqueued.insert(root);
@@ -80,58 +96,45 @@ MultiExitRegionTree::MultiExitRegionTree(
     for (auto &I : *BB) {
       if (isBegin(&I)) {
         auto Begin = &I;
-        // Found a new Begin. Let's instantiate an incomplete MERT
-        // that will be completed (i.e. has an End) later on
-        auto MERT =
+        // Found a new Begin. Let's create a new incomplete region that will be
+        // complete (i.e. will have an End) later on
+        auto T =
             new MultiExitRegionTree(this->F, this->DT, Begin, /*End=*/nullptr);
 
-        // For now we assume that it's not nested in any other tree.
-        // Keep in mind that in this ctor, `this` is the artificial node that
-        // contains ANY other subtree
-        MERT->parent = this;
-        BeginToMERT[Begin] = MERT;
+        BeginToIncompleteRegion[Begin] = T;
         UnmatchedBegins.push_back(Begin);
       } else if (isEnd(&I)) {
         auto End = &I;
-        // Find a dominator for End among the Begins
-        int i;
-        for (i = UnmatchedBegins.size() - 1; i >= 0; i--) {
-          if (DT->dominates(UnmatchedBegins[i], End)) {
-            break;
-          }
-        }
-        if (i < 0) {
-          // If we are here means no Begin dominates the End. This is impossible
-          // if the regions are well-formed. We call this Malformed input.
-          // We could go ahead and ignore this End but it is more instructive to
-          // report the problem.
-          assert(false && "Malformed region tree\n");
-        } else {
-          // Found a match! <3
-          auto MatchingBegin = UnmatchedBegins[i];
-          auto MERT = BeginToMERT.at(MatchingBegin);
-          MERT->Begin = MatchingBegin;
-          MERT->End = End;
-          UnmatchedBegins.erase(UnmatchedBegins.begin() + i);
+        // We should be able to find a matching `Begin` for `End`.
+        int i = indexOfLastUnmatchedBeginThatDominates(End);
+        // If we are here means no Begin dominates the End. This is impossible
+        // if the regions are well-formed. We call this Malformed input.
+        // We could go ahead and ignore this End but it is more informative to
+        // report the problem.
+        assert(i >= 0 && "Malformed regions");
 
-          // Use dominance info to determine nesting relations between this new
-          // region we just found. The parent, if any, must be a tree for which
-          // we haven't found an End yet (i.e. in `UnmatchedBegins`)
-          for (i = UnmatchedBegins.size() - 1; i >= 0; i--) {
-            if (DT->dominates(UnmatchedBegins[i], End)) {
-              break;
-            }
-          }
-          if (i < 0) {
-            // Couldn't find another Region that dominates `MERT`.
-            // We deduce that `MERT` is not nested
-            this->addChild(MERT);
-          } else {
-            // `MERT` is nested in the i-th tree
-            auto ParentMERT = BeginToMERT.at(UnmatchedBegins[i]);
-            MERT->parent = ParentMERT;
-            ParentMERT->addChild(MERT);
-          }
+        // Found a match! <3
+        auto MatchingBegin = UnmatchedBegins[i];
+        auto T = BeginToIncompleteRegion.at(MatchingBegin);
+        T->Begin = MatchingBegin;
+        T->End = End;
+        UnmatchedBegins.erase(UnmatchedBegins.begin() + i);
+
+        // Use dominance info to determine nesting relations between this new
+        // region we just found and the unmatched regions. The parent, if any,
+        // must be a tree for which we haven't found an End yet (i.e. in
+        // `UnmatchedBegins`)
+        i = indexOfLastUnmatchedBeginThatDominates(End);
+        if (i < 0) {
+          // Couldn't find another Region that dominates `T`.
+          // We deduce that `T` is not nested in any incomplete tree
+          T->parent = this;
+          this->addChild(T);
+        } else {
+          // `T` is nested in the i-th tree
+          auto ParentT = BeginToIncompleteRegion.at(UnmatchedBegins[i]);
+          T->parent = ParentT;
+          ParentT->addChild(T);
         }
       }
     }
@@ -145,11 +148,7 @@ MultiExitRegionTree::MultiExitRegionTree(
     }
   }
 
-  if (UnmatchedBegins.size() > 0) {
-    errs() << "Malformed Multi-exit region: " << UnmatchedBegins.size()
-           << " unmatched Begins\n";
-  }
-  assert(UnmatchedBegins.size() == 0);
+  assert(UnmatchedBegins.size() == 0 && "Malformed regions");
 }
 
 MultiExitRegionTree::~MultiExitRegionTree() {
@@ -184,9 +183,9 @@ bool MultiExitRegionTree::contains(const Instruction *I) {
 
 bool MultiExitRegionTree::contains(const BasicBlock *BB) {
   // The tree contains `BB` iff it contains its first and last instructions
-  auto A = this->contains(&*BB->begin());
-  auto B = this->contains(BB->getTerminator());
-  return A && B;
+  auto FirstI = &*BB->begin();
+  auto LastI = BB->getTerminator();
+  return this->contains(FirstI) && this->contains(LastI);
 }
 
 bool MultiExitRegionTree::contains(const LoopStructure *LS) {
@@ -223,7 +222,8 @@ MultiExitRegionTree *MultiExitRegionTree::findOutermostRegionFor(
   if (!this->contains(BB)) {
     return nullptr;
   }
-  return this->findOutermostRegionFor(&*BB->begin());
+  auto FirstI = &*BB->begin();
+  return this->findOutermostRegionFor(FirstI);
 }
 
 MultiExitRegionTree *MultiExitRegionTree::findOutermostRegionFor(
@@ -252,6 +252,7 @@ MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
     TargetBBs[BeginBB] = T;
   };
 
+  // Phase 1
   // If a child region dominates `I` there no point in considering the parent
   // as a candidate because the dominance of a child is a stronger information.
   // Given this fact, we find what can be thought of as a "dominance frontier"
@@ -295,9 +296,17 @@ MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
     }
   }
 
+  // Phase 2
   // Reverse BFS on the CFG starting from the block that contains `I`.
-  // We search the first basic block contained in the set of targets is
-  // associated (through `TargetBBs`) to the region we are looking for.
+  // We search the first basic block that is contained in the set of targets
+  // (`TargetBBs`). The associate region is guaranteed to be the one we are
+  // looking for.
+  //
+  // Proof:
+  // Assume we reach more than one target BB. That would imply
+  // that there's more than one `Begin` instruction that reaches `I` because we
+  // followed the CFG. This is a contradiction as all regions are single-entry
+  // AND we only kept the deepest regions in Phase 1 (see above).
 
   queue<const BasicBlock *> worklist2;
   unordered_set<const BasicBlock *> enqueued;
@@ -329,7 +338,8 @@ MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
   if (!this->contains(BB)) {
     return nullptr;
   }
-  return this->findInnermostRegionFor(&*BB->begin());
+  auto FirstI = &*BB->begin();
+  return this->findInnermostRegionFor(FirstI);
 }
 
 MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
