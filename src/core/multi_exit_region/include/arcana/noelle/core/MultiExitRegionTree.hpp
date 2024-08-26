@@ -55,6 +55,10 @@ public:
 
   bool strictlyContains(const llvm::Instruction *I);
 
+  bool strictlyContains(const llvm::BasicBlock *BB);
+
+  bool strictlyContains(const LoopStructure *LS);
+
   MultiExitRegionTree *findOutermostRegionFor(const llvm::Instruction *I);
 
   MultiExitRegionTree *findOutermostRegionFor(const llvm::BasicBlock *BB);

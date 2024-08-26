@@ -203,7 +203,30 @@ bool MultiExitRegionTree::contains(const LoopStructure *LS) {
 }
 
 bool MultiExitRegionTree::strictlyContains(const Instruction *I) {
-  return false;
+  auto outermost = this->findOutermostRegionFor(I);
+  if (outermost == nullptr) {
+    return false;
+  }
+  auto innermost = this->findInnermostRegionFor(I);
+  return outermost == innermost;
+}
+
+bool MultiExitRegionTree::strictlyContains(const BasicBlock *BB) {
+  auto outermost = this->findOutermostRegionFor(BB);
+  if (outermost == nullptr) {
+    return false;
+  }
+  auto innermost = this->findInnermostRegionFor(BB);
+  return outermost == innermost;
+}
+
+bool MultiExitRegionTree::strictlyContains(const LoopStructure *LS) {
+  auto outermost = this->findOutermostRegionFor(LS);
+  if (outermost == nullptr) {
+    return false;
+  }
+  auto innermost = this->findInnermostRegionFor(LS);
+  return outermost == innermost;
 }
 
 MultiExitRegionTree *MultiExitRegionTree::findOutermostRegionFor(
