@@ -64,7 +64,7 @@ bool Pragma::runOnModule(Module &M) {
       PragmaManager PM(F, Directive);
       if (!PM.getPragmaTree()->isEmpty()) {
         PM.print(errs(), prefix);
-        errs() << "\n";
+        errs() << prefix << "\n";
       }
     }
   }
