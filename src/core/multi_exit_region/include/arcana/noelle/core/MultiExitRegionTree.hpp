@@ -31,6 +31,8 @@
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Instructions.h"
 
+#include "arcana/noelle/core/LoopStructure.hpp"
+
 namespace arcana::noelle {
 
 class MultiExitRegionTree {
@@ -45,11 +47,23 @@ public:
 
   bool contains(const llvm::Instruction *I);
 
+  bool contains(const llvm::BasicBlock *BB);
+
+  bool contains(const LoopStructure *LS);
+
   bool strictlyContains(const llvm::Instruction *I);
 
   MultiExitRegionTree *findOutermostRegionFor(const llvm::Instruction *I);
 
+  MultiExitRegionTree *findOutermostRegionFor(const llvm::BasicBlock *BB);
+
+  MultiExitRegionTree *findOutermostRegionFor(const LoopStructure *LS);
+
   MultiExitRegionTree *findInnermostRegionFor(const llvm::Instruction *I);
+
+  MultiExitRegionTree *findInnermostRegionFor(const llvm::BasicBlock *BB);
+
+  MultiExitRegionTree *findInnermostRegionFor(const LoopStructure *LS);
 
   std::vector<MultiExitRegionTree *> getPathTo(const llvm::Instruction *I);
 
@@ -65,7 +79,8 @@ public:
                            std::string prefixToUse = "");
 
 private:
-  MultiExitRegionTree(llvm::DominatorTree *DT,
+  MultiExitRegionTree(llvm::Function *F,
+                      llvm::DominatorTree *DT,
                       llvm::Instruction *Begin,
                       llvm::Instruction *End);
 
@@ -75,6 +90,7 @@ private:
                            std::string prefixToUse,
                            int level);
 
+  llvm::Function *F;
   llvm::DominatorTree *DT;
   MultiExitRegionTree *parent;
   llvm::Instruction *Begin;

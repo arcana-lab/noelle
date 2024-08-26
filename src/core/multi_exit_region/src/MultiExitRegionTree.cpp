@@ -32,6 +32,7 @@
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Instructions.h"
 
+#include "arcana/noelle/core/LoopStructure.hpp"
 #include "arcana/noelle/core/MultiExitRegionTree.hpp"
 
 using namespace std;
@@ -39,10 +40,12 @@ using namespace llvm;
 
 namespace arcana::noelle {
 
-MultiExitRegionTree::MultiExitRegionTree(DominatorTree *DT,
+MultiExitRegionTree::MultiExitRegionTree(Function *F,
+                                         DominatorTree *DT,
                                          Instruction *Begin,
                                          Instruction *End)
-  : DT(DT),
+  : F(F),
+    DT(DT),
     Begin(Begin),
     End(End),
     isArtificialRoot(false) {}
@@ -51,7 +54,8 @@ MultiExitRegionTree::MultiExitRegionTree(
     Function &F,
     function<bool(const Instruction *)> isBegin,
     function<bool(const Instruction *)> isEnd)
-  : parent(nullptr),
+  : F(&F),
+    parent(nullptr),
     Begin(nullptr),
     End(nullptr),
     isArtificialRoot(true) {
@@ -78,7 +82,8 @@ MultiExitRegionTree::MultiExitRegionTree(
         auto Begin = &I;
         // Found a new Begin. Let's instantiate an incomplete MERT
         // that will be completed (i.e. has an End) later on
-        auto MERT = new MultiExitRegionTree(this->DT, Begin, /*End=*/nullptr);
+        auto MERT =
+            new MultiExitRegionTree(this->F, this->DT, Begin, /*End=*/nullptr);
 
         // For now we assume that it's not nested in any other tree.
         // Keep in mind that in this ctor, `this` is the artificial node that
@@ -100,7 +105,7 @@ MultiExitRegionTree::MultiExitRegionTree(
           // if the regions are well-formed. We call this Malformed input.
           // We could go ahead and ignore this End but it is more instructive to
           // report the problem.
-          assert(false && "Malformed MultiExitRegionTree\n");
+          assert(false && "Malformed region tree\n");
         } else {
           // Found a match! <3
           auto MatchingBegin = UnmatchedBegins[i];
@@ -166,8 +171,8 @@ void MultiExitRegionTree::addChild(MultiExitRegionTree *T) {
 
 bool MultiExitRegionTree::contains(const Instruction *I) {
   if (this->isArtificialRoot) {
-    // The root contains everything by definition
-    return true;
+    // The root contains everything by definition, as long as `I` is in `F`
+    return I->getParent()->getParent() == this->F;
   }
   if (!this->DT->dominates(this->Begin, I)) {
     // Dominance is a necessary condition therefore we can immediately return if
@@ -175,6 +180,23 @@ bool MultiExitRegionTree::contains(const Instruction *I) {
     return false;
   }
   return this->findInnermostRegionFor(I) != nullptr;
+}
+
+bool MultiExitRegionTree::contains(const BasicBlock *BB) {
+  // The tree contains `BB` iff it contains its first and last instructions
+  auto A = this->contains(&*BB->begin());
+  auto B = this->contains(BB->getTerminator());
+  return A && B;
+}
+
+bool MultiExitRegionTree::contains(const LoopStructure *LS) {
+  // The tree contains `LS` iff it contains its header and all latches
+  for (auto Latch : LS->getLatches()) {
+    if (!this->contains(Latch)) {
+      return false;
+    }
+  }
+  return this->contains(LS->getHeader());
 }
 
 bool MultiExitRegionTree::strictlyContains(const Instruction *I) {
@@ -196,6 +218,22 @@ MultiExitRegionTree *MultiExitRegionTree::findOutermostRegionFor(
   return nullptr;
 }
 
+MultiExitRegionTree *MultiExitRegionTree::findOutermostRegionFor(
+    const BasicBlock *BB) {
+  if (!this->contains(BB)) {
+    return nullptr;
+  }
+  return this->findOutermostRegionFor(&*BB->begin());
+}
+
+MultiExitRegionTree *MultiExitRegionTree::findOutermostRegionFor(
+    const LoopStructure *LS) {
+  if (!this->contains(LS)) {
+    return nullptr;
+  }
+  return this->findOutermostRegionFor(LS->getHeader());
+}
+
 MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
     const Instruction *I) {
   queue<MultiExitRegionTree *> worklist1;
@@ -209,9 +247,19 @@ MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
     worklist1.push(this);
   }
 
-  // The goal is to find the deepest set of sub trees whose associate `Begin`
-  // dominates `I`. It can be thought as a "dominance frontier" of instruction
-  // `I` with respect to this region tree
+  auto setCandidate = [&](MultiExitRegionTree *T) {
+    auto BeginBB = T->Begin->getParent();
+    TargetBBs[BeginBB] = T;
+  };
+
+  // If a child region dominates `I` there no point in considering the parent
+  // as a candidate because the dominance of a child is a stronger information.
+  // Given this fact, we find what can be thought of as a "dominance frontier"
+  // of instruction `I` with respect to this region tree.
+  // In layman's terms we find the regions `T` that dominate `I` and:
+  // - `T` is a leaf
+  //   or
+  // - none of `T`'s children dominate `I`
   while (!worklist1.empty()) {
     auto T = worklist1.front();
     worklist1.pop();
@@ -222,21 +270,28 @@ MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
       return T;
     }
 
-    // If this sub tree doesn't dominate `I` then we consider its parent to be a
-    // candidate and we stop searching in the other subtrees because if the
-    // `Begin` of region doesn't dominate an instruction, neither will any
-    // nested region as consequence of the single-entry property
-    if (!this->DT->dominates(T->Begin, I)) {
-      auto ParentT = T->parent;
-      if (T != this && !ParentT->isArtificialRoot) {
-        auto ParentBeginBB = ParentT->Begin->getParent();
-        TargetBBs[ParentBeginBB] = ParentT;
+    auto children = T->getChildren();
+    if (children.size() == 0) {
+      // Leaf case:
+      // If the current region is a leaf it's the deepest by definition
+      if (this->DT->dominates(T->Begin, I)) {
+        setCandidate(T);
       }
-      continue;
-    }
-
-    for (auto C : T->children) {
-      worklist1.push(C);
+    } else {
+      // Inner case:
+      bool noChildrenDominates = true;
+      for (auto C : children) {
+        if (this->DT->dominates(T->Begin, I)) {
+          // We will continue the search in `C`
+          worklist1.push(C);
+          noChildrenDominates = false;
+        }
+      }
+      if (noChildrenDominates) {
+        // `T` is the deepest node whose `Begin` dominates `I` therefore we
+        // consider it a candidate
+        setCandidate(T);
+      }
     }
   }
 
@@ -267,6 +322,22 @@ MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
     }
   }
   return nullptr;
+}
+
+MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
+    const BasicBlock *BB) {
+  if (!this->contains(BB)) {
+    return nullptr;
+  }
+  return this->findInnermostRegionFor(&*BB->begin());
+}
+
+MultiExitRegionTree *MultiExitRegionTree::findInnermostRegionFor(
+    const LoopStructure *LS) {
+  if (!this->contains(LS)) {
+    return nullptr;
+  }
+  return this->findInnermostRegionFor(LS->getHeader());
 }
 
 vector<MultiExitRegionTree *> MultiExitRegionTree::getPathTo(

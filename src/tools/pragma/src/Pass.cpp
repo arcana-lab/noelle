@@ -58,57 +58,22 @@ void Pragma::getAnalysisUsage(AnalysisUsage &AU) const {
 bool Pragma::runOnModule(Module &M) {
   errs() << prefix << "Start\n";
 
-  // auto &noelle = getAnalysis<NoellePass>().getNoelle();
+  auto &noelle = getAnalysis<NoellePass>().getNoelle();
   auto &MainF = *M.getFunction("main");
-
-  auto isBegin = [](const Instruction *I) -> bool {
-    if (auto *CI = dyn_cast<CallInst>(I)) {
-      auto callee = CI->getCalledFunction();
-      if (callee) {
-        if (callee->getName().startswith("noelle_pragma_begin")) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
-
-  auto isEnd = [](const Instruction *I) -> bool {
-    if (auto *CI = dyn_cast<CallInst>(I)) {
-      auto callee = CI->getCalledFunction();
-      if (callee) {
-        if (callee->getName().startswith("noelle_pragma_end")) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
 
   PragmaManager PM(MainF, "test");
 
-  auto T = PM.getPragmaTree();
-  T->print(errs());
+  auto MERT = PM.getPragmaTree();
+  MERT->print(errs());
 
-  auto T2 = T->findInnermostRegionFor(T->getChildren()[0]->getBegin());
-  errs() << PM.getPragmaTreeName(T2) << "\n";
-
-  PM.print(errs(), prefix, /*printArguments=*/true);
-
-  return false;
-
-  MultiExitRegionTree MERT(MainF, isBegin, isEnd);
-
-  MERT.print(errs(), prefix);
-
-  auto R1 = MERT.getChildren()[0];
+  auto R0 = MERT;
+  auto R1 = R0->getChildren()[0];
   auto R2 = R1->getChildren()[0];
   auto R3 = R2->getChildren()[0];
   auto R4 = R2->getChildren()[1];
-  auto R5 = MERT.getChildren()[1];
+  auto R5 = R0->getChildren()[1];
   auto R6 = R5->getChildren()[0];
-
-  errs() << "R0 = " << &MERT << "\n";
+  errs() << "R0 = " << R0 << "\n";
   errs() << "R1 = " << R1 << "\n";
   errs() << "R2 = " << R2 << "\n";
   errs() << "R3 = " << R3 << "\n";
@@ -116,17 +81,81 @@ bool Pragma::runOnModule(Module &M) {
   errs() << "R5 = " << R5 << "\n";
   errs() << "R6 = " << R6 << "\n";
 
-  errs() << "outermost R0 R1 " << MERT.findOutermostRegionFor(R1->getBegin())
+  PM.print(errs(), prefix, /*printArguments=*/true);
+
+  auto LS = *noelle.getLoopStructures()->begin();
+  errs() << *LS->getHeader() << "\n";
+  auto FirstI = &*LS->getHeader()->begin();
+  // errs() << "debug\n" << R2->findInnermostRegionFor(FirstI) << "\n";
+  errs() << "contained in R0 LS->getHeader() " << R0->contains(LS->getHeader())
          << "\n";
-  errs() << "outermost R0 R2 " << MERT.findOutermostRegionFor(R2->getBegin())
+  errs() << "contained in R1 LS->getHeader() " << R1->contains(LS->getHeader())
          << "\n";
-  errs() << "outermost R0 R3 " << MERT.findOutermostRegionFor(R3->getBegin())
+  errs() << "contained in R2 LS->getHeader() " << R2->contains(LS->getHeader())
          << "\n";
-  errs() << "outermost R0 R4 " << MERT.findOutermostRegionFor(R4->getBegin())
+  errs() << "contained in R3 LS->getHeader() " << R3->contains(LS->getHeader())
          << "\n";
-  errs() << "outermost R0 R5 " << MERT.findOutermostRegionFor(R5->getBegin())
+  errs() << "contained in R4 LS->getHeader() " << R4->contains(LS->getHeader())
          << "\n";
-  errs() << "outermost R0 R6 " << MERT.findOutermostRegionFor(R6->getBegin())
+  errs() << "contained in R0 LS " << R0->contains(LS) << "\n";
+  errs() << "contained in R1 LS " << R1->contains(LS) << "\n";
+  errs() << "contained in R2 LS " << R2->contains(LS) << "\n";
+  errs() << "contained in R3 LS " << R3->contains(LS) << "\n";
+  errs() << "contained in R4 LS " << R4->contains(LS) << "\n";
+  errs() << "om R0 LS " << R0->findOutermostRegionFor(LS) << "\n";
+  errs() << "om R1 LS " << R1->findOutermostRegionFor(LS) << "\n";
+  errs() << "om R2 LS " << R2->findOutermostRegionFor(LS) << "\n";
+  errs() << "om R3 LS " << R3->findOutermostRegionFor(LS) << "\n";
+  errs() << "om R4 LS " << R4->findOutermostRegionFor(LS) << "\n";
+  errs() << "im R0 LS " << R0->findInnermostRegionFor(LS) << "\n";
+  errs() << "im R1 LS " << R1->findInnermostRegionFor(LS) << "\n";
+  errs() << "im R2 LS " << R2->findInnermostRegionFor(LS) << "\n";
+  errs() << "im R3 LS " << R3->findInnermostRegionFor(LS) << "\n";
+  errs() << "im R4 LS " << R4->findInnermostRegionFor(LS) << "\n";
+  errs() << "om R0 LS->getHeader() "
+         << R0->findOutermostRegionFor(LS->getHeader()) << "\n";
+  errs() << "om R1 LS->getHeader() "
+         << R1->findOutermostRegionFor(LS->getHeader()) << "\n";
+  errs() << "om R2 LS->getHeader() "
+         << R2->findOutermostRegionFor(LS->getHeader()) << "\n";
+  errs() << "om R3 LS->getHeader() "
+         << R3->findOutermostRegionFor(LS->getHeader()) << "\n";
+  errs() << "om R4 LS->getHeader() "
+         << R4->findOutermostRegionFor(LS->getHeader()) << "\n";
+  errs() << "im R0 LS->getHeader() "
+         << R0->findInnermostRegionFor(LS->getHeader()) << "\n";
+  errs() << "im R1 LS->getHeader() "
+         << R1->findInnermostRegionFor(LS->getHeader()) << "\n";
+  errs() << "im R2 LS->getHeader() "
+         << R2->findInnermostRegionFor(LS->getHeader()) << "\n";
+  errs() << "im R3 LS->getHeader() "
+         << R3->findInnermostRegionFor(LS->getHeader()) << "\n";
+  errs() << "im R4 LS->getHeader() "
+         << R4->findInnermostRegionFor(LS->getHeader()) << "\n";
+  errs() << "om R0 LS first " << R0->findOutermostRegionFor(FirstI) << "\n";
+  errs() << "om R1 LS first " << R1->findOutermostRegionFor(FirstI) << "\n";
+  errs() << "om R2 LS first " << R2->findOutermostRegionFor(FirstI) << "\n";
+  errs() << "om R3 LS first " << R3->findOutermostRegionFor(FirstI) << "\n";
+  errs() << "om R4 LS first " << R4->findOutermostRegionFor(FirstI) << "\n";
+  errs() << "im R0 LS first " << R0->findInnermostRegionFor(FirstI) << "\n";
+  errs() << "im R1 LS first " << R1->findInnermostRegionFor(FirstI) << "\n";
+  errs() << "im R2 LS first " << R2->findInnermostRegionFor(FirstI) << "\n";
+  errs() << "im R3 LS first " << R3->findInnermostRegionFor(FirstI) << "\n";
+  // errs() << "im R4 LS first " << R4->findInnermostRegionFor(FirstI) << "\n";
+
+  return false;
+
+  errs() << "outermost R0 R1 " << MERT->findOutermostRegionFor(R1->getBegin())
+         << "\n";
+  errs() << "outermost R0 R2 " << MERT->findOutermostRegionFor(R2->getBegin())
+         << "\n";
+  errs() << "outermost R0 R3 " << MERT->findOutermostRegionFor(R3->getBegin())
+         << "\n";
+  errs() << "outermost R0 R4 " << MERT->findOutermostRegionFor(R4->getBegin())
+         << "\n";
+  errs() << "outermost R0 R5 " << MERT->findOutermostRegionFor(R5->getBegin())
+         << "\n";
+  errs() << "outermost R0 R6 " << MERT->findOutermostRegionFor(R6->getBegin())
          << "\n";
   errs() << "outermost R1 R1 " << R1->findOutermostRegionFor(R1->getBegin())
          << "\n";
@@ -143,17 +172,17 @@ bool Pragma::runOnModule(Module &M) {
   errs() << "outermost R4 R3 " << R4->findOutermostRegionFor(R3->getBegin())
          << "\n";
   errs() << "\n";
-  errs() << "innermost R0 R1 " << MERT.findInnermostRegionFor(R1->getBegin())
+  errs() << "innermost R0 R1 " << MERT->findInnermostRegionFor(R1->getBegin())
          << "\n";
-  errs() << "innermost R0 R2 " << MERT.findInnermostRegionFor(R2->getBegin())
+  errs() << "innermost R0 R2 " << MERT->findInnermostRegionFor(R2->getBegin())
          << "\n";
-  errs() << "innermost R0 R3 " << MERT.findInnermostRegionFor(R3->getBegin())
+  errs() << "innermost R0 R3 " << MERT->findInnermostRegionFor(R3->getBegin())
          << "\n";
-  errs() << "innermost R0 R4 " << MERT.findInnermostRegionFor(R4->getBegin())
+  errs() << "innermost R0 R4 " << MERT->findInnermostRegionFor(R4->getBegin())
          << "\n";
-  errs() << "innermost R0 R5 " << MERT.findInnermostRegionFor(R5->getBegin())
+  errs() << "innermost R0 R5 " << MERT->findInnermostRegionFor(R5->getBegin())
          << "\n";
-  errs() << "innermost R0 R6 " << MERT.findInnermostRegionFor(R6->getBegin())
+  errs() << "innermost R0 R6 " << MERT->findInnermostRegionFor(R6->getBegin())
          << "\n";
   errs() << "innermost R2 R2 " << R2->findInnermostRegionFor(R2->getBegin())
          << "\n";
@@ -177,17 +206,17 @@ bool Pragma::runOnModule(Module &M) {
   };
 
   errs() << "path to R1 ";
-  showPath(MERT.getPathTo(R1->getBegin()));
+  showPath(MERT->getPathTo(R1->getBegin()));
   errs() << "path to R2 ";
-  showPath(MERT.getPathTo(R2->getBegin()));
+  showPath(MERT->getPathTo(R2->getBegin()));
   errs() << "path to R3 ";
-  showPath(MERT.getPathTo(R3->getBegin()));
+  showPath(MERT->getPathTo(R3->getBegin()));
   errs() << "path to R4 ";
-  showPath(MERT.getPathTo(R4->getBegin()));
+  showPath(MERT->getPathTo(R4->getBegin()));
   errs() << "path to R5 ";
-  showPath(MERT.getPathTo(R5->getBegin()));
+  showPath(MERT->getPathTo(R5->getBegin()));
   errs() << "path to R6 ";
-  showPath(MERT.getPathTo(R6->getBegin()));
+  showPath(MERT->getPathTo(R6->getBegin()));
 
   errs() << "path R2 to R2 ";
   showPath(R2->getPathTo(R2->getBegin()));
