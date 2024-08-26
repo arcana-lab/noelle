@@ -38,7 +38,7 @@ public:
 
   MultiExitRegionTree *getPragmaTree();
 
-  std::string getPragmaTreeName(MultiExitRegionTree *T) const;
+  std::string getRegionDirective(MultiExitRegionTree *T) const;
 
   std::vector<llvm::Value *> getPragmaTreeArguments(
       MultiExitRegionTree *T) const;

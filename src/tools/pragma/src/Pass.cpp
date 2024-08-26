@@ -84,7 +84,6 @@ bool Pragma::runOnModule(Module &M) {
   PM.print(errs(), prefix, /*printArguments=*/true);
 
   auto LS = *noelle.getLoopStructures()->begin();
-  errs() << *LS->getHeader() << "\n";
   auto FirstI = &*LS->getHeader()->begin();
   // errs() << "debug\n" << R2->findInnermostRegionFor(FirstI) << "\n";
   errs() << "contained in R0 LS->getHeader() " << R0->contains(LS->getHeader())

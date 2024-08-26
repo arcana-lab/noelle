@@ -40,7 +40,7 @@ namespace arcana::noelle {
 PragmaManager::PragmaManager(Function &F, string directive)
   : F(F),
     directive(directive) {
-  auto matcher = [&](const Instruction *I, string funcName) -> bool {
+  auto isPragma = [&](const Instruction *I, string funcName) -> bool {
     auto CI = dyn_cast<CallInst>(I);
     if (CI == nullptr) {
       return false;
@@ -82,8 +82,13 @@ PragmaManager::PragmaManager(Function &F, string directive)
     return true;
   };
 
-  auto isBegin = bind(matcher, placeholders::_1, "_Z19noelle_pragma_begin");
-  auto isEnd = bind(matcher, placeholders::_1, "_Z17noelle_pragma_end");
+  // A pragma is a CallInst whose first argument is global constant that
+  // represents a string that starts with `directive`
+  // The difference betweem a Begin and an End is the name of the called
+  // function
+
+  auto isBegin = bind(isPragma, placeholders::_1, "_Z19noelle_pragma_begin");
+  auto isEnd = bind(isPragma, placeholders::_1, "_Z17noelle_pragma_end");
 
   this->MERT = new MultiExitRegionTree(F, isBegin, isEnd);
 }
@@ -96,7 +101,7 @@ MultiExitRegionTree *PragmaManager::getPragmaTree() {
   return this->MERT;
 }
 
-string PragmaManager::getPragmaTreeName(MultiExitRegionTree *T) const {
+string PragmaManager::getRegionDirective(MultiExitRegionTree *T) const {
   auto CI = cast<CallInst>(T->getBegin());
   auto GEP = cast<GetElementPtrInst>(CI->getArgOperand(0));
   auto Ptr = GEP->getPointerOperand();
@@ -108,6 +113,8 @@ string PragmaManager::getPragmaTreeName(MultiExitRegionTree *T) const {
 vector<Value *> PragmaManager::getPragmaTreeArguments(
     MultiExitRegionTree *T) const {
   auto CI = cast<CallInst>(T->getBegin());
+
+  // The first argument is skipped because it's the directive
 
   vector<Value *> args;
   for (size_t i = 1; i < CI->arg_size(); i++) {
@@ -137,7 +144,7 @@ raw_ostream &PragmaManager::print(raw_ostream &stream,
     auto level = levels.top();
     worklist.pop();
     levels.pop();
-    auto directive = this->getPragmaTreeName(T);
+    auto directive = this->getRegionDirective(T);
     auto levelPrefix = getLevelPrefix(level);
 
     stream << prefixToUse << levelPrefix << directive;
