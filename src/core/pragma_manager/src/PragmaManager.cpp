@@ -126,90 +126,54 @@ vector<Value *> PragmaManager::getPragmaTreeArguments(
 
 raw_ostream &PragmaManager::print(raw_ostream &stream,
                                   string prefixToUse,
-                                  bool printArguments) {
-  return this
-      ->print(this->MERT, stream, prefixToUse, printArguments, 0, ONLY_CHILD);
+                                  bool printArgs) {
+  return this->print(this->MERT, stream, prefixToUse, printArgs, LAST);
 }
 
 raw_ostream &PragmaManager::print(MultiExitRegionTree *T,
                                   raw_ostream &stream,
                                   string prefixToUse,
-                                  bool printArguments,
-                                  int level,
+                                  bool printArgs,
                                   SiblingType ST) {
-  string beginPrefix = "";
-  string endPrefix = "";
-  string levelPrefix = "";
-  string colorDefault = "\e[1;32m";
-  string colorReset = "\e[0m";
-  string directive = "";
+  string nodePrefix = "";
+  string nodeText = "";
 
-  switch (ST) {
-    case FIRST:
-      beginPrefix = "\u250F";
-      endPrefix = "\u2503";
-      break;
-    case MIDDLE:
-      beginPrefix = "\u2523";
-      endPrefix = "\u2503";
-      break;
-    case LAST:
-      beginPrefix = "\u2523";
-      endPrefix = "\u2517";
-      break;
-    case ONLY_CHILD:
-      beginPrefix = "\u250F";
-      endPrefix = "\u2517";
-      break;
-  }
-
-  for (int i = 0; i < level; i++) {
-    levelPrefix += "\u2503 ";
-  }
-
-  if (T == this->MERT) {
-    directive = colorDefault + this->F.getName().str() + colorReset;
+  if (T != this->MERT) {
+    switch (ST) {
+      case INNER:
+        nodePrefix = "\u2523\u2501 ";
+        break;
+      case LAST:
+        nodePrefix = "\u2517\u2501 ";
+        break;
+    }
+    nodeText = this->getRegionDirective(T);
   } else {
-    directive = this->getRegionDirective(T);
+    nodeText = "\e[1;32m" + this->F.getName().str() + "\e[0m";
   }
 
-  stream << prefixToUse << levelPrefix << beginPrefix << " " << directive
-         << "\n";
+  stream << prefixToUse << nodePrefix << nodeText << "\n";
+
+  if (T != this->MERT) {
+    if (ST == LAST) {
+      prefixToUse += "   ";
+    } else {
+      prefixToUse += "\u2503  ";
+    }
+  }
 
   auto children = T->getChildren();
-  if (children.size() == 1) {
-    this->print(children[0],
-                stream,
-                prefixToUse,
-                printArguments,
-                level + 1,
-                SiblingType::ONLY_CHILD);
-  } else if (children.size() > 1) {
-    this->print(children[0],
-                stream,
-                prefixToUse,
-                printArguments,
-                level + 1,
-                SiblingType::FIRST);
-    for (size_t i = 1; i < children.size() - 1; i++) {
-      this->print(children[i],
-                  stream,
-                  prefixToUse,
-                  printArguments,
-                  level + 1,
-                  SiblingType::MIDDLE);
-    }
-    this->print(children[children.size() - 1],
-                stream,
-                prefixToUse,
-                printArguments,
-                level + 1,
-                SiblingType::LAST);
+  auto N = children.size();
+
+  if (N == 0) {
+    return stream;
   }
 
-  if (ST == LAST || ST == ONLY_CHILD) {
-    stream << prefixToUse << levelPrefix << endPrefix << "\n";
+  for (size_t i = 0; i < N - 1; i++) {
+    this->print(children[i], stream, prefixToUse, printArgs, INNER);
   }
+  this->print(children[N - 1], stream, prefixToUse, printArgs, LAST);
+
   return stream;
 }
 

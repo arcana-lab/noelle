@@ -45,20 +45,19 @@ public:
 
   llvm::raw_ostream &print(llvm::raw_ostream &stream,
                            std::string prefixToUse = "",
-                           bool printArguments = false);
+                           bool printArgs = false);
 
 private:
   llvm::Function &F;
   std::string directive;
   MultiExitRegionTree *MERT;
 
-  enum SiblingType { FIRST, MIDDLE, LAST, ONLY_CHILD };
+  enum SiblingType { INNER, LAST };
 
   llvm::raw_ostream &print(MultiExitRegionTree *T,
                            llvm::raw_ostream &stream,
                            std::string prefixToUse,
-                           bool printArguments,
-                           int level,
+                           bool printArgs,
                            SiblingType ST);
 };
 
