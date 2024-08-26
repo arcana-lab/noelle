@@ -404,16 +404,16 @@ raw_ostream &MultiExitRegionTree::print(raw_ostream &stream,
 raw_ostream &MultiExitRegionTree::print(raw_ostream &stream,
                                         string prefixToUse,
                                         int level) {
-  string instBeginPrefix = "\u250F";
-  string instEndPrefix = "\u2517";
+  string beginPrefix = "\u250F ";
+  string endPrefix = "\u2517 ";
   string levelPrefix = "";
 
   for (int i = 0; i < level; i++) {
-    levelPrefix += "\u2503  ";
+    levelPrefix += "\u2503 ";
   }
 
   if (!this->isArtificialRoot) {
-    stream << prefixToUse << levelPrefix << instBeginPrefix << *Begin << "\n";
+    stream << prefixToUse << levelPrefix << beginPrefix << *Begin << "\n";
   }
 
   for (auto T : this->children) {
@@ -422,7 +422,7 @@ raw_ostream &MultiExitRegionTree::print(raw_ostream &stream,
   }
 
   if (!this->isArtificialRoot) {
-    stream << prefixToUse << levelPrefix << instEndPrefix << *End << "\n";
+    stream << prefixToUse << levelPrefix << endPrefix << *End << "\n";
   }
 
   return stream;

@@ -51,6 +51,15 @@ private:
   llvm::Function &F;
   std::string directive;
   MultiExitRegionTree *MERT;
+
+  enum SiblingType { FIRST, MIDDLE, LAST, ONLY_CHILD };
+
+  llvm::raw_ostream &print(MultiExitRegionTree *T,
+                           llvm::raw_ostream &stream,
+                           std::string prefixToUse,
+                           bool printArguments,
+                           int level,
+                           SiblingType ST);
 };
 
 } // namespace arcana::noelle

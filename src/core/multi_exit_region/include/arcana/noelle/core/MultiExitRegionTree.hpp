@@ -81,17 +81,6 @@ public:
                            std::string prefixToUse = "");
 
 private:
-  MultiExitRegionTree(llvm::Function *F,
-                      llvm::DominatorTree *DT,
-                      llvm::Instruction *Begin,
-                      llvm::Instruction *End);
-
-  void addChild(MultiExitRegionTree *T);
-
-  llvm::raw_ostream &print(llvm::raw_ostream &stream,
-                           std::string prefixToUse,
-                           int level);
-
   llvm::Function *F;
   llvm::DominatorTree *DT;
   MultiExitRegionTree *parent;
@@ -102,8 +91,18 @@ private:
   // contructed we want to preserve the insertion order as it is likely to
   // reflect the control flow order
   ChildrenTy children;
-
   bool isArtificialRoot;
+
+  MultiExitRegionTree(llvm::Function *F,
+                      llvm::DominatorTree *DT,
+                      llvm::Instruction *Begin,
+                      llvm::Instruction *End);
+
+  void addChild(MultiExitRegionTree *T);
+
+  llvm::raw_ostream &print(llvm::raw_ostream &stream,
+                           std::string prefixToUse,
+                           int level);
 };
 
 } // namespace arcana::noelle

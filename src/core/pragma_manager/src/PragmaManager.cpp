@@ -127,43 +127,89 @@ vector<Value *> PragmaManager::getPragmaTreeArguments(
 raw_ostream &PragmaManager::print(raw_ostream &stream,
                                   string prefixToUse,
                                   bool printArguments) {
-  stack<MultiExitRegionTree *> worklist;
-  stack<int> levels;
-  string symbol = "\u2500";
+  return this
+      ->print(this->MERT, stream, prefixToUse, printArguments, 0, ONLY_CHILD);
+}
 
-  auto getLevelPrefix = [&](int level) { return string(3 * level, ' '); };
+raw_ostream &PragmaManager::print(MultiExitRegionTree *T,
+                                  raw_ostream &stream,
+                                  string prefixToUse,
+                                  bool printArguments,
+                                  int level,
+                                  SiblingType ST) {
+  string beginPrefix = "";
+  string endPrefix = "";
+  string levelPrefix = "";
+  string colorDefault = "\e[1;32m";
+  string colorReset = "\e[0m";
+  string directive = "";
 
-  auto CC = this->MERT->getChildren();
-  for (auto it = CC.rbegin(); it != CC.rend(); ++it) {
-    worklist.push(*it);
-    levels.push(0);
+  switch (ST) {
+    case FIRST:
+      beginPrefix = "\u250F";
+      endPrefix = "\u2503";
+      break;
+    case MIDDLE:
+      beginPrefix = "\u2523";
+      endPrefix = "\u2503";
+      break;
+    case LAST:
+      beginPrefix = "\u2523";
+      endPrefix = "\u2517";
+      break;
+    case ONLY_CHILD:
+      beginPrefix = "\u250F";
+      endPrefix = "\u2517";
+      break;
   }
 
-  while (!worklist.empty()) {
-    auto T = worklist.top();
-    auto level = levels.top();
-    worklist.pop();
-    levels.pop();
-    auto directive = this->getRegionDirective(T);
-    auto levelPrefix = getLevelPrefix(level);
-
-    stream << prefixToUse << levelPrefix << directive;
-    if (printArguments) {
-      stream << " ( ";
-      for (auto A : this->getPragmaTreeArguments(T)) {
-        stream << *A << "; ";
-      }
-      stream << ")";
-    }
-    stream << "\n";
-
-    auto CC = T->getChildren();
-    for (auto it = CC.rbegin(); it != CC.rend(); ++it) {
-      worklist.push(*it);
-      levels.push(level + 1);
-    }
+  for (int i = 0; i < level; i++) {
+    levelPrefix += "\u2503 ";
   }
 
+  if (T == this->MERT) {
+    directive = colorDefault + this->F.getName().str() + colorReset;
+  } else {
+    directive = this->getRegionDirective(T);
+  }
+
+  stream << prefixToUse << levelPrefix << beginPrefix << " " << directive
+         << "\n";
+
+  auto children = T->getChildren();
+  if (children.size() == 1) {
+    this->print(children[0],
+                stream,
+                prefixToUse,
+                printArguments,
+                level + 1,
+                SiblingType::ONLY_CHILD);
+  } else if (children.size() > 1) {
+    this->print(children[0],
+                stream,
+                prefixToUse,
+                printArguments,
+                level + 1,
+                SiblingType::FIRST);
+    for (size_t i = 1; i < children.size() - 1; i++) {
+      this->print(children[i],
+                  stream,
+                  prefixToUse,
+                  printArguments,
+                  level + 1,
+                  SiblingType::MIDDLE);
+    }
+    this->print(children[children.size() - 1],
+                stream,
+                prefixToUse,
+                printArguments,
+                level + 1,
+                SiblingType::LAST);
+  }
+
+  if (ST == LAST || ST == ONLY_CHILD) {
+    stream << prefixToUse << levelPrefix << endPrefix << "\n";
+  }
   return stream;
 }
 

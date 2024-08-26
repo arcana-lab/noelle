@@ -33,7 +33,9 @@ using namespace arcana::noelle;
 static cl::opt<string> Directive(
     "noelle-pragma-directive",
     cl::init(""),
+    cl::value_desc("string"),
     cl::desc("Name of the directive to use to search to SEME regions"));
+
 static cl::opt<string> FunctionName("noelle-pragma-function",
                                     cl::init(""),
                                     cl::desc("Scan only a given function"));
@@ -52,8 +54,6 @@ void Pragma::getAnalysisUsage(AnalysisUsage &AU) const {
 
 bool Pragma::runOnModule(Module &M) {
   bool scanAllFunctions = FunctionName == "";
-  auto colorDefault = "\e[1;32m";
-  auto colorReset = "\e[0m";
 
   for (auto &F : M) {
     if (F.empty()) {
@@ -63,10 +63,7 @@ bool Pragma::runOnModule(Module &M) {
     if (scanAllFunctions || F.getName() == FunctionName) {
       PragmaManager PM(F, Directive);
       if (!PM.getPragmaTree()->isEmpty()) {
-        errs() << prefix << "Function: " << colorDefault << F.getName().str()
-               << colorReset << "\n";
         PM.print(errs(), prefix);
-        PM.getPragmaTree()->print(errs(), prefix);
         errs() << "\n";
       }
     }

@@ -4,4 +4,52 @@ trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
 installDir=$(noelle-config --prefix)
 
-noelle-load -load $installDir/lib/Pragma.so -Pragma -disable-output $@
+usage() {
+  echo "USAGE: `basename $0` INPUT_BC [OPTIONS]..."
+  echo
+  echo "Print Noelle pragma that match a given directive."
+  echo
+  echo "INPUT_BC              Input bitcode in .bc or .ll format"
+  echo
+  echo "Options:"
+  echo "--directive           Pragma directive to look for."
+  echo "--func                Restrict the search to a given function."
+}
+
+if [[ $# < 1 ]] ; then
+  usage
+  exit 1
+fi
+
+# parsing arguments
+
+inputBC="$1"
+passArgs=""
+
+for arg in "$@"; do
+  case ${arg} in
+    --directive=*)
+      args="${arg#*=}"
+      passArgs="${passArgs} -noelle-pragma-directive=$args"
+      shift
+      ;;
+    --func=*)
+      args="${arg#*=}"
+      passArgs="${passArgs} -noelle-pragma-function=$args"
+      shift
+      ;;
+    --help)
+      usage
+      exit 0
+      ;;
+    -*|--*)
+      echo "ERROR: Unknown option $arg"
+      usage
+      exit 1
+      ;;
+    *)
+      ;;
+  esac
+done
+
+noelle-load -load $installDir/lib/Pragma.so -Pragma -disable-output $passArgs $inputBC
