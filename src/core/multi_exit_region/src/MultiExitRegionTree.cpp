@@ -460,7 +460,7 @@ unordered_set<BasicBlock *> MultiExitRegionTree::getBasicBlocksWithin() {
   return BBs;
 }
 
-vector<MultiExitRegionTree *> MultiExitRegionTree::getPathTo(
+vector<MultiExitRegionTree *> MultiExitRegionTree::getAncestorsFromRootTo(
     const llvm::Instruction *I) {
   auto destination = findInnermostRegionFor(I);
   if (destination == nullptr) {

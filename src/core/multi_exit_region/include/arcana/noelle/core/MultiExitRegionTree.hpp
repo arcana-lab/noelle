@@ -81,7 +81,8 @@ public:
 
   std::unordered_set<llvm::BasicBlock *> getBasicBlocksWithin();
 
-  std::vector<MultiExitRegionTree *> getPathTo(const llvm::Instruction *I);
+  std::vector<MultiExitRegionTree *> getAncestorsFromRootTo(
+      const llvm::Instruction *I);
 
   ChildrenTy getChildren() const;
 
