@@ -161,11 +161,12 @@ MultiExitRegionTree::~MultiExitRegionTree() {
 
 void MultiExitRegionTree::addChild(MultiExitRegionTree *T) {
   // This function hides the container used to store children
-  if (find(this->children, T) == end(this->children)) {
+  if (std::find(std::begin(this->children), std::end(this->children), T)
+      == std::end(this->children)) {
     this->children.push_back(T);
   } else {
     // We don't expect to insert the same child twice
-    assert(false);
+    assert(false && "Child node added twice");
   }
 }
 
@@ -531,6 +532,14 @@ raw_ostream &MultiExitRegionTree::print(raw_ostream &stream,
   }
 
   return stream;
+}
+
+MultiExitRegionTree::iterator MultiExitRegionTree::begin() {
+  return { this };
+}
+
+MultiExitRegionTree::iterator MultiExitRegionTree::end() {
+  return nullptr;
 }
 
 } // namespace arcana::noelle

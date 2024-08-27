@@ -37,6 +37,8 @@ namespace arcana::noelle {
 
 class MultiExitRegionTree {
 public:
+  class iterator;
+
   using ChildrenTy = std::vector<MultiExitRegionTree *>;
 
   MultiExitRegionTree(llvm::Function &F,
@@ -88,6 +90,10 @@ public:
   llvm::raw_ostream &print(llvm::raw_ostream &stream,
                            std::string prefixToUse = "");
 
+  iterator begin();
+
+  iterator end();
+
 private:
   llvm::Function *F;
   llvm::DominatorTree *DT;
@@ -111,6 +117,22 @@ private:
   llvm::raw_ostream &print(llvm::raw_ostream &stream,
                            std::string prefixToUse,
                            int level);
+};
+
+class MultiExitRegionTree::iterator {
+public:
+  iterator(MultiExitRegionTree *T);
+
+  MultiExitRegionTree *operator*();
+
+  iterator &operator++();
+
+  bool operator==(iterator &other);
+
+  bool operator!=(iterator &other);
+
+private:
+  std::queue<MultiExitRegionTree *> Ts;
 };
 
 } // namespace arcana::noelle
