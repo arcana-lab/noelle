@@ -61,6 +61,10 @@ MultiExitRegionTree::MultiExitRegionTree(
     End(nullptr),
     isArtificialRoot(true) {
 
+  if (F.empty()) {
+    return;
+  }
+
   this->DT = new DominatorTree(F);
 
   vector<Instruction *> UnmatchedBegins;
@@ -155,7 +159,11 @@ MultiExitRegionTree::MultiExitRegionTree(
 MultiExitRegionTree::~MultiExitRegionTree() {
   if (this->isArtificialRoot) {
     assert(this->parent == nullptr);
-    free(this->DT);
+    assert(this->Begin == nullptr);
+    assert(this->End == nullptr);
+    if (this->DT != nullptr) {
+      free(this->DT);
+    }
   }
 }
 
