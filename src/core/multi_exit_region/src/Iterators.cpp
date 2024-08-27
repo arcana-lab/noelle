@@ -1,3 +1,4 @@
+#include <stack>
 #include "arcana/noelle/core/MultiExitRegionTree.hpp"
 
 namespace arcana::noelle {
@@ -22,8 +23,8 @@ MultiExitRegionTree::PreOrderIterator::PreOrderIterator(
   }
 
   if (T->isArtificialRoot) {
-    for (auto C : T->children) {
-      this->Ts.push(C);
+    for (auto it = T->children.rbegin(); it != T->children.rend(); ++it) {
+      this->Ts.push(*it);
     }
   } else {
     this->Ts.push(T);
@@ -31,15 +32,15 @@ MultiExitRegionTree::PreOrderIterator::PreOrderIterator(
 }
 
 MultiExitRegionTree *MultiExitRegionTree::PreOrderIterator::operator*() {
-  return this->Ts.front();
+  return this->Ts.top();
 }
 
 MultiExitRegionTree::PreOrderIterator &MultiExitRegionTree::PreOrderIterator::
 operator++() {
-  auto T = this->Ts.front();
+  auto T = this->Ts.top();
   this->Ts.pop();
-  for (auto C : T->children) {
-    this->Ts.push(C);
+  for (auto it = T->children.rbegin(); it != T->children.rend(); ++it) {
+    this->Ts.push(*it);
   }
   return *this;
 }

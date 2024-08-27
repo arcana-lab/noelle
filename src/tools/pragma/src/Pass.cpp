@@ -65,6 +65,10 @@ bool Pragma::runOnModule(Module &M) {
       if (!PM.getPragmaTree()->isEmpty()) {
         PM.print(errs(), prefix);
         errs() << prefix << "\n";
+        errs() << prefix << "Iterator:\n";
+        for (auto T : PM.getPragmaTree()->preOrderTraversal()) {
+          errs() << prefix << PM.getRegionDirective(T) << "\n";
+        }
       }
     }
   }

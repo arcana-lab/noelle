@@ -40,7 +40,8 @@ public:
   template <typename It>
   class Traversal; // Forward declaration
 
-  class PreOrderIterator; // Forward declaration
+  class PreOrderIterator;  // Forward declaration
+  class PostOrderIterator; // Forward declaration
 
   using ChildrenTy = std::vector<MultiExitRegionTree *>;
 
@@ -146,7 +147,7 @@ public:
   bool operator!=(PreOrderIterator &other);
 
 private:
-  std::queue<MultiExitRegionTree *> Ts;
+  std::stack<MultiExitRegionTree *> Ts;
 };
 
 template class MultiExitRegionTree::Traversal<
