@@ -36,6 +36,8 @@ public:
 
   ~PragmaManager();
 
+  static bool getStringFromArg(llvm::Value *arg, llvm::StringRef &result);
+
   MultiExitRegionTree *getPragmaTree();
 
   std::string getRegionDirective(MultiExitRegionTree *T) const;

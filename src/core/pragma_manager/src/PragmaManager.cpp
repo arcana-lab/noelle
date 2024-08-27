@@ -52,31 +52,12 @@ PragmaManager::PragmaManager(Function &F, string directive)
     if (!callee->getName().startswith(funcName)) {
       return false;
     }
-    auto GEP = dyn_cast<GetElementPtrInst>(CI->getArgOperand(0));
-    if (GEP == nullptr) {
+    StringRef str;
+    auto FirstArg = CI->getArgOperand(0);
+    if (!getStringFromArg(FirstArg, str)) {
       return false;
     }
-    auto Ptr = GEP->getPointerOperand();
-    if (!isa<Constant>(Ptr)) {
-      return false;
-    }
-    auto GV = dyn_cast<llvm::GlobalVariable>(Ptr);
-    if (GV == nullptr || !GV->isConstant()) {
-      return false;
-    }
-    auto ATy = dyn_cast<llvm::ArrayType>(GV->getValueType());
-    if (ATy == nullptr) {
-      return false;
-    }
-    if (!ATy->getElementType()->isIntegerTy(8)) {
-      return false;
-    }
-    auto *CDA = llvm::dyn_cast<llvm::ConstantDataArray>(GV->getInitializer());
-    if (!CDA->isString()) {
-      return false;
-    }
-    auto CString = CDA->getAsCString().str();
-    if (!CDA->getAsCString().startswith(directive)) {
+    if (!str.startswith(directive)) {
       return false;
     }
     return true;
@@ -95,6 +76,34 @@ PragmaManager::PragmaManager(Function &F, string directive)
 
 PragmaManager::~PragmaManager() {
   free(this->MERT);
+}
+
+bool PragmaManager::getStringFromArg(Value *arg, StringRef &result) {
+  auto GEP = dyn_cast<GetElementPtrInst>(arg);
+  if (GEP == nullptr) {
+    return false;
+  }
+  auto Ptr = GEP->getPointerOperand();
+  if (!isa<Constant>(Ptr)) {
+    return false;
+  }
+  auto GV = dyn_cast<llvm::GlobalVariable>(Ptr);
+  if (GV == nullptr || !GV->isConstant()) {
+    return false;
+  }
+  auto ATy = dyn_cast<llvm::ArrayType>(GV->getValueType());
+  if (ATy == nullptr) {
+    return false;
+  }
+  if (!ATy->getElementType()->isIntegerTy(8)) {
+    return false;
+  }
+  auto *CDA = llvm::dyn_cast<llvm::ConstantDataArray>(GV->getInitializer());
+  if (!CDA->isString()) {
+    return false;
+  }
+  result = CDA->getAsCString();
+  return true;
 }
 
 MultiExitRegionTree *PragmaManager::getPragmaTree() {
