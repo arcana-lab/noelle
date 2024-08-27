@@ -110,7 +110,7 @@ string PragmaManager::getRegionDirective(MultiExitRegionTree *T) const {
   return CDA->getAsCString().str();
 }
 
-vector<Value *> PragmaManager::getPragmaTreeArguments(
+vector<Value *> PragmaManager::getRegionArguments(
     MultiExitRegionTree *T) const {
   auto CI = cast<CallInst>(T->getBegin());
 
@@ -124,16 +124,13 @@ vector<Value *> PragmaManager::getPragmaTreeArguments(
   return args;
 }
 
-raw_ostream &PragmaManager::print(raw_ostream &stream,
-                                  string prefixToUse,
-                                  bool printArgs) {
-  return this->print(this->MERT, stream, prefixToUse, printArgs, LAST);
+raw_ostream &PragmaManager::print(raw_ostream &stream, string prefixToUse) {
+  return this->print(this->MERT, stream, prefixToUse, LAST);
 }
 
 raw_ostream &PragmaManager::print(MultiExitRegionTree *T,
                                   raw_ostream &stream,
                                   string prefixToUse,
-                                  bool printArgs,
                                   SiblingType ST) {
   string nodePrefix = "";
   string nodeText = "";
@@ -170,9 +167,9 @@ raw_ostream &PragmaManager::print(MultiExitRegionTree *T,
   }
 
   for (size_t i = 0; i < N - 1; i++) {
-    this->print(children[i], stream, prefixToUse, printArgs, INNER);
+    this->print(children[i], stream, prefixToUse, INNER);
   }
-  this->print(children[N - 1], stream, prefixToUse, printArgs, LAST);
+  this->print(children[N - 1], stream, prefixToUse, LAST);
 
   return stream;
 }

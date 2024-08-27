@@ -40,12 +40,10 @@ public:
 
   std::string getRegionDirective(MultiExitRegionTree *T) const;
 
-  std::vector<llvm::Value *> getPragmaTreeArguments(
-      MultiExitRegionTree *T) const;
+  std::vector<llvm::Value *> getRegionArguments(MultiExitRegionTree *T) const;
 
   llvm::raw_ostream &print(llvm::raw_ostream &stream,
-                           std::string prefixToUse = "",
-                           bool printArgs = false);
+                           std::string prefixToUse = "");
 
 private:
   llvm::Function &F;
@@ -57,7 +55,6 @@ private:
   llvm::raw_ostream &print(MultiExitRegionTree *T,
                            llvm::raw_ostream &stream,
                            std::string prefixToUse,
-                           bool printArgs,
                            SiblingType ST);
 };
 
