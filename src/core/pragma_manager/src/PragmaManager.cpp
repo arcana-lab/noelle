@@ -121,6 +121,9 @@ string PragmaManager::getRegionDirective(MultiExitRegionTree *T) const {
 
 vector<Value *> PragmaManager::getRegionArguments(
     MultiExitRegionTree *T) const {
+  if (T == MERT) {
+    return {};
+  }
   auto CI = cast<CallInst>(T->getBegin());
 
   // The first argument is skipped because it's the directive
@@ -133,13 +136,16 @@ vector<Value *> PragmaManager::getRegionArguments(
   return args;
 }
 
-raw_ostream &PragmaManager::print(raw_ostream &stream, string prefixToUse) {
-  return this->print(this->MERT, stream, prefixToUse, LAST);
+raw_ostream &PragmaManager::print(raw_ostream &stream,
+                                  string prefixToUse,
+                                  bool printArgs) {
+  return this->print(this->MERT, stream, prefixToUse, printArgs, LAST);
 }
 
 raw_ostream &PragmaManager::print(MultiExitRegionTree *T,
                                   raw_ostream &stream,
                                   string prefixToUse,
+                                  bool printArgs,
                                   SiblingType ST) {
   string nodePrefix = "";
   string nodeText = "";
@@ -158,7 +164,31 @@ raw_ostream &PragmaManager::print(MultiExitRegionTree *T,
     nodeText = "\e[1;32m" + this->F.getName().str() + "\e[0m";
   }
 
-  stream << prefixToUse << nodePrefix << nodeText << "\n";
+  stream << prefixToUse << nodePrefix << nodeText;
+
+  if (printArgs) {
+    auto Args = this->getRegionArguments(T);
+    bool first = false;
+    for (auto A : Args) {
+      if (first) {
+        stream << ", ";
+      } else {
+        first = true;
+        stream << " ";
+      }
+      if (isa<ConstantData>(A)) {
+        StringRef str;
+        if (PragmaManager::getStringFromArg(A, str)) {
+          stream << str.str();
+        } else {
+          stream << *A;
+        }
+      } else {
+        stream << "<Value>";
+      }
+    }
+  }
+  stream << "\n";
 
   if (T != this->MERT) {
     if (ST == LAST) {
@@ -176,9 +206,9 @@ raw_ostream &PragmaManager::print(MultiExitRegionTree *T,
   }
 
   for (size_t i = 0; i < N - 1; i++) {
-    this->print(children[i], stream, prefixToUse, INNER);
+    this->print(children[i], stream, prefixToUse, printArgs, INNER);
   }
-  this->print(children[N - 1], stream, prefixToUse, LAST);
+  this->print(children[N - 1], stream, prefixToUse, printArgs, LAST);
 
   return stream;
 }

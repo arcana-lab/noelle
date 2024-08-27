@@ -45,7 +45,8 @@ public:
   std::vector<llvm::Value *> getRegionArguments(MultiExitRegionTree *T) const;
 
   llvm::raw_ostream &print(llvm::raw_ostream &stream,
-                           std::string prefixToUse = "");
+                           std::string prefixToUse = "",
+                           bool printArgs = false);
 
 private:
   llvm::Function &F;
@@ -57,6 +58,7 @@ private:
   llvm::raw_ostream &print(MultiExitRegionTree *T,
                            llvm::raw_ostream &stream,
                            std::string prefixToUse,
+                           bool printArgs,
                            SiblingType ST);
 };
 

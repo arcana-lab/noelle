@@ -40,6 +40,10 @@ static cl::opt<string> FunctionName("noelle-pragma-function",
                                     cl::init(""),
                                     cl::desc("Scan only a given function"));
 
+static cl::opt<bool> PrintArgs("noelle-pragma-arguments",
+                               cl::init(false),
+                               cl::desc("Print arguments of pragma regions"));
+
 namespace arcana::noelle {
 
 Pragma::Pragma() : ModulePass{ ID }, prefix("Pragma: ") {}
@@ -63,7 +67,7 @@ bool Pragma::runOnModule(Module &M) {
     if (scanAllFunctions || F.getName() == FunctionName) {
       PragmaManager PM(F, Directive);
       if (!PM.getPragmaTree()->isEmpty()) {
-        PM.print(errs(), prefix);
+        PM.print(errs(), prefix, PrintArgs);
       }
     }
   }
