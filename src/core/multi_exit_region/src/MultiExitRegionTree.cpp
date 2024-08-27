@@ -534,12 +534,9 @@ raw_ostream &MultiExitRegionTree::print(raw_ostream &stream,
   return stream;
 }
 
-MultiExitRegionTree::iterator MultiExitRegionTree::begin() {
-  return { this };
-}
-
-MultiExitRegionTree::iterator MultiExitRegionTree::end() {
-  return nullptr;
+MultiExitRegionTree::Traversal<MultiExitRegionTree::PreOrderIterator>
+MultiExitRegionTree::preOrderTraversal() {
+  return Traversal<PreOrderIterator>(this);
 }
 
 } // namespace arcana::noelle

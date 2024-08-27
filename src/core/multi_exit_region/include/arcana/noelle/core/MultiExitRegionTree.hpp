@@ -37,7 +37,10 @@ namespace arcana::noelle {
 
 class MultiExitRegionTree {
 public:
-  class iterator;
+  template <typename It>
+  class Traversal; // Forward declaration
+
+  class PreOrderIterator; // Forward declaration
 
   using ChildrenTy = std::vector<MultiExitRegionTree *>;
 
@@ -90,9 +93,7 @@ public:
   llvm::raw_ostream &print(llvm::raw_ostream &stream,
                            std::string prefixToUse = "");
 
-  iterator begin();
-
-  iterator end();
+  Traversal<PreOrderIterator> preOrderTraversal();
 
 private:
   llvm::Function *F;
@@ -119,21 +120,37 @@ private:
                            int level);
 };
 
-class MultiExitRegionTree::iterator {
+template <typename It>
+class MultiExitRegionTree::Traversal {
 public:
-  iterator(MultiExitRegionTree *T);
+  Traversal(MultiExitRegionTree *T);
+
+  It begin();
+
+  It end();
+
+private:
+  MultiExitRegionTree *T;
+};
+
+class MultiExitRegionTree::PreOrderIterator {
+public:
+  PreOrderIterator(MultiExitRegionTree *T);
 
   MultiExitRegionTree *operator*();
 
-  iterator &operator++();
+  PreOrderIterator &operator++();
 
-  bool operator==(iterator &other);
+  bool operator==(PreOrderIterator &other);
 
-  bool operator!=(iterator &other);
+  bool operator!=(PreOrderIterator &other);
 
 private:
   std::queue<MultiExitRegionTree *> Ts;
 };
+
+template class MultiExitRegionTree::Traversal<
+    MultiExitRegionTree::PreOrderIterator>;
 
 } // namespace arcana::noelle
 
