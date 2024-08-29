@@ -2,9 +2,9 @@
 #define __NOELLE_PRAGMAS_HPP__
 
 template <typename... T>
-void noelle_pragma_begin(T...) {}
+__attribute__((noinline, optnone)) void noelle_pragma_begin(T...) {}
 
 template <typename... T>
-void noelle_pragma_end(T...) {}
+__attribute__((noinline, optnone)) void noelle_pragma_end(T...) {}
 
 #endif
