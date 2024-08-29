@@ -84,14 +84,13 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
   return loops;
 }
 
-std::vector<LoopStructure *>
-    *Noelle::getLoopStructuresReachableFromEntryFunction(void) {
+std::vector<LoopStructure *> *Noelle::
+    getLoopStructuresReachableFromEntryFunction(void) {
   return this->getLoopStructuresReachableFromEntryFunction(this->minHot);
 }
 
-std::vector<LoopStructure *>
-    *Noelle::getLoopStructuresReachableFromEntryFunction(
-        double minimumHotness) {
+std::vector<LoopStructure *> *Noelle::
+    getLoopStructuresReachableFromEntryFunction(double minimumHotness) {
 
   /*
    * Default function to include loops
@@ -107,8 +106,8 @@ std::vector<LoopStructure *>
   return loops;
 }
 
-std::vector<LoopStructure *>
-    *Noelle::getLoopStructuresReachableFromEntryFunction(
+std::vector<LoopStructure *> *Noelle::
+    getLoopStructuresReachableFromEntryFunction(
         double minimumHotness,
         std::function<bool(LoopStructure *)> includeLoop) {
 
@@ -353,9 +352,9 @@ LoopContent *Noelle::getLoopContent(LoopStructure *l) {
   /*
    * Compute the LDI abstraction.
    */
-  auto ldi = this->getLoopContent(l, {});
+  auto LC = this->getLoopContent(l, {});
 
-  return ldi;
+  return LC;
 }
 
 LoopContent *Noelle::getLoopContent(
@@ -375,16 +374,16 @@ LoopContent *Noelle::getLoopContent(
    * No filter file was provided. Construct LDI without profiler configurables
    */
   if (!this->hasReadFilterFile) {
-    auto ldi = this->getLoopContentForLoop(header,
-                                           funcPDG,
-                                           DS,
-                                           0,
-                                           8,
-                                           this->om->getMaximumNumberOfCores(),
-                                           optimizations);
+    auto LC = this->getLoopContentForLoop(header,
+                                          funcPDG,
+                                          DS,
+                                          0,
+                                          8,
+                                          this->om->getMaximumNumberOfCores(),
+                                          optimizations);
 
     delete DS;
-    return ldi;
+    return LC;
   }
 
   /*
@@ -395,7 +394,7 @@ LoopContent *Noelle::getLoopContent(
   auto loopIndex = loopIDOpt.value();
 
   auto maximumNumberOfCoresForTheParallelization = this->loopThreads[loopIndex];
-  auto ldi =
+  auto LC =
       this->getLoopContentForLoop(header,
                                   funcPDG,
                                   DS,
@@ -405,7 +404,7 @@ LoopContent *Noelle::getLoopContent(
                                   optimizations);
 
   delete DS;
-  return ldi;
+  return LC;
 }
 
 LoopContent *Noelle::getLoopContent(BasicBlock *header,
@@ -458,13 +457,13 @@ LoopContent *Noelle::getLoopContent(BasicBlock *header,
   /*
    * Fetch the loop content.
    */
-  auto ldi = this->getLoopContentForLoop(header,
-                                         functionPDG,
-                                         DS,
-                                         techniquesToDisable,
-                                         ltm->getChunkSize(),
-                                         ltm->getMaximumNumberOfCores(),
-                                         ltm->getOptimizationsEnabled());
+  auto LC = this->getLoopContentForLoop(header,
+                                        functionPDG,
+                                        DS,
+                                        techniquesToDisable,
+                                        ltm->getChunkSize(),
+                                        ltm->getMaximumNumberOfCores(),
+                                        ltm->getOptimizationsEnabled());
 
   /*
    * Check if we need to re-enable the loop-centric dependence analysis.
@@ -473,7 +472,7 @@ LoopContent *Noelle::getLoopContent(BasicBlock *header,
     ldgAnalysis.enableLoopDependenceAnalyses(true);
   }
 
-  return ldi;
+  return LC;
 }
 
 std::vector<LoopContent *> *Noelle::getLoopContents(Function *function) {
@@ -576,15 +575,15 @@ std::vector<LoopContent *> *Noelle::getLoopContents(Function *function,
       auto &newLI = this->getLoopInfo(*function);
       auto &SE = this->getSCEV(*function);
       auto llvmLoop = newLI.getLoopFor(ls->getHeader());
-      auto ldi = new LoopContent(this->ldgAnalysis,
-                                 this->getCompilationOptionsManager(),
-                                 funcPDG,
-                                 loopNode,
-                                 llvmLoop,
-                                 *DS,
-                                 SE,
-                                 this->om->getMaximumNumberOfCores());
-      allLoops->push_back(ldi);
+      auto LC = new LoopContent(this->ldgAnalysis,
+                                this->getCompilationOptionsManager(),
+                                funcPDG,
+                                loopNode,
+                                llvmLoop,
+                                *DS,
+                                SE,
+                                this->om->getMaximumNumberOfCores());
+      allLoops->push_back(LC);
     }
   }
 
@@ -778,22 +777,22 @@ std::vector<LoopContent *> *Noelle::getLoopContents(double minimumHotness) {
         /*
          * Check if we have to filter loops.
          */
-        LoopContent *ldi = nullptr;
+        LoopContent *LC = nullptr;
         if (!filterLoops) {
-          ldi = new LoopContent(this->ldgAnalysis,
-                                this->getCompilationOptionsManager(),
-                                funcPDG,
-                                loopNode,
-                                LLVMLoop,
-                                *DS,
-                                SE,
-                                this->om->getMaximumNumberOfCores());
+          LC = new LoopContent(this->ldgAnalysis,
+                               this->getCompilationOptionsManager(),
+                               funcPDG,
+                               loopNode,
+                               LLVMLoop,
+                               *DS,
+                               SE,
+                               this->om->getMaximumNumberOfCores());
 
         } else {
           auto maximumNumberOfCoresForTheParallelization =
               loopThreads[currentLoopIndex];
           assert(maximumNumberOfCoresForTheParallelization > 1);
-          ldi = this->getLoopContentForLoop(
+          LC = this->getLoopContentForLoop(
               loopNode,
               LLVMLoop,
               funcPDG,
@@ -804,7 +803,7 @@ std::vector<LoopContent *> *Noelle::getLoopContents(double minimumHotness) {
               maximumNumberOfCoresForTheParallelization,
               {});
         }
-        allLoops->push_back(ldi);
+        allLoops->push_back(LC);
       }
     }
 
@@ -1212,17 +1211,17 @@ LoopContent *Noelle::getLoopContentForLoop(
   /*
    * Compute the LoopContent
    */
-  auto ldi = this->getLoopContentForLoop(newLoopNode,
-                                         llvmLoop,
-                                         functionPDG,
-                                         DS,
-                                         &SE,
-                                         techniquesToDisable,
-                                         DOALLChunkSize,
-                                         maxCores,
-                                         optimizations);
+  auto LC = this->getLoopContentForLoop(newLoopNode,
+                                        llvmLoop,
+                                        functionPDG,
+                                        DS,
+                                        &SE,
+                                        techniquesToDisable,
+                                        DOALLChunkSize,
+                                        maxCores,
+                                        optimizations);
 
-  return ldi;
+  return LC;
 }
 
 /*
@@ -1338,23 +1337,23 @@ LoopContent *Noelle::getLoopContentForLoop(
     std::unordered_set<LoopContentOptimization> optimizations) {
 
   /*
-   * Allocate the LDI.
+   * Allocate the LC.
    */
-  auto ldi = new LoopContent(this->ldgAnalysis,
-                             this->getCompilationOptionsManager(),
-                             functionPDG,
-                             loopNode,
-                             loop,
-                             *DS,
-                             *SE,
-                             maxCores,
-                             optimizations,
-                             DOALLChunkSizeForLoop);
+  auto LC = new LoopContent(this->ldgAnalysis,
+                            this->getCompilationOptionsManager(),
+                            functionPDG,
+                            loopNode,
+                            loop,
+                            *DS,
+                            *SE,
+                            maxCores,
+                            optimizations,
+                            DOALLChunkSizeForLoop);
 
   /*
    * Set the techniques that are enabled.
    */
-  auto ltm = ldi->getLoopTransformationsManager();
+  auto ltm = LC->getLoopTransformationsManager();
   auto disableTransformations = techniquesToDisableForLoop;
   switch (disableTransformations) {
 
@@ -1393,7 +1392,7 @@ LoopContent *Noelle::getLoopContentForLoop(
       abort();
   }
 
-  return ldi;
+  return LC;
 }
 
 bool Noelle::isLoopHot(LoopStructure *loopStructure, double minimumHotness) {
