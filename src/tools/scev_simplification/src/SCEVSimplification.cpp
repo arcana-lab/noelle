@@ -33,7 +33,7 @@ SCEVSimplification::SCEVSimplification(Noelle &noelle) : noelle{ noelle } {
   this->intTypeForPtrSize = IntegerType::get(cxt, this->ptrSizeInBits);
 }
 
-bool SCEVSimplification::simplifyLoopGoverningIVGuards(LoopContent const &LDI,
+bool SCEVSimplification::simplifyLoopGoverningIVGuards(LoopContent const &LC,
                                                        ScalarEvolution &SE) {
 
   if (noelle.getVerbosity() != Verbosity::Disabled) {
@@ -44,8 +44,8 @@ bool SCEVSimplification::simplifyLoopGoverningIVGuards(LoopContent const &LDI,
   /*
    * Fetch the information about the loop.
    */
-  auto rootLoop = LDI.getLoopStructure();
-  auto ivManager = LDI.getInductionVariableManager();
+  auto rootLoop = LC.getLoopStructure();
+  auto ivManager = LC.getInductionVariableManager();
 
   if (noelle.getVerbosity() != Verbosity::Disabled) {
     errs() << "SCEVSimplification:    Loop "
@@ -252,10 +252,10 @@ const SCEV *SCEVSimplification::getOffsetBetween(ScalarEvolution &SE,
   return offset;
 }
 
-bool SCEVSimplification::simplifyIVRelatedSCEVs(LoopContent const &LDI) {
-  auto rootLoop = LDI.getLoopHierarchyStructures();
-  auto invariantManager = LDI.getInvariantManager();
-  auto ivManager = LDI.getInductionVariableManager();
+bool SCEVSimplification::simplifyIVRelatedSCEVs(LoopContent const &LC) {
+  auto rootLoop = LC.getLoopHierarchyStructures();
+  auto invariantManager = LC.getInvariantManager();
+  auto ivManager = LC.getInductionVariableManager();
   return simplifyIVRelatedSCEVs(rootLoop, invariantManager, ivManager);
 }
 
@@ -1123,13 +1123,13 @@ bool SCEVSimplification::isPartOfShlShrTruncationPair(Instruction *I) const {
   return true;
 }
 
-bool SCEVSimplification::simplifyConstantPHIs(LoopContent const &LDI) {
+bool SCEVSimplification::simplifyConstantPHIs(LoopContent const &LC) {
   auto modified = false;
 
   /*
    * Fetch the loop information.
    */
-  auto loopStructure = LDI.getLoopStructure();
+  auto loopStructure = LC.getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
   auto loopPreheader = loopStructure->getPreHeader();
 

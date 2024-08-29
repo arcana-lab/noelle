@@ -25,11 +25,11 @@
 namespace arcana::noelle {
 
 bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut(
-    LoopContent const &LDI) {
+    LoopContent const &LC) {
 
   bool modified = false;
 
-  auto loopSummary = LDI.getLoopStructure();
+  auto loopSummary = LC.getLoopStructure();
   auto preHeader = loopSummary->getPreHeader();
   auto header = loopSummary->getHeader();
   std::unordered_set<BasicBlock *> loopEntrySuccessors{};
@@ -44,7 +44,7 @@ bool LoopInvariantCodeMotion::hoistStoreOfLastValueLiveOut(
   PostDominatorTree PDT(*header->getParent());
   DominatorSummary DS(DT, PDT);
 
-  auto sccManager = LDI.getSCCManager();
+  auto sccManager = LC.getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
   std::unordered_set<StoreInst *> independentStoresExecutedEveryIteration;
 

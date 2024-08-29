@@ -241,19 +241,19 @@ Instruction *Privatizer::getInitProgramPoint(
      *   globalVar[i] = some number;
      * }
      */
-    LoopContent *LDI = nullptr;
-    for (auto ldi : *noelle.getLoopContents(storeInst->getFunction())) {
-      if (!ldi->getLoopStructure()->isIncluded(storeInst)) {
+    LoopContent *LC = nullptr;
+    for (auto currentLC : *noelle.getLoopContents(storeInst->getFunction())) {
+      if (!currentLC->getLoopStructure()->isIncluded(storeInst)) {
         continue;
       }
-      if (!LDI) {
-        LDI = ldi;
-      } else if (LDI->getLoopStructure()->getNestingLevel()
-                 < ldi->getLoopStructure()->getNestingLevel()) {
-        LDI = ldi;
+      if (!LC) {
+        LC = currentLC;
+      } else if (LC->getLoopStructure()->getNestingLevel()
+                 < currentLC->getLoopStructure()->getNestingLevel()) {
+        LC = currentLC;
       }
     }
-    if (!LDI) {
+    if (!LC) {
       return nullptr;
     }
 
@@ -270,7 +270,7 @@ Instruction *Privatizer::getInitProgramPoint(
      * }
      */
     auto storeExecutedEachIteration = true;
-    for (auto latch : LDI->getLoopStructure()->getLatches()) {
+    for (auto latch : LC->getLoopStructure()->getLatches()) {
       storeExecutedEachIteration &=
           DS->DT.dominates(storeInst, latch->getTerminator());
     }
@@ -305,7 +305,7 @@ Instruction *Privatizer::getInitProgramPoint(
      * The induction variable manager is to make sure each index of the array
      * will be visited. Check comments above.
      */
-    auto IVM = LDI->getInductionVariableManager();
+    auto IVM = LC->getInductionVariableManager();
     auto GIV = IVM->getLoopGoverningInductionVariable();
 
     if (GIV == nullptr) {
@@ -346,7 +346,7 @@ Instruction *Privatizer::getInitProgramPoint(
       return nullptr;
     }
 
-    auto exitNodes = LDI->getLoopStructure()->getLoopExitBasicBlocks();
+    auto exitNodes = LC->getLoopStructure()->getLoopExitBasicBlocks();
     if (exitNodes.size() != 1) {
       return nullptr;
     }
