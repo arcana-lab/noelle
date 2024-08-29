@@ -128,9 +128,9 @@ public:
   PDG *getLoopDG(void) const;
 
   /*
-   * Copy all options from otherLDI to "this".
+   * Copy all options from otherLC to "this".
    */
-  void copyParallelizationOptionsFrom(LoopContent *otherLDI);
+  void copyParallelizationOptionsFrom(LoopContent *otherLC);
 
   /*
    * Iterate over children of "this" recursively following the loop nesting tree

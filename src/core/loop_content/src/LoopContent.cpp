@@ -262,8 +262,8 @@ LoopContent::LoopContent(
   return;
 }
 
-void LoopContent::copyParallelizationOptionsFrom(LoopContent *otherLDI) {
-  auto otherLTM = otherLDI->getLoopTransformationsManager();
+void LoopContent::copyParallelizationOptionsFrom(LoopContent *otherLC) {
+  auto otherLTM = otherLC->getLoopTransformationsManager();
   assert(otherLTM != nullptr);
 
   /*
@@ -360,7 +360,7 @@ std::pair<PDG *, SCCDAG *> LoopContent::createDGsForLoop(
 #ifdef DEBUG
 
   /*
-   * Check that all loop instructions belong to LDI-specific containers.
+   * Check that all loop instructions belong to LC-specific containers.
    */
   {
     int64_t numberOfInstructionsInLoop = 0;
@@ -375,7 +375,7 @@ std::pair<PDG *, SCCDAG *> LoopContent::createDGsForLoop(
     }
 
     /*
-     * Check that all LDI-specific containers include only loop instructions.
+     * Check that all LC-specific containers include only loop instructions.
      */
     assert(loopInternals.size() == numberOfInstructionsInLoop);
     assert(loopInternalDG->numNodes() == loopInternals.size());
