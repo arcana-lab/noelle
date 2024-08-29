@@ -256,7 +256,7 @@ private:
   PDG *programDependenceGraph;
   std::unordered_set<Transformation> enabledTransformations;
   Verbosity verbose;
-  PDGGenerator pdgAnalysis;
+  PDGGenerator pdgGenerator;
   LDGGenerator ldgGenerator;
   char *filterFileName;
   bool hasReadFilterFile;

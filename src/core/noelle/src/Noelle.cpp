@@ -53,19 +53,19 @@ Noelle::Noelle(
     programDependenceGraph{ nullptr },
     enabledTransformations{ enabledTransformations },
     verbose{ v },
-    pdgAnalysis{ m,
-                 getSCEV,
-                 getLoopInfo,
-                 getPDT,
-                 getCallGraph,
-                 getAA,
-                 dumpPDG,
-                 performThePDGComparison,
-                 disableSVF,
-                 disableSVFCallGraph,
-                 disableAllocAA,
-                 disableRA,
-                 pdgVerbose },
+    pdgGenerator{ m,
+                  getSCEV,
+                  getLoopInfo,
+                  getPDT,
+                  getCallGraph,
+                  getAA,
+                  dumpPDG,
+                  performThePDGComparison,
+                  disableSVF,
+                  disableSVFCallGraph,
+                  disableAllocAA,
+                  disableRA,
+                  pdgVerbose },
     ldgGenerator{ ldgGenerator },
     filterFileName{ nullptr },
     hasReadFilterFile{ false },
@@ -283,7 +283,7 @@ GlobalsManager *Noelle::getGlobalsManager(void) {
 }
 
 PDGGenerator &Noelle::getPDGGenerator(void) {
-  return this->pdgAnalysis;
+  return this->pdgGenerator;
 }
 
 } // namespace arcana::noelle
