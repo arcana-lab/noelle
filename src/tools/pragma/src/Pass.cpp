@@ -21,8 +21,7 @@
  */
 #include <string>
 
-#include "arcana/noelle/core/MultiExitRegionTree.hpp"
-#include "arcana/noelle/core/PragmaManager.hpp"
+#include "arcana/noelle/core/PragmaForest.hpp"
 
 #include "Pass.hpp"
 
@@ -33,16 +32,11 @@ using namespace arcana::noelle;
 static cl::opt<string> Directive(
     "noelle-pragma-directive",
     cl::init(""),
-    cl::value_desc("string"),
-    cl::desc("Name of the directive to use to search to SEME regions"));
+    cl::desc("Name of the directive that defines the pragma forest"));
 
 static cl::opt<string> FunctionName("noelle-pragma-function",
                                     cl::init(""),
                                     cl::desc("Scan only a given function"));
-
-static cl::opt<bool> PrintArgs("noelle-pragma-arguments",
-                               cl::init(false),
-                               cl::desc("Print arguments of pragma regions"));
 
 namespace arcana::noelle {
 
@@ -65,9 +59,9 @@ bool Pragma::runOnModule(Module &M) {
     }
 
     if (scanAllFunctions || F.getName() == FunctionName) {
-      PragmaManager PM(F, Directive);
-      if (!PM.getPragmaTree()->isEmpty()) {
-        PM.print(errs(), prefix, PrintArgs);
+      PragmaForest PF(F, Directive);
+      if (!PF.isEmpty()) {
+        PF.print(errs(), prefix);
       }
     }
   }
@@ -78,6 +72,5 @@ bool Pragma::runOnModule(Module &M) {
 } // namespace arcana::noelle
 
 char Pragma::ID = 0;
-static RegisterPass<Pragma> X(
-    "Pragma",
-    "Print region trees for a given pragma directive");
+static RegisterPass<Pragma> X("Pragma",
+                              "Print pragma trees for a given directive");
