@@ -28,22 +28,27 @@
 
 namespace arcana::noelle {
 
-LoopContent::LoopContent(LDGGenerator &ldgAnalysis,
+LoopContent::LoopContent(LDGGenerator &ldgGenerator,
                          CompilationOptionsManager *compilationOptionsManager,
                          PDG *fG,
                          LoopTree *loopNode,
                          Loop *l,
                          DominatorSummary &DS,
                          ScalarEvolution &SE)
-  : LoopContent{ ldgAnalysis, compilationOptionsManager,
-                 fG,          loopNode,
-                 l,           DS,
-                 SE,          Architecture::getNumberOfLogicalCores(),
-                 {},          true } {
+  : LoopContent{ ldgGenerator,
+                 compilationOptionsManager,
+                 fG,
+                 loopNode,
+                 l,
+                 DS,
+                 SE,
+                 Architecture::getNumberOfLogicalCores(),
+                 {},
+                 true } {
   return;
 }
 
-LoopContent::LoopContent(LDGGenerator &ldgAnalysis,
+LoopContent::LoopContent(LDGGenerator &ldgGenerator,
                          CompilationOptionsManager *compilationOptionsManager,
                          PDG *fG,
                          LoopTree *loopNode,
@@ -51,17 +56,22 @@ LoopContent::LoopContent(LDGGenerator &ldgAnalysis,
                          DominatorSummary &DS,
                          ScalarEvolution &SE,
                          uint32_t maxCores)
-  : LoopContent{ ldgAnalysis, compilationOptionsManager,
-                 fG,          loopNode,
-                 l,           DS,
-                 SE,          maxCores,
-                 {},          true } {
+  : LoopContent{ ldgGenerator,
+                 compilationOptionsManager,
+                 fG,
+                 loopNode,
+                 l,
+                 DS,
+                 SE,
+                 maxCores,
+                 {},
+                 true } {
 
   return;
 }
 
 LoopContent::LoopContent(
-    LDGGenerator &ldgAnalysis,
+    LDGGenerator &ldgGenerator,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopTree *loopNode,
@@ -70,7 +80,7 @@ LoopContent::LoopContent(
     ScalarEvolution &SE,
     uint32_t maxCores,
     std::unordered_set<LoopContentOptimization> optimizations)
-  : LoopContent{ ldgAnalysis,
+  : LoopContent{ ldgGenerator,
                  compilationOptionsManager,
                  fG,
                  loopNode,
@@ -84,7 +94,7 @@ LoopContent::LoopContent(
   return;
 }
 
-LoopContent::LoopContent(LDGGenerator &ldgAnalysis,
+LoopContent::LoopContent(LDGGenerator &ldgGenerator,
                          CompilationOptionsManager *compilationOptionsManager,
                          PDG *fG,
                          LoopTree *loopNode,
@@ -93,17 +103,22 @@ LoopContent::LoopContent(LDGGenerator &ldgAnalysis,
                          ScalarEvolution &SE,
                          uint32_t maxCores,
                          bool enableLoopAwareDependenceAnalyses)
-  : LoopContent{ ldgAnalysis, compilationOptionsManager,
-                 fG,          loopNode,
-                 l,           DS,
-                 SE,          maxCores,
-                 {},          enableLoopAwareDependenceAnalyses } {
+  : LoopContent{ ldgGenerator,
+                 compilationOptionsManager,
+                 fG,
+                 loopNode,
+                 l,
+                 DS,
+                 SE,
+                 maxCores,
+                 {},
+                 enableLoopAwareDependenceAnalyses } {
 
   return;
 }
 
 LoopContent::LoopContent(
-    LDGGenerator &ldgAnalysis,
+    LDGGenerator &ldgGenerator,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopTree *loopNode,
@@ -113,7 +128,7 @@ LoopContent::LoopContent(
     uint32_t maxCores,
     std::unordered_set<LoopContentOptimization> optimizations,
     bool enableLoopAwareDependenceAnalyses)
-  : LoopContent(ldgAnalysis,
+  : LoopContent(ldgGenerator,
                 compilationOptionsManager,
                 fG,
                 loopNode,
@@ -128,7 +143,7 @@ LoopContent::LoopContent(
 }
 
 LoopContent::LoopContent(
-    LDGGenerator &ldgAnalysis,
+    LDGGenerator &ldgGenerator,
     CompilationOptionsManager *compilationOptionsManager,
     PDG *fG,
     LoopTree *loopNode,
@@ -172,7 +187,7 @@ LoopContent::LoopContent(
   this->fetchLoopAndBBInfo(l, SE);
   auto ls = this->getLoopStructure();
   auto loopExitBlocks = ls->getLoopExitBasicBlocks();
-  auto DGs = this->createDGsForLoop(ldgAnalysis,
+  auto DGs = this->createDGsForLoop(ldgGenerator,
                                     compilationOptionsManager,
                                     l,
                                     loopNode,
@@ -232,7 +247,7 @@ LoopContent::LoopContent(
    * And then, we can identify IVs from this new SCCDAG.
    */
   auto loopSCCDAGWithoutMemoryDeps =
-      ldgAnalysis.computeSCCDAGWithOnlyVariableAndControlDependences(loopDG);
+      ldgGenerator.computeSCCDAGWithOnlyVariableAndControlDependences(loopDG);
   this->inductionVariables =
       new InductionVariableManager(this->loop,
                                    *invariantManager,
@@ -308,7 +323,7 @@ uint64_t LoopContent::computeTripCounts(Loop *l, ScalarEvolution &SE) {
 }
 
 std::pair<PDG *, SCCDAG *> LoopContent::createDGsForLoop(
-    LDGGenerator &ldgAnalysis,
+    LDGGenerator &ldgGenerator,
     CompilationOptionsManager *com,
     Loop *l,
     LoopTree *loopNode,
@@ -320,12 +335,12 @@ std::pair<PDG *, SCCDAG *> LoopContent::createDGsForLoop(
    * Perform loop-aware memory dependence analysis to refine the loop dependence
    * graph.
    */
-  auto loopDG = ldgAnalysis.generateLoopDependenceGraph(functionDG,
-                                                        SE,
-                                                        DS,
-                                                        com,
-                                                        l,
-                                                        *loopNode);
+  auto loopDG = ldgGenerator.generateLoopDependenceGraph(functionDG,
+                                                         SE,
+                                                         DS,
+                                                         com,
+                                                         l,
+                                                         *loopNode);
 
   /*
    * Analyze the loop to identify opportunities of cloning stack objects.

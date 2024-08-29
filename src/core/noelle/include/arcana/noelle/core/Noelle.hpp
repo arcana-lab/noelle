@@ -71,7 +71,7 @@ public:
          Verbosity v,
          PDGVerbosity pdgVerbose,
          double minHot,
-         LDGGenerator ldgAnalysis,
+         LDGGenerator ldgGenerator,
          CompilationOptionsManager *om,
          bool dumpPDG,
          bool performThePDGComparison,
@@ -257,7 +257,7 @@ private:
   std::unordered_set<Transformation> enabledTransformations;
   Verbosity verbose;
   PDGGenerator pdgAnalysis;
-  LDGGenerator ldgAnalysis;
+  LDGGenerator ldgGenerator;
   char *filterFileName;
   bool hasReadFilterFile;
   std::map<uint32_t, uint32_t> loopThreads;

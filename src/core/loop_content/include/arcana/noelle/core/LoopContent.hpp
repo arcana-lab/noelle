@@ -43,7 +43,7 @@ public:
   /*
    * Constructors.
    */
-  LoopContent(LDGGenerator &ldgAnalysis,
+  LoopContent(LDGGenerator &ldgGenerator,
               CompilationOptionsManager *compilationOptionsManager,
               PDG *fG,
               LoopTree *loopNode,
@@ -51,7 +51,7 @@ public:
               DominatorSummary &DS,
               ScalarEvolution &SE);
 
-  LoopContent(LDGGenerator &ldgAnalysis,
+  LoopContent(LDGGenerator &ldgGenerator,
               CompilationOptionsManager *compilationOptionsManager,
               PDG *fG,
               LoopTree *loopNode,
@@ -60,7 +60,7 @@ public:
               ScalarEvolution &SE,
               uint32_t maxCores);
 
-  LoopContent(LDGGenerator &ldgAnalysis,
+  LoopContent(LDGGenerator &ldgGenerator,
               CompilationOptionsManager *compilationOptionsManager,
               PDG *fG,
               LoopTree *loopNode,
@@ -70,7 +70,7 @@ public:
               uint32_t maxCores,
               std::unordered_set<LoopContentOptimization> optimizations);
 
-  LoopContent(LDGGenerator &ldgAnalysis,
+  LoopContent(LDGGenerator &ldgGenerator,
               CompilationOptionsManager *compilationOptionsManager,
               PDG *fG,
               LoopTree *loopNode,
@@ -80,7 +80,7 @@ public:
               uint32_t maxCores,
               bool enableLoopAwareDependenceAnalyses);
 
-  LoopContent(LDGGenerator &ldgAnalysis,
+  LoopContent(LDGGenerator &ldgGenerator,
               CompilationOptionsManager *compilationOptionsManager,
               PDG *fG,
               LoopTree *loop,
@@ -91,7 +91,7 @@ public:
               std::unordered_set<LoopContentOptimization> optimizations,
               bool enableLoopAwareDependenceAnalyses);
 
-  LoopContent(LDGGenerator &ldgAnalysis,
+  LoopContent(LDGGenerator &ldgGenerator,
               CompilationOptionsManager *compilationOptionsManager,
               PDG *fG,
               LoopTree *loop,
@@ -198,7 +198,7 @@ private:
    */
   void fetchLoopAndBBInfo(Loop *l, ScalarEvolution &SE);
 
-  std::pair<PDG *, SCCDAG *> createDGsForLoop(LDGGenerator &ldgAnalysis,
+  std::pair<PDG *, SCCDAG *> createDGsForLoop(LDGGenerator &ldgGenerator,
                                               CompilationOptionsManager *com,
                                               Loop *l,
                                               LoopTree *loopNode,

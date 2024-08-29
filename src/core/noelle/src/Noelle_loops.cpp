@@ -448,9 +448,9 @@ LoopContent *Noelle::getLoopContent(BasicBlock *header,
    * Check if the loop-centric dependence analyses are enabled.
    */
   auto switchToTrue = false;
-  if (ldgAnalysis.areLoopDependenceAnalysesEnabled()
+  if (ldgGenerator.areLoopDependenceAnalysesEnabled()
       && (!enableLoopAwareDependenceAnalysis)) {
-    ldgAnalysis.enableLoopDependenceAnalyses(false);
+    ldgGenerator.enableLoopDependenceAnalyses(false);
     switchToTrue = true;
   }
 
@@ -469,7 +469,7 @@ LoopContent *Noelle::getLoopContent(BasicBlock *header,
    * Check if we need to re-enable the loop-centric dependence analysis.
    */
   if (switchToTrue) {
-    ldgAnalysis.enableLoopDependenceAnalyses(true);
+    ldgGenerator.enableLoopDependenceAnalyses(true);
   }
 
   return LC;
@@ -575,7 +575,7 @@ std::vector<LoopContent *> *Noelle::getLoopContents(Function *function,
       auto &newLI = this->getLoopInfo(*function);
       auto &SE = this->getSCEV(*function);
       auto llvmLoop = newLI.getLoopFor(ls->getHeader());
-      auto LC = new LoopContent(this->ldgAnalysis,
+      auto LC = new LoopContent(this->ldgGenerator,
                                 this->getCompilationOptionsManager(),
                                 funcPDG,
                                 loopNode,
@@ -779,7 +779,7 @@ std::vector<LoopContent *> *Noelle::getLoopContents(double minimumHotness) {
          */
         LoopContent *LC = nullptr;
         if (!filterLoops) {
-          LC = new LoopContent(this->ldgAnalysis,
+          LC = new LoopContent(this->ldgGenerator,
                                this->getCompilationOptionsManager(),
                                funcPDG,
                                loopNode,
@@ -1339,7 +1339,7 @@ LoopContent *Noelle::getLoopContentForLoop(
   /*
    * Allocate the LC.
    */
-  auto LC = new LoopContent(this->ldgAnalysis,
+  auto LC = new LoopContent(this->ldgGenerator,
                             this->getCompilationOptionsManager(),
                             functionPDG,
                             loopNode,
