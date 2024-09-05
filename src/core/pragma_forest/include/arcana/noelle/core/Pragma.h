@@ -5,23 +5,26 @@
 // On top of this, C++ comes with a templated `begin` that reduces boilerplate
 // code
 
+typedef int pragma_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-__attribute__((warn_unused_result)) int noelle_pragma_begin(const char *);
+__attribute__((warn_unused_result)) pragma_t noelle_pragma_begin(const char *);
 
-void noelle_pragma_arg_str(int, const char *);
+void noelle_pragma_arg_str(pragma_t, const char *);
 
-void noelle_pragma_arg_int(int, int);
+void noelle_pragma_arg_int(pragma_t, int);
 
-void noelle_pragma_end(int);
+void noelle_pragma_end(pragma_t);
 
 #ifdef __cplusplus
 }
 
 template <typename... T>
-__attribute__((warn_unused_result)) int noelle_pragma_begin(const char *, T...);
+__attribute__((warn_unused_result)) pragma_t noelle_pragma_begin(const char *,
+                                                                 T...);
 
 #endif
 

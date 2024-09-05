@@ -47,6 +47,7 @@ PragmaTree::PragmaTree(Function *F,
                        Instruction *End)
   : F(F),
     DT(DT),
+    parent(nullptr),
     Begin(Begin),
     End(End) {}
 
@@ -57,15 +58,11 @@ PragmaTree::~PragmaTree() {
 }
 
 void PragmaTree::addChild(PragmaTree *T) {
-  // This function hides the container used to store children
-  if (std::find(std::begin(this->children), std::end(this->children), T)
-      == std::end(this->children)) {
-    this->children.push_back(T);
-    T->parent = this;
-  } else {
-    // We don't expect to insert the same child twice
-    assert(false && "Child node added twice");
-  }
+  assert(std::find(std::begin(this->children), std::end(this->children), T)
+         == std::end(this->children));
+
+  this->children.push_back(T);
+  T->parent = this;
 }
 
 bool PragmaTree::getStringFromArg(Value *arg, StringRef &result) {
@@ -139,95 +136,54 @@ bool PragmaTree::strictlyContains(const LoopStructure *LS) {
 }
 
 PragmaTree *PragmaTree::findInnermostPragmaFor(const Instruction *I) {
-  queue<PragmaTree *> worklist1;
-  unordered_map<const BasicBlock *, PragmaTree *> TargetBBs;
+  queue<PragmaTree *> worklist;
+  PragmaTree *innermost = nullptr;
 
-  worklist1.push(this);
-
-  auto setCandidate = [&](PragmaTree *T) {
+  auto search = [&](PragmaTree *T, auto) -> bool {
     auto BeginBB = T->Begin->getParent();
-    TargetBBs[BeginBB] = T;
+    auto EndBB = T->End->getParent();
+    auto TargetBB = I->getParent();
+
+    if (BeginBB == EndBB) {
+      if (TargetBB != BeginBB) {
+        return false; // `T` is not the innermost
+      }
+      if (T->Begin->comesBefore(I) && I->comesBefore(T->End)) {
+        innermost = T; // `T` is the innermost
+        return true;   // stop search
+      }
+      return false; // `T` is not the innermost
+    }
+    // This pragma is across different basic blocks
+    if (TargetBB == BeginBB) {
+      if (T->Begin->comesBefore(I)) {
+        innermost = T; // `T` is the innermost
+        return true;   // stop search
+      }
+      return false; // `T` is not the innermost
+    }
+    if (TargetBB == EndBB) {
+      if (I->comesBefore(T->End)) {
+        innermost = T; // `T` is the innermost
+        return true;   // stop search
+      }
+      return false; // `T` is not the innermost
+    }
+
+    // At this point, if `T` contains `I` it must be in one basic block within
+    // the pragma region
+    auto BBs = getBasicBlocksWithin();
+    // Forgive me father for I have used a const_cast
+    if (BBs.find(const_cast<BasicBlock *>(TargetBB)) != BBs.end()) {
+      innermost = T; // `T` is the innermost
+      return true;   // stop search
+    }
+    return false; // `T` is not the innermost
   };
 
-  // Phase 1
-  // If a child region dominates `I` there no point in considering the parent
-  // as a candidate because the dominance of a child is a stronger information.
-  // Given this fact, we find what can be thought of as a "dominance frontier"
-  // of instruction `I` with respect to this region tree.
-  // In layman's terms we find the regions `T` that dominate `I` and:
-  // - `T` is a leaf
-  //   or
-  // - none of `T`'s children dominate `I`
-  while (!worklist1.empty()) {
-    auto T = worklist1.front();
-    worklist1.pop();
+  visitPostOrder(search);
 
-    // We could be lucky. This check is needed in any case because instruction
-    // `I` wouldn't dominate itself
-    if (I == T->Begin || I == T->End) {
-      return T;
-    }
-
-    auto children = T->getChildren();
-    if (children.size() == 0) {
-      // Leaf case:
-      // If the current region is a leaf it's the deepest by definition
-      if (this->DT->dominates(T->Begin, I)) {
-        setCandidate(T);
-      }
-    } else {
-      // Inner case:
-      bool noChildrenDominates = true;
-      for (auto C : children) {
-        if (this->DT->dominates(T->Begin, I)) {
-          // We will continue the search in `C`
-          worklist1.push(C);
-          noChildrenDominates = false;
-        }
-      }
-      if (noChildrenDominates) {
-        // `T` is the deepest node whose `Begin` dominates `I` therefore we
-        // consider it a candidate
-        setCandidate(T);
-      }
-    }
-  }
-
-  // Phase 2
-  // Reverse BFS on the CFG starting from the block that contains `I`.
-  // We search the first basic block that is contained in the set of targets
-  // (`TargetBBs`). The associate region is guaranteed to be the one we are
-  // looking for.
-  //
-  // Proof:
-  // Assume we reach more than one target BB. That would imply
-  // that there's more than one `Begin` instruction that reaches `I` because we
-  // followed the CFG. This is a contradiction as all regions are single-entry
-  // AND we only kept the deepest regions in Phase 1 (see above).
-
-  queue<const BasicBlock *> worklist2;
-  unordered_set<const BasicBlock *> enqueued;
-  worklist2.push(I->getParent());
-
-  while (!worklist2.empty()) {
-    auto BB = worklist2.front();
-    worklist2.pop();
-
-    auto TargetBB = TargetBBs.find(BB);
-    auto foundTarget = TargetBB != TargetBBs.end();
-    if (foundTarget) {
-      return get<PragmaTree *>(*TargetBB);
-    }
-
-    for (const auto pBB : predecessors(BB)) {
-      bool notEnqueued = enqueued.find(pBB) == enqueued.end();
-      if (notEnqueued) {
-        enqueued.insert(pBB);
-        worklist2.push(pBB);
-      }
-    }
-  }
-  return nullptr;
+  return innermost;
 }
 
 PragmaTree *PragmaTree::findInnermostPragmaFor(const BasicBlock *BB) {
@@ -375,12 +331,39 @@ string PragmaTree::getDirective() const {
 
 vector<Value *> PragmaTree::getArguments() const {
   auto CI = cast<CallInst>(this->Begin);
-
-  // The first argument is skipped because it's the directive
-
   vector<Value *> args;
-  for (size_t i = 1; i < CI->arg_size(); i++) {
-    args.push_back(CI->getArgOperand(i));
+
+  if (CI->getCalledFunction()->getName().startswith("_Z")) {
+    // C++ API:
+    // The first argument is skipped because it's the directive.
+    // The rest is just the list of args itself
+    for (size_t i = 1; i < CI->arg_size(); i++) {
+      args.push_back(CI->getArgOperand(i));
+    }
+  } else {
+    // C API:
+    // Searching for a call to either `noelle_pragma_arg_str` or
+    // `noelle_pragma_arg_int`
+    auto LastDominator = this->Begin;
+    auto foundAnEnd = false;
+    for (auto U : this->Begin->users()) {
+      assert(isa<CallInst>(U) && "Unexpected user of a pragma value");
+      auto ArgCI = cast<CallInst>(U);
+      auto calledName = ArgCI->getCalledFunction()->getName();
+      if (calledName.startswith("noelle_pragma_arg_str")
+          || calledName.startswith("noelle_pragma_arg_int")) {
+        args.push_back(ArgCI->getArgOperand(1));
+        assert(this->DT->dominates(LastDominator, ArgCI)
+               && "Unexpected order of pragma arguments");
+        LastDominator = ArgCI;
+      } else if (calledName.startswith("noelle_pragma_end")) {
+        // This must always be a user of the pragma value. But we don't care
+        foundAnEnd = true;
+      } else {
+        assert(false && "Unexpected user of a pragma value");
+      }
+    }
+    assert(foundAnEnd);
   }
 
   return args;
@@ -404,7 +387,8 @@ raw_ostream &PragmaTree::print(raw_ostream &stream,
       break;
   }
 
-  stream << prefix << nodePrefix << getDirective() << "\n";
+  stream << prefix << nodePrefix << getDirective() << " ("
+         << getArguments().size() << " args)\n";
 
   if (ST == LAST) {
     prefix += "   ";

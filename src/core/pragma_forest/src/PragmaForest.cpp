@@ -51,57 +51,49 @@ PragmaForest::PragmaForest(llvm::Function &F, std::string directive)
 
   this->DT = new DominatorTree(F);
 
-  vector<Instruction *> UnmatchedBegins;
-  unordered_map<Instruction *, PragmaTree *> BeginToIncompleteTree;
-
-  auto indexOfLastUnmatchedBeginThatDominates = [&](const Instruction *End) {
-    int i = UnmatchedBegins.size() - 1;
-    for (; i >= 0; i--) {
-      if (this->DT->dominates(UnmatchedBegins[i], End)) {
-        break;
-      }
-    }
-    return i;
-  };
-
-  auto isPragma = [&](const Instruction *I, string funcName) -> bool {
-    auto CI = dyn_cast<CallInst>(I);
+  auto isBegin = [&](const Value *V) -> bool {
+    auto CI = dyn_cast<CallInst>(V);
     if (CI == nullptr) {
       return false;
     }
-    auto callee = CI->getCalledFunction();
-    if (callee == nullptr) {
+    auto Callee = CI->getCalledFunction();
+    if (Callee == nullptr) {
       return false;
     }
-    if (!callee->getName().startswith(funcName)) {
+    if (Callee->getName() == "noelle_pragma_begin"
+        || Callee->getName().startswith("_Z19noelle_pragma_begin")) {
+      StringRef beginDirective;
+      if (PragmaTree::getStringFromArg(CI->getArgOperand(0), beginDirective)) {
+        if (beginDirective.startswith(directive)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  auto isEnd = [&](const Value *V) -> bool {
+    auto CI = dyn_cast<CallInst>(V);
+    if (CI == nullptr) {
       return false;
     }
-    StringRef str;
-    auto FirstArg = CI->getArgOperand(0);
-    if (!PragmaTree::getStringFromArg(FirstArg, str)) {
+    auto Callee = CI->getCalledFunction();
+    if (Callee == nullptr) {
       return false;
     }
-    if (!str.startswith(directive)) {
+    if (!Callee->getName().startswith("noelle_pragma_end")) {
       return false;
     }
     return true;
   };
 
-  // A pragma is a CallInst whose first argument is global constant that
-  // represents a string that starts with `directive`
-  // The difference betweem a Begin and an End is the name of the called
-  // function
-
-  auto isBegin = bind(isPragma, placeholders::_1, "_Z19noelle_pragma_begin");
-  auto isEnd = bind(isPragma, placeholders::_1, "_Z17noelle_pragma_end");
-
-  // We do a Breadth-first search on the CFG:
-  // -  When a Begin is found it is marked as unmatched and a new region is
-  //    instantiated (this will be called "incomplete region").
-  // -  When an End is found it is matched against an unmatched Begin using
-  //    dominance.
-  // -  When a match is found, the new complete region is nested inside an
-  //    incomplete one using dominance.
+  // Time for a BFS
+  // Even though searching for 'pragma end's is easier because it gives its
+  // corresponding begin for free, we do a Breadth-first search on the CFG
+  // search for 'pragma begin's. This is because this order guarantees that
+  // whenever a new pragma region is found, its parent has been found already
+  // and we can immediately nest them if necessery. Mind that B is contained in
+  // A then A's begin dominates B's begin.
 
   queue<BasicBlock *> worklist;
   unordered_set<BasicBlock *> enqueued;
@@ -114,48 +106,24 @@ PragmaForest::PragmaForest(llvm::Function &F, std::string directive)
     worklist.pop();
 
     for (auto &I : *BB) {
-      if (isBegin(&I)) {
-        auto Begin = &I;
-        // Found a new Begin. Let's create a new incomplete region that will be
-        // complete (i.e. will have an End) later on
-        auto T = new PragmaTree(&this->F, this->DT, Begin, /*End=*/nullptr);
+      if (!isBegin(&I)) {
+        continue;
+      }
 
-        BeginToIncompleteTree[Begin] = T;
-        UnmatchedBegins.push_back(Begin);
-      } else if (isEnd(&I)) {
-        auto End = &I;
-        // We should be able to find a matching `Begin` for `End`.
-        int i = indexOfLastUnmatchedBeginThatDominates(End);
-        // If we are here means no Begin dominates the End. This is impossible
-        // if the regions are well-formed. We call this Malformed input.
-        // We could go ahead and ignore this End but it is more informative to
-        // report the problem.
-        assert(i >= 0 && "Malformed regions");
-
-        // Found a match! <3
-        auto MatchingBegin = UnmatchedBegins[i];
-        auto T = BeginToIncompleteTree.at(MatchingBegin);
-        T->Begin = MatchingBegin;
-        T->End = End;
-        UnmatchedBegins.erase(UnmatchedBegins.begin() + i);
-
-        // Use dominance info to determine nesting relations between this new
-        // region we just found and the unmatched regions. The parent, if any,
-        // must be a tree for which we haven't found an End yet (i.e. in
-        // `UnmatchedBegins`)
-        i = indexOfLastUnmatchedBeginThatDominates(End);
-        if (i < 0) {
-          // Couldn't find another Tree that dominates `T`.
-          // We deduce that `T` is not nested in any incomplete tree
-          T->parent = nullptr;
-          this->addChild(T);
-        } else {
-          // `T` is nested in the i-th tree
-          auto ParentT = BeginToIncompleteTree.at(UnmatchedBegins[i]);
-          T->parent = ParentT;
-          ParentT->addChild(T);
+      Instruction *End = nullptr;
+      for (auto U : I.users()) {
+        if (isEnd(U)) {
+          End = cast<Instruction>(U);
+          break;
         }
       }
+
+      assert(End != nullptr && "Can't find corresponding Pragma End");
+
+      auto Begin = &I;
+      assert(this->DT->dominates(Begin, End) && "Corrupted pragmas");
+      auto newT = new PragmaTree(&F, this->DT, Begin, End);
+      addChild(newT);
     }
 
     for (auto succBB : successors(BB)) {
@@ -166,8 +134,6 @@ PragmaForest::PragmaForest(llvm::Function &F, std::string directive)
       }
     }
   }
-
-  assert(UnmatchedBegins.size() == 0 && "Malformed regions");
 }
 
 PragmaForest::~PragmaForest() {
@@ -231,15 +197,22 @@ bool PragmaForest::isEmpty() const {
 }
 
 void PragmaForest::addChild(PragmaTree *T) {
-  // This function hides the container used to store trees
-  if (std::find(std::begin(this->trees), std::end(this->trees), T)
-      == std::end(this->trees)) {
+  assert(std::find(std::begin(this->trees), std::end(this->trees), T)
+         == std::end(this->trees));
+
+  auto foundParent =
+      visitPostOrder([&](PragmaTree *potentialParent, auto) -> bool {
+        if (potentialParent->contains(T->Begin)) {
+          potentialParent->addChild(T);
+          return true;
+        }
+        return false;
+      });
+
+  // If no parent is found it means that `T` is a new tree in the forest
+  if (!foundParent) {
     this->trees.push_back(T);
     assert(T->parent == nullptr);
-    T->parent = nullptr;
-  } else {
-    // We don't expect to insert the same child twice
-    assert(false && "Child tree added twice");
   }
 }
 
