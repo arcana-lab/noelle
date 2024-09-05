@@ -44,7 +44,8 @@ namespace arcana::noelle {
 
 PragmaForest::PragmaForest(llvm::Function &F, std::string directive)
   : F(F),
-    directive(directive) {
+    directive(directive),
+    DT(nullptr) {
   if (F.empty()) {
     return;
   }
@@ -134,10 +135,20 @@ PragmaForest::PragmaForest(llvm::Function &F, std::string directive)
       }
     }
   }
+
+  // Sanity check
+  visitPreOrder([&](PragmaTree *T, auto) -> bool {
+    for (auto C : T->children) {
+      assert(C->parent == T);
+    }
+    return false;
+  });
 }
 
 PragmaForest::~PragmaForest() {
-  delete this->DT;
+  if (this->DT != nullptr) {
+    delete this->DT;
+  }
   for (auto T : this->trees) {
     delete T;
   }
@@ -194,6 +205,12 @@ PragmaTree *PragmaForest::findInnermostPragmaFor(const LoopStructure *LS) {
 
 bool PragmaForest::isEmpty() const {
   return this->trees.size() == 0;
+}
+
+void PragmaForest::erase() {
+  for (auto T : this->trees) {
+    T->erase();
+  }
 }
 
 void PragmaForest::addChild(PragmaTree *T) {

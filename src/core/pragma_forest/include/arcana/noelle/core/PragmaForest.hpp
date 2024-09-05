@@ -92,6 +92,8 @@ public:
 
   llvm::raw_ostream &print(llvm::raw_ostream &stream, std::string prefix = "");
 
+  void erase();
+
   bool visitPreOrder(
       std::function<bool(PragmaTree *T, uint32_t level)> callback);
 
@@ -129,7 +131,7 @@ private:
 
 class PragmaForest {
 public:
-  PragmaForest(llvm::Function &F, std::string directive);
+  PragmaForest(llvm::Function &F, std::string directive = "");
 
   ~PragmaForest();
 
@@ -144,6 +146,8 @@ public:
   PragmaTree *findInnermostPragmaFor(const LoopStructure *LS);
 
   llvm::raw_ostream &print(llvm::raw_ostream &stream, std::string prefix = "");
+
+  void erase();
 
   bool visitPreOrder(
       std::function<bool(PragmaTree *T, uint32_t level)> callback);

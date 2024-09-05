@@ -408,6 +408,27 @@ raw_ostream &PragmaTree::print(raw_ostream &stream,
   return stream;
 }
 
+void PragmaTree::erase() {
+  visitPostOrder([&](PragmaTree *T, auto) -> bool {
+    T->Begin->eraseFromParent();
+    T->Begin = nullptr;
+    T->End->eraseFromParent();
+    T->End = nullptr;
+    return false;
+  });
+
+  if (this->parent != nullptr) {
+    auto siblings = this->parent->children;
+    auto thisIt = std::find(siblings.begin(), siblings.end(), this);
+    assert(thisIt != siblings.end());
+    siblings.erase(thisIt);
+  }
+  for (auto T : this->children) {
+    delete T;
+  }
+  this->children.clear();
+}
+
 bool PragmaTree::visitPreOrder(
     std::function<bool(PragmaTree *T, uint32_t level)> callback) {
   return this->visitPreOrder(callback, 1);
