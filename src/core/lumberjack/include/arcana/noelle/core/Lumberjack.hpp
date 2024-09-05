@@ -32,7 +32,10 @@
 
 namespace arcana::noelle {
 
-enum Verbosity { LOG_NONE = 0, LOG_INFO = 1, LOG_DEBUG = 2 };
+class Lumberjack; // Forward declaration
+extern Lumberjack NoelleLumberjack;
+
+enum LVerbosity { LOG_NONE = 0, LOG_INFO = 1, LOG_DEBUG = 2 };
 
 class Lumberjack {
 public:
@@ -47,9 +50,9 @@ public:
   llvm::raw_ostream &getStream();
 
 private:
-  Verbosity default_verbosity;
+  LVerbosity default_verbosity;
   std::string separator;
-  std::unordered_map<std::string, Verbosity> classes;
+  std::unordered_map<std::string, LVerbosity> classes;
   llvm::raw_ostream &ostream;
 };
 

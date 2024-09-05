@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/ClonableMemoryObject.hpp"
+#include "arcana/noelle/core/Lumberjack.hpp"
 
 namespace arcana::noelle {
 
@@ -108,7 +109,8 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
     loop{ loop },
     isClonable{ false },
     isScopeWithinLoop{ false },
-    needInitialization{ false } {
+    needInitialization{ false },
+    log{ NoelleLumberjack, "ClonableMemoryObject" } {
   errs() << "ClonableMemoryObject: Start\n";
   errs() << "ClonableMemoryObject:   Object = " << *allocation << "\n";
 

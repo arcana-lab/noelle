@@ -43,6 +43,7 @@ public:
       void) const;
 
 private:
+  Logger log;
   std::unordered_set<std::unique_ptr<ClonableMemoryObject>>
       clonableMemoryLocations;
 };

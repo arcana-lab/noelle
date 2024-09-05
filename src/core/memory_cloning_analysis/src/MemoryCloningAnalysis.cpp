@@ -25,10 +25,12 @@ namespace arcana::noelle {
 
 MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
                                              DominatorSummary &DS,
-                                             PDG *ldg) {
+                                             PDG *ldg)
+  : log(NoelleLumberjack, "MemoryCloningAnalysis") {
   assert(loop != nullptr);
   assert(ldg != nullptr);
-  errs() << "MemoryCloningAnalysis: Start\n";
+  log.info() << "Start!\n";
+  // errs() << "MemoryCloningAnalysis: Start\n";
 
   /*
    * Collect objects allocated on the stack.

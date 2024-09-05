@@ -1,6 +1,6 @@
 {
-  "default_verbosity": 0,
+  "default_verbosity": 1,
   "separator": ": ",
-  "names": {
+  "verbosity_override": {
   }
 }

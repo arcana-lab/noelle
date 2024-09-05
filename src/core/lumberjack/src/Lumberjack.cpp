@@ -57,7 +57,7 @@ Lumberjack::Lumberjack(const char *filename, raw_ostream &ostream)
     if (verbosity.IsInt()) {
       auto v = verbosity.GetInt();
       if (LOG_NONE <= v && v <= LOG_DEBUG) {
-        this->default_verbosity = static_cast<Verbosity>(v);
+        this->default_verbosity = static_cast<LVerbosity>(v);
       }
     }
   }
@@ -66,15 +66,15 @@ Lumberjack::Lumberjack(const char *filename, raw_ostream &ostream)
     this->separator = json["separator"].GetString();
   }
 
-  if (json.HasMember("names")) {
-    auto &classes = json["names"];
+  if (json.HasMember("verbosity_override")) {
+    auto &classes = json["verbosity_override"];
     assert(classes.IsObject());
     for (auto &member : classes.GetObject()) {
       assert(member.value.IsInt());
-      Verbosity v = this->default_verbosity;
+      LVerbosity v = this->default_verbosity;
       auto mv = member.value.GetInt();
       if (LOG_NONE <= mv && mv <= LOG_DEBUG) {
-        v = static_cast<Verbosity>(mv);
+        v = static_cast<LVerbosity>(mv);
       }
       this->classes[member.name.GetString()] = v;
     }
