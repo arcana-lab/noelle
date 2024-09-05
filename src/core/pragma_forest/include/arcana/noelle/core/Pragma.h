@@ -11,20 +11,49 @@ typedef int pragma_t;
 extern "C" {
 #endif
 
-__attribute__((warn_unused_result)) pragma_t noelle_pragma_begin(const char *);
+#ifdef NOELLE_PRAGMA_ENABLE
 
-void noelle_pragma_arg_str(pragma_t, const char *);
+__attribute__((warn_unused_result, pure)) pragma_t noelle_pragma_begin(
+    const char *);
 
-void noelle_pragma_arg_int(pragma_t, int);
+__attribute__((pure)) void noelle_pragma_arg_str(pragma_t, const char *);
 
-void noelle_pragma_end(pragma_t);
+__attribute__((pure)) void noelle_pragma_arg_int(pragma_t, int);
+
+__attribute__((pure)) void noelle_pragma_end(pragma_t);
+
+#else
+
+inline pragma_t noelle_pragma_begin(const char *) {
+  return 0;
+}
+
+inline void noelle_pragma_arg_str(pragma_t, const char *) {}
+
+inline void noelle_pragma_arg_int(pragma_t, int) {}
+
+inline void noelle_pragma_end(pragma_t) {}
+
+#endif
 
 #ifdef __cplusplus
 }
 
+#  ifdef NOELLE_PRAGMA_ENABLE
+
 template <typename... T>
-__attribute__((warn_unused_result)) pragma_t noelle_pragma_begin(const char *,
-                                                                 T...);
+__attribute__((warn_unused_result, pure)) pragma_t noelle_pragma_begin(
+    const char *,
+    T...);
+
+#  else
+
+template <typename... T>
+pragma_t noelle_pragma_begin(const char *, T...) {
+  return 0;
+}
+
+#  endif
 
 #endif
 
