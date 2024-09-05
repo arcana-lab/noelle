@@ -9,11 +9,11 @@
 extern "C" {
 #endif
 
-int noelle_pragma_begin(const char *);
+__attribute__((warn_unused_result)) int noelle_pragma_begin(const char *);
 
-int noelle_pragma_arg_str(int, const char *);
+void noelle_pragma_arg_str(int, const char *);
 
-int noelle_pragma_arg_int(int, int);
+void noelle_pragma_arg_int(int, int);
 
 void noelle_pragma_end(int);
 
@@ -21,7 +21,7 @@ void noelle_pragma_end(int);
 }
 
 template <typename... T>
-int noelle_pragma_begin(const char *, T...);
+__attribute__((warn_unused_result)) int noelle_pragma_begin(const char *, T...);
 
 #endif
 
