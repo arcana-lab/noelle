@@ -21,6 +21,7 @@
  */
 #include <fstream>
 #include <sstream>
+#include <tuple>
 
 #include "llvm/Support/raw_ostream.h"
 #include "rapidjson/document.h"
@@ -83,22 +84,22 @@ Lumberjack::Lumberjack(const char *filename, raw_ostream &ostream)
 
 Lumberjack::~Lumberjack() {}
 
-bool Lumberjack::isEnabled(const char *name, int level) {
+bool Lumberjack::isEnabled(const char *name, LVerbosity verbosity) {
   auto it = this->classes.find(name);
   if (it != this->classes.end()) {
-    int max = it->second;
-    if (level <= max) {
+    auto max = get<LVerbosity>(*it);
+    if (verbosity <= max) {
       return true;
     }
   } else {
-    if (level <= this->default_verbosity) {
+    if (verbosity <= this->default_verbosity) {
       return true;
     }
   }
   return false;
 }
 
-const std::string &Lumberjack::getSeparator() const {
+std::string Lumberjack::getSeparator() const {
   return this->separator;
 }
 

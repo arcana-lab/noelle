@@ -33,6 +33,7 @@
 namespace arcana::noelle {
 
 class Lumberjack; // Forward declaration
+
 extern Lumberjack NoelleLumberjack;
 
 enum LVerbosity { LOG_NONE = 0, LOG_INFO = 1, LOG_DEBUG = 2 };
@@ -43,9 +44,9 @@ public:
 
   ~Lumberjack();
 
-  bool isEnabled(const char *name, int level);
+  bool isEnabled(const char *name, LVerbosity verbosity);
 
-  const std::string &getSeparator() const;
+  std::string getSeparator() const;
 
   llvm::raw_ostream &getStream();
 
@@ -56,32 +57,13 @@ private:
   llvm::raw_ostream &ostream;
 };
 
-// Helper to detect if T has an operator()
-// template <typename T>
-// struct has_call_operator {
-// private:
-//     // Check for non-const call operator
-//     template <typename U>
-//     static auto check(U*) -> decltype(&U::operator(), std::true_type{});
-//
-//     // Check for const call operator
-//     template <typename U>
-//     static auto check(const U*) -> decltype(&U::operator(),
-//     std::true_type{});
-//
-//     // Fallback for no call operator
-//     template <typename>
-//     static std::false_type check(...);
-//
-// public:
-//     static constexpr bool value = decltype(check<T>(nullptr))::value;
-// };
-
 class Logger {
 public:
-  Logger(Lumberjack &LM, const char *name);
+  Logger(Lumberjack &LJ, const char *name);
 
-  Logger &operator()(int level);
+  Logger &print();
+
+  Logger &print(LVerbosity verbosity);
 
   Logger &debug();
 
@@ -93,24 +75,20 @@ public:
 
   void close();
 
-  // template <typename T, typename =
-  // std::enable_if_t<has_call_operator<T>::value>>
   template <typename T>
   Logger &operator<<(const T value);
 
 private:
   const char *name;
-  bool line_is_enabled = false;
+  bool lineIsEnabled = false;
   std::vector<std::string> sections;
   Lumberjack &LJ;
 };
 
-// template <typename T, typename =
-// std::enable_if_t<has_call_operator<T>::value>>
 template <typename T>
 Logger &Logger::operator<<(const T value) {
-  if (line_is_enabled) {
-    LJ.getStream() << value;
+  if (this->lineIsEnabled) {
+    this->LJ.getStream() << value;
   }
   return *this;
 }

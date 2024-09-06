@@ -29,8 +29,7 @@ MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
   : log(NoelleLumberjack, "MemoryCloningAnalysis") {
   assert(loop != nullptr);
   assert(ldg != nullptr);
-  log.info() << "Start!\n";
-  // errs() << "MemoryCloningAnalysis: Start\n";
+  log.info() << "Start\n";
 
   /*
    * Collect objects allocated on the stack.
