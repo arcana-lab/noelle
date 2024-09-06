@@ -30,12 +30,8 @@ using namespace std;
 Logger::Logger(Lumberjack &LJ, const char *name) : name(name), LJ(LJ) {}
 
 LogStream Logger::level(LVerbosity verbosity) {
-  bool enabled = this->LJ.isEnabled(this->name, verbosity);
-  string prefix = string(this->name) + this->LJ.getSeparator();
-  for (auto section : this->sections) {
-    prefix += section;
-  }
-  return LogStream(this->LJ.getStream(), enabled, prefix);
+  this->lineEnabled = this->LJ.isEnabled(this->name, verbosity);
+  return LogStream(*this);
 }
 
 LogStream Logger::debug() {
@@ -64,6 +60,15 @@ void Logger::openIndent() {
 
 void Logger::closeIndent() {
   this->sections.pop_back();
+}
+
+string Logger::makePrefix() const {
+  string prefix = this->name;
+  prefix += this->LJ.getSeparator();
+  for (const auto &section : this->sections) {
+    prefix += section;
+  }
+  return prefix;
 }
 
 } // namespace arcana::noelle

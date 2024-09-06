@@ -26,6 +26,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 
 #include "llvm/Support/raw_ostream.h"
@@ -62,35 +63,11 @@ private:
   llvm::raw_ostream &ostream;
 };
 
-class Logger; // Forward declaration
-
-class LogStream {
-public:
-  LogStream(llvm::raw_ostream &ostream, bool enabled, std::string prefix)
-    : ostream(ostream),
-      enabled(enabled),
-      prefix(std::move(prefix)),
-      prefixHasBeenPrinted(false) {}
-
-  template <typename F>
-  typename std::enable_if_t<std::is_invocable_v<F>, LogStream &> operator<<(
-      F &func);
-
-  template <typename T>
-  typename std::enable_if_t<!std::is_invocable_v<T>, LogStream &> operator<<(
-      const T &value);
-
-  template <typename T>
-  LogStream &print(const T &obj, bool usePrefix = false);
-
-private:
-  llvm::raw_ostream &ostream;
-  bool enabled;
-  std::string prefix;
-  bool prefixHasBeenPrinted;
-};
+class LogStream; // Forward declaration
 
 class Logger {
+  friend class LogStream;
+
 public:
   Logger(Lumberjack &LJ, const char *name);
 
@@ -111,51 +88,136 @@ public:
   void closeIndent();
 
 private:
+  std::string makePrefix() const;
+
   const char *name;
   std::vector<std::string> sections;
+  bool lineEnabled;
   Lumberjack &LJ;
+};
+
+// This trait descripts types that have a member function called `print` that
+// accepts a raw_ostream& and a std::string
+template <typename T>
+class is_prefix_llvmprintable {
+private:
+  template <typename U>
+  static auto check(int)
+      -> decltype(std::declval<U>().print(std::declval<llvm::raw_ostream &>(),
+                                          std::declval<std::string>()),
+                  std::true_type{});
+
+  template <typename>
+  static std::false_type check(...);
+
+public:
+  static constexpr bool value = decltype(check<T>(0))::value;
+};
+
+// This is a trait that describes types that have a member function called
+// `print` that it accepts only one raw_ostream&
+template <typename T>
+class is_llvmprintable {
+private:
+  template <typename U>
+  static auto check(int)
+      -> decltype(std::declval<U>().print(std::declval<llvm::raw_ostream &>()),
+                  std::true_type{});
+
+  template <typename>
+  static std::false_type check(...);
+
+public:
+  static constexpr bool value = decltype(check<T>(0))::value;
+};
+
+// In simlpe words this trait to capture all non-LLVM types and non-lambda types
+// like strings, numbers ecc..
+template <typename T>
+using is_not_llvmprintable_nor_invocable =
+    std::negation<std::disjunction<std::is_invocable<T>,
+                                   is_llvmprintable<T>,
+                                   is_prefix_llvmprintable<T>>>;
+
+template <typename T>
+using is_not_prefix_but_llvmprintable =
+    std::conjunction<is_llvmprintable<T>,
+                     std::negation<is_prefix_llvmprintable<T>>>;
+
+class LogStream {
+public:
+  LogStream(Logger &logger) : logger(logger), prefixHasBeenPrinted(false) {}
+
+  template <typename T>
+  typename std::enable_if_t<is_not_llvmprintable_nor_invocable<T>::value,
+                            LogStream &>
+  operator<<(const T &value);
+
+  template <typename F>
+  typename std::enable_if_t<std::is_invocable_v<F>, LogStream &> operator<<(
+      F &func);
+
+  template <typename T>
+  typename std::enable_if_t<is_prefix_llvmprintable<T>::value, LogStream &>
+  operator<<(T &obj);
+
+  template <typename T>
+  typename std::enable_if_t<is_not_prefix_but_llvmprintable<T>::value,
+                            LogStream &>
+  operator<<(T &obj);
+
+private:
+  Logger &logger;
+  bool prefixHasBeenPrinted;
 };
 
 template <typename F>
 typename std::enable_if_t<std::is_invocable_v<F>, LogStream &> LogStream::
 operator<<(F &func) {
-  if (this->enabled) {
-    if (!this->prefixHasBeenPrinted) {
-      this->ostream << this->prefix;
-      this->prefixHasBeenPrinted = true;
-    }
-    this->ostream << func();
+  if (this->logger.lineEnabled) {
+    return this << func();
   }
   return *this;
 }
 
 template <typename T>
-typename std::enable_if_t<!std::is_invocable_v<T>, LogStream &> LogStream::
-operator<<(const T &value) {
-  if (this->enabled) {
+typename std::enable_if_t<is_not_llvmprintable_nor_invocable<T>::value,
+                          LogStream &>
+LogStream::operator<<(const T &value) {
+  if (this->logger.lineEnabled) {
+    auto &ostream = this->logger.LJ.getStream();
     if (!this->prefixHasBeenPrinted) {
-      this->ostream << this->prefix;
+      ostream << this->logger.makePrefix();
       this->prefixHasBeenPrinted = true;
     }
-    this->ostream << value;
+    ostream << value;
   }
   return *this;
 }
 
 template <typename T>
-LogStream &LogStream::print(const T &obj, bool usePrefix) {
-  if (this->enabled) {
-    if (!this->prefixHasBeenPrinted) {
-      if (!usePrefix) {
-        this->ostream << this->prefix;
-        this->prefixHasBeenPrinted = true;
-      }
-    }
-    if (usePrefix) {
-      obj.print(this->ostream, this->prefix);
+typename std::enable_if_t<is_prefix_llvmprintable<T>::value, LogStream &>
+LogStream::operator<<(T &obj) {
+  if (this->logger.lineEnabled) {
+    auto &ostream = this->logger.LJ.getStream();
+    auto prefix = this->logger.makePrefix();
+    if (this->prefixHasBeenPrinted) {
+      obj.print(ostream, "");
     } else {
-      obj.print(this->ostream);
+      this->prefixHasBeenPrinted = true;
+      obj.print(ostream, this->logger.makePrefix());
     }
+  }
+  return *this;
+}
+
+template <typename T>
+typename std::enable_if_t<is_not_prefix_but_llvmprintable<T>::value,
+                          LogStream &>
+LogStream::operator<<(T &obj) {
+  if (this->logger.lineEnabled) {
+    auto &ostream = this->logger.LJ.getStream();
+    obj.print(ostream);
   }
   return *this;
 }
