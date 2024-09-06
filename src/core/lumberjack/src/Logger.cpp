@@ -32,7 +32,7 @@ Logger::Logger(Lumberjack &LJ, const char *name) : name(name), LJ(LJ) {}
 Logger &Logger::print() {
   this->LJ.getStream() << this->name << this->LJ.getSeparator();
   for (const auto &section : this->sections) {
-    this->LJ.getStream() << section << this->LJ.getSeparator();
+    this->LJ.getStream() << section;
   }
   this->lineIsEnabled = true;
   return *this;
@@ -55,15 +55,19 @@ Logger &Logger::info() {
   return print(LOG_INFO);
 }
 
-void Logger::open(const char *name) {
-  this->sections.push_back(string(name));
+void Logger::openSection(string name) {
+  this->sections.push_back(std::move(name) + this->LJ.getSeparator());
 }
 
-void Logger::open(string name) {
-  this->sections.push_back(std::move(name));
+void Logger::closeSection() {
+  this->sections.pop_back();
 }
 
-void Logger::close() {
+void Logger::openIndent() {
+  this->sections.push_back("  ");
+}
+
+void Logger::closeIndent() {
   this->sections.pop_back();
 }
 

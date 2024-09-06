@@ -69,11 +69,13 @@ public:
 
   Logger &info();
 
-  void open(const char *name);
+  void openSection(std::string name);
 
-  void open(std::string name);
+  void openIndent();
 
-  void close();
+  void closeSection();
+
+  void closeIndent();
 
   template <typename F>
   typename std::enable_if_t<std::is_invocable_v<F>, Logger &> operator<<(

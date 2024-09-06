@@ -111,8 +111,9 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
     isScopeWithinLoop{ false },
     needInitialization{ false },
     log{ NoelleLumberjack, "ClonableMemoryObject" } {
-  errs() << "ClonableMemoryObject: Start\n";
-  errs() << "ClonableMemoryObject:   Object = " << *allocation << "\n";
+  log.debug() << "Start\n";
+  log.openIndent();
+  log.debug() << "Object = " << *allocation << "\n";
 
   /*
    * Check if the current stack object's scope is the loop.
@@ -124,9 +125,9 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
    */
   this->allocatedType = allocation->getAllocatedType();
   if (!this->identifyStoresAndOtherUsers(loop, DS)) {
-    errs()
-        << "ClonableMemoryObject:   We cannot identify memory accesses to it\n";
-    errs() << "ClonableMemoryObject: Exit\n";
+    log.debug() << "Cannot identify memory accesses to it\n";
+    log.closeIndent();
+    log.debug() << "Exit\n";
     return;
   }
 
@@ -148,8 +149,9 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
     /*
      * There is no need to clone the stack object.
      */
-    errs() << "ClonableMemoryObject:   There is no need to clone it\n";
-    errs() << "ClonableMemoryObject: Exit\n";
+    log.debug() << "Not need to clone this\n";
+    log.closeIndent();
+    log.debug() << "Exit\n";
     return;
   }
 
@@ -165,9 +167,10 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
      * The stack object is involved in a loop-carried, RAW, memory data
      * dependence. It cannot be safely cloned.
      */
-    errs()
-        << "ClonableMemoryObject:   There are RAW memory data dependences between loop iterations\n";
-    errs() << "ClonableMemoryObject: Exit\n";
+    log.debug()
+        << "There are RAW memory data dependences between loop iterations\n";
+    log.closeIndent();
+    log.debug() << "Exit\n";
     return;
   }
 
@@ -186,12 +189,13 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
      * Therefore, the object is clonable.
      */
     this->isClonable = true;
-    errs() << "ClonableMemoryObject:   It is clonable\n";
-    errs() << "ClonableMemoryObject: Exit\n";
+    log.debug() << "It is clonable\n";
+    log.closeIndent();
+    log.debug() << "Exit\n";
     return;
   }
   if (!this->isThereRAWThroughMemoryFromLoopToOutside(loop, allocation, ldg)) {
-    errs() << "ClonableMemoryObject:   It is clonable\n";
+    log.debug() << "It is clonable\n";
 
     /*
      * The stack object is not involved in any memory RAW data dependence from
@@ -212,7 +216,8 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
        * Therefore, the object is clonable.
        */
       this->isClonable = true;
-      errs() << "ClonableMemoryObject: Exit\n";
+      log.closeIndent();
+      log.debug() << "Exit\n";
       return;
     }
 
@@ -223,8 +228,9 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
      */
     this->needInitialization = true;
     this->isClonable = true;
-    errs() << "ClonableMemoryObject:   It requires initialization\n";
-    errs() << "ClonableMemoryObject: Exit\n";
+    log.debug() << "It requires initialization\n";
+    log.closeIndent();
+    log.debug() << "Exit\n";
     return;
   }
 
@@ -235,7 +241,8 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
    */
   if ((!this->isScopeWithinLoop) && (!allocatedType->isStructTy())
       && (!allocatedType->isIntegerTy())) {
-    errs() << "ClonableMemoryObject: Exit\n";
+    log.closeIndent();
+    log.debug() << "Exit\n";
     return;
   }
 
@@ -252,7 +259,8 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
         || (this->isThereRAWThroughMemoryFromLoopToOutside(loop,
                                                            allocation,
                                                            ldg))) {
-      errs() << "ClonableMemoryObject: Exit\n";
+      log.closeIndent();
+      log.debug() << "Exit\n";
       return;
     }
   }
@@ -260,10 +268,11 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
   /*
    * The location is clonable.
    */
-  errs() << "ClonableMemoryObject:   It is clonable\n";
+  log.debug() << "It is clonable\n";
+  log.closeIndent();
   this->isClonable = true;
 
-  errs() << "ClonableMemoryObject: Exit\n";
+  log.debug() << "Exit\n";
   return;
 }
 
