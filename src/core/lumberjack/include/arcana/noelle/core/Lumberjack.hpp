@@ -148,79 +148,61 @@ class LogStream {
 public:
   LogStream(Logger &logger) : logger(logger), prefixHasBeenPrinted(false) {}
 
-  template <typename T>
-  typename std::enable_if_t<is_not_llvmprintable_nor_invocable<T>::value,
-                            LogStream &>
-  operator<<(const T &value);
-
   template <typename F>
   typename std::enable_if_t<std::is_invocable_v<F>, LogStream &> operator<<(
-      F &func);
+      F &func) {
+    if (this->logger.lineEnabled) {
+      return this << func();
+    }
+    return *this;
+  }
 
   template <typename T>
   typename std::enable_if_t<is_prefix_llvmprintable<T>::value, LogStream &>
-  operator<<(T &obj);
+  operator<<(T &obj) {
+    if (this->logger.lineEnabled) {
+      auto &ostream = this->logger.LJ.getStream();
+      auto prefix = this->logger.makePrefix();
+      if (this->prefixHasBeenPrinted) {
+        obj.print(ostream, "");
+      } else {
+        this->prefixHasBeenPrinted = true;
+        obj.print(ostream, this->logger.makePrefix());
+      }
+    }
+    return *this;
+  }
 
   template <typename T>
   typename std::enable_if_t<is_not_prefix_but_llvmprintable<T>::value,
                             LogStream &>
-  operator<<(T &obj);
+  operator<<(T &obj) {
+    if (this->logger.lineEnabled) {
+      auto &ostream = this->logger.LJ.getStream();
+      obj.print(ostream);
+    }
+    return *this;
+  }
+
+  template <typename T>
+  typename std::enable_if_t<is_not_llvmprintable_nor_invocable<T>::value,
+                            LogStream &>
+  operator<<(const T &value) {
+    if (this->logger.lineEnabled) {
+      auto &ostream = this->logger.LJ.getStream();
+      if (!this->prefixHasBeenPrinted) {
+        ostream << this->logger.makePrefix();
+        this->prefixHasBeenPrinted = true;
+      }
+      ostream << value;
+    }
+    return *this;
+  }
 
 private:
   Logger &logger;
   bool prefixHasBeenPrinted;
 };
-
-template <typename F>
-typename std::enable_if_t<std::is_invocable_v<F>, LogStream &> LogStream::
-operator<<(F &func) {
-  if (this->logger.lineEnabled) {
-    return this << func();
-  }
-  return *this;
-}
-
-template <typename T>
-typename std::enable_if_t<is_not_llvmprintable_nor_invocable<T>::value,
-                          LogStream &>
-LogStream::operator<<(const T &value) {
-  if (this->logger.lineEnabled) {
-    auto &ostream = this->logger.LJ.getStream();
-    if (!this->prefixHasBeenPrinted) {
-      ostream << this->logger.makePrefix();
-      this->prefixHasBeenPrinted = true;
-    }
-    ostream << value;
-  }
-  return *this;
-}
-
-template <typename T>
-typename std::enable_if_t<is_prefix_llvmprintable<T>::value, LogStream &>
-LogStream::operator<<(T &obj) {
-  if (this->logger.lineEnabled) {
-    auto &ostream = this->logger.LJ.getStream();
-    auto prefix = this->logger.makePrefix();
-    if (this->prefixHasBeenPrinted) {
-      obj.print(ostream, "");
-    } else {
-      this->prefixHasBeenPrinted = true;
-      obj.print(ostream, this->logger.makePrefix());
-    }
-  }
-  return *this;
-}
-
-template <typename T>
-typename std::enable_if_t<is_not_prefix_but_llvmprintable<T>::value,
-                          LogStream &>
-LogStream::operator<<(T &obj) {
-  if (this->logger.lineEnabled) {
-    auto &ostream = this->logger.LJ.getStream();
-    obj.print(ostream);
-  }
-  return *this;
-}
 
 } // namespace arcana::noelle
 
