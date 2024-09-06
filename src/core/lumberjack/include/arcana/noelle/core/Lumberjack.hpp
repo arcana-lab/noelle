@@ -75,8 +75,13 @@ public:
 
   void close();
 
+  template <typename F>
+  typename std::enable_if_t<std::is_invocable_v<F>, Logger &> operator<<(
+      F &func);
+
   template <typename T>
-  Logger &operator<<(const T value);
+  typename std::enable_if_t<!std::is_invocable_v<T>, Logger &> operator<<(
+      const T &value);
 
 private:
   const char *name;
@@ -85,8 +90,18 @@ private:
   Lumberjack &LJ;
 };
 
+template <typename F>
+typename std::enable_if_t<std::is_invocable_v<F>, Logger &> Logger::operator<<(
+    F &func) {
+  if (this->lineIsEnabled) {
+    this->LJ.getStream() << func();
+  }
+  return *this;
+}
+
 template <typename T>
-Logger &Logger::operator<<(const T value) {
+typename std::enable_if_t<!std::is_invocable_v<T>, Logger &> Logger::operator<<(
+    const T &value) {
   if (this->lineIsEnabled) {
     this->LJ.getStream() << value;
   }
