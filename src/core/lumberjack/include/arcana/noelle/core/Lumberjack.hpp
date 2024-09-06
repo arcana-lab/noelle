@@ -85,6 +85,9 @@ public:
   typename std::enable_if_t<!std::is_invocable_v<T>, Logger &> operator<<(
       const T &value);
 
+  template <typename T>
+  Logger &operator()(const T &printable);
+
 private:
   const char *name;
   bool lineIsEnabled = false;
@@ -106,6 +109,14 @@ typename std::enable_if_t<!std::is_invocable_v<T>, Logger &> Logger::operator<<(
     const T &value) {
   if (this->lineIsEnabled) {
     this->LJ.getStream() << value;
+  }
+  return *this;
+}
+
+template <typename T>
+Logger &Logger::operator()(const T &printable) {
+  if (this->lineIsEnabled) {
+    printable.print(this->LJ.getStream(), this->name);
   }
   return *this;
 }
