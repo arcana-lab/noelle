@@ -57,7 +57,7 @@ Lumberjack::Lumberjack(const char *filename, raw_ostream &ostream)
     assert(verbosity.IsInt());
     if (verbosity.IsInt()) {
       auto v = verbosity.GetInt();
-      if (LOG_NONE <= v && v <= LOG_DEBUG) {
+      if (LOG_DISABLED <= v && v <= LOG_DEBUG) {
         this->default_verbosity = static_cast<LVerbosity>(v);
       }
     }
@@ -74,7 +74,7 @@ Lumberjack::Lumberjack(const char *filename, raw_ostream &ostream)
       assert(member.value.IsInt());
       LVerbosity v = this->default_verbosity;
       auto mv = member.value.GetInt();
-      if (LOG_NONE <= mv && mv <= LOG_DEBUG) {
+      if (LOG_DISABLED <= mv && mv <= LOG_DEBUG) {
         v = static_cast<LVerbosity>(mv);
       }
       this->classes[member.name.GetString()] = v;

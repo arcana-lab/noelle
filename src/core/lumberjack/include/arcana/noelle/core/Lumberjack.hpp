@@ -36,7 +36,12 @@ class Lumberjack; // Forward declaration
 
 extern Lumberjack NoelleLumberjack;
 
-enum LVerbosity { LOG_NONE = 0, LOG_INFO = 1, LOG_DEBUG = 2 };
+enum LVerbosity {
+  LOG_BYPASS = -1,
+  LOG_DISABLED = 0,
+  LOG_INFO = 1,
+  LOG_DEBUG = 2
+};
 
 class Lumberjack {
 public:
@@ -57,17 +62,45 @@ private:
   llvm::raw_ostream &ostream;
 };
 
+class Logger; // Forward declaration
+
+class LogStream {
+public:
+  LogStream(llvm::raw_ostream &ostream, bool enabled, std::string prefix)
+    : ostream(ostream),
+      enabled(enabled),
+      prefix(std::move(prefix)),
+      prefixHasBeenPrinted(false) {}
+
+  template <typename F>
+  typename std::enable_if_t<std::is_invocable_v<F>, LogStream &> operator<<(
+      F &func);
+
+  template <typename T>
+  typename std::enable_if_t<!std::is_invocable_v<T>, LogStream &> operator<<(
+      const T &value);
+
+  template <typename T>
+  LogStream &print(const T &obj, bool usePrefix = false);
+
+private:
+  llvm::raw_ostream &ostream;
+  bool enabled;
+  std::string prefix;
+  bool prefixHasBeenPrinted;
+};
+
 class Logger {
 public:
   Logger(Lumberjack &LJ, const char *name);
 
-  Logger &print();
+  LogStream level(LVerbosity verbosity);
 
-  Logger &print(LVerbosity verbosity);
+  LogStream debug();
 
-  Logger &debug();
+  LogStream info();
 
-  Logger &info();
+  LogStream bypass();
 
   void openSection(std::string name);
 
@@ -77,46 +110,52 @@ public:
 
   void closeIndent();
 
-  template <typename F>
-  typename std::enable_if_t<std::is_invocable_v<F>, Logger &> operator<<(
-      F &func);
-
-  template <typename T>
-  typename std::enable_if_t<!std::is_invocable_v<T>, Logger &> operator<<(
-      const T &value);
-
-  template <typename T>
-  Logger &operator()(const T &printable);
-
 private:
   const char *name;
-  bool lineIsEnabled = false;
   std::vector<std::string> sections;
   Lumberjack &LJ;
 };
 
 template <typename F>
-typename std::enable_if_t<std::is_invocable_v<F>, Logger &> Logger::operator<<(
-    F &func) {
-  if (this->lineIsEnabled) {
-    this->LJ.getStream() << func();
+typename std::enable_if_t<std::is_invocable_v<F>, LogStream &> LogStream::
+operator<<(F &func) {
+  if (this->enabled) {
+    if (!this->prefixHasBeenPrinted) {
+      this->ostream << this->prefix;
+      this->prefixHasBeenPrinted = true;
+    }
+    this->ostream << func();
   }
   return *this;
 }
 
 template <typename T>
-typename std::enable_if_t<!std::is_invocable_v<T>, Logger &> Logger::operator<<(
-    const T &value) {
-  if (this->lineIsEnabled) {
-    this->LJ.getStream() << value;
+typename std::enable_if_t<!std::is_invocable_v<T>, LogStream &> LogStream::
+operator<<(const T &value) {
+  if (this->enabled) {
+    if (!this->prefixHasBeenPrinted) {
+      this->ostream << this->prefix;
+      this->prefixHasBeenPrinted = true;
+    }
+    this->ostream << value;
   }
   return *this;
 }
 
 template <typename T>
-Logger &Logger::operator()(const T &printable) {
-  if (this->lineIsEnabled) {
-    printable.print(this->LJ.getStream(), this->name);
+LogStream &LogStream::print(const T &obj, bool usePrefix) {
+  if (this->enabled) {
+    if (!this->prefixHasBeenPrinted) {
+      if (!usePrefix) {
+        this->ostream << this->prefix;
+        this->prefixHasBeenPrinted = true;
+      }
+    }
+    if (usePrefix) {
+      obj.print(this->ostream, this->prefix);
+    } else {
+      obj.print(this->ostream);
+    }
   }
   return *this;
 }

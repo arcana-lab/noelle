@@ -29,30 +29,25 @@ using namespace std;
 
 Logger::Logger(Lumberjack &LJ, const char *name) : name(name), LJ(LJ) {}
 
-Logger &Logger::print() {
-  this->LJ.getStream() << this->name << this->LJ.getSeparator();
-  for (const auto &section : this->sections) {
-    this->LJ.getStream() << section;
+LogStream Logger::level(LVerbosity verbosity) {
+  bool enabled = this->LJ.isEnabled(this->name, verbosity);
+  string prefix = string(this->name) + this->LJ.getSeparator();
+  for (auto section : this->sections) {
+    prefix += section;
   }
-  this->lineIsEnabled = true;
-  return *this;
+  return LogStream(this->LJ.getStream(), enabled, prefix);
 }
 
-Logger &Logger::print(LVerbosity verbosity) {
-  if (this->LJ.isEnabled(this->name, verbosity)) {
-    print();
-  } else {
-    this->lineIsEnabled = false;
-  }
-  return *this;
+LogStream Logger::debug() {
+  return level(LOG_DEBUG);
 }
 
-Logger &Logger::debug() {
-  return print(LOG_DEBUG);
+LogStream Logger::info() {
+  return level(LOG_INFO);
 }
 
-Logger &Logger::info() {
-  return print(LOG_INFO);
+LogStream Logger::bypass() {
+  return level(LOG_BYPASS);
 }
 
 void Logger::openSection(string name) {
