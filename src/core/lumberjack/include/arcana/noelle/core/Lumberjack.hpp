@@ -144,6 +144,12 @@ using is_not_prefix_but_llvmprintable =
     std::conjunction<is_llvmprintable<T>,
                      std::negation<is_prefix_llvmprintable<T>>>;
 
+// Since this is the only Lumberjack class that provides the user with
+// an `operator<<`, and the only verbosity-controlling functions of `Logger` are
+// the only functions that return a `LogStream` the user is force to specify the
+// verbosity for each log message. Having an `operator<<` for `Logger` would
+// allow for `log << "abc"` which bypasses the verbosity level (e.g. no
+// .debug()) that we want to avoid
 class LogStream {
 public:
   LogStream(Logger &logger) : logger(logger), prefixHasBeenPrinted(false) {}
