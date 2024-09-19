@@ -197,9 +197,7 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
   /*
    * Append loops of each function.
    */
-  if (this->verbose >= Verbosity::Maximal) {
-    errs() << "Noelle: Filter out cold code\n";
-  }
+  log.debug() << "Filter out cold code\n";
   auto sortedFunctions = orderOfFunctionsToFollow(functions);
   for (auto function : sortedFunctions) {
 
@@ -209,18 +207,15 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
     if (function->empty()) {
       continue;
     }
-    if (this->verbose >= Verbosity::Maximal) {
-      errs() << "Noelle:  Function \"" << function->getName() << "\"\n";
-    }
+    log.debug() << "Function \"" << function->getName() << "\"\n";
+    log.openIndent();
 
     /*
      * Check if the function is hot.
      */
     if (!isFunctionHot(function, minimumHotness)) {
-      if (this->verbose >= Verbosity::Maximal) {
-        errs() << "Noelle:  Disable \"" << function->getName()
-               << "\" as cold function\n";
-      }
+      log.debug()
+          << "Disable \"" << function->getName() << "\" as cold function\n";
       continue;
     }
 
@@ -245,20 +240,16 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
       auto loopIDOpt = loopStructure->getID();
       assert(loopIDOpt);
       auto currentLoopIndex = loopIDOpt.value();
-      if (this->verbose >= Verbosity::Maximal) {
-        errs() << "Noelle:     Loop " << currentLoopIndex << " \""
-               << *loop->getHeader()->getFirstNonPHI() << "\" (";
-        errs() << (this->getProfiles()->getDynamicTotalInstructionCoverage(
-                       loopStructure)
-                   * 100)
-               << "%)\n";
-      }
+      log.debug() << "Loop " << currentLoopIndex << " \""
+                  << *loop->getHeader()->getFirstNonPHI() << "\" ("
+                  << (this->getProfiles()->getDynamicTotalInstructionCoverage(
+                          loopStructure)
+                      * 100)
+                  << "%)\n";
       if (minimumHotness > 0) {
         if (!isLoopHot(loopStructure, minimumHotness)) {
-          if (this->verbose >= Verbosity::Maximal) {
-            errs() << "Noelle:  Disable loop \"" << currentLoopIndex
-                   << "\" as cold code\n";
-          }
+          log.debug()
+              << "Disable loop \"" << currentLoopIndex << "\" as cold code\n";
           delete loopStructure;
           continue;
         }
@@ -288,9 +279,7 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
        * Check if more than one thread is assigned to the current loop.
        * If that's the case, then we have to enable that loop.
        */
-      if (this->verbose >= Verbosity::Maximal) {
-        errs() << "Noelle:      Current index = " << currentLoopIndex << "\n";
-      }
+      log.debug() << "Current index = " << currentLoopIndex << "\n";
       auto maximumNumberOfCoresForTheParallelization =
           this->loopThreads[currentLoopIndex];
       if ((maximumNumberOfCoresForTheParallelization <= 1)
@@ -305,16 +294,15 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
         delete loopStructure;
         continue;
       }
-      if (this->verbose >= Verbosity::Maximal) {
-        errs() << "Noelle:      Threads = "
-               << maximumNumberOfCoresForTheParallelization << "\n";
-      }
+      log.debug()
+          << "Threads = " << maximumNumberOfCoresForTheParallelization << "\n";
 
       /*
        * The current loop needs to be considered as specified by the user.
        */
       allLoops->push_back(loopStructure);
     }
+    log.closeIndent();
   }
 
   return allLoops;
@@ -624,9 +612,7 @@ std::vector<LoopContent *> *Noelle::getLoopContents(double minimumHotness) {
   /*
    * Append loops of each function.
    */
-  if (this->verbose >= Verbosity::Maximal) {
-    errs() << "Noelle: Filter out cold code\n";
-  }
+  log.debug() << "Filter out cold code\n";
 
   for (auto function : functions) {
     /*
@@ -640,10 +626,8 @@ std::vector<LoopContent *> *Noelle::getLoopContents(double minimumHotness) {
      * Check if the function is hot.
      */
     if (!isFunctionHot(function, minimumHotness)) {
-      if (this->verbose >= Verbosity::Maximal) {
-        errs() << "Noelle:  Disable \"" << function->getName()
-               << "\" as cold function\n";
-      }
+      log.debug()
+          << "Disable \"" << function->getName() << "\" as cold function\n";
       continue;
     }
 
@@ -692,10 +676,8 @@ std::vector<LoopContent *> *Noelle::getLoopContents(double minimumHotness) {
       auto currentLoopIndex = loopIDOpt.value();
       if (minimumHotness > 0) {
         if (!this->isLoopHot(loopS, minimumHotness)) {
-          if (this->verbose >= Verbosity::Maximal) {
-            errs() << "Noelle:  Disable loop \"" << currentLoopIndex
-                   << "\" as cold code\n";
-          }
+          log.debug()
+              << "Disable loop \"" << currentLoopIndex << "\" as cold code\n";
 
           /*
            * Free the memory.
@@ -944,8 +926,8 @@ bool Noelle::checkToGetLoopFilteringInfo(void) {
    */
   auto indexBuf = MemoryBuffer::getFileAsStream(this->filterFileName);
   if (auto ec = indexBuf.getError()) {
-    errs() << "Failed to read INDEX_FILE = \"" << this->filterFileName
-           << "\":" << ec.message() << "\n";
+    log.bypass() << "Failed to read INDEX_FILE = \"" << this->filterFileName
+                 << "\":" << ec.message() << "\n";
     abort();
   }
 

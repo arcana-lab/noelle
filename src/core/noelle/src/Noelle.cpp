@@ -87,7 +87,8 @@ Noelle::Noelle(
     getCallGraph{ getCallGraph },
     getBFI{ getBFI },
     getBPI{ getBPI },
-    aaEngines{} {
+    aaEngines{},
+    log{ NoelleLumberjack, "Noelle" } {
 
   this->filterFileName = getenv("INDEX_FILE");
 
