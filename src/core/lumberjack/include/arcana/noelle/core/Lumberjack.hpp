@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Federico Sossai, Simone Campanoni
+ * Copyright 2024 Federico Sossai
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -38,10 +38,10 @@ class Lumberjack; // Forward declaration
 extern Lumberjack NoelleLumberjack;
 
 enum LVerbosity {
-  LOG_BYPASS = -1,
-  LOG_DISABLED = 0,
-  LOG_INFO = 1,
-  LOG_DEBUG = 2
+  LOG_BYPASS = 0, // this must always be the first
+  LOG_INFO,
+  LOG_DEBUG,
+  LOG_DISABLED // this must always be the last
 };
 
 class Lumberjack {

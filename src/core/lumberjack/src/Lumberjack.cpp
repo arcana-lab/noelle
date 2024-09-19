@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 Federico Sossai, Simone Campanoni
+ * Copyright 2024 Federico Sossai
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -34,12 +34,10 @@ using namespace llvm;
 
 namespace arcana::noelle {
 
-Lumberjack NoelleLumberjack(NOELLE_LUMBERJACK_JSON_DEFAULT_PATH, llvm::errs());
+Lumberjack NoelleLumberjack(NOELLE_LUMBERJACK_JSON_DEFAULT_PATH, errs());
 
 Lumberjack::Lumberjack(const char *filename, raw_ostream &ostream)
-  : default_verbosity(LOG_INFO),
-    ostream(ostream) {
-  using namespace std;
+  : ostream(ostream) {
 
   stringstream input;
   ifstream ifs(filename);
@@ -57,14 +55,20 @@ Lumberjack::Lumberjack(const char *filename, raw_ostream &ostream)
     assert(verbosity.IsInt());
     if (verbosity.IsInt()) {
       auto v = verbosity.GetInt();
-      if (LOG_DISABLED <= v && v <= LOG_DEBUG) {
+      if (LOG_BYPASS <= v && v <= LOG_DISABLED) {
         this->default_verbosity = static_cast<LVerbosity>(v);
+      } else {
+        assert(false && "Unexpected verbosity level");
       }
     }
+  } else {
+    assert(false && "Corrupted Lumberjack configuration file");
   }
 
   if (json.HasMember("separator")) {
     this->separator = json["separator"].GetString();
+  } else {
+    assert(false && "Corrupted Lumberjack configuration file");
   }
 
   if (json.HasMember("verbosity_override")) {
@@ -74,8 +78,10 @@ Lumberjack::Lumberjack(const char *filename, raw_ostream &ostream)
       assert(member.value.IsInt());
       LVerbosity v = this->default_verbosity;
       auto mv = member.value.GetInt();
-      if (LOG_DISABLED <= mv && mv <= LOG_DEBUG) {
+      if (LOG_BYPASS <= mv && mv <= LOG_DISABLED) {
         v = static_cast<LVerbosity>(mv);
+      } else {
+        assert(false && "Unexpected verbosity level");
       }
       this->classes[member.name.GetString()] = v;
     }
@@ -87,8 +93,8 @@ Lumberjack::~Lumberjack() {}
 bool Lumberjack::isEnabled(const char *name, LVerbosity verbosity) {
   auto it = this->classes.find(name);
   if (it != this->classes.end()) {
-    auto max = get<LVerbosity>(*it);
-    if (verbosity <= max) {
+    auto desiredVerbosity = get<LVerbosity>(*it);
+    if (verbosity <= desiredVerbosity) {
       return true;
     }
   } else {
