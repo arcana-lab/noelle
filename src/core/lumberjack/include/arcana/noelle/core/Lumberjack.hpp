@@ -152,7 +152,12 @@ using is_not_prefix_but_llvmprintable =
 // .debug()) that we want to avoid
 class LogStream {
 public:
-  LogStream(Logger &logger) : logger(logger), prefixHasBeenPrinted(false) {}
+  LogStream(Logger &logger) : logger(logger), needToPrintPrefix(true) {}
+
+  LogStream &noPrefix() {
+    this->needToPrintPrefix = false;
+    return *this;
+  }
 
   template <typename F>
   typename std::enable_if_t<std::is_invocable_v<F>, LogStream &> operator<<(
@@ -169,10 +174,10 @@ public:
     if (this->logger.lineEnabled) {
       auto &ostream = this->logger.LJ.getStream();
       auto prefix = this->logger.makePrefix();
-      if (this->prefixHasBeenPrinted) {
+      if (!this->needToPrintPrefix) {
         obj.print(ostream, "");
       } else {
-        this->prefixHasBeenPrinted = true;
+        this->needToPrintPrefix = false;
         obj.print(ostream, this->logger.makePrefix());
       }
     }
@@ -185,6 +190,10 @@ public:
   operator<<(T &obj) {
     if (this->logger.lineEnabled) {
       auto &ostream = this->logger.LJ.getStream();
+      if (this->needToPrintPrefix) {
+        ostream << this->logger.makePrefix();
+        this->needToPrintPrefix = false;
+      }
       obj.print(ostream);
     }
     return *this;
@@ -196,9 +205,9 @@ public:
   operator<<(const T &value) {
     if (this->logger.lineEnabled) {
       auto &ostream = this->logger.LJ.getStream();
-      if (!this->prefixHasBeenPrinted) {
+      if (this->needToPrintPrefix) {
         ostream << this->logger.makePrefix();
-        this->prefixHasBeenPrinted = true;
+        this->needToPrintPrefix = false;
       }
       ostream << value;
     }
@@ -207,7 +216,7 @@ public:
 
 private:
   Logger &logger;
-  bool prefixHasBeenPrinted;
+  bool needToPrintPrefix;
 };
 
 } // namespace arcana::noelle
