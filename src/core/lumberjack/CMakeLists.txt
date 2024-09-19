@@ -5,6 +5,7 @@ target_sources(
   PRIVATE
   src/Logger.cpp
   src/Lumberjack.cpp
+  src/Sections.cpp
 )
 target_include_directories(Noelle PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 

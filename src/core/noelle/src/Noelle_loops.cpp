@@ -207,8 +207,8 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
     if (function->empty()) {
       continue;
     }
+    auto s1 = log.indentedSection();
     log.debug() << "Function \"" << function->getName() << "\"\n";
-    log.openIndent();
 
     /*
      * Check if the function is hot.
@@ -302,7 +302,6 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(
        */
       allLoops->push_back(loopStructure);
     }
-    log.closeIndent();
   }
 
   return allLoops;

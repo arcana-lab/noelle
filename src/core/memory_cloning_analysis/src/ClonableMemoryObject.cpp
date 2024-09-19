@@ -112,7 +112,7 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
     needInitialization{ false },
     log{ NoelleLumberjack, "ClonableMemoryObject" } {
   log.debug() << "Start\n";
-  log.openIndent();
+  log.openIndentedSection();
   log.debug() << "Object = " << *allocation << "\n";
 
   /*
@@ -126,7 +126,7 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
   this->allocatedType = allocation->getAllocatedType();
   if (!this->identifyStoresAndOtherUsers(loop, DS)) {
     log.debug() << "Cannot identify memory accesses to it\n";
-    log.closeIndent();
+    log.closeIndentedSection();
     log.debug() << "Exit\n";
     return;
   }
@@ -150,7 +150,7 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
      * There is no need to clone the stack object.
      */
     log.debug() << "Not need to clone this\n";
-    log.closeIndent();
+    log.closeIndentedSection();
     log.debug() << "Exit\n";
     return;
   }
@@ -169,7 +169,7 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
      */
     log.debug()
         << "There are RAW memory data dependences between loop iterations\n";
-    log.closeIndent();
+    log.closeIndentedSection();
     log.debug() << "Exit\n";
     return;
   }
@@ -190,7 +190,7 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
      */
     this->isClonable = true;
     log.debug() << "It is clonable\n";
-    log.closeIndent();
+    log.closeIndentedSection();
     log.debug() << "Exit\n";
     return;
   }
@@ -216,7 +216,7 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
        * Therefore, the object is clonable.
        */
       this->isClonable = true;
-      log.closeIndent();
+      log.closeIndentedSection();
       log.debug() << "Exit\n";
       return;
     }
@@ -229,7 +229,7 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
     this->needInitialization = true;
     this->isClonable = true;
     log.debug() << "It requires initialization\n";
-    log.closeIndent();
+    log.closeIndentedSection();
     log.debug() << "Exit\n";
     return;
   }
@@ -241,7 +241,7 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
    */
   if ((!this->isScopeWithinLoop) && (!allocatedType->isStructTy())
       && (!allocatedType->isIntegerTy())) {
-    log.closeIndent();
+    log.closeIndentedSection();
     log.debug() << "Exit\n";
     return;
   }
@@ -259,7 +259,7 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
         || (this->isThereRAWThroughMemoryFromLoopToOutside(loop,
                                                            allocation,
                                                            ldg))) {
-      log.closeIndent();
+      log.closeIndentedSection();
       log.debug() << "Exit\n";
       return;
     }
@@ -269,7 +269,7 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
    * The location is clonable.
    */
   log.debug() << "It is clonable\n";
-  log.closeIndent();
+  log.closeIndentedSection();
   this->isClonable = true;
 
   log.debug() << "Exit\n";

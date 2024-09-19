@@ -63,7 +63,10 @@ private:
   llvm::raw_ostream &ostream;
 };
 
-class LogStream; // Forward declaration
+// Forward declarations
+class IndentedSection;
+class NamedSection;
+class LogStream;
 
 class Logger {
   friend class LogStream;
@@ -79,13 +82,17 @@ public:
 
   LogStream bypass();
 
-  void openSection(std::string name);
+  void openNamedSection(std::string name);
 
-  void openIndent();
+  void closeNamedSection();
 
-  void closeSection();
+  void openIndentedSection();
 
-  void closeIndent();
+  void closeIndentedSection();
+
+  [[nodiscard]] IndentedSection indentedSection();
+
+  [[nodiscard]] NamedSection namedSection(std::string name);
 
 private:
   std::string makePrefix() const;
@@ -94,6 +101,30 @@ private:
   std::vector<std::string> sections;
   bool lineEnabled;
   Lumberjack &LJ;
+};
+
+class IndentedSection {
+  friend class Logger;
+
+public:
+  ~IndentedSection();
+
+private:
+  IndentedSection(Logger &logger);
+
+  Logger &logger;
+};
+
+class NamedSection {
+  friend class Logger;
+
+public:
+  ~NamedSection();
+
+private:
+  NamedSection(Logger &logger, std::string name);
+
+  Logger &logger;
 };
 
 // This trait descripts types that have a member function called `print` that

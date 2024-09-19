@@ -106,18 +106,18 @@ void SCCPrinter::printSCC(GenericSCC *scc) {
                << "\e[0m (Type ID " << type << ")\n";
 
   if (this->printSCCInstructions) {
-    log.openSection("\e[32mInsts\e[0m");
-    for (auto *I : sccNode->getInstructions()) {
-      log.bypass() << *I << "\n";
+    {
+      auto s1 = log.namedSection("\e[32mInsts\e[0m");
+      for (auto *I : sccNode->getInstructions()) {
+        log.bypass() << *I << "\n";
+      }
     }
-    log.closeSection();
     log.bypass() << "\n";
   }
 
   if (this->printDetails) {
-    log.openSection("\e[32mDetails\e[0m");
+    auto s1 = log.namedSection("\e[32mDetails\e[0m");
     log.bypass() << *sccNode;
-    log.closeSection();
   }
 }
 

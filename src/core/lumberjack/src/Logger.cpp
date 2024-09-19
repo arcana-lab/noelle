@@ -46,19 +46,19 @@ LogStream Logger::bypass() {
   return level(LOG_BYPASS);
 }
 
-void Logger::openSection(string name) {
+void Logger::openNamedSection(string name) {
   this->sections.push_back(std::move(name) + this->LJ.getSeparator());
 }
 
-void Logger::closeSection() {
+void Logger::closeNamedSection() {
   this->sections.pop_back();
 }
 
-void Logger::openIndent() {
+void Logger::openIndentedSection() {
   this->sections.push_back("  ");
 }
 
-void Logger::closeIndent() {
+void Logger::closeIndentedSection() {
   this->sections.pop_back();
 }
 
@@ -69,6 +69,14 @@ string Logger::makePrefix() const {
     prefix += section;
   }
   return prefix;
+}
+
+IndentedSection Logger::indentedSection() {
+  return IndentedSection(*this);
+}
+
+NamedSection Logger::namedSection(string name) {
+  return NamedSection(*this, name);
 }
 
 } // namespace arcana::noelle
