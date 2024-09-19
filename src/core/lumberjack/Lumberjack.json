@@ -1,5 +1,5 @@
 {
-  "default_verbosity": 1,
+  "default_verbosity": 0,
   "separator": ": ",
   "verbosity_override": {
   }
