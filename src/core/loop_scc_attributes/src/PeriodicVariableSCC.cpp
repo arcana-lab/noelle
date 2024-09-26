@@ -30,7 +30,8 @@ PeriodicVariableSCC::PeriodicVariableSCC(
     DominatorSummary &dom,
     Value *initVal,
     Value *per,
-    Value *st)
+    Value *st,
+    Value *acc)
   : SingleAccumulatorRecomputableSCC{ SCCKind::PERIODIC_VARIABLE,
                                       s,
                                       loop,
@@ -39,6 +40,18 @@ PeriodicVariableSCC::PeriodicVariableSCC(
     initialValue{ initVal },
     period{ per },
     step{ st } {
+
+  // DDLOTT: the algorithm for determining the accumulator in
+  // SingleAccumulatorRecomputableSCC is not sufficient for 2-phis case PVSCC.
+  // The representation of SARSCC is kind of fine, since only 1 phi is allowed
+  // to have non-phi users, but the algorithm can't deal with picking the phi
+  // that has users. errs() << "PV constructor\n";
+  if (acc != nullptr) {
+    // DD: responsibility for this being a PHINode lies with the SCCDAGAttrs
+    // isPeriodic analysis. errs()  << *acc << "\n" << this->accumulator <<
+    // "\n";
+    this->accumulator = cast<PHINode>(acc);
+  }
 
   return;
 }
