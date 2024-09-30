@@ -11,7 +11,7 @@ typedef int pragma_t;
 extern "C" {
 #endif
 
-#ifdef NOELLE_PRAGMA_ENABLE
+#ifdef NOELLE_PRAGMA_BODY_DISABLE
 
 __attribute__((warn_unused_result, pure)) pragma_t noelle_pragma_begin(
     const char *);
@@ -39,7 +39,7 @@ __attribute__((noinline)) void noelle_pragma_end(pragma_t) {}
 #ifdef __cplusplus
 }
 
-#  ifdef NOELLE_PRAGMA_ENABLE
+#  ifdef NOELLE_PRAGMA_BODY_DISABLE
 
 template <typename... T>
 __attribute__((warn_unused_result, pure)) pragma_t noelle_pragma_begin(
@@ -57,4 +57,4 @@ __attribute__((noinline)) pragma_t noelle_pragma_begin(const char *, T...) {
 
 #endif
 
-#endif // #ifndef __NOELLE_PRAGMA___
+#endif // #ifndef __NOELLE_PRAGMA_H__
