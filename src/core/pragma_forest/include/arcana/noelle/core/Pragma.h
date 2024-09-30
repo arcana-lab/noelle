@@ -24,15 +24,15 @@ __attribute__((pure)) void noelle_pragma_end(pragma_t);
 
 #else
 
-inline pragma_t noelle_pragma_begin(const char *) {
+__attribute__((noinline)) pragma_t noelle_pragma_begin(const char *) {
   return 0;
 }
 
-inline void noelle_pragma_arg_str(pragma_t, const char *) {}
+__attribute__((noinline)) void noelle_pragma_arg_str(pragma_t, const char *) {}
 
-inline void noelle_pragma_arg_int(pragma_t, int) {}
+__attribute__((noinline)) void noelle_pragma_arg_int(pragma_t, int) {}
 
-inline void noelle_pragma_end(pragma_t) {}
+__attribute__((noinline)) void noelle_pragma_end(pragma_t) {}
 
 #endif
 
@@ -49,7 +49,7 @@ __attribute__((warn_unused_result, pure)) pragma_t noelle_pragma_begin(
 #  else
 
 template <typename... T>
-pragma_t noelle_pragma_begin(const char *, T...) {
+__attribute__((noinline)) pragma_t noelle_pragma_begin(const char *, T...) {
   return 0;
 }
 
