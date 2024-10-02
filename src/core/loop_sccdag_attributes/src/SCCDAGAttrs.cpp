@@ -120,10 +120,6 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
 
     } else if (std::get<0>(isPeriodic)) {
       auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
-      //DDLOTT Sep/3/2024: SingleAccumulatorRecomputableSCC's accumulator picking algorithm
-      //doesn't suffice for 2-phis SCC. Rather than change that algorithm, it's probably
-      //better to put the code compensating for that deficiency so that it's attached to
-      //PeriodicVariableSCC -- which we might split off of SARSCC in the future.
       Value *initialValue, *period, *step, *accumulator;
       tie(std::ignore, initialValue, period, step, accumulator) = isPeriodic;
 
@@ -551,7 +547,6 @@ std::set<InductionVariable *> SCCDAGAttrs::
 std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
     SCC *scc,
     LoopTree *loopNode) {
-      //DD: whether or not a variable is periodic is not decidable.
   auto notPeriodic = std::make_tuple(false, nullptr, nullptr, nullptr, nullptr);
 
   if (this->sccToLoopCarriedDependencies.find(scc)
@@ -577,7 +572,7 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodi
     Value *initialValue;
     Value *period;
     Value *step;
-    Value *accumulator; //should be nullptr at return unless the Periodic Variable contains 2+ PHINodes. Identifies accumulator
+    Value *accumulator = nullptr; //should be nullptr at return unless the Periodic Variable contains 2+ PHINodes. Identifies accumulator
 
     auto from = edge->getSrc();
     auto to = edge->getDst();
@@ -590,12 +585,15 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodi
     if (toPHI->getNumIncomingValues() != 2)
       return notPeriodic;
 
-    //DD: we want to capture a case where we have phi1=(ph, -x)(latch, phi2) phi2=(ph, x)(latch, phi1)
-    //This is a different way of expressing a subtract-from-zero flipflop.
-    //In such a case, only one of the phis should have scc-external users.
-    //The other phi should only be holding the "out of phase" value.
-    //If instead the other phi has scc-external users, it implies that the scc is composed
-    //of two interdependent variables.
+    /* 
+     * A different way of expressing a subtract-from-zero flipflop (which can be seen as "x = -x" at the C level)
+     * is to use two PHINode instructions.
+     * With two PHINodes, this can be written as phi1=(preheader, -x)(latch, phi2), phi2=(preheader, x)(latch, phi1)
+     * In such a case, only one of the phis should have scc-external users.
+     * The other phi should only be holding the "out of phase" value.
+     * If instead the other phi has scc-external users, it implies that the scc is composed
+     * of two interdependent variables rather than merely being another way of writing "x = -x."
+     */
     if(isa<PHINode>(from)) {
 
       auto fromPHI = cast<PHINode>(from);

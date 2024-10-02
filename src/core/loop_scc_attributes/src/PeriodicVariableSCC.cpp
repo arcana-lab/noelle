@@ -41,13 +41,20 @@ PeriodicVariableSCC::PeriodicVariableSCC(
     period{ per },
     step{ st } {
 
-      //DDLOTT: the algorithm for determining the accumulator in SingleAccumulatorRecomputableSCC is not
-      //sufficient for 2-phis case PVSCC. The representation of SARSCC is kind of fine, since only 1 phi is
-      //allowed to have non-phi users, but the algorithm can't deal with picking the phi that has users.
-      //errs() << "PV constructor\n";
+      /*
+       * We allow PeriodicVariableSCC to include cases that feature a single SCC containing
+       * two phis when one of the phis is used only by the other phi.
+       * We view this as a single accumulator case where the accumulator is said to be the phi 
+       * that has SCC-external users, and the existing code that uses PeriodicVariableSCC (which
+       * is in GINO) is fully compatible with that representation.
+       * However, the GINO code is only compatible with that representation when "getAccumulator"
+       * returns the phi that has SCC-external users.
+       * The algorithm for determining the accumulator in SingleAccumulatorRecomputableSCC
+       * can't deal with picking the phi that has users between the two phis of the 2-phis case.
+       * This code therefore handles that special case in conjunction with the analysis code in
+       * SCCDAGAttrs.cpp
+       */
       if(acc != nullptr) {
-        //DD: responsibility for this being a PHINode lies with the SCCDAGAttrs isPeriodic analysis.
-        //errs()  << *acc << "\n" << this->accumulator << "\n";
         this->accumulator = cast<PHINode>(acc);
       }
 
