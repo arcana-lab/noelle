@@ -120,6 +120,14 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
 
     } else if (std::get<0>(isPeriodic)) {
       auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
+<<<<<<< HEAD
+=======
+      // DDLOTT Sep/3/2024: SingleAccumulatorRecomputableSCC's accumulator
+      // picking algorithm doesn't suffice for 2-phis SCC. Rather than change
+      // that algorithm, it's probably better to put the code compensating for
+      // that deficiency so that it's attached to PeriodicVariableSCC -- which
+      // we might split off of SARSCC in the future.
+>>>>>>> 483b2ea3fe44c205a5f722d79483f07f562938a9
       Value *initialValue, *period, *step, *accumulator;
       tie(std::ignore, initialValue, period, step, accumulator) = isPeriodic;
 
@@ -544,9 +552,15 @@ std::set<InductionVariable *> SCCDAGAttrs::
   return containedIVs;
 }
 
+<<<<<<< HEAD
 std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
     SCC *scc,
     LoopTree *loopNode) {
+=======
+std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
+    checkIfPeriodic(SCC *scc, LoopTree *loopNode) {
+  // DD: whether or not a variable is periodic is not decidable.
+>>>>>>> 483b2ea3fe44c205a5f722d79483f07f562938a9
   auto notPeriodic = std::make_tuple(false, nullptr, nullptr, nullptr, nullptr);
 
   if (this->sccToLoopCarriedDependencies.find(scc)
@@ -572,7 +586,12 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodi
     Value *initialValue;
     Value *period;
     Value *step;
+<<<<<<< HEAD
     Value *accumulator = nullptr; //should be nullptr at return unless the Periodic Variable contains 2+ PHINodes. Identifies accumulator
+=======
+    Value *accumulator; // should be nullptr at return unless the Periodic
+                        // Variable contains 2+ PHINodes. Identifies accumulator
+>>>>>>> 483b2ea3fe44c205a5f722d79483f07f562938a9
 
     auto from = edge->getSrc();
     auto to = edge->getDst();
@@ -585,6 +604,7 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodi
     if (toPHI->getNumIncomingValues() != 2)
       return notPeriodic;
 
+<<<<<<< HEAD
     /* 
      * A different way of expressing a subtract-from-zero flipflop (which can be seen as "x = -x" at the C level)
      * is to use two PHINode instructions.
@@ -595,61 +615,72 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodi
      * of two interdependent variables rather than merely being another way of writing "x = -x."
      */
     if(isa<PHINode>(from)) {
+=======
+    // DD: we want to capture a case where we have phi1=(ph, -x)(latch, phi2)
+    // phi2=(ph, x)(latch, phi1) This is a different way of expressing a
+    // subtract-from-zero flipflop. In such a case, only one of the phis should
+    // have scc-external users. The other phi should only be holding the "out of
+    // phase" value. If instead the other phi has scc-external users, it implies
+    // that the scc is composed of two interdependent variables.
+    if (isa<PHINode>(from)) {
+>>>>>>> 483b2ea3fe44c205a5f722d79483f07f562938a9
 
       auto fromPHI = cast<PHINode>(from);
       bool fromHasExternalUsers = false;
       bool toHasExternalUsers = false;
-      for(const auto &usr : from->users()) {
-        if(usr == to) {
+      for (const auto &usr : from->users()) {
+        if (usr == to) {
           continue;
         }
 
-        if(const auto &userInst = dyn_cast<Instruction>(usr)) {
+        if (const auto &userInst = dyn_cast<Instruction>(usr)) {
           fromHasExternalUsers = true;
         }
       }
-      for(const auto &usr : to->users()) {
-        if(usr == from) {
+      for (const auto &usr : to->users()) {
+        if (usr == from) {
           continue;
         }
 
-        if(const auto &userInst = dyn_cast<Instruction>(usr)) {
+        if (const auto &userInst = dyn_cast<Instruction>(usr)) {
           toHasExternalUsers = true;
         }
       }
-      if(fromHasExternalUsers && toHasExternalUsers) {
-        return notPeriodic; //implies SCC is composed of two interdependent variables, not just one variable
+      if (fromHasExternalUsers && toHasExternalUsers) {
+        return notPeriodic; // implies SCC is composed of two interdependent
+                            // variables, not just one variable
       }
-      Value* secondaryInitialValue;
-      if(fromHasExternalUsers) {
+      Value *secondaryInitialValue;
+      if (fromHasExternalUsers) {
         initialValue = fromPHI->getIncomingValue(0) == to
-                          ? fromPHI->getIncomingValue(1)
-                          : fromPHI->getIncomingValue(0);
+                           ? fromPHI->getIncomingValue(1)
+                           : fromPHI->getIncomingValue(0);
         secondaryInitialValue = toPHI->getIncomingValue(0) == from
                                     ? toPHI->getIncomingValue(1)
-                                    : toPHI->getIncomingValue(0); 
+                                    : toPHI->getIncomingValue(0);
         accumulator = fromPHI;
-      }
-      else {
+      } else {
         initialValue = toPHI->getIncomingValue(0) == from
-                          ? toPHI->getIncomingValue(1)
-                          : toPHI->getIncomingValue(0);
+                           ? toPHI->getIncomingValue(1)
+                           : toPHI->getIncomingValue(0);
         secondaryInitialValue = fromPHI->getIncomingValue(0) == to
                                     ? fromPHI->getIncomingValue(1)
                                     : fromPHI->getIncomingValue(0);
         accumulator = toPHI;
       }
       auto initialConstantInt = dyn_cast<ConstantInt>(initialValue);
-      auto secondaryInitialConstantInt = dyn_cast<ConstantInt>(secondaryInitialValue);
+      auto secondaryInitialConstantInt =
+          dyn_cast<ConstantInt>(secondaryInitialValue);
       if (initialConstantInt && secondaryInitialConstantInt) {
         auto c = initialConstantInt->isNegative() ? 1 : -1;
-        step = llvm::ConstantExpr::getSub(secondaryInitialConstantInt, initialConstantInt);
-      }
-      else {
+        step = llvm::ConstantExpr::getSub(secondaryInitialConstantInt,
+                                          initialConstantInt);
+      } else {
         return notPeriodic;
       }
-      period = llvm::ConstantInt::get(llvm::Type::getInt64Ty(fromPHI->getContext()),
-                                      2);
+      period =
+          llvm::ConstantInt::get(llvm::Type::getInt64Ty(fromPHI->getContext()),
+                                 2);
       return std::make_tuple(true, initialValue, period, step, accumulator);
     }
 
