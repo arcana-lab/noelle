@@ -9,6 +9,7 @@ function show_help() {
   echo "  --prefix              Print the installation directory path"
   echo "  --version             Print the library version"
   echo "  --include             Print the include directory"
+  echo "  --noelle-build-type   Print the build type used for Noelle. E.g. Debug"
   echo "  --logs                Print the path of the default logging configuration (.json)"I
   echo "  --svf-build-type      Print the build type used for SVF. E.g. Release"
   echo "  --scaf-build-type     Print the build type used for SCAF. E.g. Release"
