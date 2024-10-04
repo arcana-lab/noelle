@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/MemoryCloningAnalysis.hpp"
+#include "arcana/noelle/core/Lumberjack.hpp"
 
 namespace arcana::noelle {
 
@@ -29,7 +30,11 @@ MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
   : log(NoelleLumberjack, "MemoryCloningAnalysis") {
   assert(loop != nullptr);
   assert(ldg != nullptr);
-  log.info() << "Start\n";
+
+  log.debug() << "Start\n";
+
+  auto g = log.guard();
+  g.onExit(LOG_DEBUG, "Exit\n");
 
   /*
    * Collect objects allocated on the stack.
@@ -98,7 +103,6 @@ MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
     this->clonableMemoryLocations.insert(std::move(location));
   }
 
-  log.info() << "Exit\n";
   return;
 }
 

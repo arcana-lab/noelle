@@ -64,12 +64,14 @@ private:
 };
 
 // Forward declarations
+class Guard;
 class IndentedSection;
 class NamedSection;
 class LogStream;
 
 class Logger {
   friend class LogStream;
+  friend class Guard;
   friend class IndentedSection;
   friend class NamedSection;
 
@@ -84,6 +86,8 @@ public:
 
   LogStream bypass();
 
+  [[nodiscard]] Guard guard();
+
   [[nodiscard]] IndentedSection indentedSection();
 
   [[nodiscard]] NamedSection namedSection(std::string name);
@@ -97,36 +101,40 @@ private:
   Lumberjack &LJ;
 };
 
-class IndentedSection {
+class Guard {
   friend class Logger;
 
 public:
-  ~IndentedSection();
+  ~Guard();
 
   void onExit(LVerbosity verbosity, std::string text);
 
-private:
-  IndentedSection(Logger &logger);
+protected:
+  Guard(Logger &logger);
 
   Logger &logger;
   std::string exitText;
   LVerbosity exitTextVerbosity;
 };
 
-class NamedSection {
+class IndentedSection : public Guard {
+  friend class Logger;
+
+public:
+  ~IndentedSection();
+
+private:
+  IndentedSection(Logger &logger);
+};
+
+class NamedSection : public Guard {
   friend class Logger;
 
 public:
   ~NamedSection();
 
-  void onExit(LVerbosity verbosity, std::string text);
-
 private:
   NamedSection(Logger &logger, std::string name);
-
-  Logger &logger;
-  std::string exitText;
-  LVerbosity exitTextVerbosity;
 };
 
 // This trait descripts types that have a member function called `print` that

@@ -55,6 +55,10 @@ string Logger::makePrefix() const {
   return prefix;
 }
 
+Guard Logger::guard() {
+  return Guard(*this);
+}
+
 IndentedSection Logger::indentedSection() {
   return IndentedSection(*this);
 }
