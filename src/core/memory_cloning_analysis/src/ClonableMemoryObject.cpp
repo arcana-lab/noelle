@@ -112,167 +112,154 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
     needInitialization{ false },
     log{ NoelleLumberjack, "ClonableMemoryObject" } {
   log.debug() << "Start\n";
-  log.openIndentedSection();
-  log.debug() << "Object = " << *allocation << "\n";
-
-  /*
-   * Check if the current stack object's scope is the loop.
-   */
-  this->setObjectScope(allocation, loop, DS);
-
-  /*
-   * Identify the instructions that access the stack location.
-   */
-  this->allocatedType = allocation->getAllocatedType();
-  if (!this->identifyStoresAndOtherUsers(loop, DS)) {
-    log.debug() << "Cannot identify memory accesses to it\n";
-    log.closeIndentedSection();
-    log.debug() << "Exit\n";
-    return;
-  }
-
-  /*
-   * Check if there is a need for cloning the stack object.
-   */
-  if ((!this->isThereAMemoryDependenceBetweenLoopIterations(
-          loop,
-          allocation,
-          ldg,
-          this->storingInstructions))
-      && (!this->isThereAMemoryDependenceBetweenLoopIterations(
-          loop,
-          allocation,
-          ldg,
-          this->nonStoringInstructions))
-      && (!this->isScopeWithinLoop)) {
+  {
+    auto s = log.indentedSection();
+    s.onExit(LOG_DEBUG, "Exit\n");
+    log.debug() << "Object = " << *allocation << "\n";
 
     /*
-     * There is no need to clone the stack object.
+     * Check if the current stack object's scope is the loop.
      */
-    log.debug() << "Not need to clone this\n";
-    log.closeIndentedSection();
-    log.debug() << "Exit\n";
-    return;
-  }
-
-  /*
-   * Check if the stack object has loop-carried RAW memory data dependences.
-   * If it doesn't, then each iteration could have its own copy.
-   */
-  if (this->isThereRAWThroughMemoryBetweenLoopIterations(loop,
-                                                         allocation,
-                                                         ldg)) {
+    this->setObjectScope(allocation, loop, DS);
 
     /*
-     * The stack object is involved in a loop-carried, RAW, memory data
-     * dependence. It cannot be safely cloned.
+     * Identify the instructions that access the stack location.
      */
-    log.debug()
-        << "There are RAW memory data dependences between loop iterations\n";
-    log.closeIndentedSection();
-    log.debug() << "Exit\n";
-    return;
-  }
-
-  /*
-   * The stack object is not involved in any loop-carried RAW memory data
-   * dependences.
-   *
-   * Check if there are RAW memory dependences between code outside the loop and
-   * code within the loop that involves the stack object.
-   */
-  if (this->isScopeWithinLoop) {
+    this->allocatedType = allocation->getAllocatedType();
+    if (!this->identifyStoresAndOtherUsers(loop, DS)) {
+      log.debug() << "Cannot identify memory accesses to it\n";
+      return;
+    }
 
     /*
-     * The stack object cannot be accessed outside the loop.
-     *
-     * Therefore, the object is clonable.
+     * Check if there is a need for cloning the stack object.
      */
-    this->isClonable = true;
-    log.debug() << "It is clonable\n";
-    log.closeIndentedSection();
-    log.debug() << "Exit\n";
-    return;
-  }
-  if (!this->isThereRAWThroughMemoryFromLoopToOutside(loop, allocation, ldg)) {
-    log.debug() << "It is clonable\n";
-
-    /*
-     * The stack object is not involved in any memory RAW data dependence from
-     * code within the loop to code outside. In other words, values stored into
-     * the stack object within the loop are not read outside.
-     *
-     * Check if values stored within the stack object outside the loop can be
-     * read in the loop.
-     */
-    if (!this->isThereRAWThroughMemoryFromOutsideToLoop(loop,
-                                                        allocation,
-                                                        ldg)) {
+    if ((!this->isThereAMemoryDependenceBetweenLoopIterations(
+            loop,
+            allocation,
+            ldg,
+            this->storingInstructions))
+        && (!this->isThereAMemoryDependenceBetweenLoopIterations(
+            loop,
+            allocation,
+            ldg,
+            this->nonStoringInstructions))
+        && (!this->isScopeWithinLoop)) {
 
       /*
-       * The stack object is not involved in any memory RAW data dependence
-       * between code outside and inside the loop.
+       * There is no need to clone the stack object.
+       */
+      log.debug() << "Not need to clone this\n";
+      return;
+    }
+
+    /*
+     * Check if the stack object has loop-carried RAW memory data dependences.
+     * If it doesn't, then each iteration could have its own copy.
+     */
+    if (this->isThereRAWThroughMemoryBetweenLoopIterations(loop,
+                                                           allocation,
+                                                           ldg)) {
+
+      /*
+       * The stack object is involved in a loop-carried, RAW, memory data
+       * dependence. It cannot be safely cloned.
+       */
+      log.debug()
+          << "There are RAW memory data dependences between loop iterations\n";
+      return;
+    }
+
+    /*
+     * The stack object is not involved in any loop-carried RAW memory data
+     * dependences.
+     *
+     * Check if there are RAW memory dependences between code outside the loop
+     * and code within the loop that involves the stack object.
+     */
+    if (this->isScopeWithinLoop) {
+
+      /*
+       * The stack object cannot be accessed outside the loop.
        *
        * Therefore, the object is clonable.
        */
       this->isClonable = true;
-      log.closeIndentedSection();
-      log.debug() << "Exit\n";
+      log.debug() << "It is clonable\n";
+      return;
+    }
+    if (!this->isThereRAWThroughMemoryFromLoopToOutside(loop,
+                                                        allocation,
+                                                        ldg)) {
+      log.debug() << "It is clonable\n";
+
+      /*
+       * The stack object is not involved in any memory RAW data dependence from
+       * code within the loop to code outside. In other words, values stored
+       * into the stack object within the loop are not read outside.
+       *
+       * Check if values stored within the stack object outside the loop can be
+       * read in the loop.
+       */
+      if (!this->isThereRAWThroughMemoryFromOutsideToLoop(loop,
+                                                          allocation,
+                                                          ldg)) {
+
+        /*
+         * The stack object is not involved in any memory RAW data dependence
+         * between code outside and inside the loop.
+         *
+         * Therefore, the object is clonable.
+         */
+        this->isClonable = true;
+        return;
+      }
+
+      /*
+       * Values stored in the stack object before executing the loop could be
+       * read within the loop. So we need to initialize the cloned object with
+       * the original stack object.
+       */
+      this->needInitialization = true;
+      this->isClonable = true;
+      log.debug() << "It requires initialization\n";
       return;
     }
 
     /*
-     * Values stored in the stack object before executing the loop could be read
-     * within the loop. So we need to initialize the cloned object with the
-     * original stack object.
+     * Only consider struct and integer types for objects that has scope outside
+     * the loop.
+     * TODO: Remove this when array/vector types are supported
      */
-    this->needInitialization = true;
-    this->isClonable = true;
-    log.debug() << "It requires initialization\n";
-    log.closeIndentedSection();
-    log.debug() << "Exit\n";
-    return;
-  }
-
-  /*
-   * Only consider struct and integer types for objects that has scope outside
-   * the loop.
-   * TODO: Remove this when array/vector types are supported
-   */
-  if ((!this->isScopeWithinLoop) && (!allocatedType->isStructTy())
-      && (!allocatedType->isIntegerTy())) {
-    log.closeIndentedSection();
-    log.debug() << "Exit\n";
-    return;
-  }
-
-  /*
-   * For stack objects that have scope not fully contained within the target
-   * loop, we need to check if the stack object is completely initialized for
-   * every iteration. In other words, 1) there is no RAW loop-carried data
-   * dependences that involve this stack object and 2) there is no RAW from
-   * outside the loop to inside it.
-   */
-  this->identifyInitialStoringInstructions(loop, DS);
-  if (!this->isScopeWithinLoop) {
-    if ((!this->areOverrideSetsFullyCoveringTheAllocationSpace())
-        || (this->isThereRAWThroughMemoryFromLoopToOutside(loop,
-                                                           allocation,
-                                                           ldg))) {
-      log.closeIndentedSection();
-      log.debug() << "Exit\n";
+    if ((!this->isScopeWithinLoop) && (!allocatedType->isStructTy())
+        && (!allocatedType->isIntegerTy())) {
       return;
     }
-  }
 
-  /*
-   * The location is clonable.
-   */
-  log.debug() << "It is clonable\n";
-  log.closeIndentedSection();
+    /*
+     * For stack objects that have scope not fully contained within the target
+     * loop, we need to check if the stack object is completely initialized for
+     * every iteration. In other words, 1) there is no RAW loop-carried data
+     * dependences that involve this stack object and 2) there is no RAW from
+     * outside the loop to inside it.
+     */
+    this->identifyInitialStoringInstructions(loop, DS);
+    if (!this->isScopeWithinLoop) {
+      if ((!this->areOverrideSetsFullyCoveringTheAllocationSpace())
+          || (this->isThereRAWThroughMemoryFromLoopToOutside(loop,
+                                                             allocation,
+                                                             ldg))) {
+        return;
+      }
+    }
+
+    /*
+     * The location is clonable.
+     */
+    log.debug() << "It is clonable\n";
+  }
   this->isClonable = true;
 
-  log.debug() << "Exit\n";
   return;
 }
 

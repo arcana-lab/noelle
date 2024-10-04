@@ -46,22 +46,6 @@ LogStream Logger::bypass() {
   return level(LOG_BYPASS);
 }
 
-void Logger::openNamedSection(string name) {
-  this->sections.push_back(std::move(name) + this->LJ.getSeparator());
-}
-
-void Logger::closeNamedSection() {
-  this->sections.pop_back();
-}
-
-void Logger::openIndentedSection() {
-  this->sections.push_back("  ");
-}
-
-void Logger::closeIndentedSection() {
-  this->sections.pop_back();
-}
-
 string Logger::makePrefix() const {
   string prefix = this->name;
   prefix += this->LJ.getSeparator();

@@ -70,6 +70,8 @@ class LogStream;
 
 class Logger {
   friend class LogStream;
+  friend class IndentedSection;
+  friend class NamedSection;
 
 public:
   Logger(Lumberjack &LJ, const char *name);
@@ -81,14 +83,6 @@ public:
   LogStream info();
 
   LogStream bypass();
-
-  void openNamedSection(std::string name);
-
-  void closeNamedSection();
-
-  void openIndentedSection();
-
-  void closeIndentedSection();
 
   [[nodiscard]] IndentedSection indentedSection();
 
@@ -109,10 +103,14 @@ class IndentedSection {
 public:
   ~IndentedSection();
 
+  void onExit(LVerbosity verbosity, std::string text);
+
 private:
   IndentedSection(Logger &logger);
 
   Logger &logger;
+  std::string exitText;
+  LVerbosity exitTextVerbosity;
 };
 
 class NamedSection {
@@ -121,10 +119,14 @@ class NamedSection {
 public:
   ~NamedSection();
 
+  void onExit(LVerbosity verbosity, std::string text);
+
 private:
   NamedSection(Logger &logger, std::string name);
 
   Logger &logger;
+  std::string exitText;
+  LVerbosity exitTextVerbosity;
 };
 
 // This trait descripts types that have a member function called `print` that

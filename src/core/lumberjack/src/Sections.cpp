@@ -24,19 +24,36 @@
 namespace arcana::noelle {
 
 IndentedSection::IndentedSection(Logger &logger) : logger(logger) {
-  this->logger.openIndentedSection();
+  this->logger.sections.push_back("  ");
 }
 
 IndentedSection::~IndentedSection() {
-  this->logger.closeIndentedSection();
+  this->logger.sections.pop_back();
+  if (this->exitText.size() > 0) {
+    this->logger.level(this->exitTextVerbosity) << this->exitText;
+  }
+}
+
+void IndentedSection::onExit(LVerbosity verbosity, std::string text) {
+  this->exitTextVerbosity = verbosity;
+  this->exitText = std::move(text);
 }
 
 NamedSection::NamedSection(Logger &logger, std::string name) : logger(logger) {
-  this->logger.openNamedSection(name);
+  this->logger.sections.push_back(std::move(name)
+                                  + this->logger.LJ.getSeparator());
 }
 
 NamedSection::~NamedSection() {
-  this->logger.closeNamedSection();
+  logger.sections.pop_back();
+  if (this->exitText.size() > 0) {
+    this->logger.level(this->exitTextVerbosity) << this->exitText;
+  }
+}
+
+void NamedSection::onExit(LVerbosity verbosity, std::string text) {
+  this->exitTextVerbosity = verbosity;
+  this->exitText = std::move(text);
 }
 
 } // namespace arcana::noelle
