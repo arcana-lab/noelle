@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2024 Federico Sossai
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,36 +19,21 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
-#ifndef NOELLE_SRC_CORE_MEMORY_CLONING_ANALYSIS_MEMORYCLONINGANALYSIS_H_
-#define NOELLE_SRC_CORE_MEMORY_CLONING_ANALYSIS_MEMORYCLONINGANALYSIS_H_
-
-#include "arcana/noelle/core/SystemHeaders.hpp"
-#include "arcana/noelle/core/PDG.hpp"
-#include "arcana/noelle/core/SCCDAG.hpp"
-#include "arcana/noelle/core/Invariants.hpp"
-#include "arcana/noelle/core/Dominators.hpp"
-#include "arcana/noelle/core/ClonableMemoryObject.hpp"
 #include "arcana/noelle/core/Lumberjack.hpp"
 
 namespace arcana::noelle {
 
-class MemoryCloningAnalysis {
-public:
-  MemoryCloningAnalysis(LoopStructure *loop, DominatorSummary &DS, PDG *ldg);
+Guard::Guard(Logger &logger) : logger(logger) {}
 
-  const std::unordered_set<ClonableMemoryObject *> getClonableMemoryObjectsFor(
-      Instruction *I) const;
+Guard::~Guard() {
+  if (this->exitText.size() > 0) {
+    this->logger.level(this->exitTextVerbosity) << this->exitText;
+  }
+}
 
-  std::unordered_set<ClonableMemoryObject *> getClonableMemoryObjects(
-      void) const;
-
-private:
-  Logger log;
-  std::unordered_set<std::unique_ptr<ClonableMemoryObject>>
-      clonableMemoryLocations;
-};
+void Guard::onExit(LVerbosity verbosity, std::string text) {
+  this->exitTextVerbosity = verbosity;
+  this->exitText = std::move(text);
+}
 
 } // namespace arcana::noelle
-
-#endif // NOELLE_SRC_CORE_MEMORY_CLONING_ANALYSIS_MEMORYCLONINGANALYSIS_H_

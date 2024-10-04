@@ -20,6 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/ClonableMemoryObject.hpp"
+#include "arcana/noelle/core/Lumberjack.hpp"
 
 namespace arcana::noelle {
 
@@ -108,9 +109,15 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
     loop{ loop },
     isClonable{ false },
     isScopeWithinLoop{ false },
-    needInitialization{ false } {
-  errs() << "ClonableMemoryObject: Start\n";
-  errs() << "ClonableMemoryObject:   Object = " << *allocation << "\n";
+    needInitialization{ false },
+    log{ NoelleLumberjack, "ClonableMemoryObject" } {
+
+  log.debug() << "Start\n";
+
+  auto s = log.indentedSection();
+  s.onExit(LOG_DEBUG, "Exit\n");
+
+  log.debug() << "Object = " << *allocation << "\n";
 
   /*
    * Check if the current stack object's scope is the loop.
@@ -122,9 +129,7 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
    */
   this->allocatedType = allocation->getAllocatedType();
   if (!this->identifyStoresAndOtherUsers(loop, DS)) {
-    errs()
-        << "ClonableMemoryObject:   We cannot identify memory accesses to it\n";
-    errs() << "ClonableMemoryObject: Exit\n";
+    log.debug() << "Cannot identify memory accesses to it\n";
     return;
   }
 
@@ -146,8 +151,7 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
     /*
      * There is no need to clone the stack object.
      */
-    errs() << "ClonableMemoryObject:   There is no need to clone it\n";
-    errs() << "ClonableMemoryObject: Exit\n";
+    log.debug() << "Not need to clone this\n";
     return;
   }
 
@@ -163,9 +167,8 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
      * The stack object is involved in a loop-carried, RAW, memory data
      * dependence. It cannot be safely cloned.
      */
-    errs()
-        << "ClonableMemoryObject:   There are RAW memory data dependences between loop iterations\n";
-    errs() << "ClonableMemoryObject: Exit\n";
+    log.debug()
+        << "There are RAW memory data dependences between loop iterations\n";
     return;
   }
 
@@ -173,8 +176,8 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
    * The stack object is not involved in any loop-carried RAW memory data
    * dependences.
    *
-   * Check if there are RAW memory dependences between code outside the loop and
-   * code within the loop that involves the stack object.
+   * Check if there are RAW memory dependences between code outside the loop
+   * and code within the loop that involves the stack object.
    */
   if (this->isScopeWithinLoop) {
 
@@ -184,17 +187,16 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
      * Therefore, the object is clonable.
      */
     this->isClonable = true;
-    errs() << "ClonableMemoryObject:   It is clonable\n";
-    errs() << "ClonableMemoryObject: Exit\n";
+    log.debug() << "It is clonable\n";
     return;
   }
   if (!this->isThereRAWThroughMemoryFromLoopToOutside(loop, allocation, ldg)) {
-    errs() << "ClonableMemoryObject:   It is clonable\n";
+    log.debug() << "It is clonable\n";
 
     /*
      * The stack object is not involved in any memory RAW data dependence from
-     * code within the loop to code outside. In other words, values stored into
-     * the stack object within the loop are not read outside.
+     * code within the loop to code outside. In other words, values stored
+     * into the stack object within the loop are not read outside.
      *
      * Check if values stored within the stack object outside the loop can be
      * read in the loop.
@@ -210,19 +212,17 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
        * Therefore, the object is clonable.
        */
       this->isClonable = true;
-      errs() << "ClonableMemoryObject: Exit\n";
       return;
     }
 
     /*
-     * Values stored in the stack object before executing the loop could be read
-     * within the loop. So we need to initialize the cloned object with the
-     * original stack object.
+     * Values stored in the stack object before executing the loop could be
+     * read within the loop. So we need to initialize the cloned object with
+     * the original stack object.
      */
     this->needInitialization = true;
     this->isClonable = true;
-    errs() << "ClonableMemoryObject:   It requires initialization\n";
-    errs() << "ClonableMemoryObject: Exit\n";
+    log.debug() << "It requires initialization\n";
     return;
   }
 
@@ -233,7 +233,6 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
    */
   if ((!this->isScopeWithinLoop) && (!allocatedType->isStructTy())
       && (!allocatedType->isIntegerTy())) {
-    errs() << "ClonableMemoryObject: Exit\n";
     return;
   }
 
@@ -250,7 +249,6 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
         || (this->isThereRAWThroughMemoryFromLoopToOutside(loop,
                                                            allocation,
                                                            ldg))) {
-      errs() << "ClonableMemoryObject: Exit\n";
       return;
     }
   }
@@ -258,10 +256,9 @@ ClonableMemoryObject::ClonableMemoryObject(AllocaInst *allocation,
   /*
    * The location is clonable.
    */
-  errs() << "ClonableMemoryObject:   It is clonable\n";
   this->isClonable = true;
+  log.debug() << "It is clonable\n";
 
-  errs() << "ClonableMemoryObject: Exit\n";
   return;
 }
 

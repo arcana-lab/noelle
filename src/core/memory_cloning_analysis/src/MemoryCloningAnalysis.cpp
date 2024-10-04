@@ -20,15 +20,21 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "arcana/noelle/core/MemoryCloningAnalysis.hpp"
+#include "arcana/noelle/core/Lumberjack.hpp"
 
 namespace arcana::noelle {
 
 MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
                                              DominatorSummary &DS,
-                                             PDG *ldg) {
+                                             PDG *ldg)
+  : log(NoelleLumberjack, "MemoryCloningAnalysis") {
   assert(loop != nullptr);
   assert(ldg != nullptr);
-  errs() << "MemoryCloningAnalysis: Start\n";
+
+  log.debug() << "Start\n";
+
+  auto g = log.guard();
+  g.onExit(LOG_DEBUG, "Exit\n");
 
   /*
    * Collect objects allocated on the stack.
@@ -86,16 +92,17 @@ MemoryCloningAnalysis::MemoryCloningAnalysis(LoopStructure *loop,
     /*
      * The stack object is clonable.
      */
-    errs() << "MemoryCloningAnalysis:   The stack object "
-           << *location->getAllocation() << " can be cloned\n";
+    auto s1 = log.indentedSection();
+    log.debug() << "The stack object " << *location->getAllocation()
+                << " can be cloned\n";
+    auto s2 = log.indentedSection();
     if (location->doPrivateCopiesNeedToBeInitialized()) {
-      errs()
-          << "MemoryCloningAnalysis:     The private copies need to be initialized with the original object.\n";
+      log.debug()
+          << "The private copies need to be initialized with the original object.\n";
     }
     this->clonableMemoryLocations.insert(std::move(location));
   }
 
-  errs() << "MemoryCloningAnalysis: Exit\n";
   return;
 }
 

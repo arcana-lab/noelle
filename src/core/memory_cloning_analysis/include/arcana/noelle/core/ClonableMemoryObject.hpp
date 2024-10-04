@@ -27,6 +27,7 @@
 #include "arcana/noelle/core/SCCDAG.hpp"
 #include "arcana/noelle/core/Invariants.hpp"
 #include "arcana/noelle/core/Dominators.hpp"
+#include "arcana/noelle/core/Lumberjack.hpp"
 
 namespace arcana::noelle {
 
@@ -77,6 +78,8 @@ private:
   std::unordered_set<Instruction *> storingInstructions;
   std::unordered_set<Instruction *> loadInstructions;
   std::unordered_set<Instruction *> nonStoringInstructions;
+
+  Logger log;
 
   bool identifyStoresAndOtherUsers(LoopStructure *loop, DominatorSummary &DS);
 
