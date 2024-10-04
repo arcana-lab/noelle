@@ -116,8 +116,7 @@ void SCCPrinter::printSCC(GenericSCC *scc) {
   }
 
   if (this->printDetails) {
-    auto s1 = log.namedSection("\e[32mDetails\e[0m");
-    log.bypass() << *sccNode;
+    sccNode->print(errs(), /*prefix=*/"", /*maxEdges=*/INT_MAX);
   }
 }
 
