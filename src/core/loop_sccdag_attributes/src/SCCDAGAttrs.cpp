@@ -120,14 +120,6 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
 
     } else if (std::get<0>(isPeriodic)) {
       auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
-<<<<<<< HEAD
-=======
-      // DDLOTT Sep/3/2024: SingleAccumulatorRecomputableSCC's accumulator
-      // picking algorithm doesn't suffice for 2-phis SCC. Rather than change
-      // that algorithm, it's probably better to put the code compensating for
-      // that deficiency so that it's attached to PeriodicVariableSCC -- which
-      // we might split off of SARSCC in the future.
->>>>>>> 483b2ea3fe44c205a5f722d79483f07f562938a9
       Value *initialValue, *period, *step, *accumulator;
       tie(std::ignore, initialValue, period, step, accumulator) = isPeriodic;
 
@@ -552,15 +544,8 @@ std::set<InductionVariable *> SCCDAGAttrs::
   return containedIVs;
 }
 
-<<<<<<< HEAD
-std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
-    SCC *scc,
-    LoopTree *loopNode) {
-=======
 std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
     checkIfPeriodic(SCC *scc, LoopTree *loopNode) {
-  // DD: whether or not a variable is periodic is not decidable.
->>>>>>> 483b2ea3fe44c205a5f722d79483f07f562938a9
   auto notPeriodic = std::make_tuple(false, nullptr, nullptr, nullptr, nullptr);
 
   if (this->sccToLoopCarriedDependencies.find(scc)
@@ -586,12 +571,7 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
     Value *initialValue;
     Value *period;
     Value *step;
-<<<<<<< HEAD
     Value *accumulator = nullptr; //should be nullptr at return unless the Periodic Variable contains 2+ PHINodes. Identifies accumulator
-=======
-    Value *accumulator; // should be nullptr at return unless the Periodic
-                        // Variable contains 2+ PHINodes. Identifies accumulator
->>>>>>> 483b2ea3fe44c205a5f722d79483f07f562938a9
 
     auto from = edge->getSrc();
     auto to = edge->getDst();
@@ -604,7 +584,6 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
     if (toPHI->getNumIncomingValues() != 2)
       return notPeriodic;
 
-<<<<<<< HEAD
     /* 
      * A different way of expressing a subtract-from-zero flipflop (which can be seen as "x = -x" at the C level)
      * is to use two PHINode instructions.
@@ -615,15 +594,6 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
      * of two interdependent variables rather than merely being another way of writing "x = -x."
      */
     if(isa<PHINode>(from)) {
-=======
-    // DD: we want to capture a case where we have phi1=(ph, -x)(latch, phi2)
-    // phi2=(ph, x)(latch, phi1) This is a different way of expressing a
-    // subtract-from-zero flipflop. In such a case, only one of the phis should
-    // have scc-external users. The other phi should only be holding the "out of
-    // phase" value. If instead the other phi has scc-external users, it implies
-    // that the scc is composed of two interdependent variables.
-    if (isa<PHINode>(from)) {
->>>>>>> 483b2ea3fe44c205a5f722d79483f07f562938a9
 
       auto fromPHI = cast<PHINode>(from);
       bool fromHasExternalUsers = false;
