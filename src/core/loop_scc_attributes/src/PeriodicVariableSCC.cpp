@@ -30,7 +30,8 @@ PeriodicVariableSCC::PeriodicVariableSCC(
     DominatorSummary &dom,
     Value *initVal,
     Value *per,
-    Value *st)
+    Value *st,
+    Value *acc)
   : SingleAccumulatorRecomputableSCC{ SCCKind::PERIODIC_VARIABLE,
                                       s,
                                       loop,
@@ -39,6 +40,21 @@ PeriodicVariableSCC::PeriodicVariableSCC(
     initialValue{ initVal },
     period{ per },
     step{ st } {
+
+      /*
+       * We allow PeriodicVariableSCC to include cases that feature a single SCC containing
+       * two phis when one of the phis is used only by the other phi.
+       * We view this as a single accumulator case where the accumulator is said to be the phi 
+       * that has SCC-external users.
+       * Calling "getAccumulator" should therefore return specifically the phi that has SCC-external users.
+       * The algorithm for determining the accumulator in SingleAccumulatorRecomputableSCC
+       * can't deal with picking the phi that has users between the two phis of the 2-phis case.
+       * This code therefore handles that special case in conjunction with the analysis code in
+       * SCCDAGAttrs.cpp, so that "getAccumulator" will return the correct phi in the 2-phis case.
+       */
+      if(acc != nullptr) {
+        this->accumulator = cast<PHINode>(acc);
+      }
 
   return;
 }
