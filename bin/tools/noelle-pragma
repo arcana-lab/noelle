@@ -13,7 +13,6 @@ usage() {
   echo
   echo "Options:"
   echo "--directive           Pragma directive to look for."
-  echo "--args                Print arguments of each pragma region."
   echo "--func                Restrict the search to a given function."
 }
 
@@ -37,10 +36,6 @@ for arg in "$@"; do
     --func=*)
       args="${arg#*=}"
       passArgs="${passArgs} -noelle-pragma-function=$args"
-      shift
-      ;;
-    --args*)
-      passArgs="${passArgs} -noelle-pragma-arguments"
       shift
       ;;
     --help)

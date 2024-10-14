@@ -19,6 +19,7 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -113,7 +114,7 @@ void SCCPrinter::printSCC(GenericSCC *scc) {
 
   if (this->printDetails) {
     errs() << this->prefix << "  \e[32mDetails\e[0m: \n";
-    sccNode->print(errs(), "");
+    sccNode->print(errs(), "", /*maxNodes=*/INT32_MAX);
   }
 }
 
