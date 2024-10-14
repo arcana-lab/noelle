@@ -119,6 +119,13 @@ PragmaForest::PragmaForest(llvm::Function &F, std::string directive)
         }
       }
 
+      // It the following assert fails it's probably because one of the
+      // following is true:
+      // 1. mem2reg didn't promote the result of pragma begin to a register
+      //    therefore the only user of pragma begin is a StoreInst
+      // 2. A pragma end is actually not present in the code. This might happen
+      //    because the pragma end is dead (e.g. you put a pragma end after a
+      //    return)
       assert(End != nullptr && "Can't find corresponding Pragma End");
 
       auto Begin = &I;
