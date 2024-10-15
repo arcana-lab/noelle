@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2024 Simone Campanoni
+ * Copyright 2024 Federico Sossai, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,45 +19,4 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_TOOLS_SCCPRINTER_H
-#define NOELLE_SRC_TOOLS_SCCPRINTER_H
-
-#include "arcana/noelle/core/NoellePass.hpp"
-#include "arcana/noelle/core/Lumberjack.hpp"
-
-namespace arcana::noelle {
-
-std::string getSCCTypeName(GenericSCC::SCCKind type);
-
-class SCCPrinter : public ModulePass {
-public:
-  static char ID;
-
-  SCCPrinter();
-
-  ~SCCPrinter() = default;
-
-  bool doInitialization(Module &M) override;
-
-  bool runOnModule(Module &M) override;
-
-  void getAnalysisUsage(AnalysisUsage &AU) const override;
-
-  void printLoopIDs(std::vector<LoopStructure *> *LSs);
-
-  void printSCC(GenericSCC *scc);
-
-private:
-  std::vector<int> sccTypeWhiteList;
-  std::vector<int> sccTypeBlackList;
-  std::string targetFunctionName;
-  bool printSCCInstructions;
-  uint64_t targetLoopID;
-  bool loopIDs;
-  bool printDetails;
-  Logger log;
-};
-
-} // namespace arcana::noelle
-
-#endif // NOELLE_SRC_TOOLS_SCCPRINTER_H
+#define NOELLE_LUMBERJACK_JSON_DEFAULT_PATH "@NOELLE_LUMBERJACK_JSON_DEFAULT_PATH@"

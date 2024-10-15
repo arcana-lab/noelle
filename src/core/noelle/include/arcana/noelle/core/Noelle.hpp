@@ -47,6 +47,7 @@
 #include "arcana/noelle/core/MayPointsToAnalysis.hpp"
 #include "arcana/noelle/core/DependenceAnalysis.hpp"
 #include "arcana/noelle/core/CallGraphAnalysis.hpp"
+#include "arcana/noelle/core/Lumberjack.hpp"
 
 namespace arcana::noelle {
 
@@ -279,6 +280,7 @@ private:
   std::function<llvm::BlockFrequencyInfo &(Function &F)> getBFI;
   std::function<llvm::BranchProbabilityInfo &(Function &F)> getBPI;
   std::set<AliasAnalysisEngine *> aaEngines;
+  Logger log;
 
   PDG *getFunctionDependenceGraph(Function *f);
 
