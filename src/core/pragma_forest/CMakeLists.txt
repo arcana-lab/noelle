@@ -5,8 +5,3 @@ target_sources(
   src/PragmaForest.cpp
   src/PragmaTree.cpp
 )
-
-install(
-  FILES include/arcana/noelle/core/Pragma.h
-  DESTINATION include/arcana/noelle/core/Pragma.h
-)
