@@ -172,7 +172,7 @@ PragmaTree *PragmaTree::findInnermostPragmaFor(const Instruction *I) {
 
     // At this point, if `T` contains `I` it must be in one basic block within
     // the pragma region
-    auto BBs = getBasicBlocksWithin();
+    auto BBs = T->getBasicBlocksWithin();
     // Forgive me father for I have used a const_cast
     if (BBs.find(const_cast<BasicBlock *>(TargetBB)) != BBs.end()) {
       innermost = T; // `T` is the innermost
