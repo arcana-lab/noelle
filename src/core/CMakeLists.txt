@@ -15,7 +15,7 @@ foreach(module IN LISTS directories)
   install(
     DIRECTORY ${module}/include
     DESTINATION ${CMAKE_INSTALL_PREFIX}
-    FILES_MATCHING PATTERN "*.hpp" PATTERN "*.h"
+    FILES_MATCHING PATTERN "*.hpp"
   )
   add_subdirectory(${module})
 endforeach()
