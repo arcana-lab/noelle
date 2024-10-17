@@ -112,7 +112,8 @@ void SCCPrinter::printSCC(GenericSCC *scc) {
   }
 
   if (this->printDetails) {
-    sccNode->print(errs(), /*prefix=*/"", /*maxNodes=*/INT32_MAX);
+    errs() << this->prefix << "  \e[32mDetails\e[0m: \n";
+    sccNode->print(errs(), "");
   }
 }
 
