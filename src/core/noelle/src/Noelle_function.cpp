@@ -43,14 +43,14 @@ DominatorSummary *Noelle::getDominators(Function *f) {
 FunctionsManager *Noelle::getFunctionsManager(void) {
   if (!this->fm) {
     this->fm = new FunctionsManager(this->program,
-                                    this->pdgAnalysis,
+                                    this->pdgGenerator,
                                     this->getProfiles());
   }
   return this->fm;
 }
 
 void Noelle::addAnalysis(CallGraphAnalysis *a) {
-  this->pdgAnalysis.addAnalysis(a);
+  this->pdgGenerator.addAnalysis(a);
 
   return;
 }

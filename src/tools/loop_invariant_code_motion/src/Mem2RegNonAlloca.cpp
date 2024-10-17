@@ -24,10 +24,10 @@
 
 namespace arcana::noelle {
 
-Mem2RegNonAlloca::Mem2RegNonAlloca(LoopContent const &LDI, Noelle &noelle)
-  : LDI{ LDI },
+Mem2RegNonAlloca::Mem2RegNonAlloca(LoopContent const &LC, Noelle &noelle)
+  : LC{ LC },
     noelle{ noelle },
-    invariants{ *LDI.getInvariantManager() } {
+    invariants{ *LC.getInvariantManager() } {
   return;
 }
 
@@ -36,7 +36,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister(void) {
   /*
    * Fetch the loop structure.
    */
-  auto loopStructure = LDI.getLoopStructure();
+  auto loopStructure = LC.getLoopStructure();
 
   /*
    * Make sure the loop has the shape we want.
@@ -133,7 +133,7 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations(
    * Identify SCC containing only loads/stores on a single memory location
    * along with any computation that does NOT alias the loads/stores
    */
-  auto sccManager = LDI.getSCCManager();
+  auto sccManager = LC.getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
   std::map<Value *, SCC *> singleMemoryLocationsBySCC{};
   for (auto sccNode : sccdag->getNodes()) {
@@ -280,7 +280,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC(SCC *scc,
   /*
    * Initialize traversal
    */
-  auto loopStructure = LDI.getLoopStructure();
+  auto loopStructure = LC.getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
   auto loopPreHeader = loopStructure->getPreHeader();
   queue.push(loopHeader);
@@ -695,7 +695,7 @@ void Mem2RegNonAlloca::assertAndDumpLogsOnFailure(
 }
 
 void Mem2RegNonAlloca::dumpLogs(void) {
-  auto loop = LDI.getLoopStructure();
+  auto loop = LC.getLoopStructure();
   auto basicBlocks = loop->getBasicBlocks();
 
   auto loopIDOpt = loop->getID();

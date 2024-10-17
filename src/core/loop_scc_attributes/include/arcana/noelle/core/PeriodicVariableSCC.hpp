@@ -46,7 +46,8 @@ public:
       DominatorSummary &dom,
       Value *initialValue,
       Value *period,
-      Value *step);
+      Value *step,
+      Value *accumulator);
 
 protected:
   Value *initialValue;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020  Simone Campanoni
+ * Copyright 2024 Federico Sossai
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,41 +19,21 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_UNROLL_LOOPUNROLL_H_
-#define NOELLE_SRC_CORE_LOOP_UNROLL_LOOPUNROLL_H_
-
-#include "arcana/noelle/core/SystemHeaders.hpp"
-#include "arcana/noelle/core/SCC.hpp"
-#include "arcana/noelle/core/LoopContent.hpp"
+#include "arcana/noelle/core/Lumberjack.hpp"
 
 namespace arcana::noelle {
 
-class LoopUnroll {
-public:
-  /*
-   * Constructor
-   */
-  LoopUnroll();
+Guard::Guard(Logger &logger) : logger(logger) {}
 
-  /*
-   * Fully unroll the loop.
-   */
-  bool fullyUnrollLoop(LoopContent const &LC,
-                       LoopInfo &LI,
-                       DominatorTree &DT,
-                       ScalarEvolution &SE,
-                       AssumptionCache &AC);
+Guard::~Guard() {
+  if (this->exitText.size() > 0) {
+    this->logger.level(this->exitTextVerbosity) << this->exitText;
+  }
+}
 
-private:
-  /*
-   * Fields
-   */
-
-  /*
-   * Methods
-   */
-};
+void Guard::onExit(LVerbosity verbosity, std::string text) {
+  this->exitTextVerbosity = verbosity;
+  this->exitText = std::move(text);
+}
 
 } // namespace arcana::noelle
-
-#endif // NOELLE_SRC_CORE_LOOP_UNROLL_LOOPUNROLL_H_

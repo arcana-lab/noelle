@@ -39,7 +39,7 @@ Noelle::Noelle(
     Verbosity v,
     PDGVerbosity pdgVerbose,
     double minHot,
-    LDGGenerator ldgAnalysis,
+    LDGGenerator ldgGenerator,
     CompilationOptionsManager *om,
     bool dumpPDG,
     bool performThePDGComparison,
@@ -53,20 +53,20 @@ Noelle::Noelle(
     programDependenceGraph{ nullptr },
     enabledTransformations{ enabledTransformations },
     verbose{ v },
-    pdgAnalysis{ m,
-                 getSCEV,
-                 getLoopInfo,
-                 getPDT,
-                 getCallGraph,
-                 getAA,
-                 dumpPDG,
-                 performThePDGComparison,
-                 disableSVF,
-                 disableSVFCallGraph,
-                 disableAllocAA,
-                 disableRA,
-                 pdgVerbose },
-    ldgAnalysis{ ldgAnalysis },
+    pdgGenerator{ m,
+                  getSCEV,
+                  getLoopInfo,
+                  getPDT,
+                  getCallGraph,
+                  getAA,
+                  dumpPDG,
+                  performThePDGComparison,
+                  disableSVF,
+                  disableSVFCallGraph,
+                  disableAllocAA,
+                  disableRA,
+                  pdgVerbose },
+    ldgGenerator{ ldgGenerator },
     filterFileName{ nullptr },
     hasReadFilterFile{ false },
     loopThreads{},
@@ -87,7 +87,8 @@ Noelle::Noelle(
     getCallGraph{ getCallGraph },
     getBFI{ getBFI },
     getBPI{ getBPI },
-    aaEngines{} {
+    aaEngines{},
+    log{ NoelleLumberjack, "Noelle" } {
 
   this->filterFileName = getenv("INDEX_FILE");
 
@@ -283,7 +284,7 @@ GlobalsManager *Noelle::getGlobalsManager(void) {
 }
 
 PDGGenerator &Noelle::getPDGGenerator(void) {
-  return this->pdgAnalysis;
+  return this->pdgGenerator;
 }
 
 } // namespace arcana::noelle

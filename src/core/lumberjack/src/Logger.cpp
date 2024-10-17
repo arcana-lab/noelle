@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 - 2020  Simone Campanoni
+ * Copyright 2024 Federico Sossai
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,41 +19,52 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_UNROLL_LOOPUNROLL_H_
-#define NOELLE_SRC_CORE_LOOP_UNROLL_LOOPUNROLL_H_
+#include <string>
 
-#include "arcana/noelle/core/SystemHeaders.hpp"
-#include "arcana/noelle/core/SCC.hpp"
-#include "arcana/noelle/core/LoopContent.hpp"
+#include "arcana/noelle/core/Lumberjack.hpp"
 
 namespace arcana::noelle {
 
-class LoopUnroll {
-public:
-  /*
-   * Constructor
-   */
-  LoopUnroll();
+using namespace std;
 
-  /*
-   * Fully unroll the loop.
-   */
-  bool fullyUnrollLoop(LoopContent const &LC,
-                       LoopInfo &LI,
-                       DominatorTree &DT,
-                       ScalarEvolution &SE,
-                       AssumptionCache &AC);
+Logger::Logger(Lumberjack &LJ, const char *name) : name(name), LJ(LJ) {}
 
-private:
-  /*
-   * Fields
-   */
+LogStream Logger::level(LVerbosity verbosity) {
+  this->lineEnabled = this->LJ.isEnabled(this->name, verbosity);
+  return LogStream(*this);
+}
 
-  /*
-   * Methods
-   */
-};
+LogStream Logger::debug() {
+  return level(LOG_DEBUG);
+}
+
+LogStream Logger::info() {
+  return level(LOG_INFO);
+}
+
+LogStream Logger::bypass() {
+  return level(LOG_BYPASS);
+}
+
+string Logger::makePrefix() const {
+  string prefix = this->name;
+  prefix += this->LJ.getSeparator();
+  for (const auto &section : this->sections) {
+    prefix += section;
+  }
+  return prefix;
+}
+
+Guard Logger::guard() {
+  return Guard(*this);
+}
+
+IndentedSection Logger::indentedSection() {
+  return IndentedSection(*this);
+}
+
+NamedSection Logger::namedSection(string name) {
+  return NamedSection(*this, name);
+}
 
 } // namespace arcana::noelle
-
-#endif // NOELLE_SRC_CORE_LOOP_UNROLL_LOOPUNROLL_H_

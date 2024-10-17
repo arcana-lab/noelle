@@ -63,7 +63,7 @@ public:
 
 private:
   Module &program;
-  PDGGenerator &pdgAnalysis;
+  PDGGenerator &pdgGenerator;
   CallGraph *pcg;
   Hot *prof;
 };
