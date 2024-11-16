@@ -10,6 +10,7 @@ function show_help() {
   echo "  --version             Print the library version"
   echo "  --include             Print the include directory"
   echo "  --noelle-build-type   Print the build type used for Noelle. E.g. Debug"
+  echo "  --logs                Print the path of the default logging configuration (.json)"I
   echo "  --svf-build-type      Print the build type used for SVF. E.g. Release"
   echo "  --scaf-build-type     Print the build type used for SCAF. E.g. Release"
   echo "  --core-libs           Print the shared libraries used by the NOELLE core"
@@ -57,6 +58,9 @@ for arg in "$@"; do
       ;;
     --include)
       echo "@CMAKE_INSTALL_PREFIX@/include"
+      ;;
+    --logs)
+      echo "@NOELLE_LUMBERJACK_JSON_DEFAULT_PATH@"
       ;;
     --core-libs)
       echo "@NOELLE_CONFIG_CORE_LIBS@"

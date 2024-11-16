@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2022  Angelo Matni, Simone Campanoni
+ * Copyright 2024 Federico Sossai
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,36 +19,52 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <string>
 
-#ifndef NOELLE_SRC_CORE_MEMORY_CLONING_ANALYSIS_MEMORYCLONINGANALYSIS_H_
-#define NOELLE_SRC_CORE_MEMORY_CLONING_ANALYSIS_MEMORYCLONINGANALYSIS_H_
-
-#include "arcana/noelle/core/SystemHeaders.hpp"
-#include "arcana/noelle/core/PDG.hpp"
-#include "arcana/noelle/core/SCCDAG.hpp"
-#include "arcana/noelle/core/Invariants.hpp"
-#include "arcana/noelle/core/Dominators.hpp"
-#include "arcana/noelle/core/ClonableMemoryObject.hpp"
 #include "arcana/noelle/core/Lumberjack.hpp"
 
 namespace arcana::noelle {
 
-class MemoryCloningAnalysis {
-public:
-  MemoryCloningAnalysis(LoopStructure *loop, DominatorSummary &DS, PDG *ldg);
+using namespace std;
 
-  const std::unordered_set<ClonableMemoryObject *> getClonableMemoryObjectsFor(
-      Instruction *I) const;
+Logger::Logger(Lumberjack &LJ, const char *name) : name(name), LJ(LJ) {}
 
-  std::unordered_set<ClonableMemoryObject *> getClonableMemoryObjects(
-      void) const;
+LogStream Logger::level(LVerbosity verbosity) {
+  this->lineEnabled = this->LJ.isEnabled(this->name, verbosity);
+  return LogStream(*this);
+}
 
-private:
-  Logger log;
-  std::unordered_set<std::unique_ptr<ClonableMemoryObject>>
-      clonableMemoryLocations;
-};
+LogStream Logger::debug() {
+  return level(LOG_DEBUG);
+}
+
+LogStream Logger::info() {
+  return level(LOG_INFO);
+}
+
+LogStream Logger::bypass() {
+  return level(LOG_BYPASS);
+}
+
+string Logger::makePrefix() const {
+  string prefix = this->name;
+  prefix += this->LJ.getSeparator();
+  for (const auto &section : this->sections) {
+    prefix += section;
+  }
+  return prefix;
+}
+
+Guard Logger::guard() {
+  return Guard(*this);
+}
+
+IndentedSection Logger::indentedSection() {
+  return IndentedSection(*this);
+}
+
+NamedSection Logger::namedSection(string name) {
+  return NamedSection(*this, name);
+}
 
 } // namespace arcana::noelle
-
-#endif // NOELLE_SRC_CORE_MEMORY_CLONING_ANALYSIS_MEMORYCLONINGANALYSIS_H_

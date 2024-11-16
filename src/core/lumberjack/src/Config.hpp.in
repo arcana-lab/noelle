@@ -1,5 +1,5 @@
 /*
- * Copyright 2022  Simone Campanoni
+ * Copyright 2024 Federico Sossai, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -19,42 +19,4 @@
  OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_PERIODICVARIABLESCC_H_
-#define NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_PERIODICVARIABLESCC_H_
-
-#include "arcana/noelle/core/SystemHeaders.hpp"
-#include "arcana/noelle/core/SingleAccumulatorRecomputableSCC.hpp"
-
-namespace arcana::noelle {
-
-class PeriodicVariableSCC : public SingleAccumulatorRecomputableSCC {
-public:
-  PeriodicVariableSCC() = delete;
-
-  Value *getInitialValue(void) const;
-
-  Value *getPeriod(void) const;
-
-  Value *getStepValue(void) const;
-
-  static bool classof(const GenericSCC *s);
-
-  PeriodicVariableSCC(
-      SCC *s,
-      LoopStructure *loop,
-      const std::set<DGEdge<Value, Value> *> &loopCarriedDependences,
-      DominatorSummary &dom,
-      Value *initialValue,
-      Value *period,
-      Value *step,
-      Value *accumulator);
-
-protected:
-  Value *initialValue;
-  Value *period;
-  Value *step;
-};
-
-} // namespace arcana::noelle
-
-#endif // NOELLE_SRC_CORE_LOOP_SCC_ATTRIBUTES_PERIODICVARIABLESCC_H_
+#define NOELLE_LUMBERJACK_JSON_DEFAULT_PATH "@NOELLE_LUMBERJACK_JSON_DEFAULT_PATH@"
