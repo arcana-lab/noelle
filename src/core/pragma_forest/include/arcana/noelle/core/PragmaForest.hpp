@@ -50,6 +50,10 @@ public:
 
   static bool getStringFromArg(llvm::Value *arg, llvm::StringRef &result);
 
+  static bool getDoubleFromArg(llvm::Value *arg, double &result);
+
+  static bool getIntFromArg(llvm::Value *arg, int &result);
+
   bool isEmpty() const;
 
   bool contains(const llvm::Instruction *I);

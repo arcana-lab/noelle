@@ -93,6 +93,22 @@ bool PragmaTree::getStringFromArg(Value *arg, StringRef &result) {
   return true;
 }
 
+bool PragmaTree::getDoubleFromArg(llvm::Value *arg, double &result) {
+  if (auto Float = dyn_cast<ConstantFP>(arg)) {
+    result = Float->getValue().convertToDouble();
+    return true;
+  }
+  return false;
+}
+
+bool PragmaTree::getIntFromArg(llvm::Value *arg, int &result) {
+  if (auto Int = dyn_cast<ConstantInt>(arg)) {
+    result = Int->getSExtValue();
+    return true;
+  }
+  return false;
+}
+
 bool PragmaTree::isEmpty() const {
   return this->children.size() == 0;
 }
@@ -396,16 +412,18 @@ raw_ostream &PragmaTree::print(raw_ostream &stream,
   }
   for (size_t i = 0; i < Args.size(); i++) {
     auto &A = Args[i];
-    StringRef str;
-    bool isString = getStringFromArg(A, str);
+    StringRef valString;
+    int valInt;
+    double valDouble;
+    bool isString = getStringFromArg(A, valString);
+    bool isInt = getIntFromArg(A, valInt);
+    bool isDouble = getDoubleFromArg(A, valDouble);
     if (isString) {
-      stream << "\"" << str << "\"";
-    } else if (isa<ConstantData>(A)) {
-      if (auto Int = dyn_cast<ConstantInt>(A)) {
-        stream << Int->getValue();
-      } else if (auto Float = dyn_cast<ConstantFP>(A)) {
-        stream << Float->getValue().convertToDouble();
-      }
+      stream << "\"" << valString << "\"";
+    } else if (isInt) {
+      stream << valInt;
+    } else if (isDouble) {
+      stream << valDouble;
     } else {
       stream << "Value*";
     }
