@@ -14,25 +14,26 @@ extern "C" {
 #ifdef NOELLE_PRAGMA_BODY_DISABLE
 
 __attribute__((warn_unused_result, pure)) pragma_t noelle_pragma_begin(
-    const char *);
+    const char *directive);
 
-__attribute__((pure)) void noelle_pragma_arg_str(pragma_t, const char *);
+__attribute__((pure)) void noelle_pragma_arg_str(pragma_t p, const char *val);
 
-__attribute__((pure)) void noelle_pragma_arg_int(pragma_t, int);
+__attribute__((pure)) void noelle_pragma_arg_int(pragma_t p, int val);
 
-__attribute__((pure)) void noelle_pragma_end(pragma_t);
+__attribute__((pure)) void noelle_pragma_end(pragma_t p);
 
 #else
 
-__attribute__((noinline)) pragma_t noelle_pragma_begin(const char *) {
+__attribute__((noinline)) pragma_t noelle_pragma_begin(const char *directive) {
   return 0;
 }
 
-__attribute__((noinline)) void noelle_pragma_arg_str(pragma_t, const char *) {}
+__attribute__((noinline)) void noelle_pragma_arg_str(pragma_t p,
+                                                     const char *val) {}
 
-__attribute__((noinline)) void noelle_pragma_arg_int(pragma_t, int) {}
+__attribute__((noinline)) void noelle_pragma_arg_int(pragma_t p, int val) {}
 
-__attribute__((noinline)) void noelle_pragma_end(pragma_t) {}
+__attribute__((noinline)) void noelle_pragma_end(pragma_t p) {}
 
 #endif
 
