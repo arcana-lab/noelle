@@ -119,7 +119,7 @@ PragmaForest::PragmaForest(llvm::Function &F, std::string directive)
         }
       }
 
-      // It the following assert fails it's probably because one of the
+      // If the following assert fails it's probably because one of the
       // following is true:
       // 1. mem2reg didn't promote the result of pragma begin to a register
       //    therefore the only user of pragma begin is a StoreInst
