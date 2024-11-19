@@ -20,6 +20,10 @@ __attribute__((pure)) void noelle_pragma_arg_str(pragma_t p, const char *val);
 
 __attribute__((pure)) void noelle_pragma_arg_int(pragma_t p, int val);
 
+__attribute__((noinline)) void noelle_pragma_arg_double(pragma_t p, double val);
+
+__attribute__((noinline)) void noelle_pragma_arg_ptr(pragma_t p, void *ptr);
+
 __attribute__((pure)) void noelle_pragma_end(pragma_t p);
 
 #else
@@ -32,6 +36,11 @@ __attribute__((noinline)) void noelle_pragma_arg_str(pragma_t p,
                                                      const char *val) {}
 
 __attribute__((noinline)) void noelle_pragma_arg_int(pragma_t p, int val) {}
+
+__attribute__((noinline)) void noelle_pragma_arg_double(pragma_t p,
+                                                        double val) {}
+
+__attribute__((noinline)) void noelle_pragma_arg_ptr(pragma_t p, void *ptr) {}
 
 __attribute__((noinline)) void noelle_pragma_end(pragma_t p) {}
 

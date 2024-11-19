@@ -358,16 +358,15 @@ vector<Value *> PragmaTree::getArguments() const {
     }
   } else {
     // C API:
-    // Searching for a call to either `noelle_pragma_arg_str` or
-    // `noelle_pragma_arg_int`
+    // Searching for a call to either `noelle_pragma_arg_str`,
+    // `noelle_pragma_arg_int` or `noelle_pragma_arg_double`
     auto LastDominator = this->Begin;
     auto foundAnEnd = false;
     for (auto U : this->Begin->users()) {
       assert(isa<CallInst>(U) && "Unexpected user of a pragma value");
       auto ArgCI = cast<CallInst>(U);
       auto calledName = ArgCI->getCalledFunction()->getName();
-      if (calledName.startswith("noelle_pragma_arg_str")
-          || calledName.startswith("noelle_pragma_arg_int")) {
+      if (calledName.startswith("noelle_pragma_arg")) {
         args.push_back(ArgCI->getArgOperand(1));
         assert(this->DT->dominates(LastDominator, ArgCI)
                && "Unexpected order of pragma arguments");
@@ -425,15 +424,16 @@ raw_ostream &PragmaTree::print(raw_ostream &stream,
     } else if (isDouble) {
       stream << valDouble;
     } else {
-      stream << "Value*";
+      stream << "ptr*";
     }
     if (i != Args.size() - 1) {
       stream << ", ";
     }
   }
   if (Args.size() > 0) {
-    stream << ")\n";
+    stream << ")";
   }
+  stream << "\n";
 
   if (ST == LAST) {
     prefix += "   ";
