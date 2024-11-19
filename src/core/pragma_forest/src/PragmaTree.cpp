@@ -387,8 +387,35 @@ raw_ostream &PragmaTree::print(raw_ostream &stream,
       break;
   }
 
-  stream << prefix << nodePrefix << getDirective() << " ("
-         << getArguments().size() << " args)\n";
+  // Printing arguments
+
+  stream << prefix << nodePrefix << getDirective() << "";
+  auto Args = getArguments();
+  if (Args.size() > 0) {
+    stream << " (";
+  }
+  for (size_t i = 0; i < Args.size(); i++) {
+    auto &A = Args[i];
+    StringRef str;
+    bool isString = getStringFromArg(A, str);
+    if (isString) {
+      stream << "\"" << str << "\"";
+    } else if (isa<ConstantData>(A)) {
+      if (auto Int = dyn_cast<ConstantInt>(A)) {
+        stream << Int->getValue();
+      } else if (auto Float = dyn_cast<ConstantFP>(A)) {
+        stream << Float->getValue().convertToDouble();
+      }
+    } else {
+      stream << "Value*";
+    }
+    if (i != Args.size() - 1) {
+      stream << ", ";
+    }
+  }
+  if (Args.size() > 0) {
+    stream << ")\n";
+  }
 
   if (ST == LAST) {
     prefix += "   ";
