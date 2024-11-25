@@ -276,6 +276,15 @@ bool PDGStats::edgeIsDependenceOf(MDNode *edgeM,
 }
 
 void PDGStats::printStats() {
+  errs() << "Number of bytes per node: " << sizeof(DGNode<Value>) << "\n";
+  errs() << "Number of bytes per control dependence: "
+         << sizeof(ControlDependence<Value, Value>) << "\n";
+  errs() << "Number of bytes per variable dependence: "
+         << sizeof(VariableDependence<Value, Value>) << "\n";
+  errs() << "Number of bytes per memory must dependence: "
+         << sizeof(MustMemoryDependence<Value, Value>) << "\n";
+  errs() << "Number of bytes per memory may dependence: "
+         << sizeof(MayMemoryDependence<Value, Value>) << "\n";
   errs() << "Number of Nodes: " << this->numberOfNodes << "\n";
   errs() << "Number of Edges (a.k.a. dependences): " << this->numberOfEdges
          << "\n";
