@@ -61,8 +61,7 @@ PragmaForest::PragmaForest(llvm::Function &F, std::string directive)
     if (Callee == nullptr) {
       return false;
     }
-    if (Callee->getName() == "noelle_pragma_begin"
-        || Callee->getName().startswith("_Z19noelle_pragma_begin")) {
+    if (Callee->getName() == "noelle_pragma_begin") {
       StringRef beginDirective;
       if (PragmaTree::getStringFromArg(CI->getArgOperand(0), beginDirective)) {
         if (beginDirective.startswith(directive)) {

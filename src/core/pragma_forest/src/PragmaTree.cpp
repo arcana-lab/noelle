@@ -349,38 +349,11 @@ vector<Value *> PragmaTree::getArguments() const {
   auto CI = cast<CallInst>(this->Begin);
   vector<Value *> args;
 
-  if (CI->getCalledFunction()->getName().startswith("_Z")) {
-    // C++ API:
-    // The first argument is skipped because it's the directive.
-    // The rest is just the list of args itself
-    for (size_t i = 1; i < CI->arg_size(); i++) {
-      args.push_back(CI->getArgOperand(i));
-    }
-  } else {
-    // C API:
-    // Searching for a call to either `noelle_pragma_arg_str`,
-    // `noelle_pragma_arg_int` or `noelle_pragma_arg_double`
-    auto LastDominator = this->Begin;
-    auto foundAnEnd = false;
-    for (auto U : this->Begin->users()) {
-      assert(isa<CallInst>(U) && "Unexpected user of a pragma value");
-      auto ArgCI = cast<CallInst>(U);
-      auto calledName = ArgCI->getCalledFunction()->getName();
-      if (calledName.startswith("noelle_pragma_arg")) {
-        args.push_back(ArgCI->getArgOperand(1));
-        assert(this->DT->dominates(LastDominator, ArgCI)
-               && "Unexpected order of pragma arguments");
-        LastDominator = ArgCI;
-      } else if (calledName.startswith("noelle_pragma_end")) {
-        // This must always be a user of the pragma value. But we don't care
-        foundAnEnd = true;
-      } else {
-        assert(false && "Unexpected user of a pragma value");
-      }
-    }
-    assert(foundAnEnd);
+  // The first argument is skipped because it's the directive.
+  // The rest is just the list of args itself
+  for (size_t i = 1; i < CI->arg_size(); i++) {
+    args.push_back(CI->getArgOperand(i));
   }
-
   return args;
 }
 
