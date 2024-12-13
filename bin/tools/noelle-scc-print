@@ -22,21 +22,23 @@ printTypes () {
 }
 
 usage() {
-  echo "USAGE: `basename $0` INPUT_BC [OPTIONS]..."
+  echo "USAGE: `basename $0` INPUT_BC ACTION [OPTION]..."
   echo
   echo "Tool for printing info on SCCs of a given loop in a given function"
   echo
-  echo "INPUT_BC              Input bitcode in .bc or .ll format"
+  echo "INPUT_BC                Input bitcode in .bc or .ll format"
+  echo
+  echo "Actions:"
+  echo "  --loop=L              Target loop ID. Show them all with '--loops'."
+  echo "  --loops               Show all loops in a function with their ID."
+  echo "                        Use --func to select a function."
   echo
   echo "Options:"
-  echo "--insts               Print the instructions of all SCC."
-  echo "--white-list=N,..     Comma-separated list of SCC IDs to print."
-  echo "--black-list=N,..     Comma-separated list of SCC IDs to not print."
-  echo "--func=F              Target function. Default is main."
-  echo "--loop=L              Target loop ID. Show them all with '--loops'."
-  echo "--loops               Show all loops with their ID."
-  echo "                      Use this number in '--loop'."
-  echo "--help                Display this message."
+  echo "  --insts               Print the instructions of all SCC."
+  echo "  --white-list=N,..     Comma-separated list of SCC IDs to print."
+  echo "  --black-list=N,..     Comma-separated list of SCC IDs to not print."
+  echo "  --func=F              Function. Default is main."
+  echo "  --help                Display this message."
   echo
   echo "Use the following SCC type IDs as arguments to '--(white|black)-list':"
   echo
@@ -52,6 +54,8 @@ fi
 
 # parsing arguments
 
+argLoopPresent="n"
+argLoopsPresent="n"
 inputBC="$1"
 passArgs=""
 selectedFunction="main"
@@ -70,6 +74,7 @@ for arg in "$@"; do
     --loop=*)
       args="${arg#*=}"
       passArgs="${passArgs} -noelle-scc-printer-loop=$args"
+      argLoopPresent="y"
       shift
       ;;
     --func=*)
@@ -88,6 +93,7 @@ for arg in "$@"; do
       ;;
     --loops)
       passArgs="${passArgs} -noelle-scc-printer-loops"
+      argLoopsPresent="y"
       shift
       ;;
     --help)
@@ -103,5 +109,10 @@ for arg in "$@"; do
       ;;
   esac
 done
+
+if [[ $argLoopPresent == "n" && $argLoopsPresent == "n" ]]; then
+  usage
+  exit 1
+fi
 
 noelle-load -load $installDir/lib/SCCPrinter.so -scc-printer -disable-output $passArgs $inputBC
