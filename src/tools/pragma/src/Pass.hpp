@@ -24,6 +24,7 @@
 
 #include "llvm/Pass.h"
 #include "llvm/IR/Instructions.h"
+#include "arcana/noelle/core/Lumberjack.hpp"
 
 namespace arcana::noelle {
 class Pragma : public llvm::ModulePass {
@@ -41,7 +42,7 @@ public:
   bool runOnModule(llvm::Module &M) override;
 
 private:
-  std::string prefix;
+  Logger log;
 };
 
 } // namespace arcana::noelle

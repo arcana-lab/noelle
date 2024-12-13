@@ -30,9 +30,7 @@ using namespace llvm;
 
 namespace arcana::noelle {
 
-PragmaEraserPass::PragmaEraserPass()
-  : ModulePass{ ID },
-    prefix("PragmaEraser: ") {
+PragmaEraserPass::PragmaEraserPass() : ModulePass{ ID } {
   return;
 }
 

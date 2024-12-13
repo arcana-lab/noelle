@@ -40,7 +40,7 @@ static cl::opt<string> FunctionName("noelle-pragma-function",
 
 namespace arcana::noelle {
 
-Pragma::Pragma() : ModulePass{ ID }, prefix("Pragma: ") {}
+Pragma::Pragma() : ModulePass{ ID }, log{ NoelleLumberjack, "Pragma" } {}
 
 bool Pragma::doInitialization(Module &M) {
   return false;
@@ -61,7 +61,7 @@ bool Pragma::runOnModule(Module &M) {
     if (scanAllFunctions || F.getName() == FunctionName) {
       PragmaForest PF(F, Directive);
       if (!PF.isEmpty()) {
-        PF.print(errs(), prefix);
+        log.bypass() << PF;
       }
     }
   }

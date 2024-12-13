@@ -39,9 +39,6 @@ public:
   void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
 
   bool runOnModule(llvm::Module &M) override;
-
-private:
-  std::string prefix;
 };
 
 } // namespace arcana::noelle
