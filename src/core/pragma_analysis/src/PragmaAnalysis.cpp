@@ -52,6 +52,9 @@ MemoryDataDependenceStrength PragmaAnalysis::
     isThereThisMemoryDataDependenceType(DataDependenceType t,
                                         Instruction *fromInst,
                                         Instruction *toInst) {
+  if (isPragma(fromInst) || isPragma(toInst)) {
+    return CANNOT_EXIST;
+  }
   return MAY_EXIST;
 }
 
