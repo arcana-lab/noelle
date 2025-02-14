@@ -918,14 +918,6 @@ bool LoopIterationSpaceAnalysis::isInnerDimensionSubscriptsBounded(
     return false;
   }
 
-  auto equalPred = ICmpInst::Predicate::ICMP_EQ;
-  auto strictUpperBoundPred = ICmpInst::Predicate::ICMP_SLT;
-  auto strictLowerBoundPred = ICmpInst::Predicate::ICMP_SGT;
-  auto looseUpperBoundPred =
-      CmpInst::getNonStrictPredicate(strictUpperBoundPred);
-  auto looseLowerBoundPred =
-      CmpInst::getNonStrictPredicate(strictLowerBoundPred);
-
   auto scevsMatch = [](const SCEV *scev1, const SCEV *scev2) -> bool {
     if (scev1 == scev2)
       return true;
@@ -976,7 +968,6 @@ bool LoopIterationSpaceAnalysis::isInnerDimensionSubscriptsBounded(
 
     auto zeroConstant =
         (ConstantInt *)ConstantInt::get(subscriptType, (int64_t)0);
-    auto zeroSCEV = SE.getConstant(zeroConstant);
 
     // sizeSCEV->print(errs() << "Checking if bounded by 0 and ");
     // subscriptSCEV->print(errs() << ", Subscript " << i << ": ");
@@ -1005,7 +996,6 @@ bool LoopIterationSpaceAnalysis::isInnerDimensionSubscriptsBounded(
        * If the step recurrence is negative and the AddRecExpr starts at the
        * size - 1, it is bounded
        */
-      auto startSCEV = subscriptRecSCEV->getStart();
       auto stepSCEV = subscriptRecSCEV->getStepRecurrence(SE);
       auto constantStepSCEV = dyn_cast<SCEVConstant>(stepSCEV);
       if (constantStepSCEV && constantStepSCEV->getValue()->isNegative()) {
