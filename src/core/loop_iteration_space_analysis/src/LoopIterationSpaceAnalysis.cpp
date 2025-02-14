@@ -966,9 +966,6 @@ bool LoopIterationSpaceAnalysis::isInnerDimensionSubscriptsBounded(
       return false;
     }
 
-    auto zeroConstant =
-        (ConstantInt *)ConstantInt::get(subscriptType, (int64_t)0);
-
     // sizeSCEV->print(errs() << "Checking if bounded by 0 and ");
     // subscriptSCEV->print(errs() << ", Subscript " << i << ": ");
     // inst->print(errs() << "\tInst: ");
