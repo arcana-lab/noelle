@@ -104,9 +104,7 @@ bool PDGStats::runOnModule(Module &M) {
 }
 
 void PDGStats::collectStatsForNodes(Function &F) {
-  for (auto &arg : F.args()) {
-    this->numberOfNodes++;
-  }
+  this->numberOfNodes += F.arg_size();
   for (auto &B : F) {
     this->numberOfNodes += B.size();
   }
