@@ -199,10 +199,10 @@ void exportToDotGraph(LoopContent *LC,
         if (dep->isLoopCarriedDependence()) {
           if (isa<LoopCarriedUnknownSCC>(genericSCC)) {
             if (DA && !DA->canThisDependenceBeLoopCarried(dep, *LS)) {
-              // terminable
+              // breakable
               edge["@COLOR@"] = "orange";
             } else {
-              // non-terminable
+              // non-breakable
               edge["@COLOR@"] = "red";
             }
           } else {
