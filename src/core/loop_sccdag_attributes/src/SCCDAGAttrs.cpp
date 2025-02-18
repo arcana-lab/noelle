@@ -571,7 +571,9 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
     Value *initialValue;
     Value *period;
     Value *step;
-    Value *accumulator = nullptr; //should be nullptr at return unless the Periodic Variable contains 2+ PHINodes. Identifies accumulator
+    Value *accumulator =
+        nullptr; // should be nullptr at return unless the Periodic Variable
+                 // contains 2+ PHINodes. Identifies accumulator
 
     auto from = edge->getSrc();
     auto to = edge->getDst();
@@ -584,16 +586,17 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
     if (toPHI->getNumIncomingValues() != 2)
       return notPeriodic;
 
-    /* 
-     * A different way of expressing a subtract-from-zero flipflop (which can be seen as "x = -x" at the C level)
-     * is to use two PHINode instructions.
-     * With two PHINodes, this can be written as phi1=(preheader, -x)(latch, phi2), phi2=(preheader, x)(latch, phi1)
-     * In such a case, only one of the phis should have scc-external users.
-     * The other phi should only be holding the "out of phase" value.
-     * If instead the other phi has scc-external users, it implies that the scc is composed
-     * of two interdependent variables rather than merely being another way of writing "x = -x."
+    /*
+     * A different way of expressing a subtract-from-zero flipflop (which can be
+     * seen as "x = -x" at the C level) is to use two PHINode instructions. With
+     * two PHINodes, this can be written as phi1=(preheader, -x)(latch, phi2),
+     * phi2=(preheader, x)(latch, phi1) In such a case, only one of the phis
+     * should have scc-external users. The other phi should only be holding the
+     * "out of phase" value. If instead the other phi has scc-external users, it
+     * implies that the scc is composed of two interdependent variables rather
+     * than merely being another way of writing "x = -x."
      */
-    if(isa<PHINode>(from)) {
+    if (isa<PHINode>(from)) {
 
       auto fromPHI = cast<PHINode>(from);
       bool fromHasExternalUsers = false;
@@ -603,7 +606,7 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
           continue;
         }
 
-        if (const auto &userInst = dyn_cast<Instruction>(usr)) {
+        if (isa<Instruction>(usr)) {
           fromHasExternalUsers = true;
         }
       }
@@ -612,7 +615,7 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
           continue;
         }
 
-        if (const auto &userInst = dyn_cast<Instruction>(usr)) {
+        if (isa<Instruction>(usr)) {
           toHasExternalUsers = true;
         }
       }
@@ -642,7 +645,6 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
       auto secondaryInitialConstantInt =
           dyn_cast<ConstantInt>(secondaryInitialValue);
       if (initialConstantInt && secondaryInitialConstantInt) {
-        auto c = initialConstantInt->isNegative() ? 1 : -1;
         step = llvm::ConstantExpr::getSub(secondaryInitialConstantInt,
                                           initialConstantInt);
       } else {

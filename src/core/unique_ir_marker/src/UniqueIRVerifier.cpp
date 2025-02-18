@@ -12,7 +12,7 @@ void UniqueIRVerifier::visitModule(Module &M) {
   assert(metaNode->getNumOperands() == 1
          && "A Module which has been marked must have a VIAModule marker");
   auto setModuleID = UniqueIRMarkerReader::getModuleID(addressof(M));
-  assert(setModuleID && setModuleID.value() >= 0);
+  assert(setModuleID.has_value());
 }
 
 void UniqueIRVerifier::visitFunction(Function &F) {
