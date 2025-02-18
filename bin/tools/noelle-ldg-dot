@@ -1,0 +1,32 @@
+#!/bin/bash -e
+
+trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
+
+installDir=$(noelle-config --prefix)
+
+usage () {
+  echo "USAGE: `basename $0` INPUT_BC [OPTION]..."
+  echo
+  echo "Export the Dependence Graph of a loop to DOT graph."
+  echo
+  echo "Options:"
+  noelle-load -load $installDir/lib/LDGDot.so --help | grep "ldg-dot"
+}
+
+if test $# -lt 1 ; then
+  usage
+  exit 1
+fi
+
+for arg in "$@"; do
+  case ${arg} in
+    --help)
+      usage
+      exit 0
+      ;;
+    *)
+      ;;
+  esac
+done
+
+noelle-load -load $installDir/lib/LDGDot.so -LDGDot -disable-output $@
