@@ -571,7 +571,9 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
     Value *initialValue;
     Value *period;
     Value *step;
-    Value *accumulator = nullptr; //should be nullptr at return unless the Periodic Variable contains 2+ PHINodes. Identifies accumulator
+    Value *accumulator =
+        nullptr; // should be nullptr at return unless the Periodic Variable
+                 // contains 2+ PHINodes. Identifies accumulator
 
     auto from = edge->getSrc();
     auto to = edge->getDst();
@@ -608,7 +610,7 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
           continue;
         }
 
-        if (const auto &userInst = dyn_cast<Instruction>(usr)) {
+        if (isa<Instruction>(usr)) {
           fromHasExternalUsers = true;
         }
       }
@@ -617,7 +619,7 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
           continue;
         }
 
-        if (const auto &userInst = dyn_cast<Instruction>(usr)) {
+        if (isa<Instruction>(usr)) {
           toHasExternalUsers = true;
         }
       }
@@ -661,7 +663,6 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
       auto secondaryInitialConstantInt =
           dyn_cast<ConstantInt>(secondaryInitialValue);
       if (initialConstantInt && secondaryInitialConstantInt) {
-        auto c = initialConstantInt->isNegative() ? 1 : -1;
         step = llvm::ConstantExpr::getSub(secondaryInitialConstantInt,
                                           initialConstantInt);
       } else {

@@ -245,7 +245,7 @@ const SCEV *SCEVSimplification::getOffsetBetween(ScalarEvolution &SE,
     return nullptr;
   auto lhs = addSCEV->getOperand(0);
   auto rhs = addSCEV->getOperand(1);
-  if (!(lhs == startSCEV ^ rhs == startSCEV))
+  if (!((lhs == startSCEV) ^ (rhs == startSCEV)))
     return nullptr;
 
   auto offset = lhs == startSCEV ? rhs : lhs;

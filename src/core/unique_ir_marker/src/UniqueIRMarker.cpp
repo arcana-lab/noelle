@@ -132,9 +132,9 @@ MDNode *UniqueIRMarker::buildNode(LLVMContext &C, IDType value) {
 UniqueIRMarker::UniqueIRMarker(ModulePass &MP, MarkerMode mode)
   : MP(MP),
     Mode(mode),
-    InstructionCounter(0),
-    FunctionCounter(0),
     BasicBlockCounter(0),
+    FunctionCounter(0),
+    InstructionCounter(0),
     LoopCounter(0),
     ModuleCounter(0) {}
 
