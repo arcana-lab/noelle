@@ -595,6 +595,10 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
      * "out of phase" value. If instead the other phi has scc-external users, it
      * implies that the scc is composed of two interdependent variables rather
      * than merely being another way of writing "x = -x."
+     * A final qualifier: the predecessor block of the x and -x cases
+     * must be the preheader. It must not be any loop-internal block
+     * for either of the two phis: in that case you may have a memory cell
+     * instead of a flip-flop.
      */
     if (isa<PHINode>(from)) {
 
@@ -624,23 +628,37 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
                             // variables, not just one variable
       }
       Value *secondaryInitialValue;
+
+      /*
+       * Determine which incoming values of the phis are the constants (the initial values).
+       */
+      int whichFromIncomingValueIsInitial = 0;
+      int whichToIncomingValueIsInitial = 0;
+      if(fromPHI->getIncomingValue(0) == to) {
+        whichFromIncomingValueIsInitial = 1;
+      }
+      if(toPHI->getIncomingValue(0) == from) {
+        whichToIncomingValueIsInitial = 1;
+      }
       if (fromHasExternalUsers) {
-        initialValue = fromPHI->getIncomingValue(0) == to
-                           ? fromPHI->getIncomingValue(1)
-                           : fromPHI->getIncomingValue(0);
-        secondaryInitialValue = toPHI->getIncomingValue(0) == from
-                                    ? toPHI->getIncomingValue(1)
-                                    : toPHI->getIncomingValue(0);
+        initialValue = fromPHI->getIncomingValue(whichFromIncomingValueIsInitial);
+        secondaryInitialValue = toPHI->getIncomingValue(whichToIncomingValueIsInitial);          
         accumulator = fromPHI;
       } else {
-        initialValue = toPHI->getIncomingValue(0) == from
-                           ? toPHI->getIncomingValue(1)
-                           : toPHI->getIncomingValue(0);
-        secondaryInitialValue = fromPHI->getIncomingValue(0) == to
-                                    ? fromPHI->getIncomingValue(1)
-                                    : fromPHI->getIncomingValue(0);
+        initialValue = toPHI->getIncomingValue(whichToIncomingValueIsInitial);
+        secondaryInitialValue = fromPHI->getIncomingValue(whichFromIncomingValueIsInitial);          
         accumulator = toPHI;
       }
+      /*
+       * If either constant isn't incoming from the preheader, this isn't actually a periodic variable,
+       * and might be a memory cell.
+       */
+      if((fromPHI->getIncomingBlock(whichFromIncomingValueIsInitial) != loopNode->getLoop()->getPreHeader()) ||
+         (toPHI->getIncomingBlock(whichToIncomingValueIsInitial) != loopNode->getLoop()->getPreHeader())) 
+      {
+        return notPeriodic;
+      }
+      
       auto initialConstantInt = dyn_cast<ConstantInt>(initialValue);
       auto secondaryInitialConstantInt =
           dyn_cast<ConstantInt>(secondaryInitialValue);
