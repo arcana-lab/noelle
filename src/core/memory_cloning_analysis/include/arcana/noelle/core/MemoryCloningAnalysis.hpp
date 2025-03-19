@@ -29,6 +29,7 @@
 #include "arcana/noelle/core/Invariants.hpp"
 #include "arcana/noelle/core/Dominators.hpp"
 #include "arcana/noelle/core/ClonableMemoryObject.hpp"
+#include "arcana/noelle/core/Lumberjack.hpp"
 
 namespace arcana::noelle {
 
@@ -43,6 +44,7 @@ public:
       void) const;
 
 private:
+  Logger log;
   std::unordered_set<std::unique_ptr<ClonableMemoryObject>>
       clonableMemoryLocations;
 };

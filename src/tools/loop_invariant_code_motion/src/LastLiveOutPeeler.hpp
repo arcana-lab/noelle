@@ -31,12 +31,12 @@ namespace arcana::noelle {
 
 class LastLiveOutPeeler {
 public:
-  LastLiveOutPeeler(LoopContent const &LDI, Noelle &noelle);
+  LastLiveOutPeeler(LoopContent const &LC, Noelle &noelle);
 
   bool peelLastLiveOutComputation();
 
 private:
-  LoopContent const &LDI;
+  LoopContent const &LC;
   Noelle &noelle;
 
   /*

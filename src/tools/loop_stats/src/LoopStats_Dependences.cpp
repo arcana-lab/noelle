@@ -108,7 +108,7 @@ void LoopStats::collectStatsOnNoelleSCCs(Hot *profiles,
 void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
                                      SCCDAG *sccdag,
                                      SCCDAGAttrs *sccdagAttrs,
-                                     LoopContent *ldi,
+                                     LoopContent *LC,
                                      Stats *statsForLoop) {
 
   /*
@@ -134,7 +134,7 @@ void LoopStats::collectStatsOnSCCDAG(Hot *profiles,
     statsForLoop->numberOfSCCs++;
 
     if (sccdagAttrs) {
-      assert(ldi != nullptr);
+      assert(LC != nullptr);
 
       /*
        * Fetch the SCC attributes

@@ -29,6 +29,8 @@
 #include "arcana/noelle/core/LoopCarriedUnknownSCC.hpp"
 #include "arcana/noelle/core/LoopCarriedDependencies.hpp"
 #include "arcana/noelle/core/UnknownClosedFormSCC.hpp"
+#include "arcana/noelle/core/Utils.hpp"
+#include "llvm/IR/Constants.h"
 
 namespace arcana::noelle {
 
@@ -118,8 +120,8 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
 
     } else if (std::get<0>(isPeriodic)) {
       auto loopCarriedDependences = this->sccToLoopCarriedDependencies.at(scc);
-      Value *initialValue, *period, *step;
-      tie(std::ignore, initialValue, period, step) = isPeriodic;
+      Value *initialValue, *period, *step, *accumulator;
+      tie(std::ignore, initialValue, period, step, accumulator) = isPeriodic;
 
       /*
        * The SCC is a periodic variable.
@@ -130,7 +132,8 @@ SCCDAGAttrs::SCCDAGAttrs(bool enableFloatAsReal,
                                         DS,
                                         initialValue,
                                         period,
-                                        step);
+                                        step,
+                                        accumulator);
 
     } else if (doesSCCOnlyContainIV.size() > 0) {
 
@@ -541,10 +544,9 @@ std::set<InductionVariable *> SCCDAGAttrs::
   return containedIVs;
 }
 
-std::tuple<bool, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
-    SCC *scc,
-    LoopTree *loopNode) {
-  auto notPeriodic = std::make_tuple(false, nullptr, nullptr, nullptr);
+std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
+    checkIfPeriodic(SCC *scc, LoopTree *loopNode) {
+  auto notPeriodic = std::make_tuple(false, nullptr, nullptr, nullptr, nullptr);
 
   if (this->sccToLoopCarriedDependencies.find(scc)
       == this->sccToLoopCarriedDependencies.end()) {
@@ -569,16 +571,94 @@ std::tuple<bool, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
     Value *initialValue;
     Value *period;
     Value *step;
+    Value *accumulator =
+        nullptr; // should be nullptr at return unless the Periodic Variable
+                 // contains 2+ PHINodes. Identifies accumulator
 
     auto from = edge->getSrc();
     auto to = edge->getDst();
 
     if (!isa<PHINode>(to))
       return notPeriodic;
+
     auto toPHI = cast<PHINode>(to);
 
     if (toPHI->getNumIncomingValues() != 2)
       return notPeriodic;
+
+    /*
+     * A different way of expressing a subtract-from-zero flipflop (which can be
+     * seen as "x = -x" at the C level) is to use two PHINode instructions. With
+     * two PHINodes, this can be written as phi1=(preheader, -x)(latch, phi2),
+     * phi2=(preheader, x)(latch, phi1) In such a case, only one of the phis
+     * should have scc-external users. The other phi should only be holding the
+     * "out of phase" value. If instead the other phi has scc-external users, it
+     * implies that the scc is composed of two interdependent variables rather
+     * than merely being another way of writing "x = -x."
+     */
+    if (isa<PHINode>(from)) {
+
+      auto fromPHI = cast<PHINode>(from);
+      bool fromHasExternalUsers = false;
+      bool toHasExternalUsers = false;
+      for (const auto &usr : from->users()) {
+        if (usr == to) {
+          continue;
+        }
+
+        if (isa<Instruction>(usr)) {
+          fromHasExternalUsers = true;
+        }
+      }
+      for (const auto &usr : to->users()) {
+        if (usr == from) {
+          continue;
+        }
+
+        if (isa<Instruction>(usr)) {
+          toHasExternalUsers = true;
+        }
+      }
+      if (fromHasExternalUsers && toHasExternalUsers) {
+        return notPeriodic; // implies SCC is composed of two interdependent
+                            // variables, not just one variable
+      }
+      Value *secondaryInitialValue;
+      if (fromHasExternalUsers) {
+        initialValue = fromPHI->getIncomingValue(0) == to
+                           ? fromPHI->getIncomingValue(1)
+                           : fromPHI->getIncomingValue(0);
+        secondaryInitialValue = toPHI->getIncomingValue(0) == from
+                                    ? toPHI->getIncomingValue(1)
+                                    : toPHI->getIncomingValue(0);
+        accumulator = fromPHI;
+      } else {
+        initialValue = toPHI->getIncomingValue(0) == from
+                           ? toPHI->getIncomingValue(1)
+                           : toPHI->getIncomingValue(0);
+        secondaryInitialValue = fromPHI->getIncomingValue(0) == to
+                                    ? fromPHI->getIncomingValue(1)
+                                    : fromPHI->getIncomingValue(0);
+        accumulator = toPHI;
+      }
+      auto initialConstantInt = dyn_cast<ConstantInt>(initialValue);
+      auto secondaryInitialConstantInt =
+          dyn_cast<ConstantInt>(secondaryInitialValue);
+      if (initialConstantInt && secondaryInitialConstantInt) {
+        step = llvm::ConstantExpr::getSub(secondaryInitialConstantInt,
+                                          initialConstantInt);
+      } else {
+        return notPeriodic;
+      }
+      period =
+          llvm::ConstantInt::get(llvm::Type::getInt64Ty(fromPHI->getContext()),
+                                 2);
+      return std::make_tuple(true, initialValue, period, step, accumulator);
+    }
+
+    /*
+     * Capture cases where the SCC only has one PHINode
+     */
 
     initialValue = toPHI->getIncomingValue(0) == from
                        ? toPHI->getIncomingValue(1)
@@ -645,7 +725,7 @@ std::tuple<bool, Value *, Value *, Value *> SCCDAGAttrs::checkIfPeriodic(
     // errs() << "periodic variable with initial value " << *initialValue <<
     // "\n"; errs() << "                          and period " << *period <<
     // "\n"; errs() << "                            and step " << *step << "\n";
-    return std::make_tuple(true, initialValue, period, step);
+    return std::make_tuple(true, initialValue, period, step, nullptr);
   }
 
   /*

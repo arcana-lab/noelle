@@ -26,13 +26,12 @@ public:
 private:
   IDType uniqueInstructionCounter();
   IDType uniqueModuleCounter();
-
-  IDType BasicBlockCounter, InstructionCounter, FunctionCounter, LoopCounter,
-      ModuleCounter;
   MDNode *buildNode(LLVMContext &, IDType);
-  ModulePass &MP;
 
+  ModulePass &MP;
   MarkerMode Mode;
+  IDType BasicBlockCounter, FunctionCounter, InstructionCounter, LoopCounter,
+      ModuleCounter;
 };
 
 } // namespace arcana::noelle

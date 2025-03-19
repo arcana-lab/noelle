@@ -62,7 +62,8 @@ static cl::opt<std::string> TargetFunctionName(
     cl::Hidden,
     cl::desc("Restrict pass to a single function"));
 
-SCCPrinter::SCCPrinter() : prefix{ "SCCPrinter: " } {
+SCCPrinter::SCCPrinter() 
+  : log(NoelleLumberjack, "SCCPrinter") {
 
   this->sccTypeWhiteList = SCCTypeWhiteList;
   this->sccTypeBlackList = SCCTypeBlackList;
@@ -88,7 +89,7 @@ PreservedAnalyses SCCPrinter::run(Module &M, llvm::ModuleAnalysisManager &AM) {
   auto *F = M.getFunction(this->targetFunctionName);
 
   if (F == nullptr) {
-    errs() << this->prefix << "can't find the target function\n";
+    log.bypass() << "Can't find the target function\n";
     return PreservedAnalyses::all();
   }
 
@@ -98,7 +99,7 @@ PreservedAnalyses SCCPrinter::run(Module &M, llvm::ModuleAnalysisManager &AM) {
   }
 
   if (this->targetLoopID < 0) {
-    errs() << this->prefix << "please specify a loop ID\n";
+    log.bypass() << "please specify a loop ID\n";
     return PreservedAnalyses::all();
   }
 
@@ -148,30 +149,31 @@ void SCCPrinter::printSCC(GenericSCC *scc) {
   auto sccNode = scc->getSCC();
   auto type = scc->getKind();
 
-  errs() << this->prefix << "Found \e[1;32m" << getSCCTypeName(scc->getKind())
-         << "\e[0m (Type ID " << type << ")\n";
+  log.bypass() << "Found \e[1;32m" << getSCCTypeName(scc->getKind())
+               << "\e[0m (Type ID " << type << ")\n";
 
   if (this->printSCCInstructions) {
-    errs() << this->prefix << "  \e[32mInstructions\e[0m: \n";
-    for (auto *I : sccNode->getInstructions()) {
-      errs() << *I << "\n";
+    {
+      auto s1 = log.namedSection("\e[32mInsts\e[0m");
+      for (auto *I : sccNode->getInstructions()) {
+        log.bypass() << *I << "\n";
+      }
     }
-    errs() << "\n";
+    log.bypass() << "\n";
   }
 
   if (this->printDetails) {
-    errs() << this->prefix << "  \e[32mDetails\e[0m: \n";
-    sccNode->print(errs(), "");
+    sccNode->print(errs(), /*prefix=*/"", /*maxEdges=*/INT_MAX);
   }
 }
 
 void SCCPrinter::printLoopIDs(std::vector<LoopStructure *> *LSs) {
-  errs() << this->prefix << "Selected function: \e[35m"
-         << this->targetFunctionName << "\e[0m\n";
+  log.bypass()
+      << "Selected function: \e[35m" << this->targetFunctionName << "\e[0m\n";
   for (auto LS : *LSs) {
     auto id = LS->getID().value();
-    errs() << this->prefix << "\e[1;32mLoop ID " << id << "\e[0m:\n";
-    errs() << *LS->getHeader() << "\n";
+    log.bypass() << "\e[1;32mLoop ID " << id << "\e[0m:\n";
+    log.bypass() << *LS->getHeader() << "\n";
   }
 }
 
@@ -183,8 +185,6 @@ std::string getSCCTypeName(GenericSCC::SCCKind type) {
       return "REDUCTION";
     case GenericSCC::BINARY_REDUCTION:
       return "BINARY_REDUCTION";
-    case GenericSCC::LAST_REDUCTION:
-      return "LAST_REDUCTION";
     case GenericSCC::RECOMPUTABLE:
       return "RECOMPUTABLE";
     case GenericSCC::SINGLE_ACCUMULATOR_RECOMPUTABLE:
@@ -193,30 +193,18 @@ std::string getSCCTypeName(GenericSCC::SCCKind type) {
       return "INDUCTION_VARIABLE";
     case GenericSCC::LINEAR_INDUCTION_VARIABLE:
       return "LINEAR_INDUCTION_VARIABLE";
-    case GenericSCC::LAST_INDUCTION_VARIABLE:
-      return "LAST_INDUCTION_VARIABLE";
     case GenericSCC::PERIODIC_VARIABLE:
       return "PERIODIC_VARIABLE";
-    case GenericSCC::LAST_SINGLE_ACCUMULATOR_RECOMPUTABLE:
-      return "LAST_SINGLE_ACCUMULATOR_RECOMPUTABLE";
     case GenericSCC::UNKNOWN_CLOSED_FORM:
       return "UNKNOWN_CLOSED_FORM";
-    case GenericSCC::LAST_RECOMPUTABLE:
-      return "LAST_RECOMPUTABLE";
     case GenericSCC::MEMORY_CLONABLE:
       return "MEMORY_CLONABLE";
     case GenericSCC::STACK_OBJECT_CLONABLE:
       return "STACK_OBJECT_CLONABLE";
-    case GenericSCC::LAST_MEMORY_CLONABLE:
-      return "LAST_MEMORY_CLONABLE";
     case GenericSCC::LOOP_CARRIED_UNKNOWN:
       return "LOOP_CARRIED_UNKNOWN";
-    case GenericSCC::LAST_LOOP_CARRIED:
-      return "LAST_LOOP_CARRIED";
     case GenericSCC::LOOP_ITERATION:
       return "LOOP_ITERATION";
-    case GenericSCC::LAST_LOOP_ITERATION:
-      return "LAST_LOOP_ITERATION";
     default:
       assert(false);
   }

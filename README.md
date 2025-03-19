@@ -41,7 +41,7 @@ The following material compose the documentation currently available:
 
 
 ## Version
-The latest stable version is 14.0.1 (tag = `v14.0.1`).
+The latest stable version is 14.1.0 (tag = `v14.1.0`).
 
 #### Version Numbering Scheme
 The version number is in the form of \[v _Major.Minor.Revision_ \]
@@ -55,24 +55,25 @@ The version number is in the form of \[v _Major.Minor.Revision_ \]
 - **Revision**: At least once per month, at most twice per week (2/week ~ 1/month)
 
 ## Status
-Next is the status of NOELLE for different LLVM versions.
+This is the status of NOELLE for different LLVM versions.
 
-| LLVM    | NOELLE's branch |  SVF included      | SCAF included      | Working            | Maintained         | 
-| ------: | --------------: | :----------------: | :----------------: | :----------------: | :----------------: |
-|  18.1.8 | v18             | :x:                | :x:                | :x:                | :heavy_check_mark: |
-|  14.0.6 | v14             | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-|   9.0.0 | master          | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| LLVM    | NOELLE's branch |  SVF included      | SCAF included      | Unit tests failed out of 35 tests | Latest version | Maintained         | 
+| ------: | --------------: | :----------------: | :----------------: | --------------------------------: | -------------: | :----------------: |
+|  18.1.8 | v18             | :x:                | :x:                |                                35 |                | :white_check_mark: |
+|  14.0.6 | master          | :white_check_mark: | :white_check_mark: |                                13 |         14.1.0 | :white_check_mark: |
+|   9.0.0 | v9              | :white_check_mark: | :white_check_mark: |                                13 |         9.17.0 | :x:                |
 
 
 ## Prerequisites
-LLVM 18.1.6
+- LLVM 18.1.6
+- Z3 4.8.8 or newer
 
 ### Northwestern users
-Those who have access to the Zythos cluster at Northwestern can source LLVM 18.1.6 from any node of the cluster with:
+Those who have access to the [Zythos](https://users.cs.northwestern.edu/~simonec/files/Research/manuals/Zythos_guide.pdf) cluster at Northwestern can source LLVM 14.0.6 and Z3 4.13.0 from any node of the cluster with:
 ```
 source /project/extra/llvm/14.0.6/enable
+source /project/extra/z3/4.13.0/enable
 ```
-Check out the Zythos cluster guide [here](http://www.cs.northwestern.edu/~simonec/files/Research/manuals/Zythos_guide.pdf) for more.
 
 
 ## Building and Installing
@@ -129,7 +130,7 @@ include(ExternalProject)
 ExternalProject_Add(
     noelle
     GIT_REPOSITORY  "https://github.com/arcana-lab/noelle.git"
-    GIT_TAG         v14.0.1
+    GIT_TAG         v14.1.0
     BUILD_COMMAND   ${CMAKE_COMMAND} --build . -j16
     INSTALL_COMMAND ${CMAKE_COMMAND} --install .
     CMAKE_ARGS
@@ -148,7 +149,7 @@ include(FetchContent)
 FetchContent_Declare(
     noelle
     GIT_REPOSITORY  "https://github.com/arcana-lab/noelle.git"
-    GIT_TAG         v14.0.1
+    GIT_TAG         v14.1.0
 )
 set(NOELLE_SVF OFF)
 set(NOELLE_SCAF OFF)

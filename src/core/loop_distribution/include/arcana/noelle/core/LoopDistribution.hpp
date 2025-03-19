@@ -36,12 +36,12 @@ public:
    */
   LoopDistribution();
 
-  bool splitLoop(LoopContent const &LDI,
+  bool splitLoop(LoopContent const &LC,
                  SCC *SCCToPullOut,
                  std::set<Instruction *> &instructionsRemoved,
                  std::set<Instruction *> &instructionsAdded);
 
-  bool splitLoop(LoopContent const &LDI,
+  bool splitLoop(LoopContent const &LC,
                  std::set<SCC *> const &SCCsToPullOut,
                  std::set<Instruction *> &instructionsRemoved,
                  std::set<Instruction *> &instructionsAdded);
@@ -54,25 +54,25 @@ private:
   /*
    * Methods
    */
-  bool splitLoop(LoopContent const &LDI,
+  bool splitLoop(LoopContent const &LC,
                  std::set<Instruction *> &instsToPullOut,
                  std::set<Instruction *> &instructionsRemoved,
                  std::set<Instruction *> &instructionsAdded);
 
   void recursivelyCollectDependencies(Instruction *inst,
                                       std::set<Instruction *> &toPopulate,
-                                      LoopContent const &LDI);
+                                      LoopContent const &LC);
 
   bool splitWouldBeTrivial(LoopStructure *const loopStructure,
                            std::set<Instruction *> const &instsToPullOut,
                            std::set<Instruction *> const &instsToClone);
 
   bool splitWouldRequireForwardingDataDependencies(
-      LoopContent const &LDI,
+      LoopContent const &LC,
       std::set<Instruction *> const &instsToPullOut,
       std::set<Instruction *> const &instsToClone);
 
-  void doSplit(LoopContent const &LDI,
+  void doSplit(LoopContent const &LC,
                std::set<Instruction *> const &instsToPullOut,
                std::set<Instruction *> const &instsToClone,
                std::set<Instruction *> &instructionsRemoved,

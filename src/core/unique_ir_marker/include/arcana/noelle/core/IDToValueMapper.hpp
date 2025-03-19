@@ -17,9 +17,9 @@ public:
   void visitInstruction(Instruction &I);
 
 private:
+  Module &Mod;
   std::set<IDType> *relevantIDs;
   std::map<IDType, Instruction *> *mapping;
-  Module &Mod;
 };
 
 class IDToFunctionMapper : public InstVisitor<IDToFunctionMapper> {
@@ -32,9 +32,9 @@ public:
   void visitFunction(Function &I);
 
 private:
+  Module &Mod;
   std::set<IDType> *relevantIDs;
   std::map<IDType, Function *> *mapping;
-  Module &Mod;
 };
 
 } // namespace arcana::noelle

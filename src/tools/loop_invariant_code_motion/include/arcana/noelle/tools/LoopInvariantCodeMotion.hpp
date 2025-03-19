@@ -36,9 +36,9 @@ public:
    */
   LoopInvariantCodeMotion(Noelle &noelle);
 
-  bool extractInvariantsFromLoop(LoopContent const &LDI);
+  bool extractInvariantsFromLoop(LoopContent const &LC);
 
-  bool promoteMemoryLocationsToRegisters(LoopContent const &LDI);
+  bool promoteMemoryLocationsToRegisters(LoopContent const &LC);
 
 private:
   /*
@@ -49,12 +49,12 @@ private:
   /*
    * Methods
    */
-  bool hoistStoreOfLastValueLiveOut(LoopContent const &LDI);
+  bool hoistStoreOfLastValueLiveOut(LoopContent const &LC);
 
-  bool hoistInvariantValues(LoopContent const &LDI);
+  bool hoistInvariantValues(LoopContent const &LC);
 
   std::vector<Instruction *> getSourceDependenceInstructionsFrom(
-      LoopContent const &LDI,
+      LoopContent const &LC,
       Instruction &I);
 };
 

@@ -87,7 +87,7 @@ public:
    */
   LoopWhilifier();
 
-  bool whilifyLoop(LoopContent &LDI,
+  bool whilifyLoop(LoopContent &LC,
                    Scheduler &scheduler,
                    DominatorSummary *DS,
                    PDG *FDG);

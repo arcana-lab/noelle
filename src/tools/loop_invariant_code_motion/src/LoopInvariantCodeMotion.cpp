@@ -30,22 +30,21 @@ LoopInvariantCodeMotion::LoopInvariantCodeMotion(Noelle &noelle)
 }
 
 bool LoopInvariantCodeMotion::promoteMemoryLocationsToRegisters(
-    LoopContent const &LDI) {
-  Mem2RegNonAlloca mem2Reg(LDI, this->noelle);
+    LoopContent const &LC) {
+  Mem2RegNonAlloca mem2Reg(LC, this->noelle);
 
   auto result = mem2Reg.promoteMemoryToRegister();
 
   return result;
 }
 
-bool LoopInvariantCodeMotion::extractInvariantsFromLoop(
-    LoopContent const &LDI) {
+bool LoopInvariantCodeMotion::extractInvariantsFromLoop(LoopContent const &LC) {
 
-  if (this->hoistInvariantValues(LDI)) {
+  if (this->hoistInvariantValues(LC)) {
     return true;
   }
 
-  Mem2RegNonAlloca mem2Reg(LDI, noelle);
+  Mem2RegNonAlloca mem2Reg(LC, noelle);
   if (mem2Reg.promoteMemoryToRegister()) {
     return true;
   }

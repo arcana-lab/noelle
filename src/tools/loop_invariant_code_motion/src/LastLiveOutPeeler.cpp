@@ -56,8 +56,8 @@ using namespace llvm;
 using namespace llvm;
 using namespace arcana::noelle;
 
-LastLiveOutPeeler::LastLiveOutPeeler(LoopContent const &LDI, Noelle &noelle)
-  : LDI{ LDI },
+LastLiveOutPeeler::LastLiveOutPeeler(LoopContent const &LC, Noelle &noelle)
+  : LC{ LC },
     noelle{ noelle } {}
 
 // bool LastLiveOutPeeler::peelLastLiveOutComputation () {
@@ -65,7 +65,7 @@ LastLiveOutPeeler::LastLiveOutPeeler(LoopContent const &LDI, Noelle &noelle)
 //   /*
 //    * Ensure the loop entry is the only block to exit the loop
 //    */
-//   auto loopStructure = LDI.getLoopStructure();
+//   auto loopStructure = LC.getLoopStructure();
 //   auto loopHeader = loopStructure->getHeader();
 //   auto exitBlocks = loopStructure->getLoopExitBasicBlocks();
 //   if (exitBlocks.size() != 1) return false;
@@ -83,7 +83,7 @@ LastLiveOutPeeler::LastLiveOutPeeler(LoopContent const &LDI, Noelle &noelle)
 //   /*
 //    * Ensure the loop is governed by an IV
 //    */
-//   auto loopGoverningIVAttribution = LDI.getLoopGoverningIVAttribution();
+//   auto loopGoverningIVAttribution = LC.getLoopGoverningIVAttribution();
 //   if (!loopGoverningIVAttribution) return false;
 
 //   /*
@@ -103,7 +103,7 @@ LastLiveOutPeeler::LastLiveOutPeeler(LoopContent const &LDI, Noelle &noelle)
 //   /*
 //    * Identify induction variable SCCs in all sub-loops
 //    */
-//   auto ivManager = LDI.getInductionVariableManager();
+//   auto ivManager = LC.getInductionVariableManager();
 //   std::unordered_set<InductionVariable *> allIVsInLoop{};
 //   auto loops = loopStructure->getDescendants();
 //   for (auto loop : loops) {
@@ -122,9 +122,9 @@ LastLiveOutPeeler::LastLiveOutPeeler(LoopContent const &LDI, Noelle &noelle)
 // bool LastLiveOutPeeler::fetchNormalizedSCCsGoverningControlFlowOfLoop (void)
 // {
 
-//   auto loopStructure = LDI.getLoopStructure();
-//   auto normalizedSCCDAG = LDI.sccdagAttrs.getSCCDAG();
-//   auto ivManager = LDI.getInductionVariableManager();
+//   auto loopStructure = LC.getLoopStructure();
+//   auto normalizedSCCDAG = LC.sccdagAttrs.getSCCDAG();
+//   auto ivManager = LC.getInductionVariableManager();
 
 //   for (auto loopBlock : loopStructure->getBasicBlocks()) {
 //     auto terminator = loopBlock->getTerminator();
@@ -142,7 +142,7 @@ LastLiveOutPeeler::LastLiveOutPeeler(LoopContent const &LDI, Noelle &noelle)
 //     if (brInst->isUnconditional()) continue;
 
 //     auto sccOfTerminator = normalizedSCCDAG->sccOfValue(terminator);
-//     auto sccInfoOfTerminator = LDI.sccdagAttrs.getSCCAttrs(sccOfTerminator);
+//     auto sccInfoOfTerminator = LC.sccdagAttrs.getSCCAttrs(sccOfTerminator);
 //     if (sccInfoOfTerminator->isInductionVariableSCC()) {
 //       normalizedSCCsOfGoverningIVs.insert(sccOfTerminator);
 //       continue;
@@ -169,7 +169,7 @@ LastLiveOutPeeler::LastLiveOutPeeler(LoopContent const &LDI, Noelle &noelle)
 
 //       if (!isa<Instruction>(value)) return false;
 //       auto inst = cast<Instruction>(value);
-//       auto loopOfValue = LDI.getNestedMostLoopStructure(inst);
+//       auto loopOfValue = LC.getNestedMostLoopStructure(inst);
 //       auto ivOfValue = ivManager->getInductionVariable(*loopOfValue, inst);
 //       if (ivOfValue) continue;
 
@@ -186,12 +186,12 @@ LastLiveOutPeeler::LastLiveOutPeeler(LoopContent const &LDI, Noelle &noelle)
 //  */
 // void LastLiveOutPeeler::fetchSCCsOfLastLiveOuts (void) {
 
-//   auto loopStructure = LDI.getLoopStructure();
+//   auto loopStructure = LC.getLoopStructure();
 //   auto loopHeader = loopStructure->getHeader();
-//   auto loopSCCDAG = LDI.getLoopSCCDAG();
-//   auto normalizedSCCDAG = LDI.sccdagAttrs.getSCCDAG();
+//   auto loopSCCDAG = LC.getLoopSCCDAG();
+//   auto normalizedSCCDAG = LC.sccdagAttrs.getSCCDAG();
 
-//   auto loopCarriedDependencies = LDI.getLoopCarriedDependencies();
+//   auto loopCarriedDependencies = LC.getLoopCarriedDependencies();
 //   auto outermostLoopCarriedDependencies =
 //   loopCarriedDependencies->getLoopCarriedDependenciesForLoop(*loopStructure);
 //   std::unordered_set<Value *> loopCarriedConsumers{};

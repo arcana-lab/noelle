@@ -32,7 +32,6 @@ struct CAT : public ModulePass {
      * Fetch the entry point.
      */
     auto fm = noelle.getFunctionsManager();
-    auto mainF = fm->getEntryFunction();
 
     /*
      * fetch the loops with all their abstractions
