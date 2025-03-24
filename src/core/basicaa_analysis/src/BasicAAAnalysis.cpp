@@ -2,228 +2,195 @@
 
 namespace arcana::noelle {
 
-MiniBasicAA::MiniBasicAA() {}
-
-FunctionModRefBehavior MiniBasicAA::getModRefBehavior(const Function *F) {
-  if (F->doesNotAccessMemory()) {
-    return FMRB_DoesNotAccessMemory;
-  }
-
-  FunctionModRefBehavior min = FMRB_UnknownModRefBehavior;
-
-  if (F->onlyReadsMemory()) {
-    min = FMRB_OnlyReadsMemory;
-  } else if (F->onlyWritesMemory()) {
-    min = FMRB_OnlyWritesMemory;
-  }
-
-  if (F->onlyAccessesArgMemory()) {
-    min = FunctionModRefBehavior(min & FMRB_OnlyAccessesArgumentPointees);
-  } else if (F->onlyAccessesInaccessibleMemory()) {
-    min = FunctionModRefBehavior(min & FMRB_OnlyAccessesInaccessibleMem);
-  } else if (F->onlyAccessesInaccessibleMemOrArgMem()) {
-    min = FunctionModRefBehavior(min & FMRB_OnlyAccessesInaccessibleOrArgMem);
-  }
-
-  return min;
-}
-
-FunctionModRefBehavior MiniBasicAA::getModRefBehavior(const CallBase *call) {
-  if (call->doesNotAccessMemory()) {
-    return FMRB_DoesNotAccessMemory;
-  }
-
-  FunctionModRefBehavior min = FMRB_UnknownModRefBehavior;
-
-  if (call->onlyReadsMemory()) {
-    min = FMRB_OnlyReadsMemory;
-  } else if (call->onlyWritesMemory()) {
-    min = FMRB_OnlyWritesMemory;
-  }
-
-  if (call->onlyAccessesArgMemory()) {
-    min = FunctionModRefBehavior(min & FMRB_OnlyAccessesArgumentPointees);
-  } else if (call->onlyAccessesInaccessibleMemory()) {
-    min = FunctionModRefBehavior(min & FMRB_OnlyAccessesInaccessibleMem);
-  } else if (call->onlyAccessesInaccessibleMemOrArgMem()) {
-    min = FunctionModRefBehavior(min & FMRB_OnlyAccessesInaccessibleOrArgMem);
-  }
-
-  if (!call->hasOperandBundles()) {
-    if (const Function *F = call->getCalledFunction()) {
-      min = FunctionModRefBehavior(min & getModRefBehavior(F));
+class AdaptedBasicAA {
+public:
+  static MemoryEffects getMemoryEffects(const Function *F) {
+    switch (F->getIntrinsicID()) {
+      case Intrinsic::experimental_guard:
+      case Intrinsic::experimental_deoptimize:
+        // These intrinsics can read arbitrary memory, and additionally modref
+        // inaccessible memory to model control dependence.
+        return MemoryEffects::readOnly()
+               | MemoryEffects::inaccessibleMemOnly(ModRefInfo::ModRef);
     }
+    return F->getMemoryEffects();
   }
 
-  return min;
-}
+  static MemoryEffects getMemoryEffects(const CallBase *call) {
+    MemoryEffects min = call->getAttributes().getMemoryEffects();
 
-ModRefInfo MiniBasicAA::getArgModRefInfo(const CallBase *call,
-                                         unsigned argIdx) {
-  if (call->paramHasAttr(argIdx, Attribute::WriteOnly)) {
-    return ModRefInfo::Mod;
-  }
-  if (call->paramHasAttr(argIdx, Attribute::ReadOnly)) {
-    return ModRefInfo::Ref;
-  }
-  if (call->paramHasAttr(argIdx, Attribute::ReadNone)) {
-    return ModRefInfo::NoModRef;
-  }
-  return ModRefInfo::ModRef;
-}
+    if (const Function *F = dyn_cast<Function>(call->getCalledOperand())) {
+      MemoryEffects funcME = getMemoryEffects(F);
+      // Operand bundles on the call may also read or write memory, in addition
+      // to the behavior of the called function
+      if (call->hasReadingOperandBundles()) {
+        funcME |= MemoryEffects::readOnly();
+      }
+      if (call->hasClobberingOperandBundles()) {
+        funcME |= MemoryEffects::writeOnly();
+      }
+      min &= funcME;
+    }
 
-ModRefInfo BasicAAAnalysis::getModRefInfo(const CallBase *call,
-                                          const MemoryLocation &loc) {
-  ModRefInfo result = ModRefInfo::ModRef;
-
-  // BasicAA derives FMRB from function attributes. Use them to
-  // improve our solution.
-  FunctionModRefBehavior MRB = miniBasicAA.getModRefBehavior(call);
-  if (AAResults::onlyAccessesInaccessibleMem(MRB)) {
-    return ModRefInfo::NoModRef;
-  }
-  if (AAResults::onlyReadsMemory(MRB)) {
-    result = clearMod(result);
-  } else if (AAResults::onlyWritesMemory(MRB)) {
-    result = clearRef(result);
+    return min;
   }
 
-  if (AAResults::onlyAccessesArgPointees(MRB)
-      || AAResults::onlyAccessesInaccessibleOrArgMem(MRB)) {
-    // If the call only accesses memory through its pointer arguments,
-    // then we may be able to improve results with argument attributes.
-    //
-    // `allArgsMask` holds the union of all ModRefInfo collected from
-    // the call's pointer arguments.
-    ModRefInfo allArgsMask = ModRefInfo::NoModRef;
-    if (AAResults::doesAccessArgPointees(MRB)) {
-      for (size_t i = 0; i < call->arg_size(); ++i) {
-        if (!call->getArgOperand(i)->getType()->isPointerTy()) {
+  static ModRefInfo getArgModRefInfo(const CallBase *call, unsigned argIdx) {
+    if (call->paramHasAttr(argIdx, Attribute::WriteOnly)) {
+      return ModRefInfo::Mod;
+    }
+    if (call->paramHasAttr(argIdx, Attribute::ReadOnly)) {
+      return ModRefInfo::Ref;
+    }
+    if (call->paramHasAttr(argIdx, Attribute::ReadNone)) {
+      return ModRefInfo::NoModRef;
+    }
+    return ModRefInfo::ModRef;
+  }
+};
+
+class AdaptedAA {
+public:
+  static ModRefInfo getModRefInfo(const CallBase *call,
+                                  const MemoryLocation &loc) {
+    ModRefInfo result = ModRefInfo::ModRef;
+
+    auto ME = AdaptedBasicAA::getMemoryEffects(call).getWithoutLoc(
+        IRMemLocation::InaccessibleMem);
+    if (ME.doesNotAccessMemory()) {
+      return ModRefInfo::NoModRef;
+    }
+
+    ModRefInfo argMR = ME.getModRef(IRMemLocation::ArgMem);
+    ModRefInfo otherMR = ME.getWithoutLoc(IRMemLocation::ArgMem).getModRef();
+    if ((argMR | otherMR) != otherMR) {
+      // Refine result for argument memory (argMR).
+      // Only do this if argMR is not a subset of otherMR
+      ModRefInfo allArgsMask = ModRefInfo::NoModRef;
+      for (const auto &i : llvm::enumerate(call->args())) {
+        const Value *arg = i.value();
+        if (!arg->getType()->isPointerTy()) {
           continue;
         }
-        ModRefInfo argMask = miniBasicAA.getArgModRefInfo(call, i);
-        allArgsMask = unionModRef(allArgsMask, argMask);
+        unsigned argIdx = i.index();
+        // NOTE: we can further improve this by fetching the MemoryLocation
+        // pointed by arg, and test its aliasing with loc.  The current arg
+        // can be skipped if there is no alias.
+        allArgsMask |= AdaptedBasicAA::getArgModRefInfo(call, argIdx);
       }
+      argMR &= allArgsMask;
     }
-    // Improve the result
-    result = intersectModRef(result, allArgsMask);
+
+    result &= argMR | otherMR;
+    // NOTE: skip getModRefInfoMask refinement
+    return result;
   }
 
-  return result;
-}
+  static ModRefInfo getModRefInfo(const CallBase *call1,
+                                  const CallBase *call2) {
+    ModRefInfo result = ModRefInfo::ModRef;
 
-ModRefInfo BasicAAAnalysis::getModRefInfo(const CallBase *call1,
-                                          const CallBase *call2) {
-  ModRefInfo result = ModRefInfo::ModRef;
-
-  // No dependence between the calls if call1 doesn't access memory.
-  FunctionModRefBehavior call1B = miniBasicAA.getModRefBehavior(call1);
-  if (call1B == FMRB_DoesNotAccessMemory) {
-    return ModRefInfo::NoModRef;
-  }
-
-  // No dependence between the calls if call2 doesn't access memory.
-  FunctionModRefBehavior call2B = miniBasicAA.getModRefBehavior(call2);
-  if (call2B == FMRB_DoesNotAccessMemory) {
-    return ModRefInfo::NoModRef;
-  }
-
-  // No dependence between the calls if both calls only read memory.
-  if (AAResults::onlyReadsMemory(call1B)
-      && AAResults::onlyReadsMemory(call2B)) {
-    return ModRefInfo::NoModRef;
-  }
-
-  // Call1 can't mod call2 if it only reads memory.
-  // Call1 can't ref call2 if it only writes memory.
-  if (AAResults::onlyReadsMemory(call1B)) {
-    result = clearMod(result);
-  } else if (AAResults::onlyWritesMemory(call1B)) {
-    result = clearRef(result);
-  }
-
-  if (AAResults::onlyAccessesArgPointees(call2B)) {
-    if (!AAResults::doesAccessArgPointees(call2B)) {
+    // No dependence between the calls if call1 doesn't access memory.
+    auto call1ME = AdaptedBasicAA::getMemoryEffects(call1);
+    if (call1ME.doesNotAccessMemory()) {
       return ModRefInfo::NoModRef;
     }
-    // If call2 only accesses memory through its pointer arguments,
-    // we may be able to improve the result based on what call1
-    // might do to the memory locations referred by call2's args.
-    ModRefInfo R = ModRefInfo::NoModRef;
-    for (size_t i = 0; i < call2->arg_size(); ++i) {
-      const Value *arg = call2->getArgOperand(i);
-      if (!arg->getType()->isPointerTy()) {
-        continue;
-      }
 
-      // Fetch the memory location referred by call2's current argument.
-      // If call2 writes it, dependence exists when call1 reads or writes.
-      // If call2 reads it, dependence exists only when call1 writes.
-      MemoryLocation call2ArgLoc =
-          MemoryLocation::getForArgument(call2, i, nullptr);
-      ModRefInfo argModRefC2 = miniBasicAA.getArgModRefInfo(call2, i);
-      ModRefInfo argMask = ModRefInfo::NoModRef;
-      if (isModSet(argModRefC2)) {
-        argMask = ModRefInfo::ModRef;
-      } else if (isRefSet(argModRefC2)) {
-        argMask = ModRefInfo::Mod;
-      }
-
-      ModRefInfo modRefC1 = getModRefInfo(call1, call2ArgLoc);
-      argMask = intersectModRef(argMask, modRefC1);
-      R = intersectModRef(unionModRef(R, argMask), result);
-
-      if (R == result) {
-        // Early exit because we won't do better.
-        break;
-      }
-    }
-    return R;
-  }
-
-  if (AAResults::onlyAccessesArgPointees(call1B)) {
-    if (!AAResults::doesAccessArgPointees(call1B)) {
+    // No dependence between the calls if call2 doesn't access memory.
+    auto call2ME = AdaptedBasicAA::getMemoryEffects(call2);
+    if (call1ME.doesNotAccessMemory()) {
       return ModRefInfo::NoModRef;
     }
-    // Similar to the previous case, we can use arguments to improve
-    // results if call1 only accesses memory via its pointer args.
-    ModRefInfo R = ModRefInfo::NoModRef;
-    for (size_t i = 0; i < call1->arg_size(); ++i) {
-      const Value *arg = call1->getArgOperand(i);
-      if (!arg->getType()->isPointerTy()) {
-        continue;
-      }
-      // Fetch the memory location referred by call1's current argument.
-      // If call1 writes it, dependence exists when call2 reads or writes.
-      // If call1 reads it, dependence exists only when call2 writes.
-      MemoryLocation call1ArgLoc =
-          MemoryLocation::getForArgument(call1, i, nullptr);
-      ModRefInfo argModRefC1 = miniBasicAA.getArgModRefInfo(call1, i);
-      ModRefInfo modRefC2 = getModRefInfo(call2, call1ArgLoc);
-      if ((isModSet(argModRefC1) && isModOrRefSet(modRefC2))
-          || (isRefSet(argModRefC1) && isModSet(modRefC2))) {
-        R = intersectModRef(unionModRef(R, argModRefC1), result);
-      }
 
-      if (R == result) {
-        // Early exit because we won't do better.
-        break;
-      }
+    // No dependence between the calls if both calls only read memory.
+    if (call1ME.onlyReadsMemory() && call2ME.onlyReadsMemory()) {
+      return ModRefInfo::NoModRef;
     }
-    return R;
+
+    // Call1 can't mod call2 if it only reads memory.
+    // Call1 can't ref call2 if it only writes memory.
+    if (call1ME.onlyReadsMemory()) {
+      result &= ModRefInfo::Ref;
+    } else if (call1ME.onlyWritesMemory()) {
+      result &= ModRefInfo::Mod;
+    }
+
+    // Improve results if call2 only access memory via its arguments
+    if (call2ME.onlyAccessesArgPointees()) {
+      if (!call2ME.doesAccessArgPointees()) {
+        return ModRefInfo::NoModRef;
+      }
+      ModRefInfo R = ModRefInfo::NoModRef;
+      for (size_t i = 0; i < call2->arg_size(); ++i) {
+        const Value *arg = call2->getArgOperand(i);
+        if (!arg->getType()->isPointerTy()) {
+          continue;
+        }
+
+        // Fetch the memory location referred by call2's current argument.
+        // If call2 writes it, dependence exists when call1 reads or writes.
+        // If call2 reads it, dependence exists only when call1 writes.
+        MemoryLocation call2ArgLoc =
+            MemoryLocation::getForArgument(call2, i, nullptr);
+        ModRefInfo argModRefC2 = AdaptedBasicAA::getArgModRefInfo(call2, i);
+        ModRefInfo argMask = ModRefInfo::NoModRef;
+        if (isModSet(argModRefC2)) {
+          argMask = ModRefInfo::ModRef;
+        } else if (isRefSet(argModRefC2)) {
+          argMask = ModRefInfo::Mod;
+        }
+        argMask &= getModRefInfo(call1, call2ArgLoc);
+
+        R = (R | argMask) & result;
+        if (R == result) {
+          // Early exit because we won't do better.
+          break;
+        }
+      }
+      return R;
+    }
+
+    // Improve results if call1 only access memory via its arguments
+    if (call1ME.onlyAccessesArgPointees()) {
+      if (!call1ME.doesAccessArgPointees()) {
+        return ModRefInfo::NoModRef;
+      }
+      ModRefInfo R = ModRefInfo::NoModRef;
+      for (size_t i = 0; i < call1->arg_size(); ++i) {
+        const Value *arg = call1->getArgOperand(i);
+        if (!arg->getType()->isPointerTy()) {
+          continue;
+        }
+        // Fetch the memory location referred by call1's current argument.
+        // If call1 writes it, dependence exists when call2 reads or writes.
+        // If call1 reads it, dependence exists only when call2 writes.
+        MemoryLocation call1ArgLoc =
+            MemoryLocation::getForArgument(call1, i, nullptr);
+        ModRefInfo argModRefC1 = AdaptedBasicAA::getArgModRefInfo(call1, i);
+        ModRefInfo modRefC2 = getModRefInfo(call2, call1ArgLoc);
+        if ((isModSet(argModRefC1) && isModOrRefSet(modRefC2))
+            || (isRefSet(argModRefC1) && isModSet(modRefC2))) {
+          R = (R | argModRefC1) & result;
+        }
+        if (R == result) {
+          // Early exit because we won't do better.
+          break;
+        }
+      }
+      return R;
+    }
+
+    // No argument-related improvements
+    return result;
   }
+};
 
-  return result;
-}
-
-BasicAAAnalysis::BasicAAAnalysis() : DependenceAnalysis("BasicAAAnalysis") {}
-
+/// For debugging
 void printMsg(DataDependenceType t,
               Instruction *fromInst,
               Instruction *toInst) {
-#if 1
   errs() << ">>> Eliminated a dependence:\n";
-  std::string s;
+  llvm::StringRef s;
   switch (t) {
     case DG_DATA_RAW:
       s = "RAW";
@@ -239,8 +206,9 @@ void printMsg(DataDependenceType t,
   errs() << "FromInst: " << *fromInst << "\n";
   errs() << "ToInst:   " << *toInst << "\n";
   errs() << "\n";
-#endif
 }
+
+BasicAAAnalysis::BasicAAAnalysis() : DependenceAnalysis("BasicAAAnalysis") {}
 
 MemoryDataDependenceStrength BasicAAAnalysis::
     isThereThisMemoryDataDependenceType(DataDependenceType t,
@@ -268,23 +236,23 @@ MemoryDataDependenceStrength BasicAAAnalysis::
       if (isa<StoreInst>(fromInst) && isa<CallBase>(toInst)) {
         CallBase *call = cast<CallBase>(toInst);
         MemoryLocation loc = MemoryLocation::get(fromInst);
-        ModRefInfo MR = getModRefInfo(call, loc);
+        ModRefInfo MR = AdaptedAA::getModRefInfo(call, loc);
         if (isRefSet(MR)) {
-          return isMustSet(MR) ? MUST_EXIST : MAY_EXIST;
+          return MAY_EXIST;
         }
       } else if (isa<CallBase>(fromInst) && isa<LoadInst>(toInst)) {
         CallBase *call = cast<CallBase>(fromInst);
         MemoryLocation loc = MemoryLocation::get(toInst);
-        ModRefInfo MR = getModRefInfo(call, loc);
+        ModRefInfo MR = AdaptedAA::getModRefInfo(call, loc);
         if (isModSet(MR)) {
-          return isMustSet(MR) ? MUST_EXIST : MAY_EXIST;
+          return MAY_EXIST;
         }
       } else if (isa<CallBase>(fromInst) && isa<CallBase>(toInst)) {
         CallBase *call1 = cast<CallBase>(fromInst);
         CallBase *call2 = cast<CallBase>(toInst);
-        ModRefInfo MR = getModRefInfo(call2, call1);
+        ModRefInfo MR = AdaptedAA::getModRefInfo(call2, call1);
         if (isRefSet(MR)) {
-          return isMustSet(MR) ? MUST_EXIST : MAY_EXIST;
+          return MAY_EXIST;
         }
       }
       break;
@@ -294,23 +262,23 @@ MemoryDataDependenceStrength BasicAAAnalysis::
       if (isa<LoadInst>(fromInst) && isa<CallBase>(toInst)) {
         CallBase *call = cast<CallBase>(toInst);
         MemoryLocation loc = MemoryLocation::get(fromInst);
-        ModRefInfo MR = getModRefInfo(call, loc);
+        ModRefInfo MR = AdaptedAA::getModRefInfo(call, loc);
         if (isModSet(MR)) {
-          return isMustSet(MR) ? MUST_EXIST : MAY_EXIST;
+          return MAY_EXIST;
         }
       } else if (isa<CallBase>(fromInst) && isa<StoreInst>(toInst)) {
         CallBase *call = cast<CallBase>(fromInst);
         MemoryLocation loc = MemoryLocation::get(toInst);
-        ModRefInfo MR = getModRefInfo(call, loc);
+        ModRefInfo MR = AdaptedAA::getModRefInfo(call, loc);
         if (isRefSet(MR)) {
-          return isMustSet(MR) ? MUST_EXIST : MAY_EXIST;
+          return MAY_EXIST;
         }
       } else if (isa<CallBase>(fromInst) && isa<CallBase>(toInst)) {
         CallBase *call1 = cast<CallBase>(fromInst);
         CallBase *call2 = cast<CallBase>(toInst);
-        ModRefInfo MR = getModRefInfo(call1, call2);
+        ModRefInfo MR = AdaptedAA::getModRefInfo(call1, call2);
         if (isRefSet(MR)) {
-          return isMustSet(MR) ? MUST_EXIST : MAY_EXIST;
+          return MAY_EXIST;
         }
       }
       break;
@@ -320,30 +288,32 @@ MemoryDataDependenceStrength BasicAAAnalysis::
       if (isa<StoreInst>(fromInst) && isa<CallBase>(toInst)) {
         CallBase *call = cast<CallBase>(toInst);
         MemoryLocation loc = MemoryLocation::get(fromInst);
-        ModRefInfo MR = getModRefInfo(call, loc);
+        ModRefInfo MR = AdaptedAA::getModRefInfo(call, loc);
         if (isModSet(MR)) {
-          return isMustSet(MR) ? MUST_EXIST : MAY_EXIST;
+          return MAY_EXIST;
         }
       } else if (isa<CallBase>(fromInst) && isa<StoreInst>(toInst)) {
         CallBase *call = cast<CallBase>(fromInst);
         MemoryLocation loc = MemoryLocation::get(toInst);
-        ModRefInfo MR = getModRefInfo(call, loc);
+        ModRefInfo MR = AdaptedAA::getModRefInfo(call, loc);
         if (isModSet(MR)) {
-          return isMustSet(MR) ? MUST_EXIST : MAY_EXIST;
+          return MAY_EXIST;
         }
       } else if (isa<CallBase>(fromInst) && isa<CallBase>(toInst)) {
         CallBase *call1 = cast<CallBase>(fromInst);
         CallBase *call2 = cast<CallBase>(toInst);
-        ModRefInfo MR = getModRefInfo(call2, call1);
+        ModRefInfo MR = AdaptedAA::getModRefInfo(call2, call1);
         if (isModSet(MR)) {
-          return isMustSet(MR) ? MUST_EXIST : MAY_EXIST;
+          return MAY_EXIST;
         }
       }
       break;
   }
 
-  // DEBUG
+#if 0
+  // Debug
   printMsg(t, fromInst, toInst);
+#endif
 
   return CANNOT_EXIST;
 }
