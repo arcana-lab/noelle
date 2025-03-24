@@ -304,7 +304,7 @@ Noelle NoellePass::run(llvm::Module &M, llvm::ModuleAnalysisManager &AM) {
                   verbose,
                   pdgVerbose,
                   minHot,
-                  ldgAnalysis,
+                  ldgGenerator,
                   om,
                   dumpPDG,
                   performThePDGComparison,

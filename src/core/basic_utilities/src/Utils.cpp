@@ -201,10 +201,9 @@ Value *Utils::injectPrint(Value *toPrint,
                           IRBuilder<> &builder) {
 
   auto M = builder.GetInsertBlock()->getModule();
-  auto funcType =
-      FunctionType::get(builder.getInt32Ty(),
-                        ArrayRef<Type *>({ builder.getInt8PtrTy() }),
-                        true);
+  auto funcType = FunctionType::get(builder.getInt32Ty(),
+                                    ArrayRef<Type *>({ builder.getPtrTy() }),
+                                    true);
   auto printfFunc = M->getOrInsertFunction("printf", funcType);
 
   auto formatStringRef = StringRef(format);
@@ -239,10 +238,9 @@ Value *Utils::injectPrint(std::vector<Value *> &toPrint,
                           IRBuilder<> &builder) {
 
   auto M = builder.GetInsertBlock()->getModule();
-  auto funcType =
-      FunctionType::get(builder.getInt32Ty(),
-                        ArrayRef<Type *>({ builder.getInt8PtrTy() }),
-                        true);
+  auto funcType = FunctionType::get(builder.getInt32Ty(),
+                                    ArrayRef<Type *>({ builder.getPtrTy() }),
+                                    true);
   auto printfFunc = M->getOrInsertFunction("printf", funcType);
 
   auto formatStringRef = StringRef(format);
@@ -289,10 +287,9 @@ Value *Utils::injectPrint(const std::string &toPrint, IRBuilder<> &builder) {
       stringBuilder.CreateGlobalString(debugStringRef, "debugString");
 
   auto M = F->getParent();
-  auto funcType =
-      FunctionType::get(builder.getInt32Ty(),
-                        ArrayRef<Type *>({ builder.getInt8PtrTy() }),
-                        true);
+  auto funcType = FunctionType::get(builder.getInt32Ty(),
+                                    ArrayRef<Type *>({ builder.getPtrTy() }),
+                                    true);
   auto printfFunc = M->getOrInsertFunction("printf", funcType);
 
   auto stringGEP = builder.CreateGEP(

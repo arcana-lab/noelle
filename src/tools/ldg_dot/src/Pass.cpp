@@ -11,7 +11,6 @@
 #include "arcana/noelle/core/NoellePass.hpp"
 
 #include "LDGDot.hpp"
-#include "Pass.hpp"
 
 using namespace std;
 using namespace llvm;
@@ -40,70 +39,99 @@ static cl::opt<bool> OptHideKnownSCCs(
     "ldg-dot-hide-known-sccs",
     cl::desc("Hide SCC that are not LoopCarriedUnknownSCC"));
 
-DotPass::DotPass() : ModulePass{ ID }, log(NoelleLumberjack, "LDGDot") {}
+class LDGDotPass : public llvm::PassInfoMixin<LDGDotPass> {
+public:
+  LDGDotPass() : log(NoelleLumberjack, "LDGDot") {}
 
-bool DotPass::doInitialization(Module &M) {
-  return false;
-}
+  void runOnLoop(Noelle &noelle, LoopStructure *LS) {
+    string outputFile;
+    if (OptOutputFile.getNumOccurrences() == 0) {
+      outputFile = "ldg_id_" + to_string(OptLoopId) + ".dot";
+    } else {
+      outputFile = OptOutputFile;
+    }
 
-void DotPass::getAnalysisUsage(AnalysisUsage &AU) const {
-  AU.addRequired<NoellePass>();
-}
+    DotOptions options = 0;
+    if (OptCollapseEdges) {
+      options |= COLLAPSE_EDGES;
+    }
+    if (OptOnlyLCEdges) {
+      options |= ONLY_LC_EDGES;
+    }
+    if (OptHideKnownSCCs) {
+      options |= HIDE_KNOWN_SCCS;
+    }
 
-bool DotPass::runOnModule(Module &M) {
-  auto &noelle = getAnalysis<NoellePass>().getNoelle();
-  bool found = false;
+    auto optimizations = { LoopContentOptimization::MEMORY_CLONING_ID,
+                           LoopContentOptimization::THREAD_SAFE_LIBRARY_ID };
+    auto LC = noelle.getLoopContent(LS, optimizations);
 
-  if (OptLoopId.getNumOccurrences() > 0) {
-    auto &LSs = *noelle.getLoopStructures();
-    for (auto LS : LSs) {
-      if (LS->getID().value() == OptLoopId) {
-        runOnLoop(noelle, LS);
-        found = true;
-        break;
+    exportToDotGraph(LC, outputFile, options);
+
+    log.bypass() << "Dot file written to " << outputFile << "\n";
+  }
+
+  llvm::PreservedAnalyses run(llvm::Module &M,
+                              llvm::ModuleAnalysisManager &MAM) {
+    auto &noelle = MAM.getResult<NoellePass>(M);
+    bool found = false;
+
+    if (OptLoopId.getNumOccurrences() > 0) {
+      auto &LSs = *noelle.getLoopStructures();
+      for (auto LS : LSs) {
+        if (LS->getID().value() == OptLoopId) {
+          runOnLoop(noelle, LS);
+          found = true;
+          break;
+        }
       }
     }
+
+    if (!found) {
+      log.bypass() << "ERROR: target loop not found\n";
+    }
+
+    return llvm::PreservedAnalyses::all();
   }
 
-  if (!found) {
-    log.bypass() << "ERROR: target loop not found\n";
-  }
+private:
+  noelle::Logger log;
+};
 
-  return false;
+// Next there is code to register your pass to "opt"
+llvm::PassPluginLibraryInfo getPluginInfo() {
+  return { LLVM_PLUGIN_API_VERSION,
+           "noelle-ldg-dot",
+           LLVM_VERSION_STRING,
+           [](PassBuilder &PB) {
+             /*
+              * REGISTRATION FOR "opt -passes='noelle-rm-function'"
+              *
+              */
+             PB.registerPipelineParsingCallback(
+                 [](StringRef Name,
+                    llvm::ModulePassManager &PM,
+                    ArrayRef<llvm::PassBuilder::PipelineElement>) {
+                   if (Name == "noelle-ldg-dot") {
+                     PM.addPass(LDGDotPass());
+                     return true;
+                   }
+                   return false;
+                 });
+
+             /*
+              * REGISTRATION FOR "AM.getResult<NoellePass>()"
+              */
+             PB.registerAnalysisRegistrationCallback(
+                 [](ModuleAnalysisManager &AM) {
+                   AM.registerPass([&] { return NoellePass(); });
+                 });
+           } };
 }
 
-void DotPass::runOnLoop(Noelle &noelle, LoopStructure *LS) {
-  string outputFile;
-  if (OptOutputFile.getNumOccurrences() == 0) {
-    outputFile = "ldg_id_" + to_string(OptLoopId) + ".dot";
-  } else {
-    outputFile = OptOutputFile;
-  }
-
-  DotOptions options = 0;
-  if (OptCollapseEdges) {
-    options |= COLLAPSE_EDGES;
-  }
-  if (OptOnlyLCEdges) {
-    options |= ONLY_LC_EDGES;
-  }
-  if (OptHideKnownSCCs) {
-    options |= HIDE_KNOWN_SCCS;
-  }
-
-  auto optimizations = { LoopContentOptimization::MEMORY_CLONING_ID,
-                         LoopContentOptimization::THREAD_SAFE_LIBRARY_ID };
-  auto LC = noelle.getLoopContent(LS, optimizations);
-
-  exportToDotGraph(LC, outputFile, options);
-
-  log.bypass() << "Dot file written to " << outputFile << "\n";
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return getPluginInfo();
 }
-
-char DotPass::ID = 0;
-static RegisterPass<DotPass> X("LDGDot",
-                               "Dumps loop SCCDAGs into Dot file",
-                               false,
-                               false);
 
 } // namespace arcana::noelle
