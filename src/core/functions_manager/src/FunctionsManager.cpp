@@ -171,7 +171,7 @@ std::set<Function *> FunctionsManager::getFunctionsWithPrefix(
   std::set<Function *> s;
 
   for (auto &f : this->program) {
-    if (f.getName().startswith(prefixName)) {
+    if (f.getName().starts_with(prefixName)) {
       s.insert(&f);
     }
   }
