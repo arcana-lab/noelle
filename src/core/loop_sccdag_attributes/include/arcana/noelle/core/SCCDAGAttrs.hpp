@@ -100,7 +100,7 @@ private:
    */
   LoopCarriedVariable *checkIfReducible(SCC *scc, LoopTree *loop);
 
-  std::tuple<bool, Value *, Value *, Value *> checkIfPeriodic(
+  std::tuple<bool, Value *, Value *, Value *, Value *> checkIfPeriodic(
       SCC *scc,
       LoopTree *loopNode);
 

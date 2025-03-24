@@ -76,7 +76,7 @@ struct CAT : public ModulePass {
       auto sccManager = loop->getSCCManager();
       auto SCCDAG = sccManager->getSCCDAG();
 
-      auto sccIterator = [sccManager](SCC *scc) -> bool {
+      auto sccIterator = [](SCC *scc) -> bool {
         /*
          * Check if @scc is a single instruction
          */

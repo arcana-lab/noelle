@@ -28,6 +28,11 @@
  * SVF headers
  */
 #ifdef NOELLE_ENABLE_SVF
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#  pragma GCC diagnostic ignored "-Wreorder"
+#  pragma GCC diagnostic ignored "-Wsuggest-override"
+#  pragma GCC diagnostic ignored "-Wuninitialized"
 #  include "Util/Options.h"
 #  include "SVF-LLVM/LLVMModule.h"
 #  include "SVF-LLVM/SVFIRBuilder.h"
@@ -38,6 +43,7 @@
 #  include "Graphs/PTACallGraph.h"
 #  include "Graphs/ICFG.h"
 #  include "MSSA/MemSSA.h"
+#  pragma GCC diagnostic pop
 #endif
 
 namespace arcana::noelle {

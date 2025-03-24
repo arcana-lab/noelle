@@ -8,7 +8,7 @@ export NOELLE_INSTALL_DIR="$installDir" ;
 CC="clang++"
 LIB_DIR=$NOELLE_INSTALL_DIR/lib
 TEST_LIB_DIR=$NOELLE_INSTALL_DIR/test/lib
-TRANSFORMATIONS_BEFORE_PARALLELIZATION="-basicaa -mem2reg -scalar-evolution -loops -loop-simplify -lcssa -domtree -postdomtree"
+TRANSFORMATIONS_BEFORE_PARALLELIZATION="-basic-aa -mem2reg -scalar-evolution -loops -loop-simplify -lcssa -domtree -postdomtree"
 
 PROFILER_LIBS="-lm -lstdc++ -lpthread"
 PROGRAM_INPUT_FOR_PROFILE="20 20 20"
@@ -23,7 +23,6 @@ function loadAndRunNoellePasses {
   local EXTRA_UNIT_TEST_PASSES="\
     -load ${LIB_DIR}/LoopInvariantCodeMotion.so \
     -load ${LIB_DIR}/SCEVSimplification.so \
-    -load ${LIB_DIR}/Parallelizer.so \
   "
 
   local CMD_TO_EXECUTE="noelle-load $EXTRA_UNIT_TEST_PASSES $PASSES $INPUT -o $OUTPUT -noelle-verbose=3"

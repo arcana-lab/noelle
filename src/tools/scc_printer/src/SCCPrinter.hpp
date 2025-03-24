@@ -23,6 +23,7 @@
 #define NOELLE_SRC_TOOLS_SCCPRINTER_H
 
 #include "arcana/noelle/core/NoellePass.hpp"
+#include "arcana/noelle/core/Lumberjack.hpp"
 
 namespace arcana::noelle {
 
@@ -41,12 +42,12 @@ public:
 private:
   std::vector<int> sccTypeWhiteList;
   std::vector<int> sccTypeBlackList;
-  std::string prefix;
   std::string targetFunctionName;
   bool printSCCInstructions;
   uint64_t targetLoopID;
   bool loopIDs;
   bool printDetails;
+  Logger log;
 };
 
 } // namespace arcana::noelle

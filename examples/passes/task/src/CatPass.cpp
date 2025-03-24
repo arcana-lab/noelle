@@ -184,7 +184,9 @@ struct CAT : public ModulePass {
           envUser->createEnvironmentVariablePointer(entryBuilder,
                                                     envID,
                                                     producer->getType());
-      auto envLoad = entryBuilder.CreateLoad(envPointer);
+      auto envLoad = entryBuilder.CreateLoad(
+          envPointer->getType()->getPointerElementType(),
+          envPointer);
       t->addLiveIn(producer, envLoad);
     }
 

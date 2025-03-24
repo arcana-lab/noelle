@@ -110,13 +110,15 @@ Values DSTestSuite::domNodeIsIdentical(DSTestSuite &pass,
              + pass.suite->printToString(bbS) };
   }
 
-  auto children = node.getChildren();
+  auto childrenIterator = node.begin();
   auto childrenS = nodeS.getChildren();
-  for (auto i = 0; i < node.getNumChildren(); ++i) {
+  for (auto i = 0u; i < node.getNumChildren(); ++i, ++childrenIterator) {
+    auto llvmChild = *childrenIterator;
     Values errors =
-        DSTestSuite::domNodeIsIdentical(pass, *children[i], *childrenS[i]);
-    if (errors.size() > 0)
+        DSTestSuite::domNodeIsIdentical(pass, *llvmChild, *childrenS[i]);
+    if (errors.size() > 0) {
       return errors;
+    }
   }
   return {};
 }
@@ -125,8 +127,9 @@ template <class DTBase>
 Values DSTestSuite::domTreeIsIdentical(DSTestSuite &pass,
                                        DTBase &DT,
                                        arcana::noelle::DominatorForest &DTS) {
-  auto &roots = DT.getRoots();
-  for (auto root : roots) {
+  for (auto rootIterator = DT.root_begin(); rootIterator < DT.root_end();
+       ++rootIterator) {
+    auto root = *rootIterator;
     auto node = DT.getNode(root);
     auto nodeS = DTS.getNode(root);
     if (nodeS == nullptr)

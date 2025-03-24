@@ -93,7 +93,7 @@ struct CAT : public ModulePass {
      * Print the current node.
      */
     auto l = n->getLoop();
-    for (auto i = 1; i < l->getNestingLevel(); i++) {
+    for (auto i = 1u; i < l->getNestingLevel(); i++) {
       errs() << "-";
     }
     errs() << "-> ";

@@ -38,7 +38,7 @@ public:
   /*
    * Fully unroll the loop.
    */
-  bool fullyUnrollLoop(LoopContent const &LDI,
+  bool fullyUnrollLoop(LoopContent const &LC,
                        LoopInfo &LI,
                        DominatorTree &DT,
                        ScalarEvolution &SE,
