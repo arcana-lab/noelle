@@ -93,6 +93,7 @@ public:
   virtual uint32_t getNumberOfUsers(void) const;
 
   virtual Value *getEnvironmentVariable(uint32_t id) const;
+  virtual Type *getEnvironmentVariableType(uint32_t id) const;
   virtual uint32_t getIndexOfEnvironmentVariable(uint32_t id) const;
   virtual bool isIncludedEnvironmentVariable(uint32_t id) const;
   virtual Value *getAccumulatedReducedEnvironmentVariable(uint32_t id) const;
@@ -107,8 +108,7 @@ protected:
    * The environment array, owned by this builder
    */
   LLVMContext &CXT;
-  Value *envArray;
-  Value *envArrayInt8Ptr;
+  AllocaInst *envArray;
 
   /*
    * Map and reverse map from envID to index
