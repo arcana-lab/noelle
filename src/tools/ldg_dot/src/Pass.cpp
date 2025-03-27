@@ -112,7 +112,7 @@ llvm::PassPluginLibraryInfo getPluginInfo() {
                  [](StringRef Name,
                     llvm::ModulePassManager &PM,
                     ArrayRef<llvm::PassBuilder::PipelineElement>) {
-                   if (Name == "noelle-ldg-dot") {
+                   if (Name == "LDGDot") {
                      PM.addPass(LDGDotPass());
                      return true;
                    }
