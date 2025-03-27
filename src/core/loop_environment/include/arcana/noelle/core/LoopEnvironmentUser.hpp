@@ -32,7 +32,7 @@ public:
 
   LoopEnvironmentUser() = delete;
 
-  virtual void setEnvironmentArray(Value *envArr);
+  virtual void setEnvironmentArray(Value *envArr, Type *envArrType);
 
   virtual Instruction *createEnvironmentVariablePointer(IRBuilder<> &b,
                                                         uint32_t envID,
@@ -56,15 +56,19 @@ public:
 
   virtual Instruction *getEnvPtr(uint32_t id);
 
+  virtual Type *getEnvPtrType(uint32_t id);
+
   virtual ~LoopEnvironmentUser();
 
 protected:
   Value *envArray;
+  Type *envArrayType;
 
   /*
    * Maps from environment index to load/stores
    */
   std::unordered_map<uint32_t, Instruction *> envIndexToPtr;
+  std::unordered_map<uint32_t, Type *> envIndexToPtrType;
   std::set<uint32_t> liveInIDs;
   std::set<uint32_t> liveOutIDs;
   std::unordered_map<uint32_t, uint32_t> &envIDToIndex;
