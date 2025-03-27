@@ -16,7 +16,7 @@ libs="${@:3}"
 rm -f $profExec *.profraw
 
 # inject code needed by the profiler
-opt -pgo-instr-gen -instrprof $srcBC -o $profBC
+opt -passes='pgo-instr-gen,instrprof' $srcBC -o $profBC
 
 # generate the binary
 clang $profBC -fprofile-instr-generate ${libs} -o $profExec

@@ -7,6 +7,6 @@ installDir=$(noelle-config --prefix)
 # run the privatizer until a fixed point is reached
 echo "NOELLE: Privatizer: Start"
 
-noelle-fixedpoint $1 $1 "noelle-load" -load $installDir/lib/Privatizer.so -Privatizer ${@:2}
+noelle-fixedpoint $1 $1 "noelle-load" -load-pass-plugin $installDir/lib/Privatizer.so -passes='Privatizer' ${@:2}
 
 echo "NOELLE: Privatizer: Exit"

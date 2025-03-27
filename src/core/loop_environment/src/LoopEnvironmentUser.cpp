@@ -27,18 +27,21 @@ namespace arcana::noelle {
 LoopEnvironmentUser::LoopEnvironmentUser(
     std::unordered_map<uint32_t, uint32_t> &envIDToIndex)
   : envIndexToPtr{},
+    envIndexToPtrType{},
     liveInIDs{},
     liveOutIDs{},
     envIDToIndex{ envIDToIndex } {
   envIndexToPtr.clear();
+  envIndexToPtrType.clear();
   liveInIDs.clear();
   liveOutIDs.clear();
 
   return;
 }
 
-void LoopEnvironmentUser::setEnvironmentArray(Value *envArr) {
+void LoopEnvironmentUser::setEnvironmentArray(Value *envArr, Type *envArrType) {
   this->envArray = envArr;
+  this->envArrayType = envArrType;
 
   return;
 }
@@ -84,17 +87,16 @@ Instruction *LoopEnvironmentUser::createEnvironmentVariablePointer(
   /*
    * Compute the address of the environment variable
    */
-  auto envGEP =
-      builder.CreateGEP(this->envArray->getType()->getStructElementType(0),
-                        this->envArray,
-                        ArrayRef<Value *>({ zeroV, envIndV }));
-  auto envPtr = builder.CreateBitCast(envGEP, PointerType::getUnqual(type));
+  auto envGEP = builder.CreateGEP(this->envArrayType,
+                                  this->envArray,
+                                  ArrayRef<Value *>({ zeroV, envIndV }));
 
   /*
    * Cache the pointer of the environment variable.
    */
-  auto ptrInst = cast<Instruction>(envPtr);
+  auto ptrInst = cast<Instruction>(envGEP);
   this->envIndexToPtr[envIndex] = ptrInst;
+  this->envIndexToPtrType[envIndex] = type;
 
   return ptrInst;
 }
@@ -127,28 +129,23 @@ void LoopEnvironmentUser::createReducableEnvPtr(IRBuilder<> &builder,
   auto envIndV =
       cast<Value>(ConstantInt::get(int64, envIndex * valuesInCacheLine));
 
-  auto envReduceGEP =
-      builder.CreateGEP(this->envArray->getType()->getStructElementType(0),
-                        this->envArray,
-                        ArrayRef<Value *>({ zeroV, envIndV }));
-  auto arrPtr = PointerType::getUnqual(
-      ArrayType::get(int64, reducerCount * valuesInCacheLine));
-  auto envReducePtr =
-      builder.CreateBitCast(envReduceGEP, PointerType::getUnqual(arrPtr));
+  auto envReduceGEP = builder.CreateGEP(this->envArrayType,
+                                        this->envArray,
+                                        ArrayRef<Value *>({ zeroV, envIndV }));
+  auto reducerArrType = ArrayType::get(int64, reducerCount * valuesInCacheLine);
 
   auto reduceIndAlignedV =
       builder.CreateMul(reducerIndV,
                         ConstantInt::get(int64, valuesInCacheLine));
   auto newLoad =
-      builder.CreateLoad(envReducePtr->getType()->getStructElementType(0),
-                         envReducePtr);
+      builder.CreateLoad(PointerType::getUnqual(reducerArrType), envReduceGEP);
   auto envGEP =
-      builder.CreateGEP(newLoad->getType()->getStructElementType(0),
+      builder.CreateGEP(reducerArrType,
                         newLoad,
                         ArrayRef<Value *>({ zeroV, reduceIndAlignedV }));
-  auto envPtr = builder.CreateBitCast(envGEP, PointerType::getUnqual(type));
 
-  this->envIndexToPtr[envIndex] = cast<Instruction>(envPtr);
+  this->envIndexToPtr[envIndex] = cast<Instruction>(envGEP);
+  this->envIndexToPtrType[envIndex] = type;
 }
 
 void LoopEnvironmentUser::addLiveIn(uint32_t id) {
@@ -180,6 +177,21 @@ Instruction *LoopEnvironmentUser::getEnvPtr(uint32_t id) {
   assert(ptr != nullptr);
 
   return ptr;
+}
+
+Type *LoopEnvironmentUser::getEnvPtrType(uint32_t id) {
+
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(id) != this->envIDToIndex.end()
+         && "The environment variable is not included in the user\n");
+  auto ind = this->envIDToIndex.at(id);
+
+  auto type = this->envIndexToPtrType.at(ind);
+  assert(type != nullptr);
+
+  return type;
 }
 
 iterator_range<std::set<uint32_t>::iterator> LoopEnvironmentUser::

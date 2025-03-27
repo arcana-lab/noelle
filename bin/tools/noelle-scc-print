@@ -115,4 +115,4 @@ if [[ $argLoopPresent == "n" && $argLoopsPresent == "n" ]]; then
   exit 1
 fi
 
-noelle-load -load $installDir/lib/SCCPrinter.so -scc-printer -disable-output $passArgs $inputBC
+noelle-load -load-pass-plugin $installDir/lib/SCCPrinter.so -passes='scc-printer' -disable-output $passArgs $inputBC

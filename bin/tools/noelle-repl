@@ -4,4 +4,4 @@ trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
 installDir=$(noelle-config --prefix)
 
-noelle-load -load $installDir/lib/Repl.so -repl -disable-output $@
+noelle-load -load-pass-plugin $installDir/lib/Repl.so -passes='repl' -disable-output $@
