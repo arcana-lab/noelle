@@ -7,6 +7,6 @@ installDir=$(noelle-config --prefix)
 # delete dead functions until a fixed point is reached
 echo "NOELLE: DeadFunctions: Start"
 
-noelle-fixedpoint $1 $2 "noelle-load" -load $installDir/lib/DeadFunctionEliminator.so -DeadFunctionEliminator ${@:3}
+noelle-fixedpoint $1 $2 "noelle-load" -load-pass-plugin $installDir/lib/DeadFunctionEliminator.so -passes='DeadFunctionEliminator' ${@:3}
 
 echo "NOELLE: DeadFunctions: Exit"

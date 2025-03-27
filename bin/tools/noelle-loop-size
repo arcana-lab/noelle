@@ -12,5 +12,5 @@ trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 installDir=$(noelle-config --prefix)
 
 noelle-meta-loop-embed $@ -o $@
-noelle-load -load $installDir/lib/LoopSize.so -LoopSize -disable-output -noelle-min-hot=0 $@
+noelle-load -load-pass-plugin $installDir/lib/LoopSize.so -passes='LoopSize' -disable-output -noelle-min-hot=0 $@
 

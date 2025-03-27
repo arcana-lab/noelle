@@ -10,7 +10,7 @@ usage () {
   echo "Export the Dependence Graph of a loop to DOT graph."
   echo
   echo "Options:"
-  noelle-load -load $installDir/lib/LDGDot.so --help | grep "ldg-dot"
+  noelle-load -load-pass-plugin $installDir/lib/LDGDot.so --help | grep "ldg-dot"
 }
 
 if test $# -lt 1 ; then
@@ -29,4 +29,4 @@ for arg in "$@"; do
   esac
 done
 
-noelle-load -load $installDir/lib/LDGDot.so -LDGDot -disable-output $@
+noelle-load -load-pass-plugin $installDir/lib/LDGDot.so -passes='LDGDot' -disable-output $@

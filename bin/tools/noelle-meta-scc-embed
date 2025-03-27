@@ -5,4 +5,4 @@ trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 installDir=$(noelle-config --prefix)
 
 # embed PDG metadata
-noelle-load -load $installDir/lib/PDGSCCEmbedder.so -PDGSCCEmbedder $@
+noelle-load -load-pass-plugin $installDir/lib/PDGSCCEmbedder.so -passes='PDGSCCEmbedder' $@

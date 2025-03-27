@@ -7,7 +7,7 @@ outputFile=`mktemp`
 llvm-profdata merge $1 -output=$outputFile
 
 # run hotprofiler
-n-eval opt -pgo-test-profile-file=${outputFile} -block-freq -pgo-instr-use ${@:2}
+n-eval opt -pgo-test-profile-file=${outputFile} -passes='print<block-freq>,pgo-instr-use' ${@:2}
 
 # clean
 rm $outputFile
