@@ -43,12 +43,15 @@ private:
   Noelle &noelle;
   InvariantManager &invariants;
 
-  std::map<Value *, SCC *> findSCCsWithSingleMemoryLocations(void);
+  std::map<std::pair<Value *, Type *>, SCC *> findSCCsWithSingleMemoryLocations(
+      void);
 
   bool hoistMemoryInstructionsRelyingOnExistingRegisterValues(
       SCC *scc,
       Value *memoryLocation);
-  bool promoteMemoryToRegisterForSCC(SCC *scc, Value *memoryLocation);
+  bool promoteMemoryToRegisterForSCC(SCC *scc,
+                                     Value *memoryLocation,
+                                     Type *memoryLocationType);
 
   std::unordered_map<BasicBlock *, std::vector<Instruction *>>
   collectOrderedMemoryInstsByBlock(SCC *scc);
