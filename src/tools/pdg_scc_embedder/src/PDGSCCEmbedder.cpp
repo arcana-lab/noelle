@@ -52,7 +52,7 @@ bool PDGSCCEmbedder::runOnModule(Module &M) {
   /*
    * Embed the PDG.
    */
-  auto pdgGen = noelle.getPDGGenerator();
+  auto &pdgGen = noelle.getPDGGenerator();
   pdgGen.embedSCCAsMetadata(pdg);
 
   return true;
