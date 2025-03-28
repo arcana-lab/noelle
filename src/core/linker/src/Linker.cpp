@@ -34,6 +34,7 @@ void Linker::linkTransformedLoopToOriginalFunction(
     BasicBlock *startOfParLoopInOriginalFunc,
     BasicBlock *endOfParLoopInOriginalFunc,
     Value *envArray,
+    Type *envArrayType,
     Value *envIndexForExitVariable,
     std::vector<BasicBlock *> &loopExitBlocks,
     uint32_t minIdleCores) {
@@ -91,15 +92,15 @@ void Linker::linkTransformedLoopToOriginalFunction(
 
     auto int64 = this->tm->getIntegerType(64);
     auto exitEnvPtr = endBuilder.CreateGEP(
-        envArray->getType()->getStructElementType(0),
+        envArrayType,
         envArray,
         ArrayRef<Value *>({ cast<Value>(ConstantInt::get(int64, 0)),
                             endBuilder.CreateMul(
                                 envIndexForExitVariable,
                                 ConstantInt::get(int64, valuesInCacheLine)) }));
-    auto newLoad =
-        endBuilder.CreateLoad(exitEnvPtr->getType()->getStructElementType(0),
-                              exitEnvPtr);
+    auto newLoad = endBuilder.CreateLoad(
+        cast<GetElementPtrInst>(exitEnvPtr)->getResultElementType(),
+        exitEnvPtr);
     auto exitEnvCast = endBuilder.CreateIntCast(newLoad,
                                                 integerType,
                                                 /*isSigned=*/false);
@@ -139,6 +140,7 @@ void Linker::substituteOriginalLoopWithTransformedLoop(
     BasicBlock *startOfParLoopInOriginalFunc,
     BasicBlock *endOfParLoopInOriginalFunc,
     Value *envArray,
+    Type *envArrayType,
     Value *envIndexForExitVariable,
     std::vector<BasicBlock *> &loopExitBlocks,
     uint32_t minIdleCores) {
@@ -179,16 +181,16 @@ void Linker::substituteOriginalLoopWithTransformedLoop(
 
     auto int64 = this->tm->getIntegerType(64);
     auto exitEnvPtr = endBuilder.CreateGEP(
-        envArray->getType()->getStructElementType(0),
+        envArrayType,
         envArray,
         ArrayRef<Value *>({ cast<Value>(ConstantInt::get(int64, 0)),
                             endBuilder.CreateMul(
                                 envIndexForExitVariable,
                                 ConstantInt::get(int64, valuesInCacheLine)) }));
     auto integerType = this->tm->getIntegerType(32);
-    auto newLoad =
-        endBuilder.CreateLoad(exitEnvPtr->getType()->getStructElementType(0),
-                              exitEnvPtr);
+    auto newLoad = endBuilder.CreateLoad(
+        cast<GetElementPtrInst>(exitEnvPtr)->getResultElementType(),
+        exitEnvPtr);
     auto exitEnvCast = endBuilder.CreateIntCast(newLoad,
                                                 integerType,
                                                 /*isSigned=*/false);
