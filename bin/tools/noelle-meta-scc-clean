@@ -2,6 +2,8 @@
 
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
+installDir=$(noelle-config --prefix)
+
 # remove the PDG from the bitcode
 noelle-load \
   -load-pass-plugin $installDir/lib/MetadataCleaner.so \

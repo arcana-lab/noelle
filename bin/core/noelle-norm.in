@@ -3,18 +3,18 @@
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
 # LLVM normalizations
-LLVM_PASSES=`cat << EOF
+LLVM_PASSES=`tr -d '[:space:]' << EOF
   function(sroa),
-  function(mem2reg),
-  function(simplifycfg),
-  function(lowerswitch),
-  function(mergereturn),
-  function(break-crit-edges),
-  function(loop-simplify),
-  function(lcssa),
-  function(loop(indvars)),
+  mem2reg,
+  simplifycfg,
+  lowerswitch,
+  mergereturn,
+  break-crit-edges,
+  loop-simplify,
+  lcssa,
+  indvars,
   function-attrs,
-  rpo-function-attrs,
+  rpo-function-attrs
 EOF
 `
 n-eval opt                        \
@@ -22,13 +22,14 @@ n-eval opt                        \
   -passes="$LLVM_PASSES"          \
   $@
 
+# Note: SVF is commented out because it's not supported in the new PM
 # SVF normalizations
-n-eval opt                        \
-  -enable-new-pm=0                \
-  @noelle_LLVM_ALIAS_ANALYSES_FOR_LLVM_TRANSFORMATIONS@    \
-  @noelle_load_SVF_LIBS@          \
-  @noelle_SVF_TRANSFORMATIONS@    \
-  $3 -o $3
+# n-eval opt                        \
+#   -enable-new-pm=0                \
+#   _noelle_LLVM_ALIAS_ANALYSES_FOR_LLVM_TRANSFORMATIONS@    \
+#   _noelle_load_SVF_LIBS@          \
+#   _noelle_SVF_TRANSFORMATIONS@    \
+#   $3 -o $3
 
 # NOELLE normalizations
 noelle-meta-loop-embed            \

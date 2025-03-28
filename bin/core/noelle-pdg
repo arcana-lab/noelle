@@ -2,4 +2,4 @@
 
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
-noelle-load -noelle-pdg-verbose=3 -passes='noelle-pdg-dump' -disable-output $@
+noelle-load -noelle-pdg-verbose=3 -noelle-pdg-dump -disable-output $@
