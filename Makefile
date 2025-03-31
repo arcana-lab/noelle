@@ -9,6 +9,9 @@ all: install
 
 install: compile
 	cmake --install $(BUILD_DIR) 
+	# TODO: remove this hack
+	(cd install/lib; cp LoopInvariantCodeMotion.so libLoopInvariantCodeMotion.so)
+	(cd install/lib; cp SCEVSimplification.so libSCEVSimplification.so)
 
 compile: build
 	cmake --build $(BUILD_DIR) -j$(JOBS) 
