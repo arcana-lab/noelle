@@ -75,6 +75,7 @@ public:
          double minHot,
          LDGGenerator ldgGenerator,
          CompilationOptionsManager *om,
+         ModuleAnalysisManager *mam,
          bool dumpPDG,
          bool performThePDGComparison,
          bool disableSVF,
@@ -223,6 +224,10 @@ public:
 
   DominatorSummary *getDominators(Function *f);
 
+  ModuleAnalysisManager *getModuleAnalysisManager(void) const;
+
+  FunctionAnalysisManager *getFunctionAnalysisManager(void);
+
   Verbosity getVerbosity(void) const;
 
   double getMinimumHotness(void) const;
@@ -282,6 +287,7 @@ private:
   std::function<llvm::BranchProbabilityInfo &(Function &F)> getBPI;
   std::set<AliasAnalysisEngine *> aaEngines;
   Logger log;
+  ModuleAnalysisManager *mam;
 
   PDG *getFunctionDependenceGraph(Function *f);
 

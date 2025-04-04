@@ -41,6 +41,7 @@ Noelle::Noelle(
     double minHot,
     LDGGenerator ldgGenerator,
     CompilationOptionsManager *om,
+    ModuleAnalysisManager *mam,
     bool dumpPDG,
     bool performThePDGComparison,
     bool disableSVF,
@@ -88,7 +89,8 @@ Noelle::Noelle(
     getBFI{ getBFI },
     getBPI{ getBPI },
     aaEngines{},
-    log{ NoelleLumberjack, "Noelle" } {
+    log{ NoelleLumberjack, "Noelle" },
+    mam{ mam } {
 
   this->filterFileName = getenv("INDEX_FILE");
 
@@ -140,6 +142,16 @@ uint32_t Noelle::fetchTheNextValue(std::stringstream &stream) {
   }
 
   return currentValueRead;
+}
+
+ModuleAnalysisManager *Noelle::getModuleAnalysisManager(void) const {
+  return this->mam;
+}
+
+FunctionAnalysisManager *Noelle::getFunctionAnalysisManager(void) {
+  return &this->mam
+              ->getResult<FunctionAnalysisManagerModuleProxy>(this->program)
+              .getManager();
 }
 
 Verbosity Noelle::getVerbosity(void) const {
