@@ -3,51 +3,56 @@
 trap 'echo "error: $(basename $0): line $LINENO"; exit 1' ERR
 
 # LLVM normalizations
+LLVM_PASSES=`tr -d '[:space:]' << EOF
+  function(sroa),
+  mem2reg,
+  early-cse<memssa>,
+  memcpyopt,
+  function(loop-mssa(licm)),
+  loop-deletion,
+  simplifycfg,
+  instcombine,
+  tailcallelim,
+  loop-simplify,
+  lcssa,
+  function(loop-mssa(licm)),
+  simple-loop-unswitch,
+  globaldce,
+  globalopt,
+  instcombine,
+  ipsccp,
+  dce,
+  gvn,
+  dse,
+  adce,
+  loop-simplify,
+  lcssa,
+  indvars,
+  loop-deletion,
+  instcombine,
+  indvars,
+  lowerswitch,
+  sroa,
+  loop-deletion,
+  mergereturn,
+  break-crit-edges,
+  loop-simplify,
+  lcssa
+EOF
+`
 n-eval opt \
-  -enable-new-pm=0                \
-  @noelle_LLVM_ALIAS_ANALYSES_FOR_LLVM_TRANSFORMATIONS@    \
-  -mem2reg \
-  -early-cse-memssa \
-  -licm \
-  -simplifycfg \
   -simplifycfg-sink-common=false \
-  -instcombine \
-  -tailcallelim \
-  -loop-simplify \
-  -lcssa \
-  -licm \
-  -loop-unswitch \
-  -globalopt \
-  -instcombine \
-  -ipsccp \
-  -dce \
-  -gvn \
-  -dse \
-  -adce \
-  -loop-simplify \
-  -lcssa \
-  -indvars \
-  -loop-deletion \
-  -instcombine \
-  -indvars \
-  -lowerswitch \
-  -sroa \
-  -mergereturn \
-  --break-crit-edges \
-  -loop-simplify \
-  -lcssa \
+  -passes="$LLVM_PASSES"         \
   $@
 
-n-eval opt \
-  --function-attrs                  \
-  --rpo-function-attrs              \
-  $3 -o $3
+n-eval opt -passes='cgscc(function-attrs),rpo-function-attrs' $3 -o $3
 
+# Note: SVF is commented out because it's not supported in the new PM
 # SVF normalizations
-n-eval opt                        \
-  -enable-new-pm=0                \
-  @noelle_LLVM_ALIAS_ANALYSES_FOR_NOELLE_TRANSFORMATIONS@    \
-  @noelle_load_SVF_LIBS@          \
-  @noelle_SVF_TRANSFORMATIONS@    \
-  $3 -o $3
+# n-eval opt                        \
+#   -enable-new-pm=0                \
+#   _noelle_LLVM_ALIAS_ANALYSES_FOR_NOELLE_TRANSFORMATIONS@    \
+#   _noelle_load_SVF_LIBS@          \
+#   _noelle_SVF_TRANSFORMATIONS@    \
+#   $3 -o $3
 

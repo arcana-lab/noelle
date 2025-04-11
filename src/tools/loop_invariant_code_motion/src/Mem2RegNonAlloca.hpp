@@ -34,21 +34,24 @@ namespace arcana::noelle {
 
 class Mem2RegNonAlloca {
 public:
-  Mem2RegNonAlloca(LoopContent const &LDI, Noelle &noelle);
+  Mem2RegNonAlloca(LoopContent const &LC, Noelle &noelle);
 
   bool promoteMemoryToRegister(void);
 
 private:
-  LoopContent const &LDI;
+  LoopContent const &LC;
   Noelle &noelle;
   InvariantManager &invariants;
 
-  std::map<Value *, SCC *> findSCCsWithSingleMemoryLocations(void);
+  std::map<std::pair<Value *, Type *>, SCC *> findSCCsWithSingleMemoryLocations(
+      void);
 
   bool hoistMemoryInstructionsRelyingOnExistingRegisterValues(
       SCC *scc,
       Value *memoryLocation);
-  bool promoteMemoryToRegisterForSCC(SCC *scc, Value *memoryLocation);
+  bool promoteMemoryToRegisterForSCC(SCC *scc,
+                                     Value *memoryLocation,
+                                     Type *memoryLocationType);
 
   std::unordered_map<BasicBlock *, std::vector<Instruction *>>
   collectOrderedMemoryInstsByBlock(SCC *scc);
@@ -59,8 +62,8 @@ private:
 
   /*
    * Can ONLY be used before stores/loads are erased, as this invalidates the
-   * LDI
-   * TODO: Store a flag indicating whether LDI is invalidated
+   * LC
+   * TODO: Store a flag indicating whether LC is invalidated
    */
   void assertAndDumpLogsOnFailure(std::function<bool(void)> assertion,
                                   std::string errorString);

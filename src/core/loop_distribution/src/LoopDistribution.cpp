@@ -24,18 +24,18 @@
 
 namespace arcana::noelle {
 
-bool LoopDistribution::splitLoop(LoopContent const &LDI,
+bool LoopDistribution::splitLoop(LoopContent const &LC,
                                  SCC *SCCToPullOut,
                                  std::set<Instruction *> &instructionsRemoved,
                                  std::set<Instruction *> &instructionsAdded) {
   std::set<SCC *> SCCs{};
   SCCs.insert(SCCToPullOut);
   auto modified =
-      this->splitLoop(LDI, SCCs, instructionsRemoved, instructionsAdded);
+      this->splitLoop(LC, SCCs, instructionsRemoved, instructionsAdded);
   return modified;
 }
 
-bool LoopDistribution::splitLoop(LoopContent const &LDI,
+bool LoopDistribution::splitLoop(LoopContent const &LC,
                                  std::set<SCC *> const &SCCsToPullOut,
                                  std::set<Instruction *> &instructionsRemoved,
                                  std::set<Instruction *> &instructionsAdded) {
@@ -51,15 +51,15 @@ bool LoopDistribution::splitLoop(LoopContent const &LDI,
     }
   }
   bool modified =
-      this->splitLoop(LDI, Insts, instructionsRemoved, instructionsAdded);
+      this->splitLoop(LC, Insts, instructionsRemoved, instructionsAdded);
   return modified;
 }
 
-bool LoopDistribution::splitLoop(LoopContent const &LDI,
+bool LoopDistribution::splitLoop(LoopContent const &LC,
                                  std::set<Instruction *> &instsToPullOut,
                                  std::set<Instruction *> &instructionsRemoved,
                                  std::set<Instruction *> &instructionsAdded) {
-  auto loopStructure = LDI.getLoopStructure();
+  auto loopStructure = LC.getLoopStructure();
   // errs() << "LoopDistribution: Attempting Loop Distribution in "
   //        << loopStructure->getFunction()->getName()
   //        << "\n";
@@ -84,7 +84,7 @@ bool LoopDistribution::splitLoop(LoopContent const &LDI,
       // errs () << "LoopDistribution: Branch instruction: " <<  *branch <<
       // "\n";
       instsToClone.insert(branch);
-      this->recursivelyCollectDependencies(branch, instsToClone, LDI);
+      this->recursivelyCollectDependencies(branch, instsToClone, LC);
 
     } else {
       // errs() << "LoopDistribution: Abort: Non-branch terminator " <<
@@ -98,7 +98,7 @@ bool LoopDistribution::splitLoop(LoopContent const &LDI,
    * capture sub-sub loops, but those BBs should still be in the level 2 loops
    */
   std::set<BasicBlock *> subLoopBBs{};
-  auto loopStructureNode = LDI.getLoopHierarchyStructures();
+  auto loopStructureNode = LC.getLoopHierarchyStructures();
   for (auto childLoopStructureNode : loopStructureNode->getChildren()) {
     // errs() << "LoopDistribution: New sub loop\n";
     auto childLoopStructure = childLoopStructureNode->getLoop();
@@ -108,7 +108,7 @@ bool LoopDistribution::splitLoop(LoopContent const &LDI,
         // errs() << "LoopDistribution: Sub loop instruction: " << childI <<
         // "\n";
         instsToClone.insert(&childI);
-        this->recursivelyCollectDependencies(&childI, instsToClone, LDI);
+        this->recursivelyCollectDependencies(&childI, instsToClone, LC);
       }
     }
   }
@@ -132,7 +132,7 @@ bool LoopDistribution::splitLoop(LoopContent const &LDI,
    *   TODO(lukas): This is very, very conservative
    * Require that all instructions to clone do not have memory dependencies
    */
-  auto pdg = LDI.getLoopDG();
+  auto pdg = LC.getLoopDG();
   for (auto inst : instsToClone) {
     if (inst->mayHaveSideEffects()) {
       // errs() << "LoopDistribution: Abort: Unclonable instruction " << *inst
@@ -202,7 +202,7 @@ bool LoopDistribution::splitLoop(LoopContent const &LDI,
    * Require that there are no data dependencies between instsToPullOut and the
    * rest of the loop
    */
-  if (this->splitWouldRequireForwardingDataDependencies(LDI,
+  if (this->splitWouldRequireForwardingDataDependencies(LC,
                                                         instsToPullOut,
                                                         instsToClone)) {
     // errs() << "LoopDistribution: Abort: Distribution would require forwarding
@@ -213,7 +213,7 @@ bool LoopDistribution::splitLoop(LoopContent const &LDI,
   /*
    * Splitting the loop is now safe
    */
-  this->doSplit(LDI,
+  this->doSplit(LC,
                 instsToPullOut,
                 instsToClone,
                 instructionsRemoved,
@@ -227,10 +227,10 @@ bool LoopDistribution::splitLoop(LoopContent const &LDI,
 void LoopDistribution::recursivelyCollectDependencies(
     Instruction *inst,
     std::set<Instruction *> &toPopulate,
-    LoopContent const &LDI) {
+    LoopContent const &LC) {
   std::vector<Instruction *> queue = { inst };
-  auto BBs = LDI.getLoopStructure()->getBasicBlocks();
-  auto pdg = LDI.getLoopDG();
+  auto BBs = LC.getLoopStructure()->getBasicBlocks();
+  auto pdg = LC.getLoopDG();
   auto fn = [&BBs, &queue, &toPopulate](Value *from,
                                         DGEdge<Value, Value> *dep) -> bool {
     if (!isa<Instruction>(from)) {
@@ -298,10 +298,10 @@ bool LoopDistribution::splitWouldBeTrivial(
  * split the loop
  */
 bool LoopDistribution::splitWouldRequireForwardingDataDependencies(
-    LoopContent const &LDI,
+    LoopContent const &LC,
     std::set<Instruction *> const &instsToPullOut,
     std::set<Instruction *> const &instsToClone) {
-  auto BBs = LDI.getLoopStructure()->getBasicBlocks();
+  auto BBs = LC.getLoopStructure()->getBasicBlocks();
   auto fromFn = [&BBs, &instsToPullOut, &instsToClone](
                     Value *from,
                     DGEdge<Value, Value> *dependence) -> bool {
@@ -359,7 +359,7 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies(
     }
     return false;
   };
-  auto pdg = LDI.getLoopDG();
+  auto pdg = LC.getLoopDG();
   for (auto inst : instsToPullOut) {
     bool isSourceOfExternalDataDependency =
         pdg->iterateOverDependencesFrom(inst,
@@ -387,12 +387,12 @@ bool LoopDistribution::splitWouldRequireForwardingDataDependencies(
   return false;
 }
 
-void LoopDistribution::doSplit(LoopContent const &LDI,
+void LoopDistribution::doSplit(LoopContent const &LC,
                                std::set<Instruction *> const &instsToPullOut,
                                std::set<Instruction *> const &instsToClone,
                                std::set<Instruction *> &instructionsRemoved,
                                std::set<Instruction *> &instructionsAdded) {
-  auto loopStructure = LDI.getLoopStructure();
+  auto loopStructure = LC.getLoopStructure();
   auto &cxt = loopStructure->getFunction()->getContext();
   // errs() << "LoopDistribution: About to do split of " <<
   // *loopStructure->getFunction() << "\n";

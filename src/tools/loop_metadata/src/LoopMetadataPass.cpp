@@ -20,7 +20,7 @@
  OR OTHER DEALINGS IN THE SOFTWARE.
  */
 #include "llvm/Analysis/LoopInfo.h"
-#include "LoopMetadataPass.hpp"
+#include "arcana/noelle/tools/LoopMetadataPass.hpp"
 
 namespace arcana::noelle {
 
@@ -75,9 +75,9 @@ llvm::PassPluginLibraryInfo getLoopMetadataPluginInfo() {
            } };
 }
 
-// extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
-// llvmGetPassPluginInfo() {
-// return getLoopMetadataPluginInfo();
-// }
+extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+llvmGetPassPluginInfo() {
+  return getLoopMetadataPluginInfo();
+}
 
 } // namespace arcana::noelle

@@ -3,6 +3,7 @@ install(
     noelle-codesize
     noelle-deadcode
     noelle-fixedpoint
+    noelle-ldg-dot
     noelle-loop-size
     noelle-loop-stats
     noelle-meta-loop-clean

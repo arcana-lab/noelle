@@ -173,7 +173,7 @@ Noelle NoellePass::run(llvm::Module &M, llvm::ModuleAnalysisManager &AM) {
   std::unordered_set<Transformation> enabledTransformations;
   Verbosity verbose = Verbosity::Disabled;
   double minHot = 0.0;
-  LDGGenerator ldgAnalysis;
+  LDGGenerator ldgGenerator;
   CompilationOptionsManager *om;
 
   /*
@@ -220,9 +220,9 @@ Noelle NoellePass::run(llvm::Module &M, llvm::ModuleAnalysisManager &AM) {
     enabledTransformations.erase(INLINER_ID);
   }
   if (DisableLoopAwareDependenceAnalyses.getNumOccurrences() == 0) {
-    ldgAnalysis.enableLoopDependenceAnalyses(true);
+    ldgGenerator.enableLoopDependenceAnalyses(true);
   } else {
-    ldgAnalysis.enableLoopDependenceAnalyses(false);
+    ldgGenerator.enableLoopDependenceAnalyses(false);
   }
   auto pdgVerbose = static_cast<PDGVerbosity>(PDGVerbose.getValue());
   auto dumpPDG = (PDGDump.getNumOccurrences() > 0) ? true : false;
@@ -304,8 +304,9 @@ Noelle NoellePass::run(llvm::Module &M, llvm::ModuleAnalysisManager &AM) {
                   verbose,
                   pdgVerbose,
                   minHot,
-                  ldgAnalysis,
+                  ldgGenerator,
                   om,
+                  &AM,
                   dumpPDG,
                   performThePDGComparison,
                   disableSVF,

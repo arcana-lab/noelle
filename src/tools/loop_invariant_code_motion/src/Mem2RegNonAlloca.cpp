@@ -24,10 +24,10 @@
 
 namespace arcana::noelle {
 
-Mem2RegNonAlloca::Mem2RegNonAlloca(LoopContent const &LDI, Noelle &noelle)
-  : LDI{ LDI },
+Mem2RegNonAlloca::Mem2RegNonAlloca(LoopContent const &LC, Noelle &noelle)
+  : LC{ LC },
     noelle{ noelle },
-    invariants{ *LDI.getInvariantManager() } {
+    invariants{ *LC.getInvariantManager() } {
   return;
 }
 
@@ -36,7 +36,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister(void) {
   /*
    * Fetch the loop structure.
    */
-  auto loopStructure = LDI.getLoopStructure();
+  auto loopStructure = LC.getLoopStructure();
 
   /*
    * Make sure the loop has the shape we want.
@@ -90,7 +90,8 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister(void) {
     /*
      * Fetch the current SCC.
      */
-    auto memoryInst = memoryAndSCCPair.first;
+    auto memoryInst = memoryAndSCCPair.first.first;
+    auto memoryType = memoryAndSCCPair.first.second;
     auto memorySCC = memoryAndSCCPair.second;
 
     if (noelle.getVerbosity() >= Verbosity::Maximal) {
@@ -104,7 +105,8 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister(void) {
     /*
      * Promote the single memory location used in the current SCC to variables.
      */
-    auto promoted = this->promoteMemoryToRegisterForSCC(memorySCC, memoryInst);
+    auto promoted =
+        this->promoteMemoryToRegisterForSCC(memorySCC, memoryInst, memoryType);
     if (promoted) {
 
       /*
@@ -126,16 +128,16 @@ bool Mem2RegNonAlloca::promoteMemoryToRegister(void) {
   return false;
 }
 
-std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations(
-    void) {
+std::map<std::pair<Value *, Type *>, SCC *> Mem2RegNonAlloca::
+    findSCCsWithSingleMemoryLocations(void) {
 
   /*
    * Identify SCC containing only loads/stores on a single memory location
    * along with any computation that does NOT alias the loads/stores
    */
-  auto sccManager = LDI.getSCCManager();
+  auto sccManager = LC.getSCCManager();
   auto sccdag = sccManager->getSCCDAG();
-  std::map<Value *, SCC *> singleMemoryLocationsBySCC{};
+  std::map<std::pair<Value *, Type *>, SCC *> singleMemoryLocationsBySCC{};
   for (auto sccNode : sccdag->getNodes()) {
 
     /*
@@ -157,6 +159,7 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations(
      */
     auto isSingleMemoryLocation = false;
     Value *memoryLocation = nullptr;
+    Type *memoryLocationType = nullptr;
     for (auto nodePair : scc->internalNodePairs()) {
       auto value = nodePair.first;
 
@@ -179,10 +182,13 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations(
        * We only handle load and store instructions
        */
       Value *loadOrStoreLocation = nullptr;
+      Type *loadOrStoreType = nullptr;
       if (auto load = dyn_cast<LoadInst>(value)) {
         loadOrStoreLocation = load->getPointerOperand();
+        loadOrStoreType = load->getType();
       } else if (auto store = dyn_cast<StoreInst>(value)) {
         loadOrStoreLocation = store->getPointerOperand();
+        loadOrStoreType = store->getValueOperand()->getType();
       }
       if (!loadOrStoreLocation) {
         isSingleMemoryLocation = false;
@@ -195,6 +201,7 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations(
       if (!memoryLocation || loadOrStoreLocation == memoryLocation) {
         isSingleMemoryLocation = true;
         memoryLocation = loadOrStoreLocation;
+        memoryLocationType = loadOrStoreType;
         continue;
       }
 
@@ -258,14 +265,17 @@ std::map<Value *, SCC *> Mem2RegNonAlloca::findSCCsWithSingleMemoryLocations(
     /*
      * We found an SCC that can be optimized
      */
-    singleMemoryLocationsBySCC.insert(std::make_pair(memoryLocation, scc));
+    singleMemoryLocationsBySCC.insert(
+        std::make_pair(std::make_pair(memoryLocation, memoryLocationType),
+                       scc));
   }
 
   return singleMemoryLocationsBySCC;
 }
 
 bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC(SCC *scc,
-                                                     Value *memoryLocation) {
+                                                     Value *memoryLocation,
+                                                     Type *memoryLocationType) {
 
   auto orderedMemoryInstsByBlock = collectOrderedMemoryInstsByBlock(scc);
 
@@ -280,7 +290,7 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC(SCC *scc,
   /*
    * Initialize traversal
    */
-  auto loopStructure = LDI.getLoopStructure();
+  auto loopStructure = LC.getLoopStructure();
   auto loopHeader = loopStructure->getHeader();
   auto loopPreHeader = loopStructure->getPreHeader();
   queue.push(loopHeader);
@@ -290,9 +300,8 @@ bool Mem2RegNonAlloca::promoteMemoryToRegisterForSCC(SCC *scc,
    * Register load in pre-header
    */
   IRBuilder<> preHeaderBuilder(loopPreHeader->getTerminator());
-  auto initialLoad = preHeaderBuilder.CreateLoad(
-      memoryLocation->getType()->getStructElementType(0),
-      memoryLocation);
+  auto initialLoad =
+      preHeaderBuilder.CreateLoad(memoryLocationType, memoryLocation);
   lastRegisterValueByBlock.insert(std::make_pair(loopPreHeader, initialLoad));
 
   /*
@@ -695,7 +704,7 @@ void Mem2RegNonAlloca::assertAndDumpLogsOnFailure(
 }
 
 void Mem2RegNonAlloca::dumpLogs(void) {
-  auto loop = LDI.getLoopStructure();
+  auto loop = LC.getLoopStructure();
   auto basicBlocks = loop->getBasicBlocks();
 
   auto loopIDOpt = loop->getID();

@@ -28,9 +28,13 @@
  * SCAF headers
  */
 #ifdef NOELLE_ENABLE_SCAF
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wreorder"
+#  pragma GCC diagnostic ignored "-Wsuggest-override"
 #  include "scaf/MemoryAnalysisModules/LoopAA.h"
 #  include "scaf/Utilities/PDGQueries.h"
 #  include "scaf/Utilities/ModuleLoops.h"
+#  pragma GCC diagnostic pop
 #endif
 
 namespace arcana::noelle {

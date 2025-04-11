@@ -40,6 +40,15 @@ FetchContent_Declare(
   GIT_REPOSITORY  "https://github.com/PrincetonUniversity/SCAF.git"
   GIT_TAG         llvm18
 )
+FetchContent_Declare(
+  rapidjson
+  GIT_REPOSITORY  "https://github.com/Tencent/rapidjson.git"
+)
+FetchContent_GetProperties(rapidjson)
+
+if(NOT rapidjson_POPULATED)
+  FetchContent_Populate(rapidjson)
+endif()
 
 set(NOELLE_CMAKE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -101,6 +110,14 @@ if(NOELLE_SCAF STREQUAL ON)
 endif()
 
 set(CMAKE_BUILD_TYPE ${NOELLE_BUILD_TYPE})
+set(
+  NOELLE_LUMBERJACK_JSON_DEFAULT_DIR
+  ${CMAKE_INSTALL_PREFIX}/share/noelle
+)
+set(
+  NOELLE_LUMBERJACK_JSON_DEFAULT_PATH
+  ${NOELLE_LUMBERJACK_JSON_DEFAULT_DIR}/Lumberjack.json
+)
 
 file(READ ${NOELLE_CMAKE_ROOT}/VERSION NOELLE_VERSION)
 string(STRIP ${NOELLE_VERSION} NOELLE_VERSION)
@@ -126,6 +143,7 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_INSTALL_PREFIX}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 
 include_directories(
+  ${rapidjson_SOURCE_DIR}/include
   ${LLVM_INCLUDE_DIRS}
 )
 

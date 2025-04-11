@@ -23,15 +23,15 @@
 
 namespace arcana::noelle {
 
-bool LoopInvariantCodeMotion::hoistInvariantValues(LoopContent const &LDI) {
+bool LoopInvariantCodeMotion::hoistInvariantValues(LoopContent const &LC) {
   auto modified = false;
   errs() << "LICM: Start\n";
 
   /*
    * Fetch the information.
    */
-  auto invariantManager = LDI.getInvariantManager();
-  auto loopStructure = LDI.getLoopStructure();
+  auto invariantManager = LC.getInvariantManager();
+  auto loopStructure = LC.getLoopStructure();
   auto header = loopStructure->getHeader();
   auto preHeader = loopStructure->getPreHeader();
   auto loopFunction = header->getParent();
@@ -129,7 +129,7 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(LoopContent const &LDI) {
        * be invariant for @I to be hoisted.
        */
       auto dependenceInstructions =
-          this->getSourceDependenceInstructionsFrom(LDI, I);
+          this->getSourceDependenceInstructionsFrom(LC, I);
       auto isSafe = true;
       errs() << "LICM:       Checking dependences\n";
       std::set<Instruction *> dependentInvariantsInLoop{};
@@ -432,19 +432,18 @@ bool LoopInvariantCodeMotion::hoistInvariantValues(LoopContent const &LDI) {
 }
 
 std::vector<Instruction *> LoopInvariantCodeMotion::
-    getSourceDependenceInstructionsFrom(LoopContent const &LDI,
-                                        Instruction &I) {
+    getSourceDependenceInstructionsFrom(LoopContent const &LC, Instruction &I) {
   std::vector<Instruction *> s;
 
   /*
    * Fetch the loop structure.
    */
-  auto ls = LDI.getLoopStructure();
+  auto ls = LC.getLoopStructure();
 
   /*
    * Fetch the Loop DG.
    */
-  auto ldg = LDI.getLoopDG();
+  auto ldg = LC.getLoopDG();
 
   /*
    * Code to collect dependences.

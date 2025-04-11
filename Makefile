@@ -9,12 +9,17 @@ all: install
 
 install: compile
 	cmake --install $(BUILD_DIR) 
+	# TODO: remove this hack
+	(cd install/lib; cp LoopInvariantCodeMotion.so libLoopInvariantCodeMotion.so)
+	(cd install/lib; cp SCEVSimplification.so libSCEVSimplification.so)
 
 compile: build
 	cmake --build $(BUILD_DIR) -j$(JOBS) 
 
 build:
 	cmake -S . -B $(BUILD_DIR) -G "$(GENERATOR)" \
+		-DNOELLE_SVF=OFF   \
+		-DNOELLE_SCAF=OFF  \
 		-DCMAKE_INSTALL_MESSAGE=LAZY \
 		-DBUILD_SHARED_LIBS=On \
 		-DSVF_ENABLE_ASSERTIONS=true \

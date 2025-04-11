@@ -124,7 +124,11 @@ struct CAT : public ModulePass {
       if (GIV != nullptr) {
         errs() << "   The loop has a loop governing IV\n";
 
+        /*
+         * Look at the GIV as a normal IV
+         */
         auto IV = GIV->getInductionVariable();
+        errs() << "     GIV seen as an IV: " << *IV->getLoopEntryPHI() << "\n";
 
         /*
          * Print the exit condition

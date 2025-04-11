@@ -48,6 +48,7 @@
 #include "arcana/noelle/core/MayPointsToAnalysis.hpp"
 #include "arcana/noelle/core/DependenceAnalysis.hpp"
 #include "arcana/noelle/core/CallGraphAnalysis.hpp"
+#include "arcana/noelle/core/Lumberjack.hpp"
 
 namespace arcana::noelle {
 
@@ -72,8 +73,9 @@ public:
          Verbosity v,
          PDGVerbosity pdgVerbose,
          double minHot,
-         LDGGenerator ldgAnalysis,
+         LDGGenerator ldgGenerator,
          CompilationOptionsManager *om,
+         ModuleAnalysisManager *mam,
          bool dumpPDG,
          bool performThePDGComparison,
          bool disableSVF,
@@ -222,6 +224,10 @@ public:
 
   DominatorSummary *getDominators(Function *f);
 
+  ModuleAnalysisManager *getModuleAnalysisManager(void) const;
+
+  FunctionAnalysisManager *getFunctionAnalysisManager(void);
+
   Verbosity getVerbosity(void) const;
 
   double getMinimumHotness(void) const;
@@ -257,8 +263,8 @@ private:
   PDG *programDependenceGraph;
   std::unordered_set<Transformation> enabledTransformations;
   Verbosity verbose;
-  PDGGenerator pdgAnalysis;
-  LDGGenerator ldgAnalysis;
+  PDGGenerator pdgGenerator;
+  LDGGenerator ldgGenerator;
   char *filterFileName;
   bool hasReadFilterFile;
   std::map<uint32_t, uint32_t> loopThreads;
@@ -280,6 +286,8 @@ private:
   std::function<llvm::BlockFrequencyInfo &(Function &F)> getBFI;
   std::function<llvm::BranchProbabilityInfo &(Function &F)> getBPI;
   std::set<AliasAnalysisEngine *> aaEngines;
+  Logger log;
+  ModuleAnalysisManager *mam;
 
   PDG *getFunctionDependenceGraph(Function *f);
 

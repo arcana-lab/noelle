@@ -6,5 +6,5 @@ installDir=$(noelle-config --prefix)
 
 # delete dead functions until a fixed point is reached
 echo "NOELLE: DeadFunctions: Start"
-noelle-load -load $installDir/lib/RemoveFunction.so -noelle-rm-function $@
+noelle-load -load-pass-plugin $installDir/lib/RemoveFunction.so -passes='noelle-rm-function' $@
 echo "NOELLE: DeadFunctions: Exit"

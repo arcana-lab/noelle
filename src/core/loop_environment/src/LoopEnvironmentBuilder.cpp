@@ -29,11 +29,11 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder(LLVMContext &cxt,
                                                LoopEnvironment *environment,
                                                uint64_t numberOfUsers)
   : LoopEnvironmentBuilder(
-      cxt,
-      environment,
-      [](uint32_t variableID, bool isLiveOut) -> bool { return false; },
-      1,
-      numberOfUsers) {
+        cxt,
+        environment,
+        [](uint32_t variableID, bool isLiveOut) -> bool { return false; },
+        1,
+        numberOfUsers) {
 
   return;
 }
@@ -46,12 +46,12 @@ LoopEnvironmentBuilder::LoopEnvironmentBuilder(
     uint64_t reducerCount,
     uint64_t numberOfUsers)
   : LoopEnvironmentBuilder(
-      cxt,
-      environment,
-      shouldThisVariableBeReduced,
-      [](uint32_t variableID, bool isLiveOut) -> bool { return false; },
-      reducerCount,
-      numberOfUsers) {
+        cxt,
+        environment,
+        shouldThisVariableBeReduced,
+        [](uint32_t variableID, bool isLiveOut) -> bool { return false; },
+        reducerCount,
+        numberOfUsers) {
 
   return;
 }
@@ -160,7 +160,6 @@ void LoopEnvironmentBuilder::initializeBuilder(
    * Initialize fields
    */
   this->envArray = nullptr;
-  this->envArrayInt8Ptr = nullptr;
   this->envSize = singleVarIDs.size() + reducableVarIDs.size();
   this->envArrayType = nullptr;
   this->numReducers = reducerCount;
@@ -263,13 +262,9 @@ void LoopEnvironmentBuilder::allocateEnvironmentArray(IRBuilder<> &builder) {
     // abort();
   }
 
-  auto int8 = IntegerType::get(builder.getContext(), 8);
-  auto ptrTy_int8 = PointerType::getUnqual(int8);
   this->envArray = builder.CreateAlloca(this->envArrayType,
                                         nullptr,
                                         "noelle.loop_environment");
-  this->envArrayInt8Ptr =
-      cast<Value>(builder.CreateBitCast(this->envArray, ptrTy_int8));
 
   return;
 }
@@ -288,8 +283,7 @@ void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> &builder) {
 
   auto int64 = IntegerType::get(builder.getContext(), 64);
   auto zeroV = cast<Value>(ConstantInt::get(int64, 0));
-  auto fetchCastedEnvPtr =
-      [&](Value *arr, uint32_t envIndex, Type *ptrType) -> Value * {
+  auto fetchEnvPtr = [&](AllocaInst *arr, uint32_t envIndex) -> Value * {
     /*
      * Compute the offset of the variable with index "envIndex" that is stored
      * inside the environment.
@@ -304,16 +298,10 @@ void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> &builder) {
     /*
      * Compute the address of the variable with index "envIndex".
      */
-    auto envPtr = builder.CreateGEP(arr->getType()->getStructElementType(0),
+    auto envPtr = builder.CreateGEP(arr->getAllocatedType(),
                                     arr,
                                     ArrayRef<Value *>({ zeroV, indValue }));
-
-    /*
-     * Cast the pointer to the proper data type.
-     */
-    auto cast = builder.CreateBitCast(envPtr, ptrType);
-
-    return cast;
+    return envPtr;
   };
 
   /*
@@ -327,9 +315,7 @@ void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> &builder) {
     singleIndices.insert(indexVarPair.first);
   }
   for (auto envIndex : singleIndices) {
-    auto ptrType = PointerType::getUnqual(this->envTypes[envIndex]);
-    this->envIndexToVar[envIndex] =
-        fetchCastedEnvPtr(this->envArray, envIndex, ptrType);
+    this->envIndexToVar[envIndex] = fetchEnvPtr(this->envArray, envIndex);
   }
 
   /*
@@ -344,12 +330,6 @@ void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> &builder) {
     reducableIndices.insert(indexVarPair.first);
   }
   for (auto envIndex : reducableIndices) {
-
-    /*
-     * Fetch the type of the current reducable variable.
-     */
-    auto varType = this->envTypes[envIndex];
-    auto ptrType = PointerType::getUnqual(varType);
 
     /*
      * Define the type of the vectorized form of the reducable variable.
@@ -373,15 +353,14 @@ void LoopEnvironmentBuilder::generateEnvVariables(IRBuilder<> &builder) {
      * Store the pointer of the vector of the reducable variable inside the
      * environment.
      */
-    auto reduceArrPtrType = PointerType::getUnqual(reduceArrAlloca->getType());
-    auto envPtr = fetchCastedEnvPtr(this->envArray, envIndex, reduceArrPtrType);
+    auto envPtr = fetchEnvPtr(this->envArray, envIndex);
     builder.CreateStore(reduceArrAlloca, envPtr);
 
     /*
      * Compute and cache the pointer of each element of the vectorized variable.
      */
     for (auto i = 0u; i < this->numReducers; ++i) {
-      auto reducePtr = fetchCastedEnvPtr(reduceArrAlloca, i, ptrType);
+      auto reducePtr = fetchEnvPtr(reduceArrAlloca, i);
       this->envIndexToReducableVar[envIndex].push_back(reducePtr);
     }
   }
@@ -479,6 +458,10 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
    */
   auto valuesInCacheLine = Architecture::getCacheLineBytes() / sizeof(int64_t);
 
+  auto int64Type = IntegerType::get(this->CXT, 64);
+  auto reduceArrType =
+      ArrayType::get(int64Type, this->numReducers * valuesInCacheLine);
+
   /*
    * Load the values stored in the private copies of the threads.
    */
@@ -504,25 +487,16 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
         this->envIndexToVectorOfReducableVar.at(envIndex);
     auto zeroV = cast<Value>(ConstantInt::get(int32Type, 0));
     auto varType = envTypes[envIndex];
-    auto ptrType = PointerType::getUnqual(varType);
-    auto effectiveAddressOfReducedVar = loopBodyBuilder.CreateGEP(
-        baseAddressOfReducedVar->getType()->getStructElementType(0),
-        baseAddressOfReducedVar,
-        ArrayRef<Value *>({ zeroV, offsetValue }));
-
-    /*
-     * Finally, cast the effective address to the correct LLVM type.
-     */
-    auto effectiveAddressOfReducedVarProperlyCasted =
-        loopBodyBuilder.CreateBitCast(effectiveAddressOfReducedVar, ptrType);
+    auto effectiveAddressOfReducedVar =
+        loopBodyBuilder.CreateGEP(reduceArrType,
+                                  baseAddressOfReducedVar,
+                                  ArrayRef<Value *>({ zeroV, offsetValue }));
 
     /*
      * Load the next value that needs to be accumulated.
      */
-    auto envVar = loopBodyBuilder.CreateLoad(
-        effectiveAddressOfReducedVarProperlyCasted->getType()
-            ->getStructElementType(0),
-        effectiveAddressOfReducedVarProperlyCasted);
+    auto envVar =
+        loopBodyBuilder.CreateLoad(varType, effectiveAddressOfReducedVar);
     loadedValues.push_back(envVar);
   }
 
@@ -616,9 +590,8 @@ BasicBlock *LoopEnvironmentBuilder::reduceLiveOutVariables(
 }
 
 Value *LoopEnvironmentBuilder::getEnvironmentArrayVoidPtr(void) const {
-  assert(this->envArrayInt8Ptr != nullptr);
-
-  return this->envArrayInt8Ptr;
+  // We always have opaque pointers in v18
+  return this->getEnvironmentArray();
 }
 
 Value *LoopEnvironmentBuilder::getEnvironmentArray(void) const {
@@ -638,6 +611,16 @@ Value *LoopEnvironmentBuilder::getEnvironmentVariable(uint32_t id) const {
   auto iter = envIndexToVar.find(ind);
   assert(iter != envIndexToVar.end());
   return (*iter).second;
+}
+
+Type *LoopEnvironmentBuilder::getEnvironmentVariableType(uint32_t id) const {
+  /*
+   * Mapping from envID to index
+   */
+  assert(this->envIDToIndex.find(id) != this->envIDToIndex.end()
+         && "The environment variable is not included in the builder\n");
+  auto ind = this->envIDToIndex.at(id);
+  return this->envTypes[ind];
 }
 
 uint32_t LoopEnvironmentBuilder::getIndexOfEnvironmentVariable(

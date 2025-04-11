@@ -32,16 +32,16 @@ class SCEVSimplification {
 public:
   SCEVSimplification(Noelle &noelle);
 
-  bool simplifyIVRelatedSCEVs(LoopContent const &LDI);
+  bool simplifyIVRelatedSCEVs(LoopContent const &LC);
 
   bool simplifyIVRelatedSCEVs(LoopTree *rootLoopNode,
                               InvariantManager *invariantManager,
                               InductionVariableManager *ivManager);
 
-  bool simplifyLoopGoverningIVGuards(LoopContent const &LDI,
+  bool simplifyLoopGoverningIVGuards(LoopContent const &LC,
                                      ScalarEvolution &SE);
 
-  bool simplifyConstantPHIs(LoopContent const &LDI);
+  bool simplifyConstantPHIs(LoopContent const &LC);
 
 private:
   const SCEV *getOffsetBetween(ScalarEvolution &SE,

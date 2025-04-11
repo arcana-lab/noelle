@@ -27,7 +27,7 @@ FunctionsManager::FunctionsManager(Module &m,
                                    PDGGenerator &noellePDGGenerator,
                                    Hot *profiles)
   : program{ m },
-    pdgAnalysis{ noellePDGGenerator },
+    pdgGenerator{ noellePDGGenerator },
     pcg{ nullptr },
     prof{ profiles } {
   return;
@@ -40,7 +40,7 @@ Function *FunctionsManager::getEntryFunction(void) const {
 
 CallGraph *FunctionsManager::getProgramCallGraph(void) {
   if (this->pcg == nullptr) {
-    this->pcg = this->pdgAnalysis.getProgramCallGraph();
+    this->pcg = this->pdgGenerator.getProgramCallGraph();
   }
 
   return this->pcg;
@@ -69,7 +69,7 @@ bool FunctionsManager::isTheLibraryFunctionPure(Function *libraryFunction) {
    * The function is a library function.
    * Check if it is known to be pure.
    */
-  if (this->pdgAnalysis.isTheLibraryFunctionPure(libraryFunction)) {
+  if (this->pdgGenerator.isTheLibraryFunctionPure(libraryFunction)) {
     return true;
   }
 
@@ -171,7 +171,7 @@ std::set<Function *> FunctionsManager::getFunctionsWithPrefix(
   std::set<Function *> s;
 
   for (auto &f : this->program) {
-    if (f.getName().startswith(prefixName)) {
+    if (f.getName().starts_with(prefixName)) {
       s.insert(&f);
     }
   }

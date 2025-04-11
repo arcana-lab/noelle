@@ -30,7 +30,7 @@ LoopUnroll::LoopUnroll() {
   return;
 }
 
-bool LoopUnroll::fullyUnrollLoop(LoopContent const &LDI,
+bool LoopUnroll::fullyUnrollLoop(LoopContent const &LC,
                                  LoopInfo &LI,
                                  DominatorTree &DT,
                                  ScalarEvolution &SE,
@@ -40,12 +40,12 @@ bool LoopUnroll::fullyUnrollLoop(LoopContent const &LDI,
   /*
    * Fetch the loop summary
    */
-  auto ls = LDI.getLoopStructure();
+  auto ls = LC.getLoopStructure();
 
   /*
    * Check if the loop has compile time known trip count.
    */
-  if (!LDI.doesHaveCompileTimeKnownTripCount()) {
+  if (!LC.doesHaveCompileTimeKnownTripCount()) {
     return false;
   }
 
@@ -63,7 +63,7 @@ bool LoopUnroll::fullyUnrollLoop(LoopContent const &LDI,
   /*
    * Fetch the trip count.
    */
-  auto tripCount = LDI.getCompileTimeTripCount();
+  auto tripCount = LC.getCompileTimeTripCount();
 
   /*
    * Try to unroll the loop

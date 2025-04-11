@@ -40,7 +40,7 @@ PreservedAnalyses PDGSCCEmbedder::run(Module &M,
   /*
    * Embed the PDG.
    */
-  auto pdgGen = noelle.getPDGGenerator();
+  auto &pdgGen = noelle.getPDGGenerator();
   pdgGen.embedSCCAsMetadata(pdg);
 
   return PreservedAnalyses::none();

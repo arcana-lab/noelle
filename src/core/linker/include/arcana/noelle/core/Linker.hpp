@@ -37,6 +37,7 @@ public:
       BasicBlock *startOfParLoopInOriginalFunc,
       BasicBlock *endOfParLoopInOriginalFunc,
       Value *envArray,
+      Type *envArrayType,
       Value *envIndexForExitVariable,
       std::vector<BasicBlock *> &loopExitBlocks,
       uint32_t minIdleCores);
@@ -46,6 +47,7 @@ public:
       BasicBlock *startOfParLoopInOriginalFunc,
       BasicBlock *endOfParLoopInOriginalFunc,
       Value *envArray,
+      Type *envArrayType,
       Value *envIndexForExitVariable,
       std::vector<BasicBlock *> &loopExitBlocks,
       uint32_t minIdleCores);

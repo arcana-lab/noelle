@@ -117,7 +117,7 @@ private:
   void collectStatsOnSCCDAG(Hot *profiles,
                             SCCDAG *sccdag,
                             SCCDAGAttrs *sccdagAttrs,
-                            LoopContent *ldi,
+                            LoopContent *LC,
                             Stats *statsForLoop);
 
   void printPerLoopStats(Hot *profiles, Stats *stats);

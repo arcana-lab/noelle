@@ -39,8 +39,9 @@ Noelle::Noelle(
     Verbosity v,
     PDGVerbosity pdgVerbose,
     double minHot,
-    LDGGenerator ldgAnalysis,
+    LDGGenerator ldgGenerator,
     CompilationOptionsManager *om,
+    ModuleAnalysisManager *mam,
     bool dumpPDG,
     bool performThePDGComparison,
     bool disableSVF,
@@ -53,20 +54,20 @@ Noelle::Noelle(
     programDependenceGraph{ nullptr },
     enabledTransformations{ enabledTransformations },
     verbose{ v },
-    pdgAnalysis{ m,
-                 getSCEV,
-                 getLoopInfo,
-                 getPDT,
-                 getCallGraph,
-                 getAA,
-                 dumpPDG,
-                 performThePDGComparison,
-                 disableSVF,
-                 disableSVFCallGraph,
-                 disableAllocAA,
-                 disableRA,
-                 pdgVerbose },
-    ldgAnalysis{ ldgAnalysis },
+    pdgGenerator{ m,
+                  getSCEV,
+                  getLoopInfo,
+                  getPDT,
+                  getCallGraph,
+                  getAA,
+                  dumpPDG,
+                  performThePDGComparison,
+                  disableSVF,
+                  disableSVFCallGraph,
+                  disableAllocAA,
+                  disableRA,
+                  pdgVerbose },
+    ldgGenerator{ ldgGenerator },
     filterFileName{ nullptr },
     hasReadFilterFile{ false },
     loopThreads{},
@@ -87,7 +88,9 @@ Noelle::Noelle(
     getCallGraph{ getCallGraph },
     getBFI{ getBFI },
     getBPI{ getBPI },
-    aaEngines{} {
+    aaEngines{},
+    log{ NoelleLumberjack, "Noelle" },
+    mam{ mam } {
 
   this->filterFileName = getenv("INDEX_FILE");
 
@@ -139,6 +142,16 @@ uint32_t Noelle::fetchTheNextValue(std::stringstream &stream) {
   }
 
   return currentValueRead;
+}
+
+ModuleAnalysisManager *Noelle::getModuleAnalysisManager(void) const {
+  return this->mam;
+}
+
+FunctionAnalysisManager *Noelle::getFunctionAnalysisManager(void) {
+  return &this->mam
+              ->getResult<FunctionAnalysisManagerModuleProxy>(this->program)
+              .getManager();
 }
 
 Verbosity Noelle::getVerbosity(void) const {
@@ -283,7 +296,7 @@ GlobalsManager *Noelle::getGlobalsManager(void) {
 }
 
 PDGGenerator &Noelle::getPDGGenerator(void) {
-  return this->pdgAnalysis;
+  return this->pdgGenerator;
 }
 
 } // namespace arcana::noelle

@@ -68,7 +68,7 @@ set(noelle_LLVM_ALIAS_ANALYSES_FOR_LLVM_TRANSFORMATIONS
 )
 
 set(noelle_load_LLVM_ANALYSES
-  --aa-pipeline='globals-aa,cfl-steens-aa,tbaa,scev-aa,cfl-anders-aa,objc-arc-aa'
+  --aa-pipeline='globals-aa,tbaa,scev-aa,scoped-noalias-aa,objc-arc-aa'
 )
 
 # noelle-norm

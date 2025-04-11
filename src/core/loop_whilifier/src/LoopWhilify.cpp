@@ -27,19 +27,19 @@ LoopWhilifier::LoopWhilifier() : outputPrefix{ "Whilifier: " } {
   return;
 }
 
-bool LoopWhilifier::whilifyLoop(LoopContent &LDI,
+bool LoopWhilifier::whilifyLoop(LoopContent &LC,
                                 Scheduler &scheduler,
                                 DominatorSummary *DS,
                                 PDG *FDG) {
 
   /*
-   * Execute on target loop from @LDI
+   * Execute on target loop from @LC
    */
   auto AnyTransformed = false;
   errs() << outputPrefix << "Start\n";
   errs() << outputPrefix << " Try to whilify the target loop\n";
 
-  auto LS = LDI.getLoopStructure();
+  auto LS = LC.getLoopStructure();
   AnyTransformed |= whilifyLoopDriver(LS, scheduler, DS, FDG);
 
   errs() << outputPrefix << " Transformed = " << AnyTransformed << "\n";

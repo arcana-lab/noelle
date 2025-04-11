@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 - 2019  Angelo Matni, Simone Campanoni
+ * Copyright 2016 - 2024  Angelo Matni, Simone Campanoni
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -107,7 +107,7 @@ bool DGTestSuite::runOnModule(Module &M) {
 // Produce expected Values; don't actually expose checkTest
 Values DGTestSuite::pdgHasAllValuesInProgram(ModulePass &pass,
                                              TestSuite &suite) {
-  DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
+  auto &dgPass = static_cast<DGTestSuite &>(pass);
   Values valueNames;
   for (auto node : dgPass.fdg->getNodes()) {
     valueNames.insert(suite.valueToString(node->getT()));
@@ -117,23 +117,23 @@ Values DGTestSuite::pdgHasAllValuesInProgram(ModulePass &pass,
 
 Values DGTestSuite::pdgHasAllDGEdgesInProgram(ModulePass &pass,
                                               TestSuite &suite) {
-  DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
+  auto &dgPass = static_cast<DGTestSuite &>(pass);
   Values valueNames;
   for (auto edge : dgPass.fdg->getEdges()) {
-    std::string outName = suite.valueToString(edge->getSrc());
-    std::string inName = suite.valueToString(edge->getDst());
-    std::string type =
+    auto outName = suite.valueToString(edge->getSrc());
+    auto inName = suite.valueToString(edge->getDst());
+    auto type =
         isa<ControlDependence<Value, Value>>(edge)
             ? "control"
             : (isa<MemoryDependence<Value, Value>>(edge) ? "memory" : "data");
-    std::string delim = suite.orderedValueDelimiter;
+    auto delim = suite.orderedValueDelimiter;
     valueNames.insert(outName + delim + inName + delim + type);
   }
   return valueNames;
 }
 
 Values DGTestSuite::ldgHasOnlyValuesOfLoop(ModulePass &pass, TestSuite &suite) {
-  DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
+  auto &dgPass = static_cast<DGTestSuite &>(pass);
   auto &LI =
       dgPass.getAnalysis<LoopInfoWrapperPass>(*dgPass.mainF).getLoopInfo();
   auto l = LI.getLoopsInPreorder()[0];
@@ -177,7 +177,7 @@ Values DGTestSuite::pdgIdentifiesDisconnectedValueSets(ModulePass &pass,
       valueNames.push_back(suite.valueToString(node->getT()));
     }
     std::string setName = valueNames[0];
-    for (int i = 1; i < valueNames.size(); ++i) {
+    for (auto i = 1u; i < valueNames.size(); ++i) {
       setName += suite.unorderedValueDelimiter + valueNames[i];
     }
     valueSetNames.insert(setName);
@@ -198,7 +198,7 @@ Values DGTestSuite::sccdagInternalNodesOfOutermostLoop(ModulePass &pass,
 
 Values DGTestSuite::sccdagExternalNodesOfOutermostLoop(ModulePass &pass,
                                                        TestSuite &suite) {
-  DGTestSuite &dgPass = static_cast<DGTestSuite &>(pass);
+  auto &dgPass = static_cast<DGTestSuite &>(pass);
   std::set<SCC *> externalSCCs;
   for (auto nodePair : dgPass.sccdagOutermostLoop->externalNodePairs()) {
     externalSCCs.insert(nodePair.first);
@@ -210,13 +210,13 @@ Values DGTestSuite::getSCCValues(std::set<SCC *> sccs) {
   Values sccStrings;
   for (auto scc : sccs) {
     std::vector<Value *> values(scc->numInternalNodes());
-    auto i = 0;
+    auto i = 0u;
     for (auto nodePair : scc->internalNodePairs()) {
       values[i++] = nodePair.first;
     }
 
-    std::string valuesDelimited = suite->valueToString(values[0]);
-    for (i = 1; i < values.size(); ++i) {
+    auto valuesDelimited = suite->valueToString(values[0]);
+    for (i = 1u; i < values.size(); ++i) {
       valuesDelimited +=
           suite->unorderedValueDelimiter + suite->valueToString(values[i]);
     }
