@@ -38,6 +38,8 @@ public:
 
   void addAnalysis(DependenceAnalysis *a);
 
+  void removeAnalysis(DependenceAnalysis *a);
+
   bool areLoopDependenceAnalysesEnabled(void) const;
 
   void enableLoopDependenceAnalyses(bool enabled);

@@ -100,4 +100,9 @@ void Noelle::addAnalysis(DependenceAnalysis *a) {
   return;
 }
 
+void Noelle::removeAnalysis(DependenceAnalysis *a) {
+  this->pdgGenerator.removeAnalysis(a);
+  this->ldgGenerator.removeAnalysis(a);
+}
+
 } // namespace arcana::noelle

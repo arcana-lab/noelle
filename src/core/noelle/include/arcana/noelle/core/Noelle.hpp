@@ -204,6 +204,10 @@ public:
 
   void addAnalysis(CallGraphAnalysis *a);
 
+  void removeAnalysis(DependenceAnalysis *a);
+
+  void removeAnalysis(CallGraphAnalysis *a);
+
   PDG *getProgramDependenceGraph(void);
 
   DataFlowAnalysis getDataFlowAnalyses(void) const;

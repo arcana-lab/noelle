@@ -196,6 +196,10 @@ void LDGGenerator::addAnalysis(DependenceAnalysis *a) {
   this->ddAnalyses.insert(a);
 }
 
+void LDGGenerator::removeAnalysis(DependenceAnalysis *a) {
+  this->ddAnalyses.erase(a);
+}
+
 PDG *LDGGenerator::generateLoopDependenceGraph(PDG *functionDG,
                                                ScalarEvolution &scalarEvolution,
                                                DominatorSummary &DS,
