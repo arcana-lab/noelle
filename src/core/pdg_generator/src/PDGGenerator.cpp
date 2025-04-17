@@ -785,12 +785,18 @@ bool PDGGenerator::edgeIsAlongNonMemoryWritingFunctions(
 
 void PDGGenerator::addAnalysis(DependenceAnalysis *a) {
   this->ddAnalyses.insert(a);
+}
 
-  return;
+void PDGGenerator::removeAnalysis(DependenceAnalysis *a) {
+  this->ddAnalyses.erase(a);
 }
 
 void PDGGenerator::addAnalysis(CallGraphAnalysis *a) {
   this->cgAnalyses.insert(a);
+}
+
+void PDGGenerator::removeAnalysis(CallGraphAnalysis *a) {
+  this->cgAnalyses.erase(a);
 }
 
 PDGGenerator::~PDGGenerator() {
