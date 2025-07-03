@@ -24,8 +24,7 @@ namespace arcana::noelle {
  * are used, the tool `noelle-ldg-dot` should be modified accordingly
  */
 static cl::opt<uint64_t> OptLoopId("ldg-dot-loop-id",
-                                   cl::desc("Target loop ID"),
-                                   cl::Required);
+                                   cl::desc("Target loop ID"));
 static cl::opt<string> OptOutputFile("ldg-dot-output-file",
                                      cl::desc("Output file for the dot graph"));
 static cl::opt<bool> OptCollapseEdges(
@@ -43,6 +42,11 @@ static cl::opt<bool> OptHideKnownSCCs(
 DotPass::DotPass() : ModulePass{ ID }, log(NoelleLumberjack, "LDGDot") {}
 
 bool DotPass::doInitialization(Module &M) {
+  if (OptLoopId.getNumOccurrences() > 0) {
+    this->enabled = true;
+  } else {
+    this->enabled = false;
+  }
   return false;
 }
 
@@ -51,6 +55,10 @@ void DotPass::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 bool DotPass::runOnModule(Module &M) {
+  if (!this->enabled) {
+    return false;
+  }
+
   auto &noelle = getAnalysis<NoellePass>().getNoelle();
   bool found = false;
 

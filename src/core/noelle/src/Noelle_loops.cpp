@@ -84,13 +84,14 @@ std::vector<LoopStructure *> *Noelle::getLoopStructures(double minimumHotness) {
   return loops;
 }
 
-std::vector<LoopStructure *> *Noelle::
-    getLoopStructuresReachableFromEntryFunction(void) {
+std::vector<LoopStructure *>
+    *Noelle::getLoopStructuresReachableFromEntryFunction(void) {
   return this->getLoopStructuresReachableFromEntryFunction(this->minHot);
 }
 
-std::vector<LoopStructure *> *Noelle::
-    getLoopStructuresReachableFromEntryFunction(double minimumHotness) {
+std::vector<LoopStructure *>
+    *Noelle::getLoopStructuresReachableFromEntryFunction(
+        double minimumHotness) {
 
   /*
    * Default function to include loops
@@ -106,8 +107,8 @@ std::vector<LoopStructure *> *Noelle::
   return loops;
 }
 
-std::vector<LoopStructure *> *Noelle::
-    getLoopStructuresReachableFromEntryFunction(
+std::vector<LoopStructure *>
+    *Noelle::getLoopStructuresReachableFromEntryFunction(
         double minimumHotness,
         std::function<bool(LoopStructure *)> includeLoop) {
 

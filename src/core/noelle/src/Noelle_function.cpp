@@ -51,8 +51,10 @@ FunctionsManager *Noelle::getFunctionsManager(void) {
 
 void Noelle::addAnalysis(CallGraphAnalysis *a) {
   this->pdgGenerator.addAnalysis(a);
+}
 
-  return;
+void Noelle::removeAnalysis(CallGraphAnalysis *a) {
+  this->pdgGenerator.removeAnalysis(a);
 }
 
 } // namespace arcana::noelle

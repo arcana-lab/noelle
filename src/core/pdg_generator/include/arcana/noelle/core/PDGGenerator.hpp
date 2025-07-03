@@ -58,6 +58,10 @@ public:
 
   void addAnalysis(CallGraphAnalysis *a);
 
+  void removeAnalysis(DependenceAnalysis *a);
+
+  void removeAnalysis(CallGraphAnalysis *a);
+
   PDG *getPDG(void);
 
   noelle::CallGraph *getProgramCallGraph(void);
