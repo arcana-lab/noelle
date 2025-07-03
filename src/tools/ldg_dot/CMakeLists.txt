@@ -8,7 +8,7 @@ if(NOT rapidjson_POPULATED)
   FetchContent_Populate(rapidjson)
 endif()
 
-if(NOT lepto_POPULATED)
+if(NOT leptoinst_POPULATED)
   FetchContent_Populate(leptoinst)
 endif()
 
