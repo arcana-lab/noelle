@@ -20,6 +20,7 @@ public:
 
 private:
   noelle::Logger log;
+  bool enabled;
 };
 
 } // namespace arcana::noelle
