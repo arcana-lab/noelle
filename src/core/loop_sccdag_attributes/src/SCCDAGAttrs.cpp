@@ -630,35 +630,40 @@ std::tuple<bool, Value *, Value *, Value *, Value *> SCCDAGAttrs::
       Value *secondaryInitialValue;
 
       /*
-       * Determine which incoming values of the phis are the constants (the initial values).
+       * Determine which incoming values of the phis are the constants (the
+       * initial values).
        */
       int whichFromIncomingValueIsInitial = 0;
       int whichToIncomingValueIsInitial = 0;
-      if(fromPHI->getIncomingValue(0) == to) {
+      if (fromPHI->getIncomingValue(0) == to) {
         whichFromIncomingValueIsInitial = 1;
       }
-      if(toPHI->getIncomingValue(0) == from) {
+      if (toPHI->getIncomingValue(0) == from) {
         whichToIncomingValueIsInitial = 1;
       }
       if (fromHasExternalUsers) {
-        initialValue = fromPHI->getIncomingValue(whichFromIncomingValueIsInitial);
-        secondaryInitialValue = toPHI->getIncomingValue(whichToIncomingValueIsInitial);          
+        initialValue =
+            fromPHI->getIncomingValue(whichFromIncomingValueIsInitial);
+        secondaryInitialValue =
+            toPHI->getIncomingValue(whichToIncomingValueIsInitial);
         accumulator = fromPHI;
       } else {
         initialValue = toPHI->getIncomingValue(whichToIncomingValueIsInitial);
-        secondaryInitialValue = fromPHI->getIncomingValue(whichFromIncomingValueIsInitial);          
+        secondaryInitialValue =
+            fromPHI->getIncomingValue(whichFromIncomingValueIsInitial);
         accumulator = toPHI;
       }
       /*
-       * If either constant isn't incoming from the preheader, this isn't actually a periodic variable,
-       * and might be a memory cell.
+       * If either constant isn't incoming from the preheader, this isn't
+       * actually a periodic variable, and might be a memory cell.
        */
-      if((fromPHI->getIncomingBlock(whichFromIncomingValueIsInitial) != loopNode->getLoop()->getPreHeader()) ||
-         (toPHI->getIncomingBlock(whichToIncomingValueIsInitial) != loopNode->getLoop()->getPreHeader())) 
-      {
+      if ((fromPHI->getIncomingBlock(whichFromIncomingValueIsInitial)
+           != loopNode->getLoop()->getPreHeader())
+          || (toPHI->getIncomingBlock(whichToIncomingValueIsInitial)
+              != loopNode->getLoop()->getPreHeader())) {
         return notPeriodic;
       }
-      
+
       auto initialConstantInt = dyn_cast<ConstantInt>(initialValue);
       auto secondaryInitialConstantInt =
           dyn_cast<ConstantInt>(secondaryInitialValue);
