@@ -67,10 +67,16 @@ void PragmaTree::addChild(PragmaTree *T) {
 
 bool PragmaTree::getStringFromArg(Value *arg, StringRef &result) {
   auto GEP = dyn_cast<GetElementPtrInst>(arg);
+  Value *Ptr = nullptr;
   if (GEP == nullptr) {
-    return false;
+    auto CE = dyn_cast<ConstantExpr>(arg);
+    if (CE == nullptr || CE->getOpcode() != Instruction::GetElementPtr) {
+      return false;
+    }
+    Ptr = CE->getOperand(0);
+  } else {
+    Ptr = GEP->getPointerOperand();
   }
-  auto Ptr = GEP->getPointerOperand();
   if (!isa<Constant>(Ptr)) {
     return false;
   }
@@ -338,8 +344,17 @@ PragmaTree *PragmaTree::getParent() {
 
 string PragmaTree::getDirective() const {
   auto CI = cast<CallInst>(this->Begin);
-  auto GEP = cast<GetElementPtrInst>(CI->getArgOperand(0));
-  auto Ptr = GEP->getPointerOperand();
+  auto FirstArg = CI->getArgOperand(0);
+  auto GEP = dyn_cast<GetElementPtrInst>(FirstArg);
+
+  Value *Ptr = nullptr;
+  if (GEP == nullptr) {
+    auto CE = cast<ConstantExpr>(FirstArg);
+    Ptr = CE->getOperand(0);
+  } else {
+    Ptr = GEP->getPointerOperand();
+  }
+
   auto GV = cast<GlobalVariable>(Ptr);
   auto CDA = cast<ConstantDataArray>(GV->getInitializer());
   return CDA->getAsCString().str();
@@ -436,7 +451,7 @@ void PragmaTree::erase() {
   });
 
   if (this->parent != nullptr) {
-    auto siblings = this->parent->children;
+    auto &siblings = this->parent->children;
     auto thisIt = std::find(siblings.begin(), siblings.end(), this);
     assert(thisIt != siblings.end());
     siblings.erase(thisIt);
