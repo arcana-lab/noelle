@@ -16,8 +16,6 @@ compile: build
 build:
 	cmake -S . -B $(BUILD_DIR) -G "$(GENERATOR)" \
 		-DCMAKE_INSTALL_MESSAGE=LAZY \
-		-DBUILD_SHARED_LIBS=On \
-		-DSVF_ENABLE_ASSERTIONS=true \
 		-DCMAKE_INSTALL_PREFIX=install
 
 tests: install
