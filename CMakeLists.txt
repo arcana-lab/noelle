@@ -93,6 +93,8 @@ if(NOELLE_SVF STREQUAL ON)
   set(NOELLE_SVF ON)
   list(APPEND NOELLE_CXX_FLAGS "-DNOELLE_ENABLE_SVF")
   set(CMAKE_BUILD_TYPE ${SVF_BUILD_TYPE})
+  set(SVF_ENABLE_ASSERTIONS true)
+  set(BUILD_SHARED_LIBS true)
   FetchContent_MakeAvailable(svf)
   FetchContent_GetProperties(svf)
   include_directories(${svf_BINARY_DIR}/include)
@@ -150,7 +152,7 @@ include_directories(
 add_compile_options(${NOELLE_CXX_FLAGS})
 
 add_custom_target(
-  CompileCommands ALL
+  NoelleCompileCommands ALL
   COMMAND ${CMAKE_COMMAND} -E create_symlink
     ${CMAKE_BINARY_DIR}/compile_commands.json
     ${NOELLE_CMAKE_ROOT}/compile_commands.json
