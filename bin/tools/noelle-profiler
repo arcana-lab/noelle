@@ -7,7 +7,10 @@ installDir=$(noelle-config --prefix)
 usage () {
   echo "USAGE: `basename $0` INPUT_BC [OPTION]..."
   echo
-  echo "Instrumentation profiler for all functions in a bitcode"
+  echo "Instrumentation profiler for all functions in a bitcode."
+  echo
+  echo "Options:"
+  noelle-load -load $installDir/lib/Profiler.so --help | grep -- "--profiler-"
 }
 
 if test $# -lt 1 ; then
