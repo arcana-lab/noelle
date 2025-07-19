@@ -6,17 +6,18 @@ install(
     noelle-ldg-dot
     noelle-loop-size
     noelle-loop-stats
+    noelle-meta-clean
     noelle-meta-loop-clean
     noelle-meta-pdg-clean
-    noelle-meta-scc-clean
+    noelle-meta-pdg-embed
     noelle-meta-prof-clean
-    noelle-meta-clean
+    noelle-meta-scc-clean
+    noelle-meta-scc-embed
     noelle-pdg-stats
     noelle-privatizer
+    noelle-profiler
     noelle-rm-function
     noelle-scc-print
-    noelle-meta-pdg-embed
-    noelle-meta-scc-embed
   DESTINATION
     bin
 )
