@@ -18,6 +18,23 @@ using namespace llvm;
 
 namespace arcana::noelle {
 
+static cl::list<std::string> ProfileBlackList(
+    "profiler-ignore",
+    cl::desc("Function prefix to exclude from profiling (e.g., '_ZNSt')"),
+    cl::value_desc("prefix"),
+    cl::ZeroOrMore);
+
+// Helper function to check if a function should be blacklisted
+static bool isFunctionBlacklisted(const std::string &functionName) {
+  for (const auto &prefix : ProfileBlackList) {
+    if (functionName.find(prefix)
+        == 0) { // Check if function name starts with prefix
+      return true;
+    }
+  }
+  return false;
+}
+
 ProfilerPass::ProfilerPass()
   : ModulePass{ ID },
     log(NoelleLumberjack, "Profiler") {}
@@ -39,6 +56,17 @@ bool ProfilerPass::runOnModule(Module &M) {
   }
 
   log.debug() << "Profiler is enabled, starting instrumentation\n";
+
+  // Log blacklist configuration
+  if (!ProfileBlackList.empty()) {
+    log.debug() << "Function blacklist prefixes:\n";
+    auto s = log.indentedSection();
+    for (const auto &prefix : ProfileBlackList) {
+      log.debug() << "- " << prefix << "\n";
+    }
+  } else {
+    log.debug() << "No function blacklist specified\n";
+  }
 
   auto &context = M.getContext();
   auto *int8PtrTy = Type::getInt8PtrTy(context);
@@ -83,17 +111,26 @@ bool ProfilerPass::runOnModule(Module &M) {
 
   std::vector<GlobalVariable *> stopwatches;
   std::vector<std::string> functionNames;
+  int blacklistedCount = 0;
 
   // For each function, create a global stopwatch and instrument the function
   for (Function &F : M) {
     if (F.isDeclaration())
       continue;
 
-    log.debug() << "Instrumenting function: " << F.getName().str() << "\n";
+    auto funcName = F.getName().str();
+
+    // Check if function is blacklisted
+    if (isFunctionBlacklisted(funcName)) {
+      log.debug() << "Skipping blacklisted function: " << funcName << "\n";
+      blacklistedCount++;
+      continue;
+    }
+
+    log.debug() << "Instrumenting function: " << funcName << "\n";
     auto s = log.indentedSection();
 
     // Create a global string for the function name
-    auto funcName = F.getName().str();
 
     // Create the stopwatch global variable (uninitialized)
     auto *stopwatchGV = new GlobalVariable(M,
@@ -129,11 +166,20 @@ bool ProfilerPass::runOnModule(Module &M) {
   }
 
   log.debug() << "Instrumented " << stopwatches.size() << " functions\n";
+  if (blacklistedCount > 0) {
+    log.debug() << "Skipped " << blacklistedCount << " blacklisted functions\n";
+  }
 
   // Initialize stopwatches in main function
   if (!stopwatches.empty()) {
     auto *mainFunc = M.getFunction("main");
     if (mainFunc && !mainFunc->isDeclaration()) {
+      // Check if main function is blacklisted (this would be problematic)
+      if (isFunctionBlacklisted("main")) {
+        log.debug()
+            << "Warning: main function is blacklisted but needed for stopwatch initialization\n";
+      }
+
       log.debug() << "Found main function, adding stopwatch initialization\n";
 
       IRBuilder<> mainBuilder(
