@@ -5,6 +5,11 @@ target_sources(
   src/Pass.cpp
 )
 
-add_library(stopwatch SHARED
+add_library(profiler SHARED
   src/Stopwatch.cpp
+)
+
+install(
+  TARGETS profiler
+  LIBRARY DESTINATION lib
 )
