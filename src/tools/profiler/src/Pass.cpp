@@ -20,19 +20,99 @@ namespace arcana::noelle {
 
 static cl::list<std::string> ProfileBlackList(
     "profiler-ignore",
-    cl::desc("Function prefix to exclude from profiling (e.g., '_ZNSt')"),
+    cl::desc(
+        "Function prefix to exclude from profiling (e.g., '_ZNSt', '__cxa_', 'llvm.')"),
     cl::value_desc("prefix"),
     cl::ZeroOrMore);
 
+static cl::opt<bool> DisableDefaultBlackList(
+    "profiler-no-default-ignore",
+    cl::desc("Disable the default C++ runtime function blacklist"),
+    cl::init(false));
+
+static cl::opt<bool> DisableAutoCleanup(
+    "profiler-no-auto-cleanup",
+    cl::desc(
+        "Disable automatic cleanup function setup (avoids global constructor issues)"),
+    cl::init(false));
+
+// Default blacklist for common C++ runtime and system functions
+static const std::vector<std::string> DefaultBlackList = {
+  "_ZNSt",                  // std:: namespace functions (mangled)
+  "_ZSt",                   // std:: global functions (mangled)
+  "_ZN9__gnu_cxx",          // GNU C++ extension functions
+  "_ZN4__gnu",              // Additional GNU functions
+  "__cxa_",                 // C++ ABI functions (exception handling, etc.)
+  "__gxx_",                 // GCC C++ runtime functions
+  "_Unwind_",               // Exception unwinding functions
+  "llvm.",                  // LLVM intrinsics
+  "__stack_chk_",           // Stack protection functions
+  "_GLOBAL__sub_",          // Global constructor/destructor functions
+  "__clang_call_terminate", // Clang exception handling
+  "_ZTI",                   // Type info symbols
+  "_ZTV",                   // Virtual table symbols
+  "_ZTS",                   // Type string symbols
+  "_ZTT",                   // VTT (Virtual Table Table) symbols
+  "_ZTH",                   // Thread-local initialization symbols
+  "_ZTC",                   // Construction vtable symbols
+  "__cxx_global_var_init",  // C++ global variable initialization
+  "__dso_handle",           // Dynamic shared object handle
+  "_ZTIN",                  // Typeinfo names
+  "_ZTSN",                  // Typeinfo strings for namespaces
+};
+
 // Helper function to check if a function should be blacklisted
 static bool isFunctionBlacklisted(const std::string &functionName) {
+  // Always exclude certain problematic functions
+  if (functionName.empty() || functionName.find("@") != std::string::npos
+      ||                             // Avoid mangled symbols with @
+      functionName.find(".") == 0) { // Avoid hidden symbols starting with .
+    return true;
+  }
+
+  // Check user-specified blacklist
   for (const auto &prefix : ProfileBlackList) {
-    if (functionName.find(prefix)
-        == 0) { // Check if function name starts with prefix
+    if (functionName.find(prefix) == 0) {
       return true;
     }
   }
+
+  // Check default blacklist for C++ runtime functions (unless disabled)
+  if (!DisableDefaultBlackList) {
+    for (const auto &prefix : DefaultBlackList) {
+      if (functionName.find(prefix) == 0) {
+        return true;
+      }
+    }
+  }
+
   return false;
+}
+
+// Helper function for debugging - shows which rule matched
+static std::string getBlacklistReason(const std::string &functionName) {
+  if (functionName.empty())
+    return "empty name";
+  if (functionName.find("@") != std::string::npos)
+    return "contains @";
+  if (functionName.find(".") == 0)
+    return "starts with .";
+
+  for (const auto &prefix : ProfileBlackList) {
+    if (functionName.find(prefix) == 0) {
+      return "user blacklist: " + prefix;
+    }
+  }
+
+  if (!DisableDefaultBlackList) {
+    for (const auto &prefix : DefaultBlackList) {
+      if (functionName.find(prefix) == 0) {
+        return "default blacklist: " + prefix;
+      }
+    }
+  }
+
+  return "not blacklisted";
 }
 
 ProfilerPass::ProfilerPass()
@@ -58,14 +138,24 @@ bool ProfilerPass::runOnModule(Module &M) {
   log.debug() << "Profiler is enabled, starting instrumentation\n";
 
   // Log blacklist configuration
+  if (DisableDefaultBlackList) {
+    log.debug() << "Default C++ runtime blacklist is DISABLED\n";
+  } else {
+    log.debug() << "Default C++ runtime blacklist prefixes:\n";
+    auto s = log.indentedSection();
+    for (const auto &prefix : DefaultBlackList) {
+      log.debug() << "- " << prefix << "\n";
+    }
+  }
+
   if (!ProfileBlackList.empty()) {
-    log.debug() << "Function blacklist prefixes:\n";
+    log.debug() << "User-specified blacklist prefixes:\n";
     auto s = log.indentedSection();
     for (const auto &prefix : ProfileBlackList) {
       log.debug() << "- " << prefix << "\n";
     }
   } else {
-    log.debug() << "No function blacklist specified\n";
+    log.debug() << "No additional user blacklist specified\n";
   }
 
   auto &context = M.getContext();
@@ -122,7 +212,29 @@ bool ProfilerPass::runOnModule(Module &M) {
 
     // Check if function is blacklisted
     if (isFunctionBlacklisted(funcName)) {
-      log.debug() << "Skipping blacklisted function: " << funcName << "\n";
+      auto reason = getBlacklistReason(funcName);
+      log.debug() << "Skipping blacklisted function: " << funcName
+                  << " (reason: " << reason << ")\n";
+      blacklistedCount++;
+      continue;
+    }
+
+    log.debug() << "Function passed blacklist check: " << funcName << "\n";
+
+    // Additional safety checks for C++ bitcode
+    if (F.empty() || F.getEntryBlock().empty()) {
+      log.debug()
+          << "Skipping function with no entry block: " << funcName << "\n";
+      blacklistedCount++;
+      continue;
+    }
+
+    // Skip functions with certain attributes that make them unsuitable for
+    // instrumentation
+    if (F.hasFnAttribute(Attribute::NoInline)
+        && F.hasFnAttribute(Attribute::AlwaysInline)) {
+      log.debug() << "Skipping function with conflicting inline attributes: "
+                  << funcName << "\n";
       blacklistedCount++;
       continue;
     }
@@ -150,13 +262,18 @@ bool ProfilerPass::runOnModule(Module &M) {
 
     log.debug() << "Inserted stopwatch start call\n";
 
-    // Insert stopwatch_stop before each return
+    // Insert stopwatch_stop before each return and other exit points
     int returnCount = 0;
     for (auto &BB : F) {
       auto *term = BB.getTerminator();
       if (isa<ReturnInst>(term)) {
         IRBuilder<> retBuilder(term);
         retBuilder.CreateCall(stopwatchStop, { stopwatchGV });
+        returnCount++;
+      } else if (isa<ResumeInst>(term)) {
+        // Handle exception resume - also stop timing
+        IRBuilder<> resumeBuilder(term);
+        resumeBuilder.CreateCall(stopwatchStop, { stopwatchGV });
         returnCount++;
       }
     }
@@ -223,7 +340,7 @@ bool ProfilerPass::runOnModule(Module &M) {
   }
 
   // Add a cleanup function that prints all stopwatch results
-  if (!stopwatches.empty()) {
+  if (!stopwatches.empty() && !DisableAutoCleanup) {
     log.debug() << "Creating cleanup function to print timing results\n";
 
     // Create a global destructor function to print timing results
@@ -280,17 +397,83 @@ bool ProfilerPass::runOnModule(Module &M) {
           ConstantPointerNull::get(
               PointerType::getUnqual(Type::getInt8Ty(context))) });
 
-    auto *ctorArrayTy = ArrayType::get(ctorStructTy, 1);
-    auto *ctorArray = ConstantArray::get(ctorArrayTy, { ctorStruct });
+    // Check if llvm.global_ctors already exists
+    auto *existingCtors = M.getGlobalVariable("llvm.global_ctors");
+    if (existingCtors) {
+      log.debug() << "Found existing llvm.global_ctors, appending to it\n";
 
-    new GlobalVariable(M,
-                       ctorArrayTy,
-                       false,
-                       GlobalValue::AppendingLinkage,
-                       ctorArray,
-                       "llvm.global_ctors");
+      // Get the existing array
+      auto *existingArray =
+          dyn_cast<ConstantArray>(existingCtors->getInitializer());
+      if (existingArray) {
+        // Create a new array with existing elements plus our new one
+        std::vector<Constant *> newElements;
+        for (unsigned i = 0; i < existingArray->getNumOperands(); ++i) {
+          newElements.push_back(existingArray->getOperand(i));
+        }
+        newElements.push_back(ctorStruct);
+
+        auto *newCtorArrayTy = ArrayType::get(ctorStructTy, newElements.size());
+        auto *newCtorArray = ConstantArray::get(newCtorArrayTy, newElements);
+
+        // Replace the existing global variable
+        existingCtors->eraseFromParent();
+        new GlobalVariable(M,
+                           newCtorArrayTy,
+                           false,
+                           GlobalValue::AppendingLinkage,
+                           newCtorArray,
+                           "llvm.global_ctors");
+      } else {
+        log.debug()
+            << "Warning: existing llvm.global_ctors has unexpected format\n";
+        // Fallback: create our own array
+        auto *ctorArrayTy = ArrayType::get(ctorStructTy, 1);
+        auto *ctorArray = ConstantArray::get(ctorArrayTy, { ctorStruct });
+        new GlobalVariable(M,
+                           ctorArrayTy,
+                           false,
+                           GlobalValue::AppendingLinkage,
+                           ctorArray,
+                           "llvm.global_ctors.profiler");
+      }
+    } else {
+      log.debug() << "No existing llvm.global_ctors, creating new one\n";
+      // Create new global constructors array
+      auto *ctorArrayTy = ArrayType::get(ctorStructTy, 1);
+      auto *ctorArray = ConstantArray::get(ctorArrayTy, { ctorStruct });
+      new GlobalVariable(M,
+                         ctorArrayTy,
+                         false,
+                         GlobalValue::AppendingLinkage,
+                         ctorArray,
+                         "llvm.global_ctors");
+    }
 
     log.debug() << "Added constructor to global constructors list\n";
+  } else if (DisableAutoCleanup) {
+    log.debug() << "Auto cleanup disabled, skipping cleanup setup\n";
+
+    // Instead, create a simple function that users can call manually
+    if (!stopwatches.empty()) {
+      auto *printAllFuncTy =
+          FunctionType::get(Type::getVoidTy(context), {}, false);
+      auto *printAllFunc = Function::Create(printAllFuncTy,
+                                            GlobalValue::ExternalLinkage,
+                                            "profiler_print_all_results",
+                                            &M);
+
+      auto *printAllBB = BasicBlock::Create(context, "entry", printAllFunc);
+      IRBuilder<> printAllBuilder(printAllBB);
+
+      for (auto *sw : stopwatches) {
+        printAllBuilder.CreateCall(stopwatchPrint, { sw });
+      }
+
+      printAllBuilder.CreateRetVoid();
+
+      log.debug() << "Created manual profiler_print_all_results() function\n";
+    }
   } else {
     log.debug() << "No functions were instrumented, skipping cleanup setup\n";
   }
