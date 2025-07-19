@@ -1,5 +1,7 @@
 #include <cstdint>
 #include <string>
+#include <cstdlib>
+#include <cxxabi.h>
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/IR/DataLayout.h"
@@ -36,11 +38,20 @@ static cl::opt<bool> DisableAutoCleanup(
         "Disable automatic cleanup function setup (avoids global constructor issues)"),
     cl::init(false));
 
+static cl::opt<bool> DisableStdFunctions(
+    "profiler-no-std",
+    cl::desc("Exclude all std:: namespace functions from profiling"),
+    cl::init(false));
+
+static cl::opt<bool> DisableDemangle(
+    "profiler-no-demangle",
+    cl::desc("Disable C++ name demangling for function names in output"),
+    cl::init(false));
+
 // Default blacklist for common C++ runtime and system functions
 static const std::vector<std::string> DefaultBlackList = {
-  "_ZNSt",                  // std:: namespace functions (mangled)
-  "_ZSt",                   // std:: global functions (mangled)
   "_ZN9__gnu_cxx",          // GNU C++ extension functions
+  "_ZNK9__gnu_cxx",         // GNU C++ extension functions (const)
   "_ZN4__gnu",              // Additional GNU functions
   "__cxa_",                 // C++ ABI functions (exception handling, etc.)
   "__gxx_",                 // GCC C++ runtime functions
@@ -77,6 +88,15 @@ static bool isFunctionBlacklisted(const std::string &functionName) {
     }
   }
 
+  // Check for std:: functions if disabled
+  if (DisableStdFunctions) {
+    if (functionName.find("_ZNSt") == 0 || functionName.find("_ZSt") == 0
+        || functionName.find("_ZNSa") == 0
+        || functionName.find("_ZNKSt") == 0) {
+      return true;
+    }
+  }
+
   // Check default blacklist for C++ runtime functions (unless disabled)
   if (!DisableDefaultBlackList) {
     for (const auto &prefix : DefaultBlackList) {
@@ -104,6 +124,12 @@ static std::string getBlacklistReason(const std::string &functionName) {
     }
   }
 
+  if (DisableStdFunctions) {
+    if (functionName.find("_ZNSt") == 0 || functionName.find("_ZSt") == 0) {
+      return "std:: functions disabled";
+    }
+  }
+
   if (!DisableDefaultBlackList) {
     for (const auto &prefix : DefaultBlackList) {
       if (functionName.find(prefix) == 0) {
@@ -113,6 +139,31 @@ static std::string getBlacklistReason(const std::string &functionName) {
   }
 
   return "not blacklisted";
+}
+
+// Helper function to demangle C++ function names
+static std::string demangleFunctionName(const std::string &mangledName) {
+  if (DisableDemangle) {
+    return mangledName;
+  }
+
+  // Only attempt to demangle C++ mangled names (start with _Z)
+  if (mangledName.length() < 2 || mangledName.substr(0, 2) != "_Z") {
+    return mangledName;
+  }
+
+  int status = 0;
+  char *demangled =
+      abi::__cxa_demangle(mangledName.c_str(), nullptr, nullptr, &status);
+
+  if (status == 0 && demangled != nullptr) {
+    std::string result(demangled);
+    std::free(demangled);
+    return result;
+  }
+
+  // If demangling failed, return the original name
+  return mangledName;
 }
 
 ProfilerPass::ProfilerPass()
@@ -136,6 +187,19 @@ bool ProfilerPass::runOnModule(Module &M) {
   }
 
   log.debug() << "Profiler is enabled, starting instrumentation\n";
+
+  // Log configuration options
+  if (DisableDemangle) {
+    log.debug() << "C++ name demangling is DISABLED\n";
+  } else {
+    log.debug() << "C++ name demangling is ENABLED\n";
+  }
+
+  if (DisableStdFunctions) {
+    log.debug() << "std:: namespace functions are DISABLED\n";
+  } else {
+    log.debug() << "std:: namespace functions are ENABLED\n";
+  }
 
   // Log blacklist configuration
   if (DisableDefaultBlackList) {
@@ -307,9 +371,12 @@ bool ProfilerPass::runOnModule(Module &M) {
         auto *stopwatchGV = stopwatches[i];
         auto &funcName = functionNames[i];
 
-        // Create string constant for function name
+        // Demangle the function name for display purposes
+        std::string displayName = demangleFunctionName(funcName);
+
+        // Create string constant for display name
         auto *funcNameConst =
-            ConstantDataArray::getString(context, funcName, true);
+            ConstantDataArray::getString(context, displayName, true);
         auto *funcNameGV = new GlobalVariable(M,
                                               funcNameConst->getType(),
                                               true,
@@ -327,8 +394,8 @@ bool ProfilerPass::runOnModule(Module &M) {
                                                    indices);
 
         mainBuilder.CreateCall(stopwatchInit, { stopwatchGV, namePtr });
-        log.debug()
-            << "Initialized stopwatch for function: " << funcName << "\n";
+        log.debug() << "Initialized stopwatch for function: " << funcName
+                    << " (display name: " << displayName << ")\n";
       }
 
       log.debug() << "Initialized " << stopwatches.size()
