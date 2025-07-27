@@ -1,4 +1,4 @@
 extern "C" {
-#include "arcana/noelle/core/PragmaDecl.h"
+#define NOELLE_PRAGMA_INLINE
 #include "arcana/noelle/core/PragmaDef.h"
 }
