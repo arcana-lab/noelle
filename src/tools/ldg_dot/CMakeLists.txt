@@ -1,6 +1,7 @@
 FetchContent_Declare(
   leptoinst
   GIT_REPOSITORY  "https://github.com/fsossai/lepto-inst.git"
+  GIT_TAG         "llvm14-compatible"
 )
 FetchContent_GetProperties(leptoinst)
 
